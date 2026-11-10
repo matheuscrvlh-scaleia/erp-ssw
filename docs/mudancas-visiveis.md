@@ -36,3 +36,37 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   = 2). Para a FR nada muda na tela.
 - **Q54 — código de ocorrência com letra** na coluna do SSW conta como "sem código" na saída para
   entrega, em vez de derrubar a consulta.
+
+## Admin, Plataforma, auditoria e convites (spec 05)
+
+- **Q33 — convite cria a senha.** O e-mail de convite leva a `/aceitar-convite`, onde a pessoa cria
+  a própria senha (vale 72 h). Na lista de usuários aparece "Convite pendente" e só esses têm o botão
+  "Reenviar convite" (quem já tem senha usa "Definir nova senha").
+- **Q36 — usuário nunca fica pela metade.** Se o e-mail do convite não sai, nada é gravado e o aviso
+  pede para tentar de novo. Em Admin › Usuários, e-mail que já tem conta dá "já cadastrado" (antes
+  criava outro); na Plataforma, e-mail com conta só ganha o vínculo com a empresa.
+- **Q32 — mais ações em Logs.** Definir senha de outra pessoa e reenviar convite aparecem em Admin ›
+  Logs (sem a senha). Definir ou remover senha/token de integração aparece nos Logs da Plataforma.
+- **Q19 — prazos configurados.** Salvar, ligar, desligar ou apagar regra não espera mais o recálculo:
+  o aviso diz que os CT-e afetados são recalculados em seguida (antes, a tela travava até terminar e
+  mostrava quantos CT-e mudaram). Sem regra, o CT-e volta à previsão do SSW.
+- **P10 — opções de unidade e parceiro** da regra de prazo vêm de todos os CT-e da empresa (antes,
+  só dos 1.000 mais recentes).
+- **Q29 — Plataforma › Empresa › Usuários** mostra os papéis e departamentos da empresa editada
+  (antes, os da empresa de quem estava operando).
+- **Q30 — Roles e Departamentos por empresa.** Cada empresa tem os seus; a mesma chave em duas
+  empresas são cadastros diferentes. Empresa nova nasce com Super Admin, Admin, Gestor, Operador e
+  Equipe.
+- **Q31 — Logs › Integrações** segue o papel na empresa ativa (admin da empresa vê as execuções
+  dela; a Plataforma vê de qualquer empresa pela tela da empresa).
+- **Segurança (decisão técnica, ADR 0006).** Só Super Admin (ou a Plataforma) dá ou tira o nível
+  Super Admin; e-mail e senha de quem é da Plataforma só mudam pela Plataforma; e-mail de Super Admin
+  só muda por Super Admin. Definir senha de alguém encerra as sessões abertas dessa pessoa.
+  Exceções de tela e telas de role/departamento só aceitam telas da empresa (nunca as da Plataforma
+  nem Logs, que vem do nível).
+- **Senhas e tokens das integrações** ficam cifrados no banco (AES-256-GCM) e nunca voltam para a
+  tela; o cartão mostra só quando foram gravados.
+- **Logs › Alterações:** clicar na linha abre o antes e o depois numa janela (antes, abria embaixo
+  da linha); as colunas Tipo e Identificador podem ser ligadas em "Colunas" e entram na exportação.
+- **Implantação** passa a apontar integração ligada sem senha/token e deixa de listar itens "fase
+  seguinte" da migração antiga.
