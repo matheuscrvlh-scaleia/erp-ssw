@@ -1,4 +1,5 @@
 import { comContexto, conectarBanco, type Transacao } from "@erp/db";
+import { PREFIXO_DAS_FILAS } from "@erp/shared/jobs";
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { pino } from "pino";
@@ -50,14 +51,18 @@ const executar: ExecutorDoWorker = (contexto, fn) =>
 
 const filas = FILAS.map(
   ({ nome }) =>
-    new Queue(nome, { connection: redis, defaultJobOptions: OPCOES_PADRAO_DO_JOB, prefix: "erp" }),
+    new Queue(nome, {
+      connection: redis,
+      defaultJobOptions: OPCOES_PADRAO_DO_JOB,
+      prefix: PREFIXO_DAS_FILAS,
+    }),
 );
 const processar = criarProcessador({ jobs: JOBS, executar, log, agora: () => new Date() });
 const workers = FILAS.map(({ nome, concorrencia }) => {
   const worker = new Worker(nome, processar, {
     connection: redis,
     concurrency: concorrencia,
-    prefix: "erp",
+    prefix: PREFIXO_DAS_FILAS,
   });
   worker.on("failed", (job, erro) => {
     log.error(

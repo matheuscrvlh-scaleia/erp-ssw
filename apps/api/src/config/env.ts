@@ -47,6 +47,21 @@ const esquema = z
 
     /** Base pública dos logos (bucket S3); sem ela o menu mostra as iniciais da empresa. */
     LOGO_URL_BASE: z.url().optional(),
+    /** Bucket S3 compatível dos logos (envio pela Plataforma). Sem ele, o envio avisa. */
+    S3_ENDPOINT: z.url().optional(),
+    S3_REGIAO: z.string().default("us-east-1"),
+    S3_BUCKET: z.string().optional(),
+    S3_CHAVE_ACESSO: z.string().optional(),
+    S3_SEGREDO: z.string().optional(),
+    S3_CAMINHO_NO_ESTILO: booleano.default(false),
+
+    /**
+     * Chaves mestras dos segredos de integração (AES-256-GCM): `1:<base64 de 32 bytes>,2:<…>`.
+     * Sem elas, a Plataforma não grava senha/token.
+     */
+    SEGREDOS_CHAVES: z.string().optional(),
+    SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+
     /** Token de leitura de /metrics; sem ele a rota não existe. */
     METRICAS_TOKEN: z.string().min(16).optional(),
   })
@@ -60,6 +75,16 @@ const esquema = z
     }
     if (env.NODE_ENV === "production" && !env.REDIS_URL) {
       ctx.addIssue({ code: "custom", message: "Em produção, REDIS_URL é obrigatório." });
+    }
+    const s3 = [env.S3_BUCKET, env.S3_CHAVE_ACESSO, env.S3_SEGREDO];
+    if (s3.some(Boolean) && !s3.every(Boolean)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "S3: defina S3_BUCKET, S3_CHAVE_ACESSO e S3_SEGREDO.",
+      });
+    }
+    if (env.NODE_ENV === "production" && !env.SEGREDOS_CHAVES) {
+      ctx.addIssue({ code: "custom", message: "Em produção, SEGREDOS_CHAVES é obrigatório." });
     }
     if (env.NODE_ENV === "production" && !env.SMTP_HOST) {
       ctx.addIssue({ code: "custom", message: "Em produção, SMTP_HOST é obrigatório." });

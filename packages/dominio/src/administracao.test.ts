@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  type AlvoDoLogin,
   caminhoDoLogo,
   escolherEmpresaModelo,
   exigirPodeAlterarLogin,
-  exigirPodeDefinirSenha,
   exigirPodeMexerEmSuperAdmin,
   exigirPodeRemoverAdminPlataforma,
   podeAlterarLogin,
@@ -17,29 +17,50 @@ import {
 const base64 = (bytes: number[]) => btoa(String.fromCharCode(...bytes));
 
 describe("login de outra pessoa", () => {
+  const alvo: AlvoDoLogin = {
+    plataforma: false,
+    papelDeQuemPede: "admin",
+    empresaAtiva: "a",
+    empresasDoAlvo: ["a"],
+    papeisDoAlvo: ["operador"],
+    alvoEhPlataforma: false,
+  };
+
   it("admin só mexe em quem está só na empresa dele; Plataforma sempre", () => {
-    const empresaAtiva = "a";
-    expect(podeAlterarLogin({ plataforma: false, empresasDoAlvo: ["a"], empresaAtiva })).toBe(true);
-    expect(podeAlterarLogin({ plataforma: false, empresasDoAlvo: ["a", "b"], empresaAtiva })).toBe(
-      false,
+    expect(podeAlterarLogin(alvo)).toBe(true);
+    expect(podeAlterarLogin({ ...alvo, empresasDoAlvo: ["a", "b"] })).toBe(false);
+    expect(podeAlterarLogin({ ...alvo, plataforma: true, empresasDoAlvo: ["a", "b"] })).toBe(true);
+    expect(() => exigirPodeAlterarLogin({ ...alvo, empresasDoAlvo: ["a", "b"] }, "senha")).toThrow(
+      "a senha só pode ser redefinida pela equipe da Plataforma",
     );
-    expect(podeAlterarLogin({ plataforma: true, empresasDoAlvo: ["a", "b"], empresaAtiva })).toBe(
-      true,
-    );
-    expect(() =>
-      exigirPodeAlterarLogin({ plataforma: false, empresasDoAlvo: ["b"], empresaAtiva }, "senha"),
-    ).toThrow("a senha só pode ser redefinida pela equipe da Plataforma");
   });
 
   it("senha de Super Admin só outro Super Admin (a Plataforma sozinha não)", () => {
+    const superAdmin = { ...alvo, papeisDoAlvo: ["super_admin"] };
+    expect(() => exigirPodeAlterarLogin(superAdmin, "senha")).toThrow(
+      "Apenas o Super Admin pode redefinir a senha de outro Super Admin",
+    );
     expect(() =>
-      exigirPodeDefinirSenha({ papeisDoAlvo: ["super_admin"], papelDeQuemPede: "admin" }),
-    ).toThrow("Apenas o Super Admin pode redefinir a senha de outro Super Admin");
+      exigirPodeAlterarLogin(
+        { ...superAdmin, plataforma: true, papelDeQuemPede: "admin" },
+        "senha",
+      ),
+    ).toThrow();
     expect(() =>
-      exigirPodeDefinirSenha({ papeisDoAlvo: ["super_admin"], papelDeQuemPede: "super_admin" }),
+      exigirPodeAlterarLogin({ ...superAdmin, papelDeQuemPede: "super_admin" }, "senha"),
     ).not.toThrow();
+    expect(() => exigirPodeAlterarLogin(superAdmin, "e-mail")).toThrow(
+      "Apenas o Super Admin pode alterar o e-mail de outro Super Admin.",
+    );
+    expect(() => exigirPodeAlterarLogin(superAdmin, "nome e e-mail")).not.toThrow();
+  });
+
+  it("admin de empresa não mexe no login de quem é da Plataforma", () => {
+    expect(() => exigirPodeAlterarLogin({ ...alvo, alvoEhPlataforma: true }, "e-mail")).toThrow(
+      "Este usuário é da equipe da Plataforma",
+    );
     expect(() =>
-      exigirPodeDefinirSenha({ papeisDoAlvo: ["operador", null], papelDeQuemPede: "admin" }),
+      exigirPodeAlterarLogin({ ...alvo, alvoEhPlataforma: true, plataforma: true }, "senha"),
     ).not.toThrow();
   });
 

@@ -2,9 +2,13 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
 
+import { type ChavesDeSegredo } from "@erp/db/segredos";
+
 import { type Ambiente } from "./config/env";
 import { registrarTratadorDeErros } from "./http/tratador-erros";
+import { type Armazenamento } from "./infra/armazenamento";
 import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
+import { type FilaDeJobs } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
 import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
@@ -12,7 +16,15 @@ import { type ServicoDeSenhas } from "./infra/senhas";
 import { type EmissorDeTokens } from "./infra/tokens";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
+import { rotasCadastros } from "./modulos/cadastros/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
+import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
+import { rotasLogs } from "./modulos/logs/rotas";
+import { rotasPlataforma } from "./modulos/plataforma/rotas";
+import { rotasPrazos } from "./modulos/prazos/rotas";
+import { type DependenciasUsuarios } from "./modulos/usuarios/casos-de-uso";
+import { rotasUsuarios } from "./modulos/usuarios/rotas";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -34,6 +46,12 @@ export interface Dependencias {
   /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
   correio: Correio | null;
   google: ProvedorGoogle | null;
+  /** Fila do worker (recálculos); desligada sem Redis. */
+  fila: FilaDeJobs;
+  /** Bucket dos logos; nulo = envio de logo não configurado. */
+  armazenamento: Armazenamento | null;
+  /** Chaves dos segredos de integração; nulo = cofre não configurado. */
+  chavesDeSegredo: ChavesDeSegredo | null;
   agora: () => Date;
 }
 
@@ -92,6 +110,26 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+
+  const usuarios: DependenciasUsuarios = {
+    correio: auth.correio,
+    senhas: deps.senhas,
+    webUrl: ambiente.WEB_URL,
+    agora: deps.agora,
+  };
+  await app.register(rotasUsuarios, { deps: usuarios, executar: deps.executar });
+  await app.register(rotasCadastros);
+  await app.register(rotasConfiguracoes, { cache: criarCacheDeConfiguracoes(deps.agora) });
+  await app.register(rotasPrazos, { fila: deps.fila });
+  await app.register(rotasLogs, { executar: deps.executar });
+  await app.register(rotasPlataforma, {
+    executar: deps.executar,
+    usuarios,
+    armazenamento: deps.armazenamento,
+    chavesDeSegredo: deps.chavesDeSegredo,
+    urlDoLogo: acesso.urlDoLogo,
+    agora: deps.agora,
+  });
 
   return app;
 }

@@ -13,6 +13,8 @@ const CAMINHOS_SENSIVEIS = [
   "*.token",
   "tokenAcesso",
   "*.tokenAcesso",
+  "segredo",
+  "*.segredo",
 ];
 
 export function opcoesDeLog(ambiente: Ambiente): NonNullable<FastifyServerOptions["logger"]> {

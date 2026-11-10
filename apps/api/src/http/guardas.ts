@@ -1,5 +1,6 @@
 import { moduloLiberado } from "@erp/dominio/acesso";
 import { type ChaveModulo, nomeDoModulo } from "@erp/shared/acesso/modulos";
+import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
 import { type Tela } from "@erp/shared/acesso/telas";
 import { type Acesso } from "@erp/shared/contratos/auth";
 import { type FastifyRequest } from "fastify";
@@ -42,6 +43,16 @@ export function exigirTela(tela: Tela): Guarda {
   };
 }
 
+/** Passa com qualquer uma das telas (lista usada por mais de uma tela, ex.: cargos). */
+export function exigirUmaDasTelas(...telas: Tela[]): Guarda {
+  return async (request) => {
+    const acesso = await acessoComEmpresa(request);
+    if (!telas.some((t) => acesso.telas.includes(t))) {
+      throw semPermissao("Seu nível de acesso não libera esta tela.");
+    }
+  };
+}
+
 /** Passa se qualquer um dos módulos estiver liberado para a empresa (Plataforma sempre passa). */
 export function exigirModulo(...chaves: ChaveModulo[]): Guarda {
   return async (request) => {
@@ -57,6 +68,17 @@ export function exigirPapel(...papeis: string[]): Guarda {
     if (!acesso.papel || !papeis.includes(acesso.papel)) throw semPermissao();
   };
 }
+
+/**
+ * Admin da empresa ativa: papel admin ou super_admin no vínculo, ou admin da Plataforma (que conta
+ * como admin mesmo com outro papel no vínculo, igual a `has_role`).
+ */
+export const exigirAdminDaEmpresa: Guarda = async (request) => {
+  const acesso = await acessoComEmpresa(request);
+  if (!acesso.adminPlataforma && !ehAdminDaEmpresa(acesso.papel)) {
+    throw semPermissao("Acesso restrito a administradores");
+  }
+};
 
 export const exigirAdminPlataforma: Guarda = async (request) => {
   const acesso = await request.acesso();

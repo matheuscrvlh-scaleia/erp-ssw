@@ -37,3 +37,23 @@ export function emailDeRedefinicao(dados: {
     html: html(saudacao(dados.nome), paragrafos, dados.link, "Criar nova senha"),
   };
 }
+
+/** Convite (criação de conta pelo Admin ou pela Plataforma): o link leva a criar a senha. */
+export function emailDeConvite(dados: {
+  para: string;
+  nome: string | null;
+  empresa: string;
+  link: string;
+  validadeHoras: number;
+}): Mensagem {
+  const paragrafos = [
+    `Você foi convidado para o Painel Logístico da ${dados.empresa}.`,
+    `Crie sua senha pelo link abaixo. Ele vale por ${dados.validadeHoras} horas e só pode ser usado uma vez.`,
+  ];
+  return {
+    para: dados.para,
+    assunto: `Convite para o Painel Logístico — ${dados.empresa}`,
+    texto: [saudacao(dados.nome), ...paragrafos, dados.link].join("\n\n"),
+    html: html(saudacao(dados.nome), paragrafos, dados.link, "Criar minha senha"),
+  };
+}

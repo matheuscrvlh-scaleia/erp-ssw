@@ -50,10 +50,4 @@ export function definirJob<D>(definicao: DefinicaoDeJob<D>): DefinicaoDeJob<D> {
   return definicao;
 }
 
-/** Política padrão: 5 tentativas com espera exponencial; histórico limitado no Redis. */
-export const OPCOES_PADRAO_DO_JOB = {
-  attempts: 5,
-  backoff: { type: "exponential", delay: 30_000 },
-  removeOnComplete: { age: 24 * 3600, count: 1000 },
-  removeOnFail: { age: 7 * 24 * 3600 },
-} as const;
+export { OPCOES_PADRAO_DO_JOB } from "@erp/shared/jobs";

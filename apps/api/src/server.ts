@@ -1,9 +1,12 @@
 import { comContexto, conectarBanco } from "@erp/db";
+import { lerChavesDeSegredo } from "@erp/db/segredos";
 import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
 import { carregarAmbiente } from "./config/env";
+import { criarArmazenamentoS3 } from "./infra/armazenamento";
 import { criarCorreioSmtp } from "./infra/correio";
+import { criarFilaBullmq, filaDesligada } from "./infra/fila";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
@@ -24,6 +27,8 @@ const conexao = conectarBanco({
 const redis = ambiente.REDIS_URL
   ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
   : null;
+
+const fila = redis ? criarFilaBullmq(redis) : null;
 
 const app = await construirApp({
   ambiente,
@@ -58,10 +63,26 @@ const app = await construirApp({
           redirectUri: ambiente.GOOGLE_REDIRECT_URI,
         })
       : null,
+  fila: fila ?? filaDesligada,
+  armazenamento:
+    ambiente.S3_BUCKET && ambiente.S3_CHAVE_ACESSO && ambiente.S3_SEGREDO
+      ? criarArmazenamentoS3({
+          endpoint: ambiente.S3_ENDPOINT,
+          regiao: ambiente.S3_REGIAO,
+          bucket: ambiente.S3_BUCKET,
+          chaveDeAcesso: ambiente.S3_CHAVE_ACESSO,
+          segredo: ambiente.S3_SEGREDO,
+          caminhoNoEstilo: ambiente.S3_CAMINHO_NO_ESTILO,
+        })
+      : null,
+  chavesDeSegredo: ambiente.SEGREDOS_CHAVES
+    ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
+    : null,
   agora: () => new Date(),
 });
 
 app.addHook("onClose", async () => {
+  await fila?.fechar();
   await conexao.encerrar();
   await redis?.quit();
 });

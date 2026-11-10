@@ -18,8 +18,6 @@ export const LIMITE_INTEGRACAO_POR_ORIGEM = 250;
 export const ORIGENS_INTEGRACAO = ["sftp_xml", "relatorio_ssw", "aplicacao_ssw", "bi2"] as const;
 export type OrigemIntegracao = (typeof ORIGENS_INTEGRACAO)[number];
 
-const valorJson = z.json();
-
 export const linhaAuditoria = z.object({
   id: z.number().int(),
   empresaId: z.uuid().nullable(),
@@ -30,8 +28,8 @@ export const linhaAuditoria = z.object({
   entidade: z.string(),
   entidadeId: z.string().nullable(),
   resumo: z.string().nullable(),
-  antes: z.record(z.string(), valorJson).nullable(),
-  depois: z.record(z.string(), valorJson).nullable(),
+  antes: z.record(z.string(), z.unknown()).nullable(),
+  depois: z.record(z.string(), z.unknown()).nullable(),
   ip: z.string().nullable(),
   criadoEm: z.iso.datetime(),
 });

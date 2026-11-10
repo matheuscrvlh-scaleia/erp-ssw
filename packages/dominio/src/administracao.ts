@@ -26,39 +26,55 @@ export function setorLegado(departamento: string | null): Setor | null {
     : null;
 }
 
+/** Quem é a pessoa cujo login (nome, e-mail, senha) se quer mudar, e quem pede. */
+export interface AlvoDoLogin {
+  plataforma: boolean;
+  papelDeQuemPede: string | null;
+  empresaAtiva: string;
+  /** Empresas em que o alvo tem vínculo (qualquer estado), lidas sem o filtro da empresa. */
+  empresasDoAlvo: readonly string[];
+  /** Papéis do alvo em todas as empresas. */
+  papeisDoAlvo: readonly (string | null)[];
+  alvoEhPlataforma: boolean;
+}
+
 /**
  * Nome, e-mail e senha são da pessoa, não da empresa: o admin da empresa só mexe quando a pessoa
  * está só na empresa dele. Com mais de uma empresa, só a Plataforma.
  */
-export function podeAlterarLogin(entrada: {
-  plataforma: boolean;
-  empresasDoAlvo: readonly string[];
-  empresaAtiva: string;
-}): boolean {
-  if (entrada.plataforma) return true;
-  return entrada.empresasDoAlvo.length === 1 && entrada.empresasDoAlvo[0] === entrada.empresaAtiva;
+export function podeAlterarLogin(alvo: AlvoDoLogin): boolean {
+  if (alvo.plataforma) return true;
+  return alvo.empresasDoAlvo.length === 1 && alvo.empresasDoAlvo[0] === alvo.empresaAtiva;
 }
 
+/**
+ * Além da regra de hoje (`podeAlterarLogin`, Super Admin na senha), o porte fecha duas tomadas de
+ * conta: admin de empresa mudando e-mail ou senha de alguém da equipe da Plataforma, e trocando
+ * o e-mail de um Super Admin (o "Esqueci a senha" iria para o e-mail novo).
+ */
 export function exigirPodeAlterarLogin(
-  entrada: Parameters<typeof podeAlterarLogin>[0],
-  oQue: "nome e e-mail" | "senha",
+  alvo: AlvoDoLogin,
+  oQue: "nome e e-mail" | "e-mail" | "senha",
 ): void {
-  if (podeAlterarLogin(entrada)) return;
-  throw proibido(
-    oQue === "senha"
-      ? "Este usuário também acessa outra empresa: a senha só pode ser redefinida pela equipe da Plataforma."
-      : "Este usuário também acessa outra empresa: nome e e-mail só podem ser alterados pela equipe da Plataforma.",
-  );
-}
-
-/** Senha de quem é Super Admin (em qualquer empresa) só outro Super Admin redefine. */
-export function exigirPodeDefinirSenha(entrada: {
-  papeisDoAlvo: readonly (string | null)[];
-  papelDeQuemPede: string | null;
-}): void {
-  const alvoEhSuperAdmin = entrada.papeisDoAlvo.includes(PAPEL_SUPER_ADMIN);
-  if (alvoEhSuperAdmin && entrada.papelDeQuemPede !== PAPEL_SUPER_ADMIN) {
-    throw proibido("Apenas o Super Admin pode redefinir a senha de outro Super Admin");
+  if (alvo.alvoEhPlataforma && !alvo.plataforma) {
+    throw proibido(
+      "Este usuário é da equipe da Plataforma: só a Plataforma altera nome, e-mail e senha.",
+    );
+  }
+  if (!podeAlterarLogin(alvo)) {
+    throw proibido(
+      oQue === "senha"
+        ? "Este usuário também acessa outra empresa: a senha só pode ser redefinida pela equipe da Plataforma."
+        : "Este usuário também acessa outra empresa: nome e e-mail só podem ser alterados pela equipe da Plataforma.",
+    );
+  }
+  const alvoEhSuperAdmin = alvo.papeisDoAlvo.includes(PAPEL_SUPER_ADMIN);
+  if (oQue !== "nome e e-mail" && alvoEhSuperAdmin && alvo.papelDeQuemPede !== PAPEL_SUPER_ADMIN) {
+    throw proibido(
+      oQue === "senha"
+        ? "Apenas o Super Admin pode redefinir a senha de outro Super Admin"
+        : "Apenas o Super Admin pode alterar o e-mail de outro Super Admin.",
+    );
   }
 }
 
