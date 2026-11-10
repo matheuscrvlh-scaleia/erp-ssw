@@ -1,7 +1,8 @@
 import { type Transacao } from "@erp/db";
-import { configuracoes, empresaIntegracoes, empresas } from "@erp/db/schema";
+import { empresaIntegracoes, empresas } from "@erp/db/schema";
+import { type SegredoCifrado } from "@erp/db/segredos";
 import { type EmpresaParaIngestao } from "@erp/ingestao/casos-de-uso";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 
 /** Leituras da Plataforma usadas pelas rotas públicas da ingestão. */
 export function criarRepositorioDaIngestaoPublica(tx: Transacao) {
@@ -23,14 +24,27 @@ export function criarRepositorioDaIngestaoPublica(tx: Transacao) {
           and(eq(empresaIntegracoes.empresaId, empresas.id), eq(empresaIntegracoes.ativo, true)),
         )
         .groupBy(empresas.id),
-    async tokenDoCron(): Promise<string | null> {
-      const [c] = await tx
-        .select({ valor: configuracoes.valor })
-        .from(configuracoes)
+    /** Segredo cifrado da integração `ingestao_publica` ligada de cada empresa. */
+    async segredosDaIngestao(): Promise<{ empresaId: string; segredo: SegredoCifrado }[]> {
+      const linhas = await tx
+        .select({
+          empresaId: empresaIntegracoes.empresaId,
+          cifrado: empresaIntegracoes.segredoCifrado,
+          versaoChave: empresaIntegracoes.segredoVersaoChave,
+        })
+        .from(empresaIntegracoes)
         .where(
-          and(isNull(configuracoes.empresaId), eq(configuracoes.chave, "backfill_cron_token")),
+          and(
+            eq(empresaIntegracoes.tipo, "ingestao_publica"),
+            eq(empresaIntegracoes.ativo, true),
+            isNotNull(empresaIntegracoes.segredoCifrado),
+          ),
         );
-      return c?.valor.trim() || null;
+      return linhas.flatMap(({ empresaId, cifrado, versaoChave }) =>
+        cifrado === null || versaoChave === null
+          ? []
+          : [{ empresaId, segredo: { cifrado, versaoChave } }],
+      );
     },
   };
 }

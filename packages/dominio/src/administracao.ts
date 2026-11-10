@@ -96,6 +96,23 @@ export function exigirPodeMexerEmSuperAdmin(entrada: {
   }
 }
 
+/**
+ * Desativar ou reativar alguém (conta ou vínculo): quem é da Plataforma só pela Plataforma; Super
+ * Admin só por Super Admin ou pela Plataforma (ADR 0007). Sem isso, um admin comum tirava o
+ * acesso de quem está acima dele.
+ */
+export function exigirPodeMudarAtivo(alvo: AlvoDoLogin): void {
+  if (alvo.alvoEhPlataforma && !alvo.plataforma) {
+    throw proibido(
+      "Este usuário é da equipe da Plataforma: só a Plataforma o desativa ou reativa.",
+    );
+  }
+  const alvoEhSuperAdmin = alvo.papeisDoAlvo.includes(PAPEL_SUPER_ADMIN);
+  if (alvoEhSuperAdmin && !alvo.plataforma && alvo.papelDeQuemPede !== PAPEL_SUPER_ADMIN) {
+    throw proibido("Apenas o Super Admin pode desativar ou reativar um Super Admin.");
+  }
+}
+
 /** Cargos que toda empresa nova recebe; `super_admin` é protegido (telas e chave fixas). */
 export const CARGOS_PADRAO: readonly { chave: string; rotulo: string; protegido: boolean }[] = [
   { chave: PAPEL_SUPER_ADMIN, rotulo: "Super Admin", protegido: true },

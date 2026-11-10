@@ -10,3 +10,4 @@ export {
   ehViolacaoDeUnicidade,
   type Transacao,
 } from "./cliente";
+export { erroParaLog } from "./erros";

@@ -83,4 +83,5 @@ export const exigirAdminDaEmpresa: Guarda = async (request) => {
 export const exigirAdminPlataforma: Guarda = async (request) => {
   const acesso = await request.acesso();
   if (!acesso.adminPlataforma) throw semPermissao("Esta ação é só da equipe da Plataforma.");
+  if (!acesso.ativo) throw semPermissao("Sua conta foi desativada por um administrador.");
 };

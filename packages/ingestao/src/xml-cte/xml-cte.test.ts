@@ -8,6 +8,7 @@ import {
   classificarXml,
   lerCancelamentoXml,
   lerCteXml,
+  LIMITES_DO_ZIP,
   numeroCteDaChave,
   statusDoArquivoXml,
   xmlsDoZip,
@@ -69,6 +70,19 @@ describe("leitura do XML", () => {
   it("extrai só os .xml do zip", () => {
     const zip = zipSync({ "a/1-cte.xml": strToU8(XML_CTE), "leia.txt": strToU8("x") });
     expect(xmlsDoZip(zip).map((x) => x.nome)).toEqual(["a/1-cte.xml"]);
+  });
+
+  it("recusa bomba de zip: um XML acima do teto ou o total acima do limite", () => {
+    // Zeros comprimem para quase nada: o zip é pequeno, o conteúdo, não.
+    const grande = new Uint8Array(LIMITES_DO_ZIP.porArquivo + 1);
+    const bomba = zipSync({ "bomba.xml": grande }, { level: 9 });
+    expect(bomba.length).toBeLessThan(100_000);
+    expect(() => xmlsDoZip(bomba)).toThrow(/grande demais dentro do zip/);
+
+    const parte = new Uint8Array(1000);
+    const muitos = zipSync({ "a.xml": parte, "b.xml": parte, "c.xml": parte });
+    expect(() => xmlsDoZip(muitos, { porArquivo: 1000, total: 2500 })).toThrow(/descompactado/);
+    expect(xmlsDoZip(muitos, { porArquivo: 1000, total: 3000 })).toHaveLength(3);
   });
 });
 

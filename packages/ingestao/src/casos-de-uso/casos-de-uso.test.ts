@@ -283,6 +283,7 @@ describe("FTP", () => {
             porta: 22,
             usuario: "u",
             senha: "s",
+            impressaoDigital: "SHA256:teste",
             relatoriosPath: "/arquivos_import",
             importadosPath: "/importados",
           }),

@@ -136,6 +136,10 @@ const VALIDADE_REDEFINICAO_MS = 60 * 60_000;
 const credenciaisInvalidas = () =>
   new ErroDeNegocio("NAO_AUTENTICADO", "E-mail ou senha incorretos.");
 
+/** Conta desativada não entra nem renova a sessão (a senha já conferiu: não revela nada novo). */
+const contaDesativada = () =>
+  new ErroDeNegocio("SEM_PERMISSAO", "Sua conta foi desativada por um administrador.");
+
 const linkInvalido = (tipo: TipoTokenSenha) =>
   new ErroDeNegocio(
     "ENTRADA_INVALIDA",
@@ -164,6 +168,7 @@ async function abrirSessao(
 ): Promise<SessaoEmitida> {
   const { usuario, adminPlataforma, vinculos } = await lerIdentidade(depsDoAcesso(deps), usuarioId);
   if (!usuario) throw naoAutenticado();
+  if (!usuario.ativo) throw contaDesativada();
   const empresaId = empresaDaSessao(usuario.empresaPreferidaId, adminPlataforma, vinculos);
   const agora = deps.agora();
   const refresh = gerarTokenOpaco();
@@ -302,7 +307,7 @@ export async function renovar(
     depsDoAcesso(deps),
     sessao.usuarioId,
   );
-  if (!usuario) throw sessaoExpirada();
+  if (!usuario?.ativo) throw sessaoExpirada();
   const empresaId = empresaDaSessao(sessao.empresaAtivaId, adminPlataforma, vinculos);
   const novo = gerarTokenOpaco();
   const expiraEm = new Date(agora.getTime() + deps.refreshDias * 86_400_000);

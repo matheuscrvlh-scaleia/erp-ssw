@@ -138,6 +138,7 @@ export const TIPOS_INTEGRACAO = [
   "ssw_webhook",
   "ahgora",
   "xml_cte",
+  "ingestao_publica",
 ] as const;
 
 /**
@@ -157,6 +158,12 @@ export const empresaIntegracoes = erp.table(
     segredoCifrado: text("segredo_cifrado"),
     segredoVersaoChave: integer("segredo_versao_chave"),
     segredoDefinidoEm: timestamp("segredo_definido_em", { withTimezone: true, mode: "date" }),
+    /**
+     * Segredo trocado por último (só o do webhook SSW), cifrado com o mesmo contexto: o
+     * reprocesso de "token incorreto" aceita eventos assinados com ele.
+     */
+    segredoAnteriorCifrado: text("segredo_anterior_cifrado"),
+    segredoAnteriorVersaoChave: integer("segredo_anterior_versao_chave"),
     ultimoTesteEm: timestamp("ultimo_teste_em", { withTimezone: true, mode: "date" }),
     ultimoTesteOk: boolean("ultimo_teste_ok"),
     ultimoTesteMsg: text("ultimo_teste_msg"),
@@ -168,6 +175,10 @@ export const empresaIntegracoes = erp.table(
     check(
       "empresa_integracoes_segredo_coerente",
       sql`(${t.segredoCifrado} is null) = (${t.segredoVersaoChave} is null)`,
+    ),
+    check(
+      "empresa_integracoes_segredo_anterior_coerente",
+      sql`(${t.segredoAnteriorCifrado} is null) = (${t.segredoAnteriorVersaoChave} is null)`,
     ),
     // O worker lê no contexto da empresa; só a Plataforma cadastra e altera.
     ...politicas("empresa_integracoes", {

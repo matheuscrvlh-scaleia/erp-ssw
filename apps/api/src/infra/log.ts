@@ -1,3 +1,4 @@
+import { erroParaLog } from "@erp/db";
 import { type FastifyRequest, type FastifyServerOptions } from "fastify";
 
 import { type Ambiente } from "../config/env";
@@ -31,12 +32,19 @@ const PARAMETROS_SENSIVEIS = new Set([
   "key",
 ]);
 
-/** Devolve a URL com o valor dos parâmetros sensíveis trocado por `[oculto]`. */
+/** Caminhos com segredo num segmento: o token do link público do ranking. */
+const CAMINHOS_COM_SEGREDO = /^(\/(?:api\/public\/ranking|ranking\/publico)\/)[^/?#]+/i;
+
+/**
+ * Devolve a URL com o valor dos parâmetros sensíveis e o segmento de segredo do caminho trocados
+ * por `[oculto]`.
+ */
 export function mascararUrl(url: string): string {
-  const inicioQuery = url.indexOf("?");
-  if (inicioQuery === -1) return url;
-  const caminho = url.slice(0, inicioQuery);
-  const pares = url
+  const mascarada = url.replace(CAMINHOS_COM_SEGREDO, "$1[oculto]");
+  const inicioQuery = mascarada.indexOf("?");
+  if (inicioQuery === -1) return mascarada;
+  const caminho = mascarada.slice(0, inicioQuery);
+  const pares = mascarada
     .slice(inicioQuery + 1)
     .split("&")
     .map((par) => {
@@ -56,6 +64,8 @@ export function opcoesDeLog(ambiente: Ambiente): NonNullable<FastifyServerOption
     redact: { paths: CAMINHOS_SENSIVEIS, censor: "[oculto]" },
     base: { servico: "erp-api" },
     serializers: {
+      // Erro do Drizzle leva SQL e parâmetros na mensagem: sai sem eles.
+      err: erroParaLog,
       req: (req: FastifyRequest) => ({
         method: req.method,
         url: mascararUrl(req.url),

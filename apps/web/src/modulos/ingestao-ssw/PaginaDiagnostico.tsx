@@ -301,7 +301,8 @@ function CartaoReprocessarToken() {
     >
       <p className="text-[12px] text-muted-foreground">
         Reenvia ao processamento os eventos recusados com &quot;token incorreto&quot; que guardaram
-        o conteúdo recebido. Use depois de corrigir o segredo do webhook.
+        o conteúdo recebido e cujo token é o segredo atual ou o anterior. Use depois de corrigir o
+        segredo do webhook.
       </p>
       <Button
         size="sm"

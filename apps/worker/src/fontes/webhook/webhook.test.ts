@@ -170,4 +170,31 @@ describe("webhook SSW2181 — processamento", () => {
       erroProcessamento: "conexão caiu",
     });
   });
+
+  it("evento sem token conferido nunca vira dado", async () => {
+    const cte = cteGravado({ sigla: "CAP", numero: "33214" });
+    banco.ctes.push(cte);
+    const id = randomUUID();
+    banco.eventos.set(id, {
+      payload: corpo({ numeroCTe: "CAP033214-5" }),
+      autenticado: false,
+      resultado: null,
+    });
+    const r = await processar(id);
+    expect(r).toMatchObject({ statusHttp: 401, motivoRejeicao: "token_incorreto" });
+    expect(banco.ocorrencias).toEqual([]);
+  });
+
+  it("reaplica a lista de CNPJs aceitos da integração", async () => {
+    banco.ctes.push(cteGravado({ sigla: "CAP", numero: "33214" }));
+    banco.integracoes.set("ssw_webhook", {
+      ativo: true,
+      parametros: { cnpjs_aceitos: ["99888777000166"] },
+      segredo: null,
+      dominioSswDaEmpresa: null,
+    });
+    const r = await processar(evento(corpo({ numeroCTe: "CAP033214-5" })));
+    expect(r).toMatchObject({ statusHttp: 401, motivoRejeicao: "cnpj_nao_autorizado" });
+    expect(banco.ocorrencias).toEqual([]);
+  });
 });

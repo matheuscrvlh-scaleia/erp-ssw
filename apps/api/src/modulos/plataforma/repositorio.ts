@@ -180,12 +180,20 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         atualizadoPor,
         atualizadoEm: new Date(),
       };
+      // Webhook: o segredo que sai vira o "anterior" (o reprocesso aceita eventos assinados com ele).
+      const guardaAnterior =
+        tipo === "ssw_webhook"
+          ? {
+              segredoAnteriorCifrado: sql<string>`coalesce(${empresaIntegracoes.segredoCifrado}, ${empresaIntegracoes.segredoAnteriorCifrado})`,
+              segredoAnteriorVersaoChave: sql<number>`coalesce(${empresaIntegracoes.segredoVersaoChave}, ${empresaIntegracoes.segredoAnteriorVersaoChave})`,
+            }
+          : {};
       await tx
         .insert(empresaIntegracoes)
         .values({ empresaId, tipo, ativo: false, ...valores })
         .onConflictDoUpdate({
           target: [empresaIntegracoes.empresaId, empresaIntegracoes.tipo],
-          set: valores,
+          set: { ...valores, ...guardaAnterior },
         });
     },
 

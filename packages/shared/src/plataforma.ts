@@ -20,6 +20,7 @@ export const TIPOS_INTEGRACAO = [
   "ssw_webhook",
   "ahgora",
   "xml_cte",
+  "ingestao_publica",
 ] as const;
 export type TipoIntegracao = (typeof TIPOS_INTEGRACAO)[number];
 
@@ -41,6 +42,11 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
       { chave: "host", rotulo: "Servidor" },
       { chave: "porta", rotulo: "Porta" },
       { chave: "usuario", rotulo: "Usuário" },
+      {
+        chave: "impressao_digital",
+        rotulo: "Impressão digital do servidor",
+        dica: "Obrigatória: sem ela o sistema não conecta. Peça ao provedor ou rode “ssh-keyscan -p <porta> <servidor> | ssh-keygen -lf -” e copie o SHA256:… da linha da chave.",
+      },
       { chave: "caminho_xml", rotulo: "Pasta dos XML", dica: "Ex.: /xml_ssw" },
       { chave: "relatorios_path", rotulo: "Pasta dos relatórios" },
       { chave: "importados_path", rotulo: "Pasta dos importados" },
@@ -94,6 +100,13 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
       },
     ],
     tela: "/admin/xml-cte",
+  },
+  ingestao_publica: {
+    nome: "Rotas públicas da ingestão",
+    descricao:
+      "Segredo que quem chama /api/public/ftp-relatorio-import, ssw-ciclo-aplicar e xml-orfaos-retry manda no cabeçalho x-ftp-ingest-secret (ou x-cron-token). Identifica a empresa.",
+    campos: [],
+    segredo: "Segredo das rotas públicas",
   },
 };
 

@@ -1,9 +1,17 @@
 import { type ChavesDeSegredo, contextoDoSegredo, decifrarSegredo } from "@erp/db/segredos";
 import { type FastifyPluginCallback, type FastifyRequest } from "fastify";
 
+import { type ContadorPorJanela } from "../../infra/limitador";
 import { type ExecutorComContexto } from "../../repositorios";
 import { type FilasDeIngestao } from "./casos-de-uso";
-import { type EmpresaDoWebhook, type PortasDoWebhook, receberWebhook } from "./webhook";
+import {
+  type AutenticacaoDoWebhook,
+  autenticarWebhook,
+  type CabecalhosDoWebhook,
+  type EmpresaDoWebhook,
+  type PortasDoWebhook,
+  processarWebhook,
+} from "./webhook";
 
 export const CAMINHO_DO_WEBHOOK = "/api/public/ssw-ocorrencias";
 
@@ -11,12 +19,16 @@ export const CAMINHO_DO_WEBHOOK = "/api/public/ssw-ocorrencias";
 const CACHE_MS = 60_000;
 /** O SSW manda uma ocorrência por chamada e em rajada: limite próprio, bem acima do geral. */
 const LIMITE_POR_MINUTO = 6_000;
+/** Falhas de autenticação por IP por minuto; acima disso nada é gravado (resposta 429). */
+export const LIMITE_DE_FALHAS_POR_MINUTO = 30;
 
 export interface OpcoesDoWebhookPublico {
   executar: ExecutorComContexto;
   filas: FilasDeIngestao | null;
   chaves: ChavesDeSegredo | null;
   agora: () => Date;
+  /** Falhas de autenticação por IP numa janela de 1 minuto. */
+  falhas: ContadorPorJanela;
 }
 
 const PLATAFORMA = { empresaId: null, usuarioId: null, plataforma: true };
@@ -26,9 +38,16 @@ function textoDe(valor: unknown): string {
   return typeof valor === "string" ? valor.trim() : "";
 }
 
-function ipDa(request: FastifyRequest): string {
-  const cf = request.headers["cf-connecting-ip"];
-  return (typeof cf === "string" && cf) || request.ip;
+function cabecalhosDe(request: FastifyRequest): CabecalhosDoWebhook {
+  const query = typeof request.query === "object" && request.query !== null ? request.query : {};
+  return {
+    authorization: request.headers.authorization ?? "",
+    segredoNaQuery: textoDe(Reflect.get(query, "secret")),
+    empresaNaQuery: textoDe(Reflect.get(query, "empresa")),
+    // A borda é o Caddy: o IP vem do X-Forwarded-For só dos proxies confiáveis (`trustProxy`).
+    ip: request.ip,
+    userAgent: request.headers["user-agent"] ?? null,
+  };
 }
 
 /**
@@ -72,6 +91,12 @@ export const rotasPublicasSsw: FastifyPluginCallback<OpcoesDoWebhookPublico> = (
       opcoes.executar(daEmpresa(evento.empresaId), ({ ingestaoSsw }) =>
         ingestaoSsw.registrarEvento(evento),
       ),
+    quarentenaDesde: (empresaId, desde) =>
+      opcoes.executar(daEmpresa(empresaId), ({ ingestaoSsw }) =>
+        ingestaoSsw.quarentenaDesde(desde),
+      ),
+    falhaPermitida: async (ip) =>
+      (await opcoes.falhas.somar(ip ?? "desconhecido")) <= LIMITE_DE_FALHAS_POR_MINUTO,
     marcarEvento: (empresaId, eventoId, status, erro) =>
       opcoes.executar(daEmpresa(empresaId), ({ ingestaoSsw }) =>
         ingestaoSsw.marcarEvento(eventoId, status, erro),
@@ -101,20 +126,34 @@ export const rotasPublicasSsw: FastifyPluginCallback<OpcoesDoWebhookPublico> = (
     };
   });
 
+  // Autenticado no `onRequest`: a recusa sai antes de o corpo ser lido.
+  const autenticacoes = new WeakMap<FastifyRequest, AutenticacaoDoWebhook>();
   app.post(
     CAMINHO_DO_WEBHOOK,
-    { config: { rateLimit: { max: LIMITE_POR_MINUTO, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: LIMITE_POR_MINUTO, timeWindow: "1 minute" } },
+      onRequest: async (request, reply) => {
+        const autenticacao = await autenticarWebhook(portas, cabecalhosDe(request));
+        if (autenticacao.tipo === "recusado") {
+          const { status, corpo } = autenticacao.resposta;
+          return reply.header("cache-control", "no-store").code(status).send(corpo);
+        }
+        autenticacoes.set(request, autenticacao);
+      },
+    },
     async (request, reply) => {
-      const query =
-        typeof request.query === "object" && request.query !== null ? request.query : {};
-      const resposta = await receberWebhook(portas, {
-        corpoBruto: typeof request.body === "string" ? request.body : "",
-        authorization: request.headers.authorization ?? "",
-        segredoNaQuery: textoDe(Reflect.get(query, "secret")),
-        empresaNaQuery: textoDe(Reflect.get(query, "empresa")),
-        ip: ipDa(request),
-        userAgent: request.headers["user-agent"] ?? null,
-      });
+      const autenticacao = autenticacoes.get(request);
+      if (!autenticacao || autenticacao.tipo === "recusado") {
+        throw new Error("webhook sem autenticação decidida no onRequest");
+      }
+      const resposta = await processarWebhook(
+        portas,
+        {
+          ...cabecalhosDe(request),
+          corpoBruto: typeof request.body === "string" ? request.body : "",
+        },
+        autenticacao,
+      );
       void reply.header("cache-control", "no-store").code(resposta.status);
       return resposta.corpo;
     },

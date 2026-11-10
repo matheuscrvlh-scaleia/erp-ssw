@@ -171,9 +171,32 @@ export interface XmlDoArquivo {
   conteudo: string;
 }
 
-/** Todos os `*.xml` de dentro de um `.zip`, com o caminho interno como nome. */
-export function xmlsDoZip(bytes: Uint8Array): XmlDoArquivo[] {
-  const arquivos = unzipSync(bytes, { filter: (f) => /\.xml$/i.test(f.name) });
+/**
+ * Um XML de CT-e tem dezenas de KB: acima de 10 MB por arquivo é bomba de zip. O total (256 MB)
+ * cabe milhares de XML com folga.
+ */
+export const LIMITES_DO_ZIP = { porArquivo: 10 * 1024 * 1024, total: 256 * 1024 * 1024 };
+
+/**
+ * Todos os `*.xml` de dentro de um `.zip`, com o caminho interno como nome. O tamanho
+ * descompactado (`originalSize`, que o fflate usa como teto da saída) é conferido antes de
+ * descompactar: arquivo ou total acima do limite recusa o zip inteiro.
+ */
+export function xmlsDoZip(bytes: Uint8Array, limites = LIMITES_DO_ZIP): XmlDoArquivo[] {
+  let total = 0;
+  const arquivos = unzipSync(bytes, {
+    filter: (f) => {
+      if (!/\.xml$/i.test(f.name)) return false;
+      if (f.originalSize > limites.porArquivo) {
+        throw new Error(`XML ${f.name} grande demais dentro do zip (limite por arquivo).`);
+      }
+      total += f.originalSize;
+      if (total > limites.total) {
+        throw new Error("Zip grande demais depois de descompactado (limite do total).");
+      }
+      return true;
+    },
+  });
   return Object.entries(arquivos).map(([nome, conteudo]) => ({
     nome,
     conteudo: strFromU8(conteudo),

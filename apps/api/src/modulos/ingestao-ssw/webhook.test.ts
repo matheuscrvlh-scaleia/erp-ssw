@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { type EmpresaDoWebhook, type EventoRecebido, receberWebhook } from "./webhook";
+import {
+  type EmpresaDoWebhook,
+  type EventoRecebido,
+  LIMITE_DA_QUARENTENA_BYTES,
+  LIMITE_DIARIO_DA_QUARENTENA,
+  receberWebhook,
+} from "./webhook";
 
 const SEGREDO = "x".repeat(40);
 const EVENTO = JSON.stringify({
@@ -23,10 +29,13 @@ function empresa(dados: Partial<EmpresaDoWebhook> = {}): EmpresaDoWebhook {
 }
 
 /** O segredo "decifrado" é o próprio texto em `cifrado`, quando diferente de "c". */
-function montar(empresas: EmpresaDoWebhook[]) {
+function montar(empresas: EmpresaDoWebhook[], opcoes = { quarentena: 0, falhasPermitidas: 1000 }) {
   const eventos: EventoRecebido[] = [];
   const enfileirados: unknown[] = [];
+  let falhas = 0;
   const portas = {
+    quarentenaDesde: () => Promise.resolve(opcoes.quarentena),
+    falhaPermitida: () => Promise.resolve(++falhas <= opcoes.falhasPermitidas),
     empresas: () => Promise.resolve(empresas),
     segredo: (e: EmpresaDoWebhook) =>
       e.segredo === null ? null : e.segredo.cifrado === "c" ? SEGREDO : e.segredo.cifrado,
@@ -98,11 +107,57 @@ describe("receberWebhook", () => {
     expect(eventos).toMatchObject([{ empresaId: "e1", motivoRejeicao: "webhook_nao_configurado" }]);
   });
 
-  it("?empresa= com token errado grava a recusa na empresa", async () => {
+  it("?empresa= com token errado grava a recusa na empresa (ocorrência válida fica em quarentena)", async () => {
     const { portas, eventos } = montar([empresa()]);
     const r = await receberWebhook(portas, req({ empresaNaQuery: "fr", segredoNaQuery: "errado" }));
     expect(r.status).toBe(401);
     expect(eventos).toMatchObject([{ motivoRejeicao: "token_incorreto", autenticado: false }]);
+    expect(eventos[0]?.payloadBruto).toEqual(JSON.parse(EVENTO));
+    expect(JSON.stringify(eventos)).not.toContain("errado");
+  });
+
+  it("recusa que não pode ser o caso legítimo grava só metadados", async () => {
+    const tokenErrado = { empresaNaQuery: "fr", segredoNaQuery: "errado" };
+    const casos = [
+      { dados: req({ ...tokenErrado, corpoBruto: "{nao é json" }), quarentena: 0 },
+      { dados: req({ ...tokenErrado, corpoBruto: JSON.stringify({ x: 1 }) }), quarentena: 0 },
+      {
+        dados: req({
+          ...tokenErrado,
+          corpoBruto: JSON.stringify({
+            ...(JSON.parse(EVENTO) as object),
+            lixo: "x".repeat(LIMITE_DA_QUARENTENA_BYTES),
+          }),
+        }),
+        quarentena: 0,
+      },
+      { dados: req(tokenErrado), quarentena: LIMITE_DIARIO_DA_QUARENTENA },
+      { dados: req({ empresaNaQuery: "fr" }), quarentena: 0 },
+    ];
+    for (const { dados, quarentena } of casos) {
+      const { portas, eventos } = montar([empresa({ parametros: {} })], {
+        quarentena,
+        falhasPermitidas: 1000,
+      });
+      await receberWebhook(portas, dados);
+      expect(eventos).toHaveLength(1);
+      expect(eventos[0]?.payloadBruto).toBeNull();
+      expect(eventos[0]).toMatchObject({ ip: "1.2.3.4", autenticado: false });
+    }
+    const outroCnpj = montar([empresa({ parametros: { cnpjs_aceitos: ["99888777000166"] } })]);
+    await receberWebhook(outroCnpj.portas, req(tokenErrado));
+    expect(outroCnpj.eventos[0]?.payloadBruto).toBeNull();
+  });
+
+  it("falhas acima do limite do IP: 429 e nada gravado", async () => {
+    const { portas, eventos } = montar([empresa()], { quarentena: 0, falhasPermitidas: 1 });
+    const errado = req({ empresaNaQuery: "fr", segredoNaQuery: "errado" });
+    expect((await receberWebhook(portas, errado)).status).toBe(401);
+    expect((await receberWebhook(portas, errado)).status).toBe(429);
+    expect((await receberWebhook(portas, req({ empresaNaQuery: "fr" }))).status).toBe(429);
+    expect(eventos).toHaveLength(1);
+    // Chamada autenticada não conta como falha.
+    expect((await receberWebhook(portas, req({ segredoNaQuery: SEGREDO }))).status).toBe(200);
   });
 
   it("CNPJ fora da lista da empresa: 401 autenticado", async () => {
