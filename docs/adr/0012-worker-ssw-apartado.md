@@ -84,6 +84,23 @@ A auditoria da ação (quem pediu) fica no ERP, gravada **antes** de chamar o wo
 | GET    | `/interno/v1/execucoes/:job/:execucaoId`             | `?aguardarMs=0..60000` (espera até terminar ou vencer) | `{ estado: "na_fila"|"rodando"|"concluida"|"falhou", resultado?, erro? }` |
 | GET    | `/interno/v1/empresas/:empresaId/situacao`           | —                                                      | `{ jobs: [{ job, estado, ultimaExecucao?, proximaExecucao? }], tokenSswGeradoEm? }` |
 
+Operações manuais da tela Admin › Importação SSW (as mesmas de hoje; o usuário não pode perder
+nenhuma). Respostas no formato que a tela já usa, e erro em português para o operador:
+
+| Método | Caminho                                                         | Corpo                                   | Faz                                                        |
+| ------ | --------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------- |
+| POST   | `/interno/v1/empresas/:empresaId/ciclos/:chave/retomar`         | —                                       | retoma o ciclo                                              |
+| POST   | `/interno/v1/empresas/:empresaId/ciclos/:chave/descartar`       | `{ motivo? }`                           | descarta o ciclo (e recalcula as projeções afetadas)        |
+| POST   | `/interno/v1/empresas/:empresaId/relatorios`                    | `{ nomeArquivo, conteudoBase64 }`       | importação manual de relatório (até 64 MB)                  |
+| POST   | `/interno/v1/empresas/:empresaId/aplicacoes`                    | `{ simular: boolean, ... }` (o de hoje) | aplica ou simula a aplicação                                |
+| GET    | `/interno/v1/empresas/:empresaId/ftp`                           | —                                       | ligado/pausado, trava, progresso (Redis)                   |
+| PUT    | `/interno/v1/empresas/:empresaId/ftp/ativo`                     | `{ ativo: boolean }`                    | pausa/religa o FTP                                          |
+| POST   | `/interno/v1/empresas/:empresaId/ftp/liberar-trava`             | —                                       | força a liberação da trava do FTP                           |
+| POST   | `/interno/v1/empresas/:empresaId/xml`                           | `{ nomeArquivo, conteudoBase64 }`       | importação manual de XML/zip (grava itens, arquivos, órfãos) |
+
+O ERP repassa o corpo validado pelo seu contrato de tela; quem grava e decide é o worker-ssw.
+Leituras puras (pipeline, aplicações, arquivos XML) continuam no ERP direto do banco.
+
 - `job` aceito só da lista de jobs que podem ser pedidos de fora: `sincronizar-ftp`,
   `sincronizar-ftp-retroativo`, `aplicar-ciclos`, `bi2-0017`, `verificar-token-ssw`,
   `processar-webhook-ssw`, `reprocessar-xml-orfaos`, `projecoes-romaneio`,
