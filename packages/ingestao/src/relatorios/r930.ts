@@ -3,6 +3,8 @@
  * (24 campos); outra linha não vazia é erro. Datas e horas em São Paulo, sem fuso.
  * origem: src/features/ssw/server/parse-930.server.ts (sistema atual)
  */
+import { type Registro930 } from "@erp/shared/relatorios-ssw";
+
 import { dataBR, limpa, linhasDoArquivo, splitCsv, timestampBR, txt } from "./texto";
 import { type Analise, diferencasDeCabecalho, type ErroDeLeitura, type LinhaLida } from "./tipos";
 
@@ -33,31 +35,7 @@ export const CABECALHO_930 = [
   "NOME_PAGADOR",
 ] as const;
 
-export interface Registro930 {
-  ctrc: string | null;
-  emissao_ctrc: string | null;
-  serie_cte: string | null;
-  nro_cte: string | null;
-  serie_nota_fiscal: string | null;
-  nro_nota_fiscal: string | null;
-  pedido: string | null;
-  empr_ocor: string | null;
-  unid_ocor: string | null;
-  /** "aaaa-mm-ddThh:mm:00", hora de São Paulo sem fuso. */
-  inclusao_em: string | null;
-  /** "aaaa-mm-ddThh:mm:00", hora de São Paulo sem fuso. */
-  ocorrencia_em: string | null;
-  usuario_ocor: string | null;
-  cod_ocor: string | null;
-  descricao_ocor: string | null;
-  complemento_ocor: string | null;
-  data_entrega: string | null;
-  descr_item: string | null;
-  primeiro_manifesto: string | null;
-  cancelado: string | null;
-  cnpj_pagador: string | null;
-  nome_pagador: string | null;
-}
+export type { Registro930 };
 
 export function ler930(conteudo: string): Analise<Registro930> {
   const registros: LinhaLida<Registro930>[] = [];

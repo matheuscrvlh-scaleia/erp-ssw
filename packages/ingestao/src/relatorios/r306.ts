@@ -3,6 +3,8 @@
  * demais = 14 campos. Não altera o CT-e: alimenta a projeção "motorista por CT-e" do Romaneio.
  * origem: src/features/ssw/server/parse-306.server.ts (sistema atual)
  */
+import { type Registro306 } from "@erp/shared/relatorios-ssw";
+
 import { dataBR4, limpa, linhasDoArquivo, txt } from "./texto";
 import { type Analise, diferencasDeCabecalho, type ErroDeLeitura, type LinhaLida } from "./tipos";
 
@@ -11,22 +13,7 @@ export const CABECALHO_LITERAL_306 =
 
 const CABECALHO_306 = CABECALHO_LITERAL_306.split(";");
 
-export interface Registro306 {
-  placa: string | null;
-  ctrc_coleta: string | null;
-  data: string | null;
-  motorista: string | null;
-  remetente: string | null;
-  uf_cidade_origem: string | null;
-  setor_origem: string | null;
-  destinatario: string | null;
-  uf_cidade_destino: string | null;
-  unidade_destino: string | null;
-  setor_destino: string | null;
-  data_previsao_entrega: string | null;
-  ocorrencia_mobile: string | null;
-  ocorrencia_atual: string | null;
-}
+export type { Registro306 };
 
 /** Só CTRC/COLETA no formato de CT-e ("CAP33214-5") tem número; coleta pura não. */
 export function ehCtrcDo306(ctrcColeta: string | null): boolean {

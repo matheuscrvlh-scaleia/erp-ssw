@@ -3,6 +3,8 @@
  * `2` = dado com 17 campos (`split(";")`, sem aspas). Prazo "31/12/2050" = sem prazo definido.
  * origem: src/features/ssw/server/parse-038.server.ts (sistema atual)
  */
+import { type Registro038 } from "@erp/shared/relatorios-ssw";
+
 import { dataBR4, linhasDoArquivo, numPonto, truncar } from "./texto";
 import { type Analise, diferencasDeCabecalho, type ErroDeLeitura, type LinhaLida } from "./tipos";
 
@@ -27,25 +29,7 @@ export const CABECALHO_038 = [
 
 export const PRAZO_SEM_DEFINICAO = "31/12/2050";
 
-export interface Registro038 {
-  sem_prazo_definido: boolean;
-  ctrc: string | null;
-  nota_fiscal: string | null;
-  remetente: string | null;
-  destinatario: string | null;
-  endereco: string | null;
-  cidade: string | null;
-  bairro: string | null;
-  cep: string | null;
-  setor: string | null;
-  valor_mercadoria: number | null;
-  quantidade_volumes: number | null;
-  peso: number | null;
-  prazo_entrega: string | null;
-  atraso: number | null;
-  ultima_ocorrencia: string | null;
-  localizacao: string | null;
-}
+export type { Registro038 };
 
 /** O 038 usa `trim` simples (sem tratar o espaço não-quebrável), como o leitor atual. */
 function texto(v: string | undefined): string | null {

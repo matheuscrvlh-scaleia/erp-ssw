@@ -93,6 +93,7 @@ export function linha036(extra: Partial<Linha036> = {}): Linha036 {
     ajudante: null,
     ajudante2: null,
     ajudante3: null,
+    conferente: null,
     dataEmissao: "2026-11-10",
     horaEmissao: "08:00",
     cidadeEntrega: "CAMPINAS / SP",

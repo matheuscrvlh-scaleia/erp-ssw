@@ -34,6 +34,7 @@ export interface Linha036 {
   ajudante: string | null;
   ajudante2: string | null;
   ajudante3: string | null;
+  conferente: string | null;
   dataEmissao: string | null;
   horaEmissao: string | null;
   cidadeEntrega: string | null;

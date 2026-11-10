@@ -1,3 +1,4 @@
+import { registro455Csv } from "@erp/shared/relatorios-ssw";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -142,6 +143,8 @@ describe("455 CSV", () => {
     expect(a.registros[0]?.dados.data_de_emissao).toBe("2026-11-03");
     expect(a.registros[0]?.dados.valor_do_frete).toBeNull();
     expect(a.cabecalhoDiferencas[0]).toContain("Coluna Nova");
+    // A linha guardada é lida pelas projeções do Romaneio com o schema do shared.
+    expect(registro455Csv.parse(a.registros[0]?.dados).valor_da_mercadoria).toBe(1500.25);
   });
 
   it("dado antes do cabeçalho é erro; sem cabeçalho é divergente", () => {

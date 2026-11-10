@@ -3,6 +3,8 @@
  * 46 colunas); `2` = dado com 47 campos (`split(";")`); outro marcador = erro.
  * origem: src/features/ssw/server/parse-036.server.ts (sistema atual)
  */
+import { type Registro036 } from "@erp/shared/relatorios-ssw";
+
 import { conferirCabecalhoLiteral } from "./r306";
 import { dataBR4, inteiroSemPontos, limpa, linhasDoArquivo, numBR, txt } from "./texto";
 import { type Analise, type ErroDeLeitura, type LinhaLida } from "./tipos";
@@ -13,54 +15,7 @@ export const CABECALHO_LITERAL_036 =
 /** Marcador do tipo de linha + 46 colunas. */
 const TOTAL_CAMPOS = 47;
 
-export interface Registro036 {
-  romaneio: string | null;
-  data_emissao: string | null;
-  hora_emissao: string | null;
-  situacao: string | null;
-  placa: string | null;
-  placa_carreta: string | null;
-  motorista: string | null;
-  cpf_motorista: string | null;
-  seguradora: string | null;
-  autorizacao: string | null;
-  validade: string | null;
-  ctrc: string | null;
-  tipo_frete: string | null;
-  nome_remetente: string | null;
-  nome_destinatario: string | null;
-  cnpj_pagador: string | null;
-  nome_pagador: string | null;
-  cidade_pagador: string | null;
-  cidade_entrega: string | null;
-  cep_entrega: string | null;
-  local_entrega: string | null;
-  bairro: string | null;
-  setor_dest: string | null;
-  cod_ocorr_rom: string | null;
-  desc_ocorr_rom: string | null;
-  data_ocorr_rom: string | null;
-  hora_ocorr_rom: string | null;
-  cod_ocorr_ctrc: string | null;
-  desc_ocorr_ctrc: string | null;
-  data_ocorr_ctrc: string | null;
-  hora_ocorr_ctrc: string | null;
-  frete_ctrc_origem: number | null;
-  frete_ctrc: number | null;
-  peso_calculo: number | null;
-  qtde_vol: number | null;
-  vlr_merc: number | null;
-  cod_merc: string | null;
-  serie_nf: string | null;
-  numero_nf: string | null;
-  nro_pedido: string | null;
-  conferente: string | null;
-  ajudante: string | null;
-  ajudante_2: string | null;
-  ajudante_3: string | null;
-  emitido_por: string | null;
-  prev_entrega_ctrc: string | null;
-}
+export type { Registro036 };
 
 export function ler036(conteudo: string): Analise<Registro036> {
   const registros: LinhaLida<Registro036>[] = [];
