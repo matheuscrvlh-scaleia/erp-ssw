@@ -12,6 +12,7 @@ import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-u
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
 import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
+import { DadosDoRanking } from "./falsos-ranking";
 import { criarPerformanceFalsa } from "./leituras-falsas";
 
 /*
@@ -85,6 +86,8 @@ export class BancoEmMemoria {
   listagem = new ListagemFalsa();
   /** Leituras da Performance: os testes trocam o método que interessa. */
   performance = criarPerformanceFalsa();
+  /** Ranking, bonificação de entrega e Ahgora (`falsos-ranking.ts`). */
+  ranking = new DadosDoRanking();
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
   falharCom: Error | null = null;
 
@@ -160,6 +163,7 @@ export class BancoEmMemoria {
       filtros: this.filtros,
       listagem: this.listagem,
       performance: this.performance,
+      ...this.ranking.repositorios(),
       acesso: {
         usuario: (id) => Promise.resolve(this.usuarios.find((u) => u.id === id) ?? null),
         ehAdminPlataforma: (id) => Promise.resolve(this.plataformaAdmins.has(id)),

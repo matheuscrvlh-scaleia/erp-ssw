@@ -65,6 +65,33 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   botão "Ir para o início".
 - **Detalhe do CT-e.** O "Status do prazo" usa o dia de Brasília (Q11); "não encontrado" oferece
   só "Voltar" (antes, "Voltar ao romaneio").
+## Ranking, equipes, bonificação e ponto (spec 05 §5–7)
+
+- **Q47 — atribuir CT-e à equipe grava de verdade** (Admin › Equipes, "Atribuir (n)"); antes o aviso
+  aparecia e nada mudava. Com regra ativa, membros e CT-e atribuídos, o valor da equipe deixa de ser
+  sempre zero. Ver ADR 0006 (diverge da recomendação c) de Q47; confirmar com o dono).
+- **Q47 — piso de performance na escala certa.** "85" no piso passa a significar 85%; antes 95% de
+  performance (0,95) era comparado com 85 e o valor sempre zerava.
+- **P12 — faltas têm tela.** Quadro "Faltas do mês" em Bonificação de entrega (registrar, listar,
+  excluir); a falta zera o bônus do último dia bonificado antes dela, como a regra já previa.
+- **Link público do ranking só aparece ao ser gerado.** O banco guarda só o hash: "Copiar link"
+  funciona na hora; depois aparece "Gerar novo link" (troca o anterior). Links antigos param de
+  valer na virada e precisam ser gerados de novo. Limite de 30 consultas por minuto por IP.
+- **P11 — saída do membro no dia de Brasília** (antes, depois das 21h gravava o dia seguinte).
+- **Q11 — dia de Brasília nas contas das equipes e da bonificação:** "entregue no prazo" compara o
+  dia da entrega em Brasília com o prazo, e a "ocorrência do dia do romaneio" usa o dia de Brasília.
+- **Q21 — quarentena fora:** ocorrência em quarentena não conta como penalizante no ranking de
+  equipes nem como desfecho da NF na bonificação de entrega.
+- **Bonificação de entrega lê os romaneios já processados:** romaneio cancelado no SSW não entra
+  mais no bônus; meses antigos continuam apuráveis (antes dependiam das linhas cruas do 036).
+- **Empate no ranking público** (mesmo valor) é desfeito pelo nome da equipe, sempre na mesma ordem
+  (antes, ao acaso).
+- **Q26 — equipes:** quem tem a tela vê todas as equipes da empresa (sem recorte por unidade).
+- **Q02 — CT-e como sigla + número** na lista de atribuição (ex.: `CAP123456`).
+- **Ranking operacional:** "hoje" dos atalhos de período é o dia de Brasília (Q11), não o do
+  navegador; filtros de filial e tipo de CT-e ainda não aparecem na tela (falta a consulta de
+  opções da Performance).
+
 
 ## Performance e relatório de período (`/performance`, spec 02)
 

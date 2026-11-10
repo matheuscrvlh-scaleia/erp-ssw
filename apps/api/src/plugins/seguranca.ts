@@ -36,6 +36,9 @@ export async function registrarSeguranca(app: FastifyInstance, opcoes: OpcoesSeg
     ...(opcoes.redis ? { redis: opcoes.redis, nameSpace: "erp-api-limite:" } : {}),
     errorResponseBuilder: () => muitasTentativas(),
   });
+  // Nos testes a suíte inteira roda em paralelo e o event loop atrasa de propósito: a proteção
+  // contra sobrecarga recusaria requisições válidas e o teste falharia por acaso.
+  if (opcoes.ambiente.NODE_ENV === "test") return;
   await app.register(underPressure, {
     maxEventLoopDelay: 1_000,
     customError: class SobreCarga extends ErroDeNegocio {
