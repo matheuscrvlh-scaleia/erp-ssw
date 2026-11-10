@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   alteracaoDoLote,
-  efeitoDaAlteracao,
   diferencas,
+  efeitoDaAlteracao,
   estatisticasDoCatalogo,
   historicoDoCodigo,
   registroAuditavel,

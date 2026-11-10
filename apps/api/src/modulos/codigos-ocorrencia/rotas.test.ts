@@ -4,8 +4,8 @@ import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { type FilaDeRecalculo } from "../../infra/fila";
-import { type CodigoFalso } from "../../testes/falsos-ocorrencias";
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
+import { type CodigoFalso } from "../../testes/falsos-ocorrencias";
 import { LIMITE_DE_PROPAGACAO_IMEDIATA, salvarCodigo } from "./casos-de-uso";
 
 let cenario: Cenario;

@@ -1,13 +1,13 @@
 import {
-  FAIXAS_ATRASO,
   type FaixaAtraso,
+  FAIXAS_ATRASO,
   type PainelDeOcorrencias,
   type Recortes,
   type Responsabilidade,
   type ResponsavelDoEvento,
 } from "@erp/shared/contratos/ocorrencias";
 
-import { agrupar } from "../colecoes";
+import { agrupar, type Grupo } from "../colecoes";
 import { compararTexto } from "../ordem";
 import {
   type Classificacao,
@@ -184,8 +184,8 @@ function contarFaixas(eventos: readonly Evento[]): Record<FaixaAtraso, number> {
 }
 
 /** Descrição, responsável e flags de um código (iguais em todos os eventos dele). */
-function resumoDoCodigo(eventos: readonly Evento[]) {
-  const primeiro = eventos[0]!;
+function resumoDoCodigo(eventos: Grupo<Evento>) {
+  const [primeiro] = eventos;
   return {
     codigo: primeiro.codigo,
     descricao: primeiro.classificacao.descricao,

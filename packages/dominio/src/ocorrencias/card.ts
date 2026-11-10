@@ -41,7 +41,7 @@ export function codigosDoCard(
   });
   return [...agrupar(doCard, (o) => o.codigo).values()]
     .map((doCodigo) => {
-      const { codigo, classificacao } = doCodigo[0]!;
+      const [{ codigo, classificacao }] = doCodigo;
       return {
         codigo,
         descricao: classificacao.descricao,

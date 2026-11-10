@@ -12,7 +12,7 @@ export function termoCtrc(entrada: string): string | null {
   const termo = btrim(entrada)
     .toUpperCase()
     .replace(/^[A-Z]+/, "")
-    .split("-")[0]!
+    .replace(/-.*$/s, "")
     .replace(/[^0-9]/g, "")
     .replace(/^0+/, "");
   return termo === "" ? null : termo;

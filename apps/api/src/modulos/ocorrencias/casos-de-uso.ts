@@ -291,7 +291,12 @@ export async function obterLista(
     });
     const idsDaPagina = [...new Set(linhas.map((l) => l.cte.id))];
     const detalhes = new Map((await ocorrencias.detalhes(idsDaPagina)).map((d) => [d.id, d]));
-    const doPagina = linhas.map((l) => ctes.get(l.cte.id)!.lido);
+    // Toda linha veio de um CT-e do mapa; o flatMap só convence o tipo.
+    const daPagina = linhas.flatMap((l) => {
+      const cte = ctes.get(l.cte.id);
+      return cte ? [{ l, c: cte.lido }] : [];
+    });
+    const doPagina = daPagina.map(({ c }) => c);
     const conferentes = new Map(
       (
         await ocorrencias.conferentesDosCtes(
@@ -302,8 +307,7 @@ export async function obterLista(
     );
     return {
       total,
-      linhas: linhas.map((l): LinhaDeOcorrencia => {
-        const c = ctes.get(l.cte.id)!.lido;
+      linhas: daPagina.map(({ l, c }): LinhaDeOcorrencia => {
         const d = detalhes.get(c.id);
         const conf = conferentes.get(`${c.sigla}|${c.numero}`);
         return {

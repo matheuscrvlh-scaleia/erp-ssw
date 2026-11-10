@@ -145,6 +145,9 @@ export function pareceRelatorio050(conteudo: string): boolean {
   return /^ssw0157\s+RELACAO DAS COLETAS/m.test(inicio) || RE_CABECALHO_CSV.test(inicio);
 }
 
+/** Grupo de captura obrigatório da expressão (sempre presente quando ela casa). */
+const grupo = (m: RegExpExecArray, i: number): string => m[i] ?? "";
+
 function limpar(valor: string | undefined | null): string | null {
   const texto = (valor ?? "").replace(/\s+/g, " ").trim();
   return texto === "" ? null : texto;
@@ -230,11 +233,11 @@ function derivarDoHistorico(c: Coleta050): void {
   for (const evento of c.historico) {
     const cte = /CTRC GERADO: ([A-Z0-9]{3}) (\d+)-\d/.exec(evento.texto);
     if (cte && !c.cteSigla) {
-      c.cteSigla = cte[1]!;
+      c.cteSigla = grupo(cte, 1);
       c.cteNumero = String(Number(cte[2]));
     }
     const romaneio = /ROMANEIO ([A-Z0-9]{3} [\d-]+) gerado/.exec(evento.texto);
-    if (romaneio && !c.romaneio) c.romaneio = romaneio[1]!;
+    if (romaneio && !c.romaneio) c.romaneio = grupo(romaneio, 1);
     if (/PREJUDICADA PELO HORARIO/.test(evento.texto)) c.prejudicadaHorario = true;
   }
 }
@@ -285,8 +288,8 @@ function coletaVazia(unidade: string, numero: number, tipo: string): Coleta050 {
 
 const eventoDoHistorico = (m: RegExpExecArray, data: Datador): EventoDaColeta => ({
   em: data(m[3], m[4]),
-  unidade: m[1]!,
-  usuario: m[2]!,
+  unidade: grupo(m, 1),
+  usuario: grupo(m, 2),
   texto: limpar(m[5]) ?? "",
 });
 
@@ -394,9 +397,11 @@ function lerCsv(conteudo: string, arquivo: string | null): Relatorio050 {
     .map((c) => c.diaCadastro)
     .filter((d) => d !== null)
     .sort();
+  const [inicio] = dias;
+  const fim = dias.at(-1);
   return {
     emitidoEm: emissao.toISOString(),
-    periodoCadastro: dias.length > 0 ? { inicio: dias[0]!, fim: dias.at(-1)! } : null,
+    periodoCadastro: inicio && fim ? { inicio, fim } : null,
     periodoColeta: null,
     coletas,
     resumo: null,
@@ -414,7 +419,7 @@ function lerCabecalho(linhas: readonly string[]) {
     if (e && !emissao) emissao = new Date(`20${e[3]}-${e[2]}-${e[1]}T${e[4]}:${e[5]}:00-03:00`);
     const p = RE_PERIODO.exec(linha);
     if (p) {
-      const periodo = { inicio: dataCurta(p[2]!), fim: dataCurta(p[3]!) };
+      const periodo = { inicio: dataCurta(grupo(p, 2)), fim: dataCurta(grupo(p, 3)) };
       if (p[1] === "CADASTRAMENTO") periodoCadastro = periodo;
       else periodoColeta = periodo;
     }
@@ -539,7 +544,7 @@ function lerImpresso(conteudo: string): Relatorio050 {
     const inicio = RE_INICIO.exec(linha);
     if (inicio) {
       fechar();
-      atual = coletaVazia(inicio[1]!, Number(inicio[2]), tipoDaColeta(inicio[3]!));
+      atual = coletaVazia(grupo(inicio, 1), Number(inicio[2]), tipoDaColeta(grupo(inicio, 3)));
       atual.limiteInicial = inicio[4] ? (data(inicio[4])?.slice(0, 10) ?? null) : null;
       return;
     }

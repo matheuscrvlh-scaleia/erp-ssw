@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { type CteFalso } from "../../testes/falsos-ocorrencias";
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
+import { type CteFalso } from "../../testes/falsos-ocorrencias";
 
 let cenario: Cenario;
 let app: FastifyInstance;
