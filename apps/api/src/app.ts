@@ -23,7 +23,10 @@ import { rotasCalendario } from "./modulos/calendario/rotas";
 import { rotasCodigosOcorrencia } from "./modulos/codigos-ocorrencia/rotas";
 import { rotasColetas } from "./modulos/coletas/rotas";
 import { rotasComprovantes } from "./modulos/comprovantes/rotas";
-import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
+import {
+  type CacheDeConfiguracoes,
+  criarCacheDeConfiguracoes,
+} from "./modulos/configuracoes/cache";
 import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
 import { rotasCtrc } from "./modulos/ctrc/rotas";
 import { rotasFiltros } from "./modulos/filtros/rotas";
@@ -77,6 +80,11 @@ export interface Dependencias {
   /** Chaves dos segredos de integração. Nulo = sem cofre: não salva senha nem confere o webhook. */
   chavesDeSegredo: ChavesDeSegredo | null;
   agora: () => Date;
+  /**
+   * Cache das configurações: o mesmo que os repositórios leem (`criarRepositorios`). Sem ele (os
+   * testes, com repositórios falsos), um próprio, só para o Admin invalidar.
+   */
+  cacheDeConfiguracoes?: CacheDeConfiguracoes;
   /** Ponto (Ahgora): cofre de segredos, credencial de transição e HTTP. Sem ele, sem cofre. */
   ahgora?: DependenciasAhgora;
 }
@@ -184,7 +192,9 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   };
   await app.register(rotasUsuarios, { deps: usuarios, executar: deps.executar });
   await app.register(rotasCadastros);
-  await app.register(rotasConfiguracoes, { cache: criarCacheDeConfiguracoes(deps.agora) });
+  await app.register(rotasConfiguracoes, {
+    cache: deps.cacheDeConfiguracoes ?? criarCacheDeConfiguracoes(deps.agora),
+  });
   await app.register(rotasPrazos, { fila: deps.fila });
   await app.register(rotasLogs, { executar: deps.executar });
   await app.register(rotasPlataforma, {

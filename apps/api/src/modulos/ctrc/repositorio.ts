@@ -2,15 +2,15 @@ import { type Transacao } from "@erp/db";
 import {
   bi2Bruto,
   codigosOcorrencia,
-  configuracoes,
   ctes,
   filiais,
   ocorrencias,
   parceiros,
   romaneioCteAtual,
 } from "@erp/db/schema";
-import { and, asc, desc, eq, inArray, isNull, not, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, not } from "drizzle-orm";
 
+import { type LeitorDeConfiguracoes } from "../configuracoes/leitor";
 import { type RepositorioCtrc } from "./casos-de-uso";
 
 /** Teto de segurança: um número repete em poucas séries. */
@@ -20,7 +20,10 @@ const LIMITE_DE_OCORRENCIAS = 2000;
 
 const numeroOuNulo = (valor: string | null) => (valor === null ? null : Number(valor));
 
-export function criarRepositorioCtrc(tx: Transacao): RepositorioCtrc {
+export function criarRepositorioCtrc(
+  tx: Transacao,
+  configuracoesVigentes: LeitorDeConfiguracoes,
+): RepositorioCtrc {
   return {
     filiaisProprias: async (empresaId) => {
       const linhas = await tx
@@ -44,24 +47,7 @@ export function criarRepositorioCtrc(tx: Transacao): RepositorioCtrc {
         .where(eq(codigosOcorrencia.empresaId, empresaId))
         .orderBy(asc(codigosOcorrencia.codigo)),
 
-    configuracoes: async (empresaId, chaves) => {
-      const linhas = await tx
-        .select({
-          chave: configuracoes.chave,
-          valor: configuracoes.valor,
-          daEmpresa: sql<boolean>`${configuracoes.empresaId} is not null`,
-        })
-        .from(configuracoes)
-        .where(
-          and(
-            inArray(configuracoes.chave, [...chaves]),
-            or(eq(configuracoes.empresaId, empresaId), isNull(configuracoes.empresaId)),
-          ),
-        );
-      // Padrão da plataforma primeiro; o da empresa sobrescreve.
-      const ordenadas = [...linhas].sort((a, b) => Number(a.daEmpresa) - Number(b.daEmpresa));
-      return new Map(ordenadas.map((l) => [l.chave, l.valor]));
-    },
+    configuracoes: configuracoesVigentes,
 
     ctesPorNumero: (empresaId, numero, sigla) =>
       tx

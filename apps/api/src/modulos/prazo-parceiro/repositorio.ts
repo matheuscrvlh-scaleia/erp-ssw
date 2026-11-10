@@ -3,7 +3,6 @@
  */
 import { type Transacao } from "@erp/db";
 import {
-  configuracoes,
   cteDadosRelatorios,
   ctes,
   filiais,
@@ -83,7 +82,11 @@ const colunas = {
   ufDestino: ctes.ufDestino,
 };
 
-export function criarRepositorioPrazoParceiro(tx: Transacao): RepositorioPrazoParceiro {
+export function criarRepositorioPrazoParceiro(
+  tx: Transacao,
+  /** Leitor já preso à empresa do contexto. */
+  configuracoesVigentes: (chaves: readonly string[]) => Promise<Map<string, string>>,
+): RepositorioPrazoParceiro {
   const consultar = () =>
     tx
       .select(colunas)
@@ -105,23 +108,7 @@ export function criarRepositorioPrazoParceiro(tx: Transacao): RepositorioPrazoPa
         await tx.select({ sigla: filiais.sigla }).from(filiais).where(eq(filiais.propria, true))
       ).map((f) => f.sigla),
 
-    configuracoes: async (chaves) => {
-      const linhas = await tx
-        .select({
-          empresaId: configuracoes.empresaId,
-          chave: configuracoes.chave,
-          valor: configuracoes.valor,
-        })
-        .from(configuracoes)
-        .where(sql`${configuracoes.chave} = any(${lista(chaves)}::text[])`);
-      // A da empresa vence a da plataforma (empresa nula).
-      const valores = new Map<string, string>();
-      for (const l of [...linhas].sort(
-        (a, b) => Number(a.empresaId !== null) - Number(b.empresaId !== null),
-      ))
-        valores.set(l.chave, l.valor);
-      return valores;
-    },
+    configuracoes: (chaves) => configuracoesVigentes(chaves),
 
     parceiros: () =>
       tx

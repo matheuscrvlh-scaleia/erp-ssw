@@ -1,7 +1,6 @@
 import { type Transacao } from "@erp/db";
 import {
   codigosOcorrencia,
-  configuracoes,
   ctes,
   ocorrencias,
   parceiros,
@@ -16,7 +15,6 @@ import {
   exists,
   inArray,
   isNotNull,
-  isNull,
   ne,
   not,
   or,
@@ -25,6 +23,7 @@ import {
 } from "drizzle-orm";
 
 import { casaAlgumPadrao, filiaisProprias, nfIgual } from "../../compartilhado/sql-cte";
+import { type LeitorDeConfiguracoes } from "../configuracoes/leitor";
 import { type FiltroDeCtes, type RepositorioOcorrencias } from "./casos-de-uso";
 
 /** `numeric` chega do driver como texto. */
@@ -66,7 +65,10 @@ function ondeCtes(tx: Transacao, f: FiltroDeCtes): SQL | undefined {
   );
 }
 
-export function criarRepositorioOcorrencias(tx: Transacao): RepositorioOcorrencias {
+export function criarRepositorioOcorrencias(
+  tx: Transacao,
+  configuracoesVigentes: LeitorDeConfiguracoes,
+): RepositorioOcorrencias {
   return {
     catalogo: (empresaId) =>
       tx
@@ -82,21 +84,8 @@ export function criarRepositorioOcorrencias(tx: Transacao): RepositorioOcorrenci
         .from(codigosOcorrencia)
         .where(eq(codigosOcorrencia.empresaId, empresaId)),
 
-    configuracao: async (empresaId, chave) => {
-      const [linha] = await tx
-        .select({ valor: configuracoes.valor })
-        .from(configuracoes)
-        .where(
-          and(
-            eq(configuracoes.chave, chave),
-            or(eq(configuracoes.empresaId, empresaId), isNull(configuracoes.empresaId)),
-          ),
-        )
-        // A da empresa vence a da Plataforma.
-        .orderBy(sql`${configuracoes.empresaId} nulls last`)
-        .limit(1);
-      return linha?.valor ?? null;
-    },
+    configuracao: async (empresaId, chave) =>
+      (await configuracoesVigentes(empresaId, [chave])).get(chave) ?? null,
 
     ctes: (filtro, limite) =>
       tx

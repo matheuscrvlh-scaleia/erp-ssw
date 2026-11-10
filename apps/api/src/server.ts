@@ -21,6 +21,7 @@ import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
+import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
 import { criarRepositorioDaIngestaoPublica } from "./modulos/ingestao/repositorio";
 import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
 import { criarRepositorios } from "./repositorios";
@@ -79,11 +80,16 @@ const ingestao: ServicosDaIngestao | null =
       }
     : null;
 
+const agora = () => new Date();
+const cacheDeConfiguracoes = criarCacheDeConfiguracoes(agora);
+
 const app = await construirApp({
   ingestao,
   ambiente,
   executar: (contexto, fn) =>
-    comContexto(conexao.banco, contexto, (tx) => fn(criarRepositorios(tx))),
+    comContexto(conexao.banco, contexto, (tx) =>
+      fn(criarRepositorios(tx, contexto, cacheDeConfiguracoes)),
+    ),
   verificarBanco: conexao.verificar,
   redis,
   tokens: criarEmissorDeTokens({
@@ -127,7 +133,8 @@ const app = await construirApp({
         })
       : null,
   chavesDeSegredo,
-  agora: () => new Date(),
+  agora,
+  cacheDeConfiguracoes,
   ahgora: {
     segredos: chavesDeSegredo,
     ambiente: { usuario: ambiente.AHGORA_API_USUARIO, senha: ambiente.AHGORA_API_SENHA },

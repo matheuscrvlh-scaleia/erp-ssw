@@ -25,6 +25,7 @@ import {
   xmlCteOrfaos,
   xmlFtpSincronizacoes,
 } from "@erp/db/schema";
+import { configuracoesVigentes } from "@erp/dominio/configuracoes";
 import {
   cnpjsPropriosDaEmpresa,
   lerConfiguracaoDoNucleo,
@@ -155,11 +156,8 @@ export function criarRepositorioIngestao(
             sql`(${configuracoes.empresaId} = ${empresaId} or ${configuracoes.empresaId} is null)`,
           ),
         );
-      // Valor da empresa vence o padrão da Plataforma.
-      const saida = new Map<string, string>();
-      for (const l of linhas.filter((x) => x.empresaId === null)) saida.set(l.chave, l.valor);
-      for (const l of linhas.filter((x) => x.empresaId !== null)) saida.set(l.chave, l.valor);
-      return saida;
+      // Sem cache: a pausa do FTP (`ftp_sync_ativo`) vale na próxima execução.
+      return configuracoesVigentes(linhas);
     },
 
     async gravarConfiguracao(chave, valor) {

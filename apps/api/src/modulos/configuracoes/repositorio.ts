@@ -3,8 +3,12 @@ import { configuracoes } from "@erp/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { type RepositorioConfiguracoes } from "./casos-de-uso";
+import { type LeitorDeConfiguracoes } from "./leitor";
 
-export function criarRepositorioConfiguracoes(tx: Transacao): RepositorioConfiguracoes {
+export function criarRepositorioConfiguracoes(
+  tx: Transacao,
+  configuracoesVigentes: LeitorDeConfiguracoes,
+): RepositorioConfiguracoes {
   return {
     daEmpresa: (empresaId, grupos) =>
       tx
@@ -20,15 +24,7 @@ export function criarRepositorioConfiguracoes(tx: Transacao): RepositorioConfigu
           and(eq(configuracoes.empresaId, empresaId), inArray(configuracoes.grupo, [...grupos])),
         ),
 
-    valores: async (empresaId, chaves) => {
-      const linhas = await tx
-        .select({ chave: configuracoes.chave, valor: configuracoes.valor })
-        .from(configuracoes)
-        .where(
-          and(eq(configuracoes.empresaId, empresaId), inArray(configuracoes.chave, [...chaves])),
-        );
-      return new Map(linhas.map((l) => [l.chave, l.valor]));
-    },
+    vigentes: configuracoesVigentes,
 
     gravarValor: async (empresaId, chave, valor, atualizadoPor) => {
       await tx

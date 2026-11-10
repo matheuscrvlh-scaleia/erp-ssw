@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type ContextoBanco } from "@erp/db";
+import { configuracoesVigentes } from "@erp/dominio/configuracoes";
 import { ehTela, type Tela } from "@erp/shared/acesso/telas";
 import { type OrigemIntegracao } from "@erp/shared/contratos/auditoria";
 import { type TipoIntegracao } from "@erp/shared/plataforma";
@@ -339,12 +340,12 @@ export function criarRepositoriosDeAdministracao(
             atualizadoEm,
           })),
       ),
-    valores: (empresaId, chaves) =>
+    vigentes: (empresaId, chaves) =>
       Promise.resolve(
         new Map(
-          adm.configuracoes
-            .filter((c) => c.empresaId === empresaId && chaves.includes(c.chave))
-            .map((c) => [c.chave, c.valor]),
+          [
+            ...configuracoesVigentes(adm.configuracoes.filter((c) => c.empresaId === empresaId)),
+          ].filter(([chave]) => chaves.includes(chave)),
         ),
       ),
     gravarValor: (empresaId, chave, valor, atualizadoPor) => {

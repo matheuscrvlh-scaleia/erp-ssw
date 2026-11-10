@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { copiaParaEmpresaNova, validarValorDeConfiguracao } from "./configuracoes";
+import {
+  configuracoesVigentes,
+  copiaParaEmpresaNova,
+  validarValorDeConfiguracao,
+} from "./configuracoes";
 
 describe("validarValorDeConfiguracao", () => {
   it("horário HH:MM", () => {
@@ -53,5 +57,21 @@ describe("copiaParaEmpresaNova", () => {
     expect(copiaParaEmpresaNova({ chave: "otif_visivel", grupo: "empresa" })).toBe(true);
     expect(copiaParaEmpresaNova({ chave: "edge_apikey", grupo: "empresa" })).toBe(false);
     expect(copiaParaEmpresaNova({ chave: "bi2_cursor", grupo: "jobs" })).toBe(false);
+  });
+});
+
+describe("configuracoesVigentes", () => {
+  it("a da empresa vence a da Plataforma, em qualquer ordem de leitura", () => {
+    const vigentes = configuracoesVigentes([
+      { empresaId: "e1", chave: "sla_meta_pct", valor: "90" },
+      { empresaId: null, chave: "sla_meta_pct", valor: "95" },
+      { empresaId: null, chave: "otif_visivel", valor: "false" },
+    ]);
+    expect(vigentes).toEqual(
+      new Map([
+        ["sla_meta_pct", "90"],
+        ["otif_visivel", "false"],
+      ]),
+    );
   });
 });

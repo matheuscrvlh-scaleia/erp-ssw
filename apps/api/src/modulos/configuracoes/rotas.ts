@@ -57,7 +57,7 @@ export const rotasConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDeConfig
     async (request) => {
       const acesso = await request.acesso();
       const empresaId = acesso.ativo ? (acesso.empresa?.id ?? null) : null;
-      return { valores: await configuracoesPublicas(request.db, cache, empresaId) };
+      return { valores: await configuracoesPublicas(request.db, empresaId) };
     },
   );
   pronto();

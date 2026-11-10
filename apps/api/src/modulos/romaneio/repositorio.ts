@@ -6,7 +6,6 @@
 import { type Transacao } from "@erp/db";
 import {
   codigosOcorrencia,
-  configuracoes,
   cteDadosRelatorios,
   ctes,
   equipeMembros,
@@ -179,7 +178,11 @@ function linhasImportadas(relatorio: string): SQL {
       and ${ingestaoArquivos.status} <> 'importado')`;
 }
 
-export function criarRepositorioRomaneio(tx: Transacao): RepositorioRomaneio {
+export function criarRepositorioRomaneio(
+  tx: Transacao,
+  /** Leitor já preso à empresa do contexto. */
+  configuracoesVigentes: (chaves: readonly string[]) => Promise<Map<string, string>>,
+): RepositorioRomaneio {
   return {
     filiaisProprias: () =>
       tx
@@ -199,23 +202,7 @@ export function criarRepositorioRomaneio(tx: Transacao): RepositorioRomaneio {
         })
         .from(codigosOcorrencia),
 
-    configuracoes: async (chaves) => {
-      const linhas = await tx
-        .select({
-          empresaId: configuracoes.empresaId,
-          chave: configuracoes.chave,
-          valor: configuracoes.valor,
-        })
-        .from(configuracoes)
-        .where(sql`${configuracoes.chave} = any(${lista(chaves)}::text[])`);
-      // A da empresa vence a da plataforma (empresa nula).
-      const valores = new Map<string, string>();
-      for (const l of [...linhas].sort(
-        (a, b) => Number(a.empresaId !== null) - Number(b.empresaId !== null),
-      ))
-        valores.set(l.chave, l.valor);
-      return valores;
-    },
+    configuracoes: (chaves) => configuracoesVigentes(chaves),
 
     ctes: async (c) => {
       const linhas = await tx

@@ -113,3 +113,21 @@ export function validarValorDeConfiguracao(chave: string, valor: string): string
   }
   return String(n);
 }
+
+/** Linha de `configuracoes`: da empresa ou da Plataforma (empresa nula, o padrão). */
+export interface ConfiguracaoLida {
+  empresaId: string | null;
+  chave: string;
+  valor: string;
+}
+
+/**
+ * Valor vigente de cada chave: o da empresa vence o padrão da Plataforma.
+ * origem: leitura de `configuracoes` nas RPCs (sistema atual)
+ */
+export function configuracoesVigentes(linhas: readonly ConfiguracaoLida[]): Map<string, string> {
+  const vigentes = new Map<string, string>();
+  for (const l of linhas) if (l.empresaId === null) vigentes.set(l.chave, l.valor);
+  for (const l of linhas) if (l.empresaId !== null) vigentes.set(l.chave, l.valor);
+  return vigentes;
+}

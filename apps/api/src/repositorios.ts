@@ -20,7 +20,12 @@ import { type RepositorioColetas } from "./modulos/coletas/casos-de-uso";
 import { criarRepositorioColetas } from "./modulos/coletas/repositorio";
 import { type RepositorioComprovantes } from "./modulos/comprovantes/casos-de-uso";
 import { criarRepositorioComprovantes } from "./modulos/comprovantes/repositorio";
+import { type CacheDeConfiguracoes } from "./modulos/configuracoes/cache";
 import { type RepositorioConfiguracoes } from "./modulos/configuracoes/casos-de-uso";
+import {
+  carregarConfiguracoesDoBanco,
+  criarLeitorDeConfiguracoes,
+} from "./modulos/configuracoes/leitor";
 import { criarRepositorioConfiguracoes } from "./modulos/configuracoes/repositorio";
 import { type RepositorioCtrc } from "./modulos/ctrc/casos-de-uso";
 import { criarRepositorioCtrc } from "./modulos/ctrc/repositorio";
@@ -83,7 +88,20 @@ export interface Repositorios {
   usuarios: RepositorioUsuarios;
 }
 
-export function criarRepositorios(tx: Transacao): Repositorios {
+/**
+ * `contexto`: o da transação (a empresa das leituras de configuração). `cacheDeConfiguracoes`: o
+ * único da instância, o mesmo que o Admin invalida ao salvar.
+ */
+export function criarRepositorios(
+  tx: Transacao,
+  contexto: ContextoBanco,
+  cacheDeConfiguracoes: CacheDeConfiguracoes,
+): Repositorios {
+  const configuracoes = criarLeitorDeConfiguracoes(
+    carregarConfiguracoesDoBanco(tx),
+    cacheDeConfiguracoes,
+  );
+  const daEmpresa = (chaves: readonly string[]) => configuracoes(contexto.empresaId, chaves);
   return {
     acesso: criarRepositorioAcesso(tx),
     ahgora: criarRepositorioAhgora(tx),
@@ -91,21 +109,21 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     auth: criarRepositorioAuth(tx),
     bonificacaoEntrega: criarRepositorioBonificacaoEntrega(tx),
     calendario: criarRepositorioCalendario(tx),
-    prazoParceiro: criarRepositorioPrazoParceiro(tx),
-    romaneio: criarRepositorioRomaneio(tx),
+    prazoParceiro: criarRepositorioPrazoParceiro(tx, daEmpresa),
+    romaneio: criarRepositorioRomaneio(tx, daEmpresa),
     ingestaoSsw: criarRepositorioIngestaoSsw(tx),
     codigosOcorrencia: criarRepositorioCodigosOcorrencia(tx),
     coletas: criarRepositorioColetas(tx),
     comprovantes: criarRepositorioComprovantes(tx),
     historico: criarRepositorioHistorico(tx),
-    ocorrencias: criarRepositorioOcorrencias(tx),
-    ctrc: criarRepositorioCtrc(tx),
+    ocorrencias: criarRepositorioOcorrencias(tx, configuracoes),
+    ctrc: criarRepositorioCtrc(tx, configuracoes),
     filtros: criarRepositorioFiltros(tx),
     listagem: criarRepositorioListagem(tx),
     performance: criarRepositorioPerformance(tx),
     ranking: criarRepositorioRanking(tx),
     cadastros: criarRepositorioCadastros(tx),
-    configuracoes: criarRepositorioConfiguracoes(tx),
+    configuracoes: criarRepositorioConfiguracoes(tx, configuracoes),
     logs: criarRepositorioLogs(tx),
     plataforma: criarRepositorioPlataforma(tx),
     prazos: criarRepositorioPrazos(tx),

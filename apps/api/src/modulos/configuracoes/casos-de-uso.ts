@@ -22,8 +22,8 @@ export interface ConfiguracaoGravada {
 export interface RepositorioConfiguracoes {
   /** Chaves da empresa (sem as da Plataforma, de empresa nula) dos grupos pedidos. */
   daEmpresa(empresaId: string, grupos: readonly string[]): Promise<ConfiguracaoGravada[]>;
-  /** Valores da empresa para as chaves pedidas (as que existem). */
-  valores(empresaId: string, chaves: readonly string[]): Promise<Map<string, string>>;
+  /** Valores vigentes (empresa vence Plataforma) das chaves pedidas que existem. */
+  vigentes(empresaId: string, chaves: readonly string[]): Promise<Map<string, string>>;
   gravarValor(
     empresaId: string,
     chave: string,
@@ -107,12 +107,11 @@ export async function salvarConfiguracoes(
  */
 export async function configuracoesPublicas(
   db: Executor<"configuracoes">,
-  cache: CacheDeConfiguracoes,
   empresaId: string | null,
 ): Promise<Record<string, string>> {
   if (!empresaId) return {};
-  const valores = await cache.valores(empresaId, () =>
-    db(({ configuracoes }) => configuracoes.valores(empresaId, CHAVES_PUBLICAS)),
+  const valores = await db(({ configuracoes }) =>
+    configuracoes.vigentes(empresaId, CHAVES_PUBLICAS),
   );
   return Object.fromEntries(valores);
 }
