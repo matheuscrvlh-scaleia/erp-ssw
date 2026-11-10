@@ -1,5 +1,6 @@
 /** Peças comuns da visão geral e do detalhe do Prazo do parceiro. Visual da tela de hoje. */
 import { ROTULO_ATALHO } from "@/componentes/comum/periodo";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 import { type Periodo, PERIODOS } from "./busca";
@@ -79,7 +80,7 @@ export function CartaoMetrica({
         )}
       </div>
       {carregando ? (
-        <div className="mt-2 h-8 w-24 animate-pulse rounded bg-muted/60" />
+        <Skeleton className="mt-2 h-8 w-24 rounded bg-muted/60" />
       ) : (
         <div
           className={cn(
@@ -93,23 +94,6 @@ export function CartaoMetrica({
       )}
       {dica && <div className="mt-1 text-[11px] text-muted-foreground">{dica}</div>}
     </div>
-  );
-}
-
-/** Linhas cinza enquanto a tabela carrega. */
-export function LinhasCarregando({ linhas, colunas }: { linhas: number; colunas: number }) {
-  return (
-    <>
-      {Array.from({ length: linhas }, (_, i) => (
-        <tr key={i} className="border-b border-border/40">
-          {Array.from({ length: colunas }, (__, j) => (
-            <td key={j} className="px-3 py-2">
-              <div className="h-3 w-full animate-pulse rounded bg-muted/60" />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
   );
 }
 

@@ -17,6 +17,7 @@ import { type ReactNode } from "react";
 
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { Skeleton } from "@/componentes/ui/skeleton";
 
 import { type RecorteFinalizacao, ROTULO_DA_FAIXA } from "./busca";
 import { classeDoResponsavel, rotulosDoResponsavel } from "./rotulos";
@@ -142,7 +143,9 @@ function SemDados() {
 
 function Esqueletos({ n = 5 }: { n?: number }) {
   return Array.from({ length: n }, (_, i) => (
-    <li key={i} className="h-8 animate-pulse rounded bg-muted/60" />
+    <li key={i}>
+      <Skeleton className="h-8 rounded bg-muted/60" />
+    </li>
   ));
 }
 

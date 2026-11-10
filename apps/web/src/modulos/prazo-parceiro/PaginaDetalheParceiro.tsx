@@ -21,8 +21,10 @@ import {
   FiltrandoPor,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
@@ -33,7 +35,7 @@ import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaDetalhe, consultaOpcoes } from "./api";
 import { esquemaDetalhe, filtrosDaBusca, ROTULO_PERIODO } from "./busca";
-import { BotoesDePeriodo, CartaoMetrica, LinhasCarregando, tomDoSla } from "./componentes";
+import { BotoesDePeriodo, CartaoMetrica, tomDoSla } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
 
 const rota = getRouteApi("/_autenticado/prazo-parceiro_/$id");
@@ -193,7 +195,7 @@ export function PaginaDetalheParceiro() {
           Quantos dias o prazo do CT-e veio abaixo das 48 horas, por faixa
         </p>
         {q.isLoading ? (
-          <div className="mt-4 h-24 animate-pulse rounded bg-muted/60" />
+          <Skeleton className="mt-4 h-24 rounded bg-muted/60" />
         ) : (d?.histograma.length ?? 0) === 0 ? (
           <p className="mt-4 text-[12px] text-muted-foreground">
             Nenhum CTRC nasceu atrasado neste período.

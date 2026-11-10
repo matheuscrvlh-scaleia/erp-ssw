@@ -38,8 +38,10 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
@@ -63,13 +65,7 @@ import {
   ROTULO_PERIODO,
   tamanhoDaLista,
 } from "./busca";
-import {
-  BotoesDePeriodo,
-  CartaoMetrica,
-  classeDoSla,
-  LinhasCarregando,
-  tomDoSla,
-} from "./componentes";
+import { BotoesDePeriodo, CartaoMetrica, classeDoSla, tomDoSla } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
 
 const COLUNAS_DA_EXPORTACAO: readonly ColunaExportacao[] = [
@@ -327,7 +323,7 @@ export function PaginaPrazoParceiro() {
           <h2 className="text-[14px] font-medium">Origem do prazo</h2>
           <p className="text-[11px] text-muted-foreground">Distribuição dos CTRCs no período</p>
           {visao.isLoading ? (
-            <div className="mt-4 h-16 animate-pulse rounded bg-muted/60" />
+            <Skeleton className="mt-4 h-16 rounded bg-muted/60" />
           ) : t && t.totalCtes > 0 ? (
             <>
               <div className="mt-4 flex h-4 w-full overflow-hidden rounded-full bg-muted">
@@ -401,7 +397,7 @@ export function PaginaPrazoParceiro() {
             Emitido a menos de 48 horas da previsão de entrega
           </p>
           {visao.isLoading ? (
-            <div className="mt-4 h-16 animate-pulse rounded bg-muted/60" />
+            <Skeleton className="mt-4 h-16 rounded bg-muted/60" />
           ) : (
             <>
               <div className="mt-3 text-[36px] font-medium tabular-nums">

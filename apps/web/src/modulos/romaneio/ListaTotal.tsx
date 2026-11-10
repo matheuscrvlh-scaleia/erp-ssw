@@ -41,6 +41,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { BotoesDePagina } from "@/componentes/comum/BotoesDePagina";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { type EtiquetaFiltroOpcional, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
+import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Checkbox } from "@/componentes/ui/checkbox";
@@ -358,7 +359,7 @@ export function ListaTotal({ busca: b, definir, filtros, otifVisivel }: PropsDaL
               </tr>
             </thead>
             <tbody>
-              {q.isLoading && <LinhasCarregando />}
+              {q.isLoading && <LinhasCarregando linhas={8} colunas={20} />}
               {q.isError && (
                 <tr>
                   <td colSpan={COLUNAS_DA_TABELA} className="px-3 py-8 text-center">
@@ -835,22 +836,6 @@ function Grupo({
         <td colSpan={COLUNAS_DA_TABELA - COLUNAS_ANTES_DO_PESO - 3} />
       </tr>
       {aberto && linhas.map((l) => children(l))}
-    </>
-  );
-}
-
-function LinhasCarregando() {
-  return (
-    <>
-      {Array.from({ length: 8 }, (_, i) => (
-        <tr key={i} className="border-b border-border/40">
-          {Array.from({ length: 20 }, (__, j) => (
-            <td key={j} className="px-3 py-2">
-              <div className="h-3 w-full animate-pulse rounded bg-muted/60" />
-            </td>
-          ))}
-        </tr>
-      ))}
     </>
   );
 }

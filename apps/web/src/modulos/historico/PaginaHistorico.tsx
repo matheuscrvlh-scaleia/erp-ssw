@@ -20,6 +20,7 @@ import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { etiquetasQueLimpam, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
@@ -516,7 +517,7 @@ export function PaginaHistorico() {
       {consulta.isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-lg bg-muted/40" />
+            <Skeleton key={i} className="h-16 rounded-lg bg-muted/40" />
           ))}
         </div>
       ) : consulta.error ? (

@@ -13,7 +13,9 @@ import {
 import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
 import { type KeyboardEvent, type ReactNode } from "react";
 
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 import { corDoStatus, fundoDoStatus, textoDoStatus } from "../cores";
 
@@ -465,9 +467,9 @@ export function EsqueletoDeCards({ quantos, altura }: { quantos: number; altura:
       }
     >
       {Array.from({ length: quantos }, (_, i) => (
-        <div
+        <Skeleton
           key={i}
-          className={`${altura} animate-pulse rounded-[10px] border border-border/70 bg-muted/40`}
+          className={cn(altura, "rounded-[10px] border border-border/70 bg-muted/40")}
         />
       ))}
     </div>
