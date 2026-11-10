@@ -5,6 +5,7 @@ import {
 } from "@erp/shared/contratos/ingestao-ssw";
 import { formatarData, formatarDataHora, formatarInteiro } from "@erp/shared/formatacao";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { Database, History, Play, RotateCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -197,12 +198,13 @@ function CartaoEventosWebhook() {
       titulo: "CTRC",
       celula: (e) =>
         e.numeroCte ? (
-          <a
-            href={`/ctrc/${encodeURIComponent(e.numeroCte)}`}
+          <Link
+            to="/ctrc/$numero"
+            params={{ numero: e.numeroCte }}
             className="font-mono text-[var(--marca-primaria,inherit)] hover:underline"
           >
             {e.numeroCte}
-          </a>
+          </Link>
         ) : null,
     },
     {

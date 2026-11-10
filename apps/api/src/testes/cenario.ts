@@ -1,9 +1,8 @@
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 
-import { type ChavesDeSegredo } from "@erp/db/segredos";
 import { type FastifyInstance } from "fastify";
 
-import { construirApp } from "../app";
+import { construirApp, type Dependencias } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
 import { type Correio, type Mensagem } from "../infra/correio";
 import { type ProvedorGoogle } from "../infra/google";
@@ -11,7 +10,6 @@ import { criarLimitadorEmMemoria } from "../infra/limitador";
 import { criarServicoDeSenhas } from "../infra/senhas";
 import { criarEmissorDeTokens, type EmissorDeTokens } from "../infra/tokens";
 import { type DependenciasAuth } from "../modulos/auth/casos-de-uso";
-import { type FilasDeIngestao } from "../modulos/ingestao-ssw/casos-de-uso";
 import { BancoEmMemoria, type UsuarioFalso } from "./banco-em-memoria";
 
 export function gerarChavePem(): string {
@@ -88,10 +86,7 @@ export function criarCenario(): Cenario {
 export async function construirAppDeTeste(
   cenario: Cenario,
   google: ProvedorGoogle | null = null,
-  ingestao: { filas: FilasDeIngestao | null; chaves: ChavesDeSegredo | null } = {
-    filas: null,
-    chaves: null,
-  },
+  extras: Partial<Dependencias> = {},
 ): Promise<FastifyInstance> {
   const { deps } = cenario;
   return construirApp({
@@ -105,9 +100,10 @@ export async function construirAppDeTeste(
     limitador: deps.limitador,
     correio: cenario.correio,
     google,
-    filasDeIngestao: ingestao.filas,
-    chavesDeSegredo: ingestao.chaves,
+    filasDeIngestao: null,
+    chavesDeSegredo: null,
     agora: deps.agora,
+    ...extras,
   });
 }
 

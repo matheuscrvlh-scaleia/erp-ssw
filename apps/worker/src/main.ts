@@ -40,7 +40,7 @@ const PRAZO_DE_DESLIGAMENTO_MS = 30_000;
 
 const ambiente = carregarAmbiente(process.env);
 const chavesDeSegredo = ambiente.SEGREDOS_CHAVES
-  ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_VERSAO_ATUAL)
+  ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
   : null;
 const log = pino({
   level: ambiente.LOG_NIVEL,

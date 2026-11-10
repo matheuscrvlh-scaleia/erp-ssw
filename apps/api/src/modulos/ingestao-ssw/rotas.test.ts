@@ -66,7 +66,10 @@ let empresaId: string;
 beforeEach(async () => {
   cenario = criarCenario();
   filas = new FilasFalsas();
-  app = await construirAppDeTeste(cenario, null, { filas, chaves });
+  app = await construirAppDeTeste(cenario, null, {
+    filasDeIngestao: filas,
+    chavesDeSegredo: chaves,
+  });
   empresaId = cenario.banco.criarEmpresa().id;
   cenario.banco.liberarModulo(empresaId, "integracao_ssw");
   cenario.banco.definirCargo(empresaId, "admin", { rotulo: "Admin", telas: ["admin_ingestao"] });

@@ -31,6 +31,10 @@ const redis = ambiente.REDIS_URL
 // Só produz e consulta (não consome): pode dividir a conexão com o limite de taxa.
 const filasDeIngestao = redis ? criarFilasDeIngestao(redis, (ms) => esperar(ms)) : null;
 
+const chaves = ambiente.SEGREDOS_CHAVES
+  ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
+  : null;
+
 const app = await construirApp({
   ambiente,
   executar: (contexto, fn) =>
@@ -65,10 +69,13 @@ const app = await construirApp({
         })
       : null,
   filasDeIngestao,
-  chavesDeSegredo: ambiente.SEGREDOS_CHAVES
-    ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_VERSAO_ATUAL)
-    : null,
+  chavesDeSegredo: chaves,
   agora: () => new Date(),
+  ahgora: {
+    segredos: chaves,
+    ambiente: { usuario: ambiente.AHGORA_API_USUARIO, senha: ambiente.AHGORA_API_SENHA },
+    http: fetch,
+  },
 });
 
 app.addHook("onClose", async () => {

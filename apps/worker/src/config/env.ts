@@ -28,7 +28,7 @@ const esquema = z.object({
     ),
   /** Chaves mestras dos segredos de integração (`1:<base64 32 bytes>,2:...`) e a versão atual. */
   SEGREDOS_CHAVES: z.string().min(1).optional(),
-  SEGREDOS_VERSAO_ATUAL: z.coerce.number().int().positive().default(1),
+  SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
 });
 
 export type AmbienteWorker = z.output<typeof esquema>;

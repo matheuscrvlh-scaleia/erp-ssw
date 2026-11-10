@@ -50,9 +50,13 @@ const esquema = z
     /** Token de leitura de /metrics; sem ele a rota não existe. */
     METRICAS_TOKEN: z.string().min(16).optional(),
 
-    /** Chaves mestras dos segredos de integração (`1:<base64 32 bytes>,2:...`) e a versão atual. */
-    SEGREDOS_CHAVES: z.string().min(1).optional(),
-    SEGREDOS_VERSAO_ATUAL: z.coerce.number().int().positive().default(1),
+    /** Chaves mestras dos segredos de integração: "1:<base64 de 32 bytes>,2:<…>". */
+    SEGREDOS_CHAVES: z.string().optional(),
+    /** Versão da chave usada para cifrar segredos novos. */
+    SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+    /** Transição da FR: credencial do Ahgora no ambiente (só com parametros.usar_env). */
+    AHGORA_API_USUARIO: z.string().optional(),
+    AHGORA_API_SENHA: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     const google = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI];
