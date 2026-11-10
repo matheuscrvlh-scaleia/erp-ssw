@@ -1,33 +1,48 @@
-import { setTimeout as esperar } from "node:timers/promises";
-
-import { comContexto, conectarBanco } from "@erp/db";
-import { contextoDoSegredo, decifrarSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
-import {
-  criarFilaDeAplicacao,
-  criarProgressos,
-  criarRepositorioIngestao,
-  criarTravas,
-} from "@erp/ingestao/infra";
+import { comContexto, conectarBanco, type ContextoBanco, type Transacao } from "@erp/db";
+import { lerChavesDeSegredo } from "@erp/db/segredos";
 import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
+import { criarRepositorioCteNucleo } from "./compartilhado/gravacao-cte";
 import { carregarAmbiente } from "./config/env";
 import { criarArmazenamentoS3 } from "./infra/armazenamento";
 import { criarCorreioSmtp } from "./infra/correio";
-import { criarFilasBullmq, filaDesligada } from "./infra/fila";
+import { filaDesligada } from "./infra/fila";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
+import { criarClienteWorkerSsw } from "./infra/worker-ssw";
+import { criarFilasDosJobs, ligarWorkersDosJobs, pedirRecifragemDeSegredos } from "./jobs/iniciar";
+import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
+import { criarRepositorioSegredos } from "./jobs/manutencao/repositorio-segredos";
+import { criarRepositorioPrazosDoJob } from "./jobs/prazos/repositorio";
+import { criarRepositorioRecalculo } from "./jobs/recalculo/repositorio";
+import { type RepositoriosDosJobs } from "./jobs/registro";
+import { criarRepositorioAgendamentos } from "./jobs/repositorio-agendamentos";
 import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
-import { criarRepositorioDaIngestaoPublica } from "./modulos/ingestao/repositorio";
-import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
 import { criarRepositorios } from "./repositorios";
 
-/** Tempo para terminar as requisições em andamento depois do SIGTERM. */
-const PRAZO_DE_DESLIGAMENTO_MS = 10_000;
+/**
+ * Tempo para terminar as requisições e os jobs em andamento depois do SIGTERM. O job que não
+ * terminar volta para a fila (o BullMQ o retoma; os jobs do ERP podem repetir).
+ */
+const PRAZO_DE_DESLIGAMENTO_MS = 25_000;
 
 const ambiente = carregarAmbiente(process.env);
+
+const redis = ambiente.REDIS_URL
+  ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
+  : null;
+
+// Subcomando: `node dist/server.js --recifrar-segredos` só pede o job (docs/deploy.md §5.3) e sai.
+if (process.argv.includes("--recifrar-segredos")) {
+  if (redis === null) throw new Error("--recifrar-segredos precisa de REDIS_URL.");
+  await pedirRecifragemDeSegredos(redis);
+  await redis.quit();
+  process.stdout.write("job recifrar-segredos enfileirado\n");
+  process.exit(0);
+}
 
 const conexao = conectarBanco({
   url: ambiente.DATABASE_URL,
@@ -35,65 +50,45 @@ const conexao = conectarBanco({
   timeoutConsultaMs: ambiente.DB_TIMEOUT_CONSULTA_MS,
   nomeAplicacao: "erp-api",
 });
-const redis = ambiente.REDIS_URL
-  ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
-  : null;
-// Só produz e consulta (não consome): pode dividir a conexão com o limite de taxa.
-const filas = redis ? criarFilasBullmq(redis, (ms) => esperar(ms)) : null;
 
 const chavesDeSegredo = ambiente.SEGREDOS_CHAVES
   ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
   : null;
 
-const PLATAFORMA = { empresaId: null, usuarioId: null, plataforma: true } as const;
-const enfileirador = filas?.enfileirador ?? null;
-const ingestao: ServicosDaIngestao | null =
-  redis && enfileirador
-    ? {
-        executarNaEmpresa: (empresaId, ator) => (fn) =>
-          comContexto(
-            conexao.banco,
-            {
-              empresaId,
-              usuarioId: ator?.usuarioId ?? null,
-              plataforma: ator?.plataforma ?? false,
-            },
-            (tx) => fn(criarRepositorioIngestao(tx, empresaId, ator)),
-          ),
-        empresasParaIngestao: () =>
-          comContexto(conexao.banco, PLATAFORMA, (tx) =>
-            criarRepositorioDaIngestaoPublica(tx).empresasParaIngestao(),
-          ),
-        segredosDaIngestao: async () => {
-          if (chavesDeSegredo === null) return [];
-          const cifrados = await comContexto(conexao.banco, PLATAFORMA, (tx) =>
-            criarRepositorioDaIngestaoPublica(tx).segredosDaIngestao(),
-          );
-          return cifrados.flatMap(({ empresaId, segredo }) => {
-            try {
-              const texto = decifrarSegredo(
-                chavesDeSegredo,
-                segredo,
-                contextoDoSegredo(empresaId, "ingestao_publica"),
-              ).trim();
-              return texto ? [{ empresaId, segredo: texto }] : [];
-            } catch {
-              return [];
-            }
-          });
-        },
-        fila: criarFilaDeAplicacao(redis),
-        travas: criarTravas(redis),
-        progressos: criarProgressos(redis),
-        enfileirador,
-      }
-    : null;
+function repositoriosDosJobs(tx: Transacao, { empresaId }: ContextoBanco): RepositoriosDosJobs {
+  return {
+    agendamentos: criarRepositorioAgendamentos(tx),
+    manutencao: criarRepositorioManutencao(tx),
+    // Só os jobs por empresa gravam CT-e: sem empresa no contexto, falha no uso.
+    get cteNucleo() {
+      if (empresaId === null) throw new Error("Gravação de CT-e sem empresa no contexto.");
+      return criarRepositorioCteNucleo(tx, empresaId);
+    },
+    prazos: criarRepositorioPrazosDoJob(tx),
+    recalculo: criarRepositorioRecalculo(tx),
+    segredos: criarRepositorioSegredos(tx),
+  };
+}
+
+// Produtor dos jobs do ERP (sempre que há Redis); os workers ligam depois do app (usam o log dele).
+const filasDosJobs = redis ? criarFilasDosJobs(redis) : null;
 
 const agora = () => new Date();
 const cacheDeConfiguracoes = criarCacheDeConfiguracoes(agora);
 
+const workerSsw =
+  ambiente.WORKER_SSW_URL && ambiente.WORKER_SSW_TOKEN
+    ? criarClienteWorkerSsw({
+        url: ambiente.WORKER_SSW_URL,
+        token: ambiente.WORKER_SSW_TOKEN,
+        buscar: fetch,
+        aoFalhar: (erro, operacao) => {
+          app.log.warn({ err: erro, operacao }, "worker-ssw não respondeu");
+        },
+      })
+    : null;
+
 const app = await construirApp({
-  ingestao,
   ambiente,
   executar: (contexto, fn) =>
     comContexto(conexao.banco, contexto, (tx) =>
@@ -128,8 +123,11 @@ const app = await construirApp({
           redirectUri: ambiente.GOOGLE_REDIRECT_URI,
         })
       : null,
-  filasDeIngestao: filas?.ingestao ?? null,
-  fila: filas?.jobs ?? filaDesligada,
+  workerSsw,
+  fila: filasDosJobs?.fila ?? filaDesligada,
+  ...(ambiente.JOBS_LIGADOS
+    ? { verificarJobs: () => workers?.verificar() ?? Promise.resolve() }
+    : {}),
   armazenamento:
     ambiente.S3_BUCKET && ambiente.S3_CHAVE_ACESSO && ambiente.S3_SEGREDO
       ? criarArmazenamentoS3({
@@ -151,8 +149,28 @@ const app = await construirApp({
   },
 });
 
+// O BullMQ exige `maxRetriesPerRequest: null` na conexão dos workers (bloqueante, própria).
+const conexaoDosWorkers =
+  ambiente.JOBS_LIGADOS && ambiente.REDIS_URL
+    ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: null })
+    : null;
+const workers =
+  filasDosJobs && conexaoDosWorkers
+    ? await ligarWorkersDosJobs(filasDosJobs.filas, {
+        conexao: conexaoDosWorkers,
+        executar: (contexto, fn) =>
+          comContexto(conexao.banco, contexto, (tx) => fn(repositoriosDosJobs(tx, contexto))),
+        log: app.log,
+        chavesDeSegredo,
+        agendamentosLigados: ambiente.AGENDAMENTOS_LIGADOS,
+      })
+    : null;
+
 app.addHook("onClose", async () => {
-  await filas?.fechar();
+  // Primeiro os jobs (param de pegar e terminam o que rodam), depois as conexões.
+  await workers?.fechar();
+  await filasDosJobs?.fechar();
+  await conexaoDosWorkers?.quit();
   await conexao.encerrar();
   await redis?.quit();
 });

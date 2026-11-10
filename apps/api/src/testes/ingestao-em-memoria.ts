@@ -1,26 +1,73 @@
-import { randomUUID } from "node:crypto";
-
 import { type IntegracaoDaIngestao } from "@erp/shared/ingestao";
 
+import {
+  type CicloLido,
+  type LinhaApagada,
+  type RepositorioIngestao,
+} from "../modulos/ingestao/casos-de-uso";
 import {
   type EventoLido,
   type IntegracaoLida,
   type RepositorioIngestaoSsw,
   type SincronizacaoLida,
 } from "../modulos/ingestao-ssw/casos-de-uso";
-import { type EmpresaDoWebhook, type EventoRecebido } from "../modulos/ingestao-ssw/webhook";
 
-export type EventoGravado = EventoRecebido & { id: string; recebidoEm: Date; cteId: string | null };
+/** Evento do webhook como o worker-ssw o grava em `ssw_webhook_eventos`. */
+export interface EventoGravado {
+  id: string;
+  recebidoEm: Date;
+  cteId: string | null;
+  autenticado: boolean;
+  motivoRejeicao: string | null;
+  statusHttp: number;
+  payloadBruto: unknown;
+  tokenSha256: string[] | null;
+  erroProcessamento: string | null;
+}
 
 /** Parte de ingestão SSW do banco falso (sem RLS: os testes conferem o contexto à parte). */
 export class IngestaoEmMemoria {
   integracoes = new Map<string, IntegracaoLida>();
-  empresasDoWebhook: EmpresaDoWebhook[] = [];
   eventos: EventoGravado[] = [];
   sincronizacoes: SincronizacaoLida[] = [];
   ultimaAplicacao: Date | null = null;
-  /** Relógio do `recebido_em` (o cenário liga ao relógio dos testes). */
-  agora: () => Date = () => new Date();
+  ciclos: (CicloLido & { empresaId: string })[] = [];
+  /** Linhas de staging por ciclo (o que o descarte apaga). */
+  staging = new Map<string, LinhaApagada[]>();
+  ftpAtivo = new Map<string, boolean>();
+
+  /** Repositório das telas Admin › Importação SSW e XML CT-e. */
+  repositorioDasTelas(): RepositorioIngestao {
+    const doCiclo = (empresaId: string, chave: string) =>
+      this.ciclos.find((c) => c.empresaId === empresaId && c.cicloChave === chave) ?? null;
+    return {
+      ultimosCiclos: (empresaId, limite) =>
+        Promise.resolve(this.ciclos.filter((c) => c.empresaId === empresaId).slice(0, limite)),
+      ultimosArquivos: () => Promise.resolve([]),
+      relatoriosEsperados: () => Promise.resolve([]),
+      ultimasAplicacoes: () => Promise.resolve([]),
+      ftpAtivo: (empresaId) => Promise.resolve(this.ftpAtivo.get(empresaId) ?? true),
+      gravarFtpAtivo: (empresaId, ativo) => {
+        this.ftpAtivo.set(empresaId, ativo);
+        return Promise.resolve();
+      },
+      ultimasSincronizacoes: () => Promise.resolve([]),
+      ultimosArquivosXml: () => Promise.resolve([]),
+      estatisticasDosOrfaos: () =>
+        Promise.resolve({ pendentes: 0, expirados: 0, casados: 0, maisAntigo: null }),
+      ciclo: (empresaId, chave) => Promise.resolve(doCiclo(empresaId, chave)),
+      apagarStagingDoCiclo: (_empresaId, chave) => {
+        const apagadas = this.staging.get(chave) ?? [];
+        this.staging.delete(chave);
+        return Promise.resolve({ linhas: apagadas.length, erros: 0, apagadas });
+      },
+      marcarCicloDescartado: (empresaId, chave, motivo) => {
+        const c = doCiclo(empresaId, chave);
+        if (c) Object.assign(c, { status: "descartado", motivo });
+        return Promise.resolve();
+      },
+    };
+  }
 
   repositorio(): RepositorioIngestaoSsw {
     const lido = (e: EventoGravado): EventoLido => ({
@@ -108,23 +155,6 @@ export class IngestaoEmMemoria {
             autenticado: true,
             erroProcessamento: "reenviado para processamento",
           });
-        return Promise.resolve();
-      },
-      empresasComWebhook: () => Promise.resolve(this.empresasDoWebhook),
-      registrarEvento: (evento) => {
-        const id = randomUUID();
-        this.eventos.push({ ...evento, id, recebidoEm: this.agora(), cteId: null });
-        return Promise.resolve(id);
-      },
-      quarentenaDesde: (desde) =>
-        Promise.resolve(
-          this.eventos.filter(
-            (e) => !e.autenticado && e.payloadBruto !== null && e.recebidoEm >= desde,
-          ).length,
-        ),
-      marcarEvento: (eventoId, statusHttp, erro) => {
-        const e = this.eventos.find((x) => x.id === eventoId);
-        if (e) Object.assign(e, { statusHttp, erroProcessamento: erro });
         return Promise.resolve();
       },
     };

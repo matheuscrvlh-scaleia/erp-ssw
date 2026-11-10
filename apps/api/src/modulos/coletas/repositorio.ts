@@ -1,6 +1,5 @@
 import { type Transacao } from "@erp/db";
 import { coletas, ctes } from "@erp/db/schema";
-import { criarRepositorioGravacao050 } from "@erp/ingestao/infra";
 import {
   type EtapaDeColeta,
   type FiltrosDeColetas,
@@ -22,6 +21,7 @@ import {
 
 import { diaNoFuso, tipoDocumentoEfetivo } from "../../compartilhado/sql-cte";
 import { type ColetaLida, type RepositorioColetas } from "./casos-de-uso";
+import { criarRepositorioGravacao050 } from "./gravacao-050";
 
 const numero = (valor: string | null) => (valor === null ? null : Number(valor));
 

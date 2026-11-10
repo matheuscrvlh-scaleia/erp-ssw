@@ -13,6 +13,19 @@ describe("ambiente", () => {
     expect(() => ambienteDeTeste({ NODE_ENV: "production" })).toThrow(/REDIS_URL[\s\S]*SMTP_HOST/);
   });
 
+  it("worker-ssw: URL e token juntos; jobs do ERP precisam de Redis", () => {
+    expect(() => ambienteDeTeste({ WORKER_SSW_URL: "http://worker-ssw:3100" })).toThrow(
+      "WORKER_SSW_TOKEN",
+    );
+    expect(() => ambienteDeTeste({ JOBS_LIGADOS: "true" })).toThrow("JOBS_LIGADOS");
+    expect(
+      ambienteDeTeste({
+        WORKER_SSW_URL: "http://worker-ssw:3100",
+        WORKER_SSW_TOKEN: "t".repeat(32),
+      }).WORKER_SSW_URL,
+    ).toBe("http://worker-ssw:3100");
+  });
+
   it("aceita PEM com \\n literal e monta as origens do CORS", () => {
     const pemEmUmaLinha = gerarChavePem().replaceAll("\n", "\\n");
     const ambiente = ambienteDeTeste({

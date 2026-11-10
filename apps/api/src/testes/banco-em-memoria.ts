@@ -429,6 +429,7 @@ export class BancoEmMemoria {
       prazoParceiro: this.prazoParceiro.repositorio(),
       romaneio: this.romaneio.repositorio(),
 
+      ingestao: this.ingestao.repositorioDasTelas(),
       ingestaoSsw: this.ingestao.repositorio(),
     };
   }

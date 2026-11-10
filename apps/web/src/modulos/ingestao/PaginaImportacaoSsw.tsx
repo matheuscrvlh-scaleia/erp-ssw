@@ -1,5 +1,5 @@
 /** Admin › Importação SSW (só Plataforma): pipeline automático + importação manual + aplicação. */
-import { DESCRICAO_DO_RELATORIO, type Relatorio } from "@erp/ingestao/relatorios";
+import { DESCRICAO_DO_RELATORIO, type Relatorio } from "@erp/dominio/ingestao/relatorios";
 import { type CicloDaIngestao, contratosIngestao as c } from "@erp/shared/contratos/ingestao";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";

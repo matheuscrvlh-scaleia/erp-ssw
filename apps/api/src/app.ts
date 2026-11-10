@@ -1,5 +1,4 @@
 import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/segredos";
-import { type FilasDeIngestao } from "@erp/shared/ingestao";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -10,14 +9,11 @@ import type { Armazenamento } from "./infra/armazenamento";
 import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
 import type { FilaDeJobs } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
-import {
-  criarContadorEmMemoria,
-  criarContadorRedis,
-  type LimitadorDeFalhas,
-} from "./infra/limitador";
+import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
 import { type EmissorDeTokens } from "./infra/tokens";
+import { type ClienteWorkerSsw } from "./infra/worker-ssw";
 import { type DependenciasAhgora } from "./modulos/ahgora/casos-de-uso";
 import { rotasAhgora } from "./modulos/ahgora/rotas";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
@@ -36,11 +32,8 @@ import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
 import { rotasCtrc } from "./modulos/ctrc/rotas";
 import { rotasFiltros } from "./modulos/filtros/rotas";
 import { rotasHistorico } from "./modulos/historico/rotas";
-import { rotasAdminDaIngestao } from "./modulos/ingestao/rotas-admin";
-import { rotasPublicasDaIngestao } from "./modulos/ingestao/rotas-publicas";
-import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
+import { rotasIngestao } from "./modulos/ingestao/rotas";
 import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
-import { rotasPublicasSsw } from "./modulos/ingestao-ssw/rotas-publicas";
 import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasLogs } from "./modulos/logs/rotas";
 import { rotasOcorrencias } from "./modulos/ocorrencias/rotas";
@@ -73,12 +66,15 @@ export interface Dependencias {
   /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
   correio: Correio | null;
   google: ProvedorGoogle | null;
-  /** Ingestão SSW (precisa de Redis); sem ela as rotas da ingestão não existem. */
-  ingestao?: ServicosDaIngestao | null;
-  /** Filas do BullMQ (ingestão). Nulo = sem Redis: execuções manuais e o webhook respondem 503. */
-  filasDeIngestao: FilasDeIngestao | null;
-  /** Fila do worker (recálculos); desligada sem Redis. */
+  /**
+   * HTTP interno do worker-ssw (ADR 0012). Nulo = `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` ausentes: as
+   * ações de ingestão respondem 503 e as leituras continuam.
+   */
+  workerSsw: ClienteWorkerSsw | null;
+  /** Fila dos jobs do ERP (recálculos); desligada sem Redis. */
   fila: FilaDeJobs;
+  /** Saúde dos workers dos jobs do ERP (`JOBS_LIGADOS`); ausente = jobs desligados. */
+  verificarJobs?: () => Promise<void>;
   /** Bucket dos logos; nulo = envio de logo não configurado. */
   armazenamento: Armazenamento | null;
   /** Chaves dos segredos de integração. Nulo = sem cofre: não salva senha nem confere o webhook. */
@@ -127,6 +123,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
             },
           }
         : {}),
+      ...(deps.verificarJobs ? { jobs: deps.verificarJobs } : {}),
     },
   });
 
@@ -148,10 +145,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
-  if (deps.ingestao) {
-    await app.register(rotasPublicasDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
-    await app.register(rotasAdminDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
-  }
+  await app.register(rotasIngestao, { deps: { workerSsw: deps.workerSsw } });
   await app.register(rotasRomaneio, { agora: deps.agora });
   await app.register(rotasPrazoParceiro);
   await app.register(rotasOcorrencias, { agora: deps.agora });
@@ -174,7 +168,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   const chaves = deps.chavesDeSegredo;
   await app.register(rotasIngestaoSsw, {
     deps: {
-      filas: deps.filasDeIngestao,
+      workerSsw: deps.workerSsw,
       cifrador: chaves
         ? {
             cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto),
@@ -189,15 +183,6 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
         : null,
       agora: deps.agora,
     },
-  });
-  await app.register(rotasPublicasSsw, {
-    executar: deps.executar,
-    filas: deps.filasDeIngestao,
-    chaves,
-    agora: deps.agora,
-    falhas: redis
-      ? criarContadorRedis(redis, "webhook:falhas", 60_000)
-      : criarContadorEmMemoria(60_000, () => deps.agora().getTime()),
   });
 
   const usuarios: DependenciasUsuarios = {

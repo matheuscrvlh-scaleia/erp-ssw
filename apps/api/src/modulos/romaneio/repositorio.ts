@@ -405,8 +405,8 @@ export function criarRepositorioRomaneio(
 
     linhas036DoDia: async (dia) => {
       // A ingestão grava em `data_referencia` o dia de emissão do romaneio às 00:00 de SP
-      // (`linhasParaGravar` em `@erp/ingestao`); a faixa larga só usa o índice, quem decide é o
-      // `data_emissao` da linha.
+      // (`identificarLinha` em `@erp/dominio/ingestao/linhas`); a faixa larga só usa o índice,
+      // quem decide é o `data_emissao` da linha.
       const linhas = await tx
         .select({ dados: ingestaoLinhas.dados, importadoEm: ingestaoLinhas.importadoEm })
         .from(ingestaoLinhas)

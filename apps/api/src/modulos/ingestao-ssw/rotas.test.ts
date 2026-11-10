@@ -10,71 +10,22 @@ import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
-import { type FilasDeIngestao, type ResultadoDaExecucao } from "./casos-de-uso";
-import { LIMITE_DE_FALHAS_POR_MINUTO } from "./rotas-publicas";
-import { resumoDoSegredo } from "./webhook";
+import { WorkerSswFalso } from "../../testes/worker-ssw-falso";
+import { resumoDoSegredo } from "./casos-de-uso";
 
 const chaves = lerChavesDeSegredo(`1:${randomBytes(32).toString("base64")}`, 1);
-const SEGREDO_WEBHOOK = "s".repeat(40);
-
-class FilasFalsas implements FilasDeIngestao {
-  enfileirados: {
-    job: string;
-    dados: Readonly<Record<string, unknown>>;
-    deduplicar: string | null;
-  }[] = [];
-  resultado: ResultadoDaExecucao = { tipo: "pendente" };
-  esquecidos: string[] = [];
-  falhar = false;
-  /** Simula o worker rodando logo que o job entra na fila. */
-  aoEnfileirar: (dados: Readonly<Record<string, unknown>>) => void = () => undefined;
-
-  enfileirar(
-    job: string,
-    dados: Readonly<Record<string, unknown>>,
-    { deduplicar }: { deduplicar: string | null },
-  ) {
-    if (this.falhar) return Promise.reject(new Error("redis fora"));
-    this.enfileirados.push({ job, dados, deduplicar });
-    this.aoEnfileirar(dados);
-    return Promise.resolve(`job-${this.enfileirados.length}`);
-  }
-  aguardar() {
-    return Promise.resolve(this.resultado);
-  }
-  status() {
-    return Promise.resolve({
-      agendado: true,
-      proximaExecucao: null,
-      aguardando: 0,
-      ativos: 0,
-      atrasados: 0,
-      falhos: 0,
-      ultimaConclusao: null,
-      ultimasFalhas: [],
-    });
-  }
-  tokenSswGeradoEm() {
-    return Promise.resolve(null);
-  }
-  esquecerTokenSsw(empresaId: string) {
-    this.esquecidos.push(empresaId);
-    return Promise.resolve();
-  }
-}
+const TESTAR = "/api/v1/admin/ingestao/ssw-api/testar";
+const DIAGNOSTICO = "/api/v1/admin/ssw-diagnostico";
 
 let cenario: Cenario;
 let app: FastifyInstance;
-let filas: FilasFalsas;
+let workerSsw: WorkerSswFalso;
 let empresaId: string;
 
 beforeEach(async () => {
   cenario = criarCenario();
-  filas = new FilasFalsas();
-  app = await construirAppDeTeste(cenario, null, {
-    filasDeIngestao: filas,
-    chavesDeSegredo: chaves,
-  });
+  workerSsw = new WorkerSswFalso();
+  app = await construirAppDeTeste(cenario, null, { workerSsw, chavesDeSegredo: chaves });
   empresaId = cenario.banco.criarEmpresa().id;
   cenario.banco.liberarModulo(empresaId, "integracao_ssw");
   cenario.banco.definirCargo(empresaId, "admin", { rotulo: "Admin", telas: ["admin_ingestao"] });
@@ -116,7 +67,11 @@ describe("Admin › Ingestão SSW", () => {
     expect(r.statusCode).toBe(422);
   });
 
-  it("BI2 manual vai para a fila da empresa ativa e fica auditado", async () => {
+  it("BI2 manual: auditado antes do pedido ao worker-ssw, na empresa ativa", async () => {
+    let auditadoAntes = false;
+    workerSsw.aoPedir = () => {
+      auditadoAntes = cenario.banco.auditoria.some((a) => a.entidade === "bi2-0017");
+    };
     const r = await app.inject({
       method: "POST",
       url: "/api/v1/admin/ingestao/bi2-0017/rodar",
@@ -125,14 +80,72 @@ describe("Admin › Ingestão SSW", () => {
     });
     expect(r.statusCode).toBe(200);
     expect(r.json()).toEqual({ enfileirado: true, pendente: true, resultado: null });
-    expect(filas.enfileirados).toEqual([
+    expect(workerSsw.pedidos).toEqual([
       {
+        empresaId,
         job: "bi2-0017",
-        dados: { empresaId, modo: "manual", data: "2026-11-09", lookback: 0 },
-        deduplicar: null,
+        dados: { modo: "manual", data: "2026-11-09", lookback: 0 },
       },
     ]);
-    expect(cenario.banco.auditoria.at(-1)).toMatchObject({ entidade: "bi2-0017", empresaId });
+    expect(workerSsw.consultas).toEqual([{ job: "bi2-0017", execucaoId: "1", aguardarMs: 60_000 }]);
+    expect(auditadoAntes).toBe(true);
+  });
+
+  it("BI2 que falhou no worker-ssw: 409 com a mensagem dele", async () => {
+    workerSsw.execucao = { estado: "falhou", erro: "O SSW não respondeu." };
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/ingestao/bi2-0017/rodar",
+      headers: await plataforma(),
+      payload: { data: "2026-11-09" },
+    });
+    expect(r.statusCode).toBe(409);
+    expect(r.json()).toMatchObject({
+      erro: { mensagem: "O BI2 0017 falhou: O SSW não respondeu." },
+    });
+  });
+
+  it("testar conexão espera o resultado do verificar-token-ssw", async () => {
+    workerSsw.execucao = {
+      estado: "concluida",
+      resultado: {
+        ok: true,
+        renovado: true,
+        mensagem: "Token renovado.",
+        tipoFalha: null,
+        tokenPrevia: "abc",
+      },
+    };
+    const r = await app.inject({
+      method: "POST",
+      url: TESTAR,
+      headers: await plataforma(),
+    });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ ok: true, pendente: false, renovado: true });
+    expect(workerSsw.pedidos[0]).toMatchObject({
+      job: "verificar-token-ssw",
+      dados: { manual: true },
+    });
+    expect(workerSsw.consultas[0]?.aguardarMs).toBe(30_000);
+  });
+
+  it("sem o worker-ssw configurado: ações 503, leituras seguem", async () => {
+    await app.close();
+    app = await construirAppDeTeste(cenario, null, { chavesDeSegredo: chaves });
+    const headers = await plataforma();
+    const acao = await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/ingestao/bi2-0017/rodar",
+      headers,
+      payload: { data: "2026-11-09" },
+    });
+    expect(acao.statusCode).toBe(503);
+    expect(acao.json()).toMatchObject({
+      erro: { mensagem: "Integração com o worker do SSW não configurada." },
+    });
+    const leitura = await app.inject({ url: "/api/v1/admin/ingestao/bi2-0017", headers });
+    expect(leitura.statusCode).toBe(200);
   });
 
   it("salvar credenciais cifra a senha com o contexto da empresa e invalida o token", async () => {
@@ -145,7 +158,10 @@ describe("Admin › Ingestão SSW", () => {
     });
     expect(r.statusCode).toBe(200);
     expect(r.json()).toEqual({ tokenInvalidado: true });
-    expect(filas.esquecidos).toEqual([empresaId]);
+    // O token novo sai das credenciais novas: verificação forçada no worker-ssw.
+    expect(workerSsw.pedidos).toEqual([
+      { empresaId, job: "verificar-token-ssw", dados: { manual: true } },
+    ]);
 
     const gravada = cenario.banco.ingestao.integracoes.get(`${empresaId}:ssw_api`);
     expect(gravada?.parametros).toEqual({ dominio: "frt", usuario: "api" });
@@ -187,133 +203,33 @@ describe("Admin › Ingestão SSW", () => {
   });
 });
 
-describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
-  const URL = "/api/public/ssw-ocorrencias";
-  const EVENTO = {
-    cte: { numeroCTe: "123456" },
-    ocorrencia: { codigo: "1", dataHoraEvento: "09-11-2026 10:30:00" },
-    nf: { numeroNFe: "987" },
-  };
-
-  function cadastrarWebhook(ativa = true) {
-    cenario.banco.ingestao.empresasDoWebhook.push({
-      id: empresaId,
-      slug: "fr",
-      nome: "FR Transportes",
-      status: "ativa",
-      integracaoAtiva: ativa,
-      parametros: {},
-      segredo: cifrarSegredo(chaves, SEGREDO_WEBHOOK, contextoDoSegredo(empresaId, "ssw_webhook")),
-    });
-  }
-
-  it("GET informa como enviar", async () => {
-    const r = await app.inject({ url: URL });
+describe("Plataforma › Diagnóstico SSW", () => {
+  it("situação dos jobs vem do worker-ssw; fora do ar, a tela avisa", async () => {
+    workerSsw.situacaoDaEmpresa = {
+      jobs: [
+        {
+          job: "sincronizar-ftp",
+          estado: "rodando",
+          ultimaExecucao: "2026-11-10T11:59:00.000Z",
+          proximaExecucao: "2026-11-10T12:01:00.000Z",
+        },
+      ],
+    };
+    const headers = await plataforma();
+    const r = await app.inject({ url: DIAGNOSTICO, headers });
     expect(r.statusCode).toBe(200);
-    expect(r.headers["cache-control"]).toBe("no-store");
-    expect(r.json()).toMatchObject({ ok: true, metodo: "POST" });
-  });
-
-  it("401 sem autorização, sem gravar evento quando a empresa não é conhecida", async () => {
-    cadastrarWebhook();
-    const r = await app.inject({ method: "POST", url: URL, payload: EVENTO });
-    expect(r.statusCode).toBe(401);
-    expect(r.json()).toMatchObject([{ retorno: { codigo: 401, motivo: "autorizacao_ausente" } }]);
-    expect(cenario.banco.ingestao.eventos).toEqual([]);
-  });
-
-  it("segredo na query: grava o evento autenticado e enfileira o processamento", async () => {
-    cadastrarWebhook();
-    const r = await app.inject({
-      method: "POST",
-      url: `${URL}?secret=${SEGREDO_WEBHOOK}`,
-      headers: { "content-type": "application/json" },
-      payload: JSON.stringify(EVENTO),
+    const corpo = r.json<{ filasDisponiveis: boolean; jobs: { job: string }[] }>();
+    expect(corpo.filasDisponiveis).toBe(true);
+    expect(corpo.jobs.find((j) => j.job === "sincronizar-ftp")).toMatchObject({
+      agendado: true,
+      ativos: 1,
+      proximaExecucao: "2026-11-10T12:01:00.000Z",
     });
-    expect(r.statusCode).toBe(200);
-    expect(r.json()).toMatchObject([{ retorno: { codigo: 200 } }]);
-    const [evento] = cenario.banco.ingestao.eventos;
-    expect(evento).toMatchObject({ empresaId, autenticado: true, statusHttp: 200 });
-    expect(filas.enfileirados).toEqual([
-      {
-        job: "processar-webhook-ssw",
-        dados: expect.objectContaining({ empresaId, eventoId: evento?.id }) as unknown,
-        deduplicar: `ssw_webhook__${evento?.id ?? ""}`,
-      },
-    ]);
-    // O contexto da gravação é o da empresa do evento (RLS), e a busca da dona é da Plataforma.
-    expect(cenario.banco.contextos).toContainEqual({
-      empresaId,
-      usuarioId: null,
-      plataforma: false,
-    });
-  });
 
-  it("sem token válido, recusa antes de ler o corpo e não guarda o conteúdo", async () => {
-    cadastrarWebhook();
-    const r = await app.inject({
-      method: "POST",
-      url: `${URL}?empresa=fr`,
-      headers: { "content-type": "application/json" },
-      payload: "{nao é json",
-    });
-    expect(r.statusCode).toBe(401);
-    expect(r.json()).toMatchObject([{ retorno: { motivo: "autorizacao_ausente" } }]);
-    expect(cenario.banco.ingestao.eventos).toMatchObject([
-      { motivoRejeicao: "autorizacao_ausente", payloadBruto: null },
-    ]);
-  });
-
-  it("IP do evento é o request.ip: cabeçalho cf-connecting-ip forjado é ignorado", async () => {
-    cadastrarWebhook();
-    await app.inject({
-      method: "POST",
-      url: `${URL}?empresa=fr&secret=errado`,
-      headers: { "cf-connecting-ip": "203.0.113.9" },
-      payload: EVENTO,
-    });
-    expect(cenario.banco.ingestao.eventos[0]?.ip).toBe("127.0.0.1");
-  });
-
-  it("limite próprio e baixo para falhas: depois dele, 429 sem gravar nada", async () => {
-    cadastrarWebhook();
-    const tentar = () =>
-      app.inject({ method: "POST", url: `${URL}?empresa=fr&secret=errado`, payload: EVENTO });
-    for (let i = 0; i < LIMITE_DE_FALHAS_POR_MINUTO; i++)
-      expect((await tentar()).statusCode).toBe(401);
-    expect((await tentar()).statusCode).toBe(429);
-    expect(cenario.banco.ingestao.eventos).toHaveLength(LIMITE_DE_FALHAS_POR_MINUTO);
-    const valido = await app.inject({
-      method: "POST",
-      url: `${URL}?secret=${SEGREDO_WEBHOOK}`,
-      payload: EVENTO,
-    });
-    expect(valido.statusCode).toBe(200);
-  });
-
-  it("fila fora: 503 para o SSW reenviar, com o evento marcado", async () => {
-    cadastrarWebhook();
-    filas.falhar = true;
-    const r = await app.inject({
-      method: "POST",
-      url: URL,
-      headers: { authorization: `Bearer ${SEGREDO_WEBHOOK}` },
-      payload: EVENTO,
-    });
-    expect(r.statusCode).toBe(503);
-    expect(cenario.banco.ingestao.eventos[0]).toMatchObject({ statusHttp: 503 });
-  });
-
-  it("JSON inválido é recusado no formato do SSW", async () => {
-    cadastrarWebhook();
-    const r = await app.inject({
-      method: "POST",
-      url: URL,
-      headers: { "content-type": "application/json", authorization: `Bearer ${SEGREDO_WEBHOOK}` },
-      payload: "{nao é json",
-    });
-    expect(r.statusCode).toBe(400);
-    expect(r.json()).toMatchObject([{ retorno: { codigo: 400 } }]);
+    workerSsw.fora = true;
+    const fora = await app.inject({ url: DIAGNOSTICO, headers });
+    expect(fora.statusCode).toBe(200);
+    expect(fora.json()).toMatchObject({ filasDisponiveis: false });
   });
 });
 
@@ -342,10 +258,7 @@ describe("Reprocessar webhooks rejeitados por token", () => {
     const id = randomUUID();
     cenario.banco.ingestao.eventos.push({
       id,
-      empresaId,
       recebidoEm: new Date("2026-11-10T10:00:00Z"),
-      ip: "1.2.3.4",
-      userAgent: null,
       autenticado: false,
       motivoRejeicao: "token_incorreto",
       statusHttp: 401,
@@ -366,7 +279,7 @@ describe("Reprocessar webhooks rejeitados por token", () => {
 
     const r = await app.inject({ method: "POST", url: URL, headers: await plataforma() });
     expect(r.json()).toEqual({ total: 4, enfileirados: 2 });
-    const enviados = filas.enfileirados.map((e) => e.dados.eventoId);
+    const enviados = workerSsw.pedidos.map((p) => p.dados?.["eventoId"]);
     expect(enviados.sort()).toEqual([doAtual, doAnterior].sort());
     const evento = (id: string) => cenario.banco.ingestao.eventos.find((e) => e.id === id);
     expect(evento(doAtual)?.autenticado).toBe(true);
@@ -381,10 +294,10 @@ describe("Reprocessar webhooks rejeitados por token", () => {
     expect(umSo.statusCode).toBe(409);
   });
 
-  it("marca o reenvio antes de enfileirar: o worker que termina antes não fica pendente", async () => {
+  it("marca o reenvio antes de pedir: o worker-ssw que termina antes não fica pendente", async () => {
     configurarSegredos();
     const id = recusado([resumoDoSegredo(ATUAL)]);
-    filas.aoEnfileirar = () => {
+    workerSsw.aoPedir = () => {
       const e = cenario.banco.ingestao.eventos.find((x) => x.id === id);
       if (e) Object.assign(e, { statusHttp: 200, erroProcessamento: null });
     };
@@ -393,26 +306,5 @@ describe("Reprocessar webhooks rejeitados por token", () => {
       statusHttp: 200,
       erroProcessamento: null,
     });
-  });
-
-  it("recebimento guarda o SHA-256 do token, nunca o token", async () => {
-    cenario.banco.ingestao.empresasDoWebhook.push({
-      id: empresaId,
-      slug: "fr",
-      nome: "FR Transportes",
-      status: "ativa",
-      integracaoAtiva: true,
-      parametros: {},
-      segredo: cifrar(SEGREDO_WEBHOOK),
-    });
-    await app.inject({
-      method: "POST",
-      url: "/api/public/ssw-ocorrencias",
-      headers: { authorization: `Bearer ${SEGREDO_WEBHOOK}` },
-      payload: { cte: { numeroCTe: "1" }, ocorrencia: { codigo: "1" } },
-    });
-    const [evento] = cenario.banco.ingestao.eventos;
-    expect(JSON.stringify(evento)).not.toContain(SEGREDO_WEBHOOK);
-    expect(evento?.tokenSha256).toContain(resumoDoSegredo(SEGREDO_WEBHOOK));
   });
 });

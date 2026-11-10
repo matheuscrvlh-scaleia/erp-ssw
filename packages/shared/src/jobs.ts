@@ -1,8 +1,9 @@
 import { z } from "./zod";
 
 /**
- * Jobs que a API enfileira e o worker processa: o nome e a fila são o contrato entre os dois.
- * Escopo empresa: os dados levam `empresaId` e o worker roda no contexto (RLS) dela.
+ * Jobs do ERP que os módulos da API pedem e os workers do BullMQ no processo da API rodam (ADR
+ * 0012): o nome e a fila são o contrato entre os dois. Escopo empresa: os dados levam `empresaId`
+ * e o job roda no contexto (RLS) dela.
  */
 export const JOB_RECALCULAR_PRAZOS = {
   nome: "recalcular-prazos-configurados",
@@ -28,7 +29,6 @@ export const dadosDePropagarClassificacao = z.object({
   empresaId: z.uuid(),
   codigos: z.array(z.number().int().min(0).max(99)).min(1),
 });
-export type DadosDePropagarClassificacao = z.infer<typeof dadosDePropagarClassificacao>;
 
 /**
  * Recalcula pelo núcleo os CT-e que têm o código (numa ocorrência ou como efetiva), depois que a

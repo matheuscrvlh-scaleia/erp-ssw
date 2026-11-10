@@ -294,7 +294,7 @@ export async function obterDetalheDaColeta(
 }
 
 /**
- * Importação do 050 pela tela (a do FTP usa o mesmo caso de uso no worker).
+ * Importação do 050 pela tela (a do FTP é do worker-ssw).
  * origem: importar-050.server.ts + importar_coletas_050 (sistema atual)
  */
 export async function importarRelatorio050(

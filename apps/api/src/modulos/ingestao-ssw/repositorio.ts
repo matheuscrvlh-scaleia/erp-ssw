@@ -3,7 +3,6 @@ import {
   bi2Sincronizacoes,
   ctes,
   empresaIntegracoes,
-  empresas,
   ingestaoCiclos,
   sswWebhookEventos,
   xmlCteOrfaos,
@@ -207,63 +206,6 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
         .update(sswWebhookEventos)
         .set({ autenticado: true, erroProcessamento: "reenviado para processamento" })
         .where(eq(sswWebhookEventos.id, id));
-    },
-
-    empresasComWebhook: async () => {
-      const linhas = await tx
-        .select({
-          id: empresas.id,
-          slug: empresas.slug,
-          nome: empresas.nome,
-          status: empresas.status,
-          integracaoAtiva: empresaIntegracoes.ativo,
-          parametros: empresaIntegracoes.parametros,
-          segredoCifrado: empresaIntegracoes.segredoCifrado,
-          segredoVersaoChave: empresaIntegracoes.segredoVersaoChave,
-        })
-        .from(empresas)
-        .innerJoin(
-          empresaIntegracoes,
-          and(
-            eq(empresaIntegracoes.empresaId, empresas.id),
-            eq(empresaIntegracoes.tipo, "ssw_webhook"),
-          ),
-        )
-        .orderBy(empresas.criadoEm, empresas.id);
-      return linhas.map(({ segredoCifrado, segredoVersaoChave, ...e }) => ({
-        ...e,
-        segredo: segredoDaLinha(segredoCifrado, segredoVersaoChave),
-      }));
-    },
-
-    registrarEvento: async (e) => {
-      const [linha] = await tx
-        .insert(sswWebhookEventos)
-        .values({ ...e, payloadBruto: e.payloadBruto ?? null })
-        .returning({ id: sswWebhookEventos.id });
-      if (!linha) throw new Error("Gravação do evento do webhook não devolveu a linha.");
-      return linha.id;
-    },
-
-    quarentenaDesde: async (desde) => {
-      const [linha] = await tx
-        .select({ n: count() })
-        .from(sswWebhookEventos)
-        .where(
-          and(
-            eq(sswWebhookEventos.autenticado, false),
-            isNotNull(sswWebhookEventos.payloadBruto),
-            gte(sswWebhookEventos.recebidoEm, desde),
-          ),
-        );
-      return linha?.n ?? 0;
-    },
-
-    marcarEvento: async (eventoId, statusHttp, erro) => {
-      await tx
-        .update(sswWebhookEventos)
-        .set({ statusHttp, erroProcessamento: erro.slice(0, 2000) })
-        .where(eq(sswWebhookEventos.id, eventoId));
     },
   };
 }

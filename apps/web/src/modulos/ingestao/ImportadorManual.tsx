@@ -2,7 +2,7 @@
  * Importador manual de um relatório SSW: arquivo (latin-1) ou texto colado → "Processar" mostra a
  * prévia lida aqui no navegador (mesmo leitor do servidor) → "Gravar na staging".
  */
-import { lerRelatorio, type Relatorio } from "@erp/ingestao/relatorios";
+import { lerRelatorio, type Relatorio } from "@erp/dominio/ingestao/relatorios";
 import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, FileUp, Loader2 } from "lucide-react";

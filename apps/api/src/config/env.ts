@@ -62,6 +62,15 @@ const esquema = z
     SEGREDOS_CHAVES: z.string().optional(),
     /** Versão da chave usada para cifrar segredos novos. */
     SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+    /**
+     * Jobs do ERP no processo da API (ADR 0012): workers do BullMQ ligados nesta réplica. Os
+     * agendados (cron) só com `AGENDAMENTOS_LIGADOS` também.
+     */
+    JOBS_LIGADOS: booleano.default(false),
+    AGENDAMENTOS_LIGADOS: booleano.default(false),
+    /** HTTP interno do worker-ssw (rede interna do Docker) e o token de serviço dele. */
+    WORKER_SSW_URL: z.url().optional(),
+    WORKER_SSW_TOKEN: z.string().min(32).optional(),
     /** Transição da FR: credencial do Ahgora no ambiente (só com parametros.usar_env). */
     AHGORA_API_USUARIO: z.string().optional(),
     AHGORA_API_SENHA: z.string().optional(),
@@ -76,6 +85,15 @@ const esquema = z
     }
     if (env.NODE_ENV === "production" && !env.REDIS_URL) {
       ctx.addIssue({ code: "custom", message: "Em produção, REDIS_URL é obrigatório." });
+    }
+    if (env.JOBS_LIGADOS && !env.REDIS_URL) {
+      ctx.addIssue({ code: "custom", message: "JOBS_LIGADOS precisa de REDIS_URL." });
+    }
+    if (Boolean(env.WORKER_SSW_URL) !== Boolean(env.WORKER_SSW_TOKEN)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "worker-ssw: defina WORKER_SSW_URL e WORKER_SSW_TOKEN (os dois ou nenhum).",
+      });
     }
     const s3 = [env.S3_BUCKET, env.S3_CHAVE_ACESSO, env.S3_SEGREDO];
     if (s3.some(Boolean) && !s3.every(Boolean)) {

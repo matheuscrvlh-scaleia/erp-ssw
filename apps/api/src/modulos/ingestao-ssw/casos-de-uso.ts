@@ -1,9 +1,12 @@
 /**
  * Ingestão SSW na API: faixa de saúde da SSW API, Admin › Ingestão SSW (BI2 0017, credenciais,
- * eventos do webhook) e Plataforma › Diagnóstico SSW. O trabalho pesado é do worker: aqui só se
- * lê o que ele gravou, enfileira execuções manuais e grava credenciais.
+ * eventos do webhook) e Plataforma › Diagnóstico SSW. O trabalho é do worker-ssw (ADR 0012): aqui
+ * se lê o que ele gravou no banco, grava credenciais e pede execuções pelo HTTP interno dele (a
+ * auditoria fica no ERP, gravada antes do pedido).
  * Especificação: docs/regras/06-ingestao.md §3.15–§3.18, §5.
  */
+import { createHash } from "node:crypto";
+
 import { contextoDoSegredo, type SegredoCifrado } from "@erp/db/segredos";
 import { saudeDaIntegracaoSsw, TTL_DO_TOKEN_MS } from "@erp/dominio/ingestao/ssw-api";
 import { type EntradaDe, type SaidaDe } from "@erp/shared/contrato";
@@ -17,16 +20,12 @@ import {
   sincronizacaoBi2,
   type StatusDoJob,
 } from "@erp/shared/contratos/ingestao-ssw";
-import {
-  type FilasDeIngestao,
-  type IntegracaoDaIngestao,
-  JOBS_DE_INGESTAO,
-} from "@erp/shared/ingestao";
+import { type IntegracaoDaIngestao, JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
 
 import { conflito, naoEncontrado } from "../../http/erros";
+import { type ClienteWorkerSsw, exigirWorkerSsw } from "../../infra/worker-ssw";
 import { type Executor } from "../../repositorios";
 import { type Ator } from "../auditoria/auditoria";
-import { type EmpresaDoWebhook, type EventoRecebido, resumoDoSegredo } from "./webhook";
 
 // --- Portas -----------------------------------------------------------------------------------
 
@@ -90,18 +89,7 @@ export interface RepositorioIngestaoSsw {
    * autenticado: só chega aqui o que passou pela conferência do token.
    */
   marcarReprocesso(id: string): Promise<void>;
-  // Recepção do webhook (rota pública).
-  /** Todas as empresas com a integração do webhook (contexto da Plataforma). */
-  empresasComWebhook(): Promise<EmpresaDoWebhook[]>;
-  /** Grava o evento recebido (contexto da empresa do evento). */
-  registrarEvento(evento: EventoRecebido): Promise<string>;
-  /** Eventos não autenticados com conteúdo guardado desde o instante (teto da quarentena). */
-  quarentenaDesde(desde: Date): Promise<number>;
-  marcarEvento(eventoId: string, statusHttp: number, erro: string): Promise<void>;
 }
-
-/** Filas do BullMQ e o token da SSW API no Redis. Nulo = API sem Redis (desenvolvimento). */
-export type { FilasDeIngestao, ResultadoDaExecucao, StatusDaFila } from "@erp/shared/ingestao";
 
 export interface CifradorDeSegredos {
   cifrar(textoPuro: string, contexto: string): SegredoCifrado;
@@ -110,7 +98,8 @@ export interface CifradorDeSegredos {
 }
 
 export interface DependenciasIngestaoSsw {
-  filas: FilasDeIngestao | null;
+  /** Nulo = `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` não configurados: as ações respondem 503. */
+  workerSsw: ClienteWorkerSsw | null;
   cifrador: CifradorDeSegredos | null;
   agora: () => Date;
 }
@@ -123,11 +112,26 @@ const DIA_MS = 24 * 3_600_000;
 
 const iso = (d: Date | null) => (d === null ? null : d.toISOString());
 
-function filasOuErro(filas: FilasDeIngestao | null): FilasDeIngestao {
-  if (filas === null) {
-    throw conflito("A fila de processamento não está disponível. Tente de novo em instantes.");
+/** SHA-256 em hex: o que o worker-ssw guarda da credencial recebida e o que o reprocesso compara. */
+export function resumoDoSegredo(texto: string): string {
+  return createHash("sha256").update(texto, "utf8").digest("hex");
+}
+
+/**
+ * Quando o token da SSW API foi gerado (situação do worker-ssw). É leitura: worker-ssw fora ou não
+ * configurado = token desconhecido, e a tela continua.
+ */
+async function tokenSswGeradoEm(
+  deps: DependenciasIngestaoSsw,
+  empresaId: string,
+): Promise<Date | null> {
+  if (deps.workerSsw === null) return null;
+  try {
+    const { tokenSswGeradoEm: em } = await deps.workerSsw.situacao(empresaId);
+    return em ? new Date(em) : null;
+  } catch {
+    return null;
   }
-  return filas;
 }
 
 function texto(parametros: Record<string, unknown>, chave: string): string {
@@ -145,7 +149,7 @@ export async function saudeSsw(
 ): Promise<SaidaDe<typeof contratosIngestaoSsw.saude>> {
   const integracao = await db(({ ingestaoSsw }) => ingestaoSsw.integracao(empresaId, "ssw_api"));
   const ativa = integracao?.ativo ?? false;
-  const tokenGeradoEm = ativa && deps.filas ? await deps.filas.tokenSswGeradoEm(empresaId) : null;
+  const tokenGeradoEm = ativa ? await tokenSswGeradoEm(deps, empresaId) : null;
   const p = integracao?.parametros ?? {};
   const s = saudeDaIntegracaoSsw({
     ativa,
@@ -193,12 +197,7 @@ export async function rodarBi2(
   empresaId: string,
   data: string,
 ): Promise<SaidaDe<typeof contratosIngestaoSsw.rodarBi2>> {
-  const filas = filasOuErro(deps.filas);
-  const jobId = await filas.enfileirar(
-    "bi2-0017",
-    { empresaId, modo: "manual", data, lookback: 0 },
-    { deduplicar: null },
-  );
+  const workerSsw = exigirWorkerSsw(deps.workerSsw);
   await db(({ auditoria }) =>
     auditoria.registrar(ator, {
       empresaId,
@@ -210,9 +209,14 @@ export async function rodarBi2(
       depois: null,
     }),
   );
-  const fim = await filas.aguardar("bi2-0017", jobId, PRAZO_DO_BI2_MS);
-  if (fim.tipo === "falhou") throw conflito(`O BI2 0017 falhou: ${fim.erro}`);
-  if (fim.tipo === "pendente") return { enfileirado: true, pendente: true, resultado: null };
+  const execucaoId = await workerSsw.pedirExecucao(empresaId, {
+    job: "bi2-0017",
+    dados: { modo: "manual", data, lookback: 0 },
+  });
+  if (execucaoId === null) return { enfileirado: true, pendente: true, resultado: null };
+  const fim = await workerSsw.consultarExecucao("bi2-0017", execucaoId, PRAZO_DO_BI2_MS);
+  if (fim.estado === "falhou") throw conflito(`O BI2 0017 falhou: ${fim.erro ?? "erro"}`);
+  if (fim.estado !== "concluida") return { enfileirado: true, pendente: true, resultado: null };
   const ultima = (await db(({ ingestaoSsw }) => ingestaoSsw.sincronizacoesBi2("17", 1)))[0];
   return {
     enfileirado: true,
@@ -230,7 +234,7 @@ export async function credenciaisSsw(
 ): Promise<SaidaDe<typeof contratosIngestaoSsw.credenciais>> {
   const integracao = await db(({ ingestaoSsw }) => ingestaoSsw.integracao(empresaId, "ssw_api"));
   const p = integracao?.parametros ?? {};
-  const geradoEm = deps.filas ? await deps.filas.tokenSswGeradoEm(empresaId) : null;
+  const geradoEm = await tokenSswGeradoEm(deps, empresaId);
   const expiraEm = geradoEm === null ? null : new Date(geradoEm.getTime() + TTL_DO_TOKEN_MS);
   const tokenStatus =
     expiraEm === null ? "ausente" : expiraEm > deps.agora() ? "valido" : "expirado";
@@ -257,8 +261,9 @@ export async function credenciaisSsw(
 }
 
 /**
- * Campos vazios são ignorados (a senha só muda quando vem). Mudou o que autentica: o token
- * guardado deixa de valer e o próximo heartbeat gera outro.
+ * Campos vazios são ignorados (a senha só muda quando vem). Mudou o que autentica: pede ao
+ * worker-ssw a verificação forçada, que gera o token com as credenciais novas (sem o worker-ssw,
+ * o token antigo vale até vencer e o heartbeat agendado gera o novo).
  * origem: setSswCredentials (sistema atual)
  */
 export async function salvarCredenciaisSsw(
@@ -321,7 +326,11 @@ export async function salvarCredenciaisSsw(
       ["dominio", "usuario", "cnpj_edi"].some((c) => texto(antes, c) !== texto(parametros, c))
     );
   });
-  if (tokenInvalidado) await deps.filas?.esquecerTokenSsw(empresaId);
+  if (tokenInvalidado && deps.workerSsw) {
+    await deps.workerSsw
+      .pedirExecucao(empresaId, { job: "verificar-token-ssw", dados: { manual: true } })
+      .catch(() => null);
+  }
   return { tokenInvalidado };
 }
 
@@ -330,14 +339,16 @@ export async function testarConexaoSsw(
   deps: DependenciasIngestaoSsw,
   empresaId: string,
 ): Promise<ResultadoDoTesteSsw> {
-  const filas = filasOuErro(deps.filas);
-  const jobId = await filas.enfileirar(
-    "verificar-token-ssw",
-    { empresaId, manual: true },
-    { deduplicar: null },
-  );
-  const fim = await filas.aguardar("verificar-token-ssw", jobId, PRAZO_DO_TESTE_MS);
-  if (fim.tipo === "pendente") {
+  const workerSsw = exigirWorkerSsw(deps.workerSsw);
+  const execucaoId = await workerSsw.pedirExecucao(empresaId, {
+    job: "verificar-token-ssw",
+    dados: { manual: true },
+  });
+  const fim =
+    execucaoId === null
+      ? null
+      : await workerSsw.consultarExecucao("verificar-token-ssw", execucaoId, PRAZO_DO_TESTE_MS);
+  if (fim === null || fim.estado === "na_fila" || fim.estado === "rodando") {
     return {
       ok: false,
       pendente: true,
@@ -347,17 +358,17 @@ export async function testarConexaoSsw(
       tokenPrevia: null,
     };
   }
-  if (fim.tipo === "falhou") {
+  if (fim.estado === "falhou") {
     return {
       ok: false,
       pendente: false,
       renovado: false,
-      mensagem: fim.erro,
+      mensagem: fim.erro ?? "O teste falhou. Tente de novo.",
       tipoFalha: null,
       tokenPrevia: null,
     };
   }
-  const lido = resultadoDoTesteSsw.omit({ pendente: true }).safeParse(fim.valor);
+  const lido = resultadoDoTesteSsw.omit({ pendente: true }).safeParse(fim.resultado);
   if (!lido.success) throw conflito("O teste devolveu uma resposta inesperada. Tente de novo.");
   return { ...lido.data, pendente: false };
 }
@@ -390,7 +401,7 @@ export async function reprocessarEvento(
   empresaId: string,
   id: string,
 ): Promise<{ enfileirado: boolean }> {
-  const filas = filasOuErro(deps.filas);
+  const workerSsw = exigirWorkerSsw(deps.workerSsw);
   const evento = await db(({ ingestaoSsw }) => ingestaoSsw.evento(id));
   if (evento === null) throw naoEncontrado("Evento não encontrado.");
   if (!evento.temPayload) throw conflito("Este evento não guardou o conteúdo recebido.");
@@ -414,7 +425,7 @@ export async function reprocessarEvento(
       depois: null,
     });
   });
-  await enfileirarEvento(filas, empresaId, id);
+  await pedirProcessamento(workerSsw, empresaId, id);
   return { enfileirado: true };
 }
 
@@ -429,7 +440,7 @@ export async function reprocessarTokenIncorreto(
   ator: Ator,
   empresaId: string,
 ): Promise<{ total: number; enfileirados: number }> {
-  const filas = filasOuErro(deps.filas);
+  const workerSsw = exigirWorkerSsw(deps.workerSsw);
   const aceitos = await resumosAceitos(db, deps, empresaId);
   const eventos = await db(({ ingestaoSsw }) =>
     ingestaoSsw.eventosComMotivo("token_incorreto", 1000),
@@ -449,7 +460,7 @@ export async function reprocessarTokenIncorreto(
       depois: null,
     });
   });
-  for (const id of ids) await enfileirarEvento(filas, empresaId, id);
+  for (const id of ids) await pedirProcessamento(workerSsw, empresaId, id);
   return { total: eventos.length, enfileirados: ids.length };
 }
 
@@ -483,21 +494,35 @@ function assinadoPorSegredoConhecido(
   return (resumosDoEvento ?? []).some((r) => aceitos.has(r));
 }
 
-/** Protocolo do reprocesso: novo, para não colidir com o da ocorrência gravada antes. */
-export async function enfileirarEvento(
-  filas: FilasDeIngestao,
+/**
+ * Protocolo do reprocesso: novo, para não colidir com o da ocorrência gravada antes. O worker-ssw
+ * descarta o pedido repetido enquanto o do mesmo evento está na fila.
+ */
+async function pedirProcessamento(
+  workerSsw: ClienteWorkerSsw,
   empresaId: string,
   eventoId: string,
 ) {
   const protocolo = `r${Date.now().toString(36)}`.slice(0, 16);
-  await filas.enfileirar(
-    "processar-webhook-ssw",
-    { empresaId, eventoId, protocolo },
-    { deduplicar: `ssw_webhook__${eventoId}` },
-  );
+  await workerSsw.pedirExecucao(empresaId, {
+    job: "processar-webhook-ssw",
+    dados: { eventoId, protocolo },
+    deduplicar: `ssw_webhook__${eventoId}`,
+  });
 }
 
 // --- Diagnóstico ------------------------------------------------------------------------------
+
+/** Situação dos jobs pelo worker-ssw; `null` = não configurado ou fora (a tela avisa). */
+async function situacaoDosJobs(deps: DependenciasIngestaoSsw, empresaId: string) {
+  if (deps.workerSsw === null) return null;
+  try {
+    const { jobs } = await deps.workerSsw.situacao(empresaId);
+    return new Map(jobs.map((j) => [j.job, j]));
+  } catch {
+    return null;
+  }
+}
 
 export async function diagnosticoSsw(
   db: Db,
@@ -521,27 +546,28 @@ export async function diagnosticoSsw(
       xml: await ingestaoSsw.xmlOrfaos(),
     };
   });
-  const jobs: StatusDoJob[] = [];
-  for (const j of JOBS_DE_INGESTAO) {
-    const s = deps.filas ? await deps.filas.status(j.job, empresaId) : null;
-    jobs.push({
+  // O worker-ssw informa o estado da última execução de cada job (ADR 0012, `/situacao`).
+  const situacao = await situacaoDosJobs(deps, empresaId);
+  const jobs: StatusDoJob[] = JOBS_DE_INGESTAO.map((j) => {
+    const s = situacao?.get(j.job);
+    return {
       job: j.job,
       descricao: j.descricao,
       integracao: j.integracao,
       cron: j.cron,
       integracaoLigada: dados.ligadas.get(j.integracao) ?? false,
-      agendado: s?.agendado ?? false,
-      proximaExecucao: iso(s?.proximaExecucao ?? null),
-      aguardando: s?.aguardando ?? 0,
-      ativos: s?.ativos ?? 0,
-      atrasados: s?.atrasados ?? 0,
-      falhos: s?.falhos ?? 0,
-      ultimaConclusao: iso(s?.ultimaConclusao ?? null),
-      ultimasFalhas: (s?.ultimasFalhas ?? []).map((f) => ({ ...f, quando: iso(f.quando) })),
-    });
-  }
+      agendado: s?.proximaExecucao !== undefined,
+      proximaExecucao: s?.proximaExecucao ?? null,
+      aguardando: s?.estado === "na_fila" ? 1 : 0,
+      ativos: s?.estado === "rodando" ? 1 : 0,
+      atrasados: 0,
+      falhos: s?.estado === "falhou" ? 1 : 0,
+      ultimaConclusao: s?.estado === "concluida" ? (s.ultimaExecucao ?? null) : null,
+      ultimasFalhas: [],
+    };
+  });
   return {
-    filasDisponiveis: deps.filas !== null,
+    filasDisponiveis: situacao !== null,
     jobs,
     sincronizacoes: dados.sincronizacoes.map(paraSaida),
     webhook: {

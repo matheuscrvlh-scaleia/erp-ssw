@@ -33,6 +33,8 @@ import { type RepositorioFiltros } from "./modulos/filtros/casos-de-uso";
 import { criarRepositorioFiltros } from "./modulos/filtros/repositorio";
 import { type RepositorioHistorico } from "./modulos/historico/casos-de-uso";
 import { criarRepositorioHistorico } from "./modulos/historico/repositorio";
+import { type RepositorioIngestao } from "./modulos/ingestao/casos-de-uso";
+import { criarRepositorioIngestao } from "./modulos/ingestao/repositorio";
 import { type RepositorioIngestaoSsw } from "./modulos/ingestao-ssw/casos-de-uso";
 import { criarRepositorioIngestaoSsw } from "./modulos/ingestao-ssw/repositorio";
 import { type RepositorioListagem } from "./modulos/listagem/casos-de-uso";
@@ -69,6 +71,7 @@ export interface Repositorios {
   calendario: RepositorioCalendario;
   prazoParceiro: RepositorioPrazoParceiro;
   romaneio: RepositorioRomaneio;
+  ingestao: RepositorioIngestao;
   ingestaoSsw: RepositorioIngestaoSsw;
   codigosOcorrencia: RepositorioCodigosOcorrencia;
   coletas: RepositorioColetas;
@@ -111,6 +114,7 @@ export function criarRepositorios(
     calendario: criarRepositorioCalendario(tx),
     prazoParceiro: criarRepositorioPrazoParceiro(tx, daEmpresa),
     romaneio: criarRepositorioRomaneio(tx, daEmpresa),
+    ingestao: criarRepositorioIngestao(tx),
     ingestaoSsw: criarRepositorioIngestaoSsw(tx),
     codigosOcorrencia: criarRepositorioCodigosOcorrencia(tx),
     coletas: criarRepositorioColetas(tx),
