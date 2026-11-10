@@ -26,9 +26,7 @@ export class ProjecoesFalsas implements RepositorioProjecoesRomaneio {
       saidas: new Map(doEstado.map(([k, p]) => [k, p.saidas])),
       atuais: new Map(doEstado.flatMap(([k, p]) => (p.atual ? [[k, p.atual]] : []))),
       dados: new Map(doEstado.flatMap(([k, p]) => (p.dados ? [[k, p.dados]] : []))),
-      conferentes: new Map(
-        doEstado.flatMap(([k, p]) => (p.conferente ? [[k, p.conferente]] : [])),
-      ),
+      conferentes: new Map(doEstado.flatMap(([k, p]) => (p.conferente ? [[k, p.conferente]] : []))),
     });
   };
 

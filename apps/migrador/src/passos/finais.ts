@@ -1,5 +1,5 @@
 import { type PassoFinal } from "../motor/executar";
-import { passoDasProjecoes,type ProjecoesNoDestino } from "./projecoes";
+import { passoDasProjecoes, type ProjecoesNoDestino } from "./projecoes";
 import { conferirColunasCalculadas } from "./recalculo";
 
 /** Passos depois de todas as tabelas: projeções do Romaneio e conferência dos derivados. */

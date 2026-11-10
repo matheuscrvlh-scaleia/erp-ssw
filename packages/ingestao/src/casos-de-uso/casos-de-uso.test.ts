@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { CABECALHO_930 } from "../relatorios";
 import { EMPRESA } from "../testes/cte";
-import { r036 } from "../testes/registros";
 import {
   enfileiradorFalso,
   estadoFalso,
@@ -10,6 +9,7 @@ import {
   filaFalsa,
   travasFalsas,
 } from "../testes/falsos";
+import { r036 } from "../testes/registros";
 import { aplicarBloco, prepararFila } from "./aplicar";
 import { aplicarCiclo, descartarCiclo, rodarCiclos } from "./ciclo";
 import { decidirEmpresa } from "./empresa";
@@ -215,9 +215,7 @@ describe("ciclo automático", () => {
       status: "aplicado",
       aplicadoEm: s.agora,
     });
-    await expect(descartarCiclo(deps, "x", "teste")).rejects.toThrow(
-      /já foi aplicado/,
-    );
+    await expect(descartarCiclo(deps, "x", "teste")).rejects.toThrow(/já foi aplicado/);
   });
 });
 

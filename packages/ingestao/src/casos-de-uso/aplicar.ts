@@ -351,15 +351,9 @@ export async function aplicarChaves(
     const campos: CamposDoCte = p.prod ? { ...p.campos } : {};
     const entrega = entregaDoEstorno.get(cte.id);
     if (entrega !== undefined) campos.dataEntregaRealizada = entrega;
-    const res = await regravarCte(
-      r,
-      cad,
-      cte,
-      campos,
-      ocorrencias.get(cte.id) ?? [],
-      agora,
-      { ajustar: (final) => ({ camposSsw: camposSswDoCte(final, p.cand) }) },
-    );
+    const res = await regravarCte(r, cad, cte, campos, ocorrencias.get(cte.id) ?? [], agora, {
+      ajustar: (final) => ({ camposSsw: camposSswDoCte(final, p.cand) }),
+    });
     if (res.tipo === "descartado") ignorados.push({ chave: p.chave, motivo: res.motivo });
     if (res.tipo === "gravado" && p.prod) atualizados++;
     if (res.tipo === "gravado" || !p.prod) mudaram.push(p.chave);

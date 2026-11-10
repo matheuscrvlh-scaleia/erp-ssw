@@ -342,7 +342,10 @@ const RELATORIOS_DAS_PROJECOES: ReadonlySet<string> = new Set(["036", "306", "03
 
 /** Agrupa por CT-e o que as linhas apagadas trouxeram para as projeções do Romaneio. */
 function descartadasPorCte(apagadas: readonly LinhaApagada[]): LinhasDescartadas[] {
-  const porCte = new Map<string, { sigla: string; numero: string; r: Set<string>; rom: Set<string>; dias: Set<string> }>();
+  const porCte = new Map<
+    string,
+    { sigla: string; numero: string; r: Set<string>; rom: Set<string>; dias: Set<string> }
+  >();
   for (const l of apagadas) {
     if (!RELATORIOS_DAS_PROJECOES.has(l.relatorio) || l.sigla === null || l.numero === null) {
       continue;

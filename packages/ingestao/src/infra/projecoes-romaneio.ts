@@ -159,10 +159,7 @@ export function criarRepositorioProjecoesRomaneio(
         tx.select().from(romaneioSaidasCte).where(dasChaves(romaneioSaidasCte, chaves)),
         tx.select().from(romaneioCteAtual).where(dasChaves(romaneioCteAtual, chaves)),
         tx.select().from(cteDadosRelatorios).where(dasChaves(cteDadosRelatorios, chaves)),
-        tx
-          .select()
-          .from(romaneioConferenteCte)
-          .where(dasChaves(romaneioConferenteCte, chaves)),
+        tx.select().from(romaneioConferenteCte).where(dasChaves(romaneioConferenteCte, chaves)),
       ]);
       return {
         viagens: agrupar(viagens, (r): ViagemProjetada => ({
@@ -184,7 +181,10 @@ export function criarRepositorioProjecoesRomaneio(
         atuais: new Map(atuais.map((r) => [chaveDoCte(r), atualDaLinha(r)])),
         dados: new Map(dados.map((r) => [chaveDoCte(r), dadosDaLinha(r)])),
         conferentes: new Map(
-          conferentes.map((r) => [chaveDoCte(r), { conferente: r.conferente, romaneio: r.romaneio }]),
+          conferentes.map((r) => [
+            chaveDoCte(r),
+            { conferente: r.conferente, romaneio: r.romaneio },
+          ]),
         ),
       };
     },
