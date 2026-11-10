@@ -3,9 +3,14 @@
 Consolidado em 10/11/2026 a partir das dúvidas das especificações (`docs/regras/00` a `06`) e das
 pendências de `docs/dados/modelo.md`. Perguntas repetidas entre as especificações viraram uma só.
 
-**Regra enquanto não houver resposta:** o sistema novo faz **igual ao de hoje**, inclusive nos
-pontos estranhos, para o usuário não notar diferença. A única exceção é falha de segurança (Q28 e
-Q29), que já sai corrigida. Cada item diz o que acontece até a decisão.
+> **DECIDIDO em 10/11/2026:** o dono delegou ("faça o que achar melhor em cada uma das opções").
+> **Vale a RECOMENDAÇÃO de cada item, de Q01 a Q55.** O texto "o que o sistema novo faz até a
+> resposta" abaixo fica só como histórico do comportamento atual. Toda mudança de número em relação
+> ao sistema atual que decorre dessas decisões vai listada em `docs/mudancas-visiveis.md` (para
+> avisar os usuários na virada e para a comparação lado a lado — Q52).
+
+Regra antiga (antes da decisão): o sistema novo fazia **igual ao de hoje**, salvo falha de segurança
+(Q28 e Q29).
 
 Os exemplos marcados "ilustrativo" mostram o tipo de efeito; os números não foram medidos.
 
