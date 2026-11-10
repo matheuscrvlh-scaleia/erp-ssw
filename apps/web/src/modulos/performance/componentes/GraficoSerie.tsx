@@ -1,32 +1,33 @@
-import { type MetricaDaSerie, valorDaMetrica } from "@erp/dominio/performance/serie";
+import { valorDaMetrica } from "@erp/dominio/performance/serie";
 import { type Granularidade, type PontoSerie } from "@erp/shared/contratos/performance";
 import { useState } from "react";
+
+import { GraficoLinha } from "@/componentes/comum/Graficos";
 
 import { fmtInt } from "../formato";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-const DEFINICAO: Record<
-  "sla_op" | "sla_cli" | "volume",
-  { rotulo: string; pct: boolean; detalhe: (p: PontoSerie) => string }
-> = {
+const DEFINICAO = {
   sla_op: {
     rotulo: "SLA Operacional",
     pct: true,
-    detalhe: (p) => `${fmtInt(p.totalCtrcs)} emitidos · ${fmtInt(p.foraPrazoOp)} fora do prazo`,
+    detalhe: (p: PontoSerie) =>
+      `${fmtInt(p.totalCtrcs)} emitidos · ${fmtInt(p.foraPrazoOp)} fora do prazo`,
   },
   sla_cli: {
     rotulo: "SLA Cliente",
     pct: true,
-    detalhe: (p) => `${fmtInt(p.noPrazoCli)} no prazo · ${fmtInt(p.foraPrazoCli)} fora`,
+    detalhe: (p: PontoSerie) => `${fmtInt(p.noPrazoCli)} no prazo · ${fmtInt(p.foraPrazoCli)} fora`,
   },
   volume: {
     rotulo: "CT-e emitidos",
     pct: false,
-    detalhe: (p) => `${fmtInt(p.entregue)} entregues`,
+    detalhe: (p: PontoSerie) => `${fmtInt(p.entregue)} entregues`,
   },
-};
+} as const;
 type Metrica = keyof typeof DEFINICAO;
+const METRICAS = Object.keys(DEFINICAO) as Metrica[];
 
 export function rotuloDoPeriodo(iso: string, g: Granularidade, longo = false): string {
   const [ano = "", mes = "", dia = ""] = iso.split("-");
@@ -35,14 +36,7 @@ export function rotuloDoPeriodo(iso: string, g: Granularidade, longo = false): s
   return longo ? `${dia}/${mes}/${ano}` : `${dia}/${mes}`;
 }
 
-const L = 640;
-const A = 220;
-const MARGEM = { esq: 40, dir: 8, topo: 10, base: 22 };
-
-/**
- * Evolução dia a dia ou mês a mês (SLA Op., SLA Cliente ou volume), com a meta tracejada.
- * TODO(kit-ui): trocar pelo gráfico de linha do kit quando chegar à main.
- */
+/** Evolução dia a dia ou mês a mês (SLA Op., SLA Cliente ou volume), com a meta tracejada. */
 export function GraficoSerie({
   titulo,
   subtitulo,
@@ -56,36 +50,21 @@ export function GraficoSerie({
   subtitulo: string;
   pontos: readonly PontoSerie[] | undefined;
   granularidade: Granularidade;
+  /** Fração 0–1. */
   meta: number;
   carregando: boolean;
   erro: Error | null;
 }) {
   const [metrica, setMetrica] = useState<Metrica>("sla_op");
-  const [foco, setFoco] = useState<number | null>(null);
   const def = DEFINICAO[metrica];
-  const dados = (pontos ?? []).map((p) => {
-    const v = valorDaMetrica(metrica satisfies MetricaDaSerie, p);
-    return { p, v: v == null ? null : def.pct ? v * 100 : v };
-  });
-  const valores = dados.flatMap((d) => (d.v == null ? [] : [d.v]));
-  const piso = def.pct
-    ? Math.max(0, Math.floor(Math.min(...valores, meta * 100, 100) / 5) * 5 - 5)
-    : 0;
-  const teto = def.pct ? 100 : Math.max(1, ...valores);
-  const largura = L - MARGEM.esq - MARGEM.dir;
-  const altura = A - MARGEM.topo - MARGEM.base;
-  const x = (i: number) =>
-    MARGEM.esq + (dados.length <= 1 ? largura / 2 : (i / (dados.length - 1)) * largura);
-  const y = (v: number) => MARGEM.topo + altura - ((v - piso) / (teto - piso || 1)) * altura;
-  const trechos: string[] = [];
-  dados.forEach((d, i) => {
-    if (d.v == null) return;
-    const anterior = dados[i - 1];
-    trechos.push(`${anterior?.v == null ? "M" : "L"}${x(i).toFixed(1)},${y(d.v).toFixed(1)}`);
-  });
-  const passoRotulo = Math.max(1, Math.ceil(dados.length / 10));
-  const focado = foco == null ? null : dados[foco];
-
+  const dados = (pontos ?? []).map((p) => ({
+    ponto: p,
+    rotulo: rotuloDoPeriodo(p.periodo, granularidade),
+    valor: valorDaMetrica(metrica, p),
+  }));
+  const valores = dados.flatMap((d) => (d.valor == null ? [] : [d.valor]));
+  // Eixo do percentual começa 5 p.p. abaixo do menor valor (ou da meta), em degraus de 5.
+  const piso = Math.max(0, Math.floor(Math.min(...valores, meta, 1) * 20) / 20 - 0.05);
   return (
     <section className="rounded-[10px] border border-border/70 bg-card">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3.5">
@@ -94,10 +73,12 @@ export function GraficoSerie({
           <p className="text-[11px] text-muted-foreground">{subtitulo}</p>
         </div>
         <div className="flex rounded-md border border-border/70 p-0.5">
-          {(Object.keys(DEFINICAO) as Metrica[]).map((m) => (
+          {METRICAS.map((m) => (
             <button
               key={m}
-              onClick={() => { setMetrica(m); }}
+              onClick={() => {
+                setMetrica(m);
+              }}
               className={
                 "rounded-[5px] px-3 py-1 text-[12px] transition-colors " +
                 (metrica === m
@@ -110,104 +91,39 @@ export function GraficoSerie({
           ))}
         </div>
       </header>
-      <div className="relative h-[260px] p-4">
-        {erro ? (
-          <div className="flex h-full items-center justify-center px-4 text-center text-[12px] text-destructive">
-            {erro.message}
-          </div>
-        ) : carregando && !pontos ? (
-          <div className="flex h-full items-center justify-center text-[12px] text-muted-foreground">
-            Carregando…
-          </div>
-        ) : valores.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-[12px] text-muted-foreground">
-            Sem CTRCs no período.
-          </div>
-        ) : (
-          <svg
-            viewBox={`0 0 ${L} ${A}`}
-            className="h-full w-full"
-            role="img"
-            aria-label={`${def.rotulo} por ${granularidade === "mes" ? "mês" : "dia"}`}
-            onMouseLeave={() => { setFoco(null); }}
-          >
-            {[piso, (piso + teto) / 2, teto].map((v) => (
-              <g key={v}>
-                <line
-                  x1={MARGEM.esq}
-                  x2={L - MARGEM.dir}
-                  y1={y(v)}
-                  y2={y(v)}
-                  stroke="var(--border)"
-                />
-                <text
-                  x={MARGEM.esq - 4}
-                  y={y(v) + 3}
-                  textAnchor="end"
-                  fontSize="10"
-                  fill="var(--muted-foreground)"
-                >
-                  {def.pct ? `${Math.round(v)}%` : fmtInt(Math.round(v))}
-                </text>
-              </g>
-            ))}
-            {def.pct && (
-              <line
-                x1={MARGEM.esq}
-                x2={L - MARGEM.dir}
-                y1={y(meta * 100)}
-                y2={y(meta * 100)}
-                stroke="var(--status-good)"
-                strokeDasharray="4 4"
-              />
-            )}
-            <path d={trechos.join(" ")} fill="none" stroke="var(--brand)" strokeWidth="2" />
-            {dados.map((d, i) => (
-              <g key={d.p.periodo} onMouseEnter={() => { setFoco(i); }}>
-                <rect
-                  x={x(i) - largura / Math.max(1, dados.length) / 2}
-                  y={MARGEM.topo}
-                  width={largura / Math.max(1, dados.length)}
-                  height={altura}
-                  fill="transparent"
-                />
-                {d.v != null && (
-                  <circle cx={x(i)} cy={y(d.v)} r={foco === i ? 4 : 2.5} fill="var(--brand)" />
-                )}
-                {i % passoRotulo === 0 && (
-                  <text
-                    x={x(i)}
-                    y={A - 6}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fill="var(--muted-foreground)"
-                  >
-                    {rotuloDoPeriodo(d.p.periodo, granularidade)}
-                  </text>
-                )}
-              </g>
-            ))}
-          </svg>
-        )}
-        {focado && (
-          <div className="pointer-events-none absolute top-4 right-4 rounded-lg border border-border bg-card px-3 py-2 text-[12px] shadow-sm">
+      <GraficoLinha
+        descricao={`${def.rotulo} por ${granularidade === "mes" ? "mês" : "dia"}`}
+        dados={dados}
+        eixoX="rotulo"
+        series={[{ chave: "valor", nome: def.rotulo }]}
+        formato={def.pct ? "percentual" : "inteiro"}
+        dominioY={def.pct ? [piso, 1] : undefined}
+        meta={
+          def.pct
+            ? { valor: meta, rotulo: `meta ${(meta * 100).toFixed(1).replace(".", ",")}%` }
+            : undefined
+        }
+        dica={(d) => (
+          <div className="rounded-lg border border-border bg-card px-3 py-2 text-[12px] shadow-sm">
             <div className="font-medium">
-              {rotuloDoPeriodo(focado.p.periodo, granularidade, true)}
+              {rotuloDoPeriodo(d.ponto.periodo, granularidade, true)}
             </div>
             <div className="mt-0.5 tabular-nums">
               {def.rotulo}:{" "}
-              {focado.v == null
+              {d.valor == null
                 ? "—"
                 : def.pct
-                  ? `${focado.v.toFixed(1).replace(".", ",")}%`
-                  : fmtInt(focado.v)}
+                  ? `${(d.valor * 100).toFixed(1).replace(".", ",")}%`
+                  : fmtInt(d.valor)}
             </div>
             <div className="text-[11px] text-muted-foreground tabular-nums">
-              {def.detalhe(focado.p)}
+              {def.detalhe(d.ponto)}
             </div>
           </div>
         )}
-      </div>
+        carregando={carregando && !pontos}
+        erro={erro}
+      />
     </section>
   );
 }

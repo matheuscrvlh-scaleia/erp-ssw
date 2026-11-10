@@ -5,9 +5,19 @@ import {
 } from "@erp/shared/contratos/performance";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { useQuery } from "@tanstack/react-query";
-import { FileBarChart, FileText, GitCompareArrows, Info, Printer } from "lucide-react";
+import {
+  FileBarChart,
+  FileSpreadsheet,
+  FileText,
+  GitCompareArrows,
+  Info,
+  Printer,
+} from "lucide-react";
 import { Fragment, useState } from "react";
+import { toast } from "sonner";
 
+import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
+import { useEmpresaDaExportacao } from "@/componentes/comum/use-empresa-da-exportacao";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -18,12 +28,12 @@ import {
   DialogTitle,
 } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
+import { exportarCsv, exportarExcel, imprimir } from "@/lib/exportacao";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { consultaRelatorio } from "../api";
-import { exportarCsv, imprimir } from "../exportacao-local";
 import { fmtInt, fmtPct100 } from "../formato";
 import { type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "../relatorio";
-import { FiltroDatas } from "./Filtros";
 import { DistribuicaoPontualidade } from "./Kpis";
 
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
@@ -71,23 +81,23 @@ export function DialogoRelatorio({
     enabled: aberto,
   });
 
-  const exportarDados = (r: RelatorioPeriodo) => ({
-    arquivo: `relatorio-periodo-${inicio}-a-${fim}`,
+  const marca = useEmpresaDaExportacao();
+  const exportacao = (r: RelatorioPeriodo) => ({
+    arquivo: "relatorio-periodo",
     titulo: "Relatório de período",
     subtitulo: `${dataBr(inicio)} → ${dataBr(fim)}${herdados.etiquetas.length ? ` · ${herdados.etiquetas.map((e) => `${e.rotulo}: ${e.valor}`).join(" | ")}` : ""}`,
-    empresa,
+    empresa: marca,
     colunas: [
-      { chave: "secao" as const, titulo: "Seção" },
-      { chave: "item" as const, titulo: "Indicador" },
-      { chave: "valor" as const, titulo: "Valor" },
-      { chave: "comparativo" as const, titulo: "Comparativo" },
+      { chave: "secao", titulo: "Seção" },
+      { chave: "item", titulo: "Indicador" },
+      { chave: "valor", titulo: "Valor" },
+      { chave: "comparativo", titulo: "Comparativo" },
     ],
     linhas: linhasDoCsv(r, herdados.codigos),
   });
-
-  const botaoDoPreset = (p: Periodo) =>
-    "rounded-[5px] px-3 py-1 text-[12px] transition-colors " +
-    (preset === p ? "bg-[var(--brand)] text-white" : "text-muted-foreground hover:bg-muted");
+  const falhou = (e: unknown) => {
+    toast.error("Não foi possível gerar o arquivo", { description: mensagemAmigavel(e) });
+  };
 
   return (
     <Dialog open={aberto} onOpenChange={onAberto}>
@@ -113,29 +123,15 @@ export function DialogoRelatorio({
                 não segue o período da barra principal
               </span>
               <div className="ml-auto flex flex-wrap items-center gap-2">
-                <div className="flex rounded-md border border-border/70 p-0.5">
-                  {(["hoje", "7d", "30d", "mes"] as const).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => {
-                        setPreset(p);
-                        setDe("");
-                        setAte("");
-                      }}
-                      className={botaoDoPreset(p)}
-                    >
-                      {ROTULO_DO_PRESET[p]}
-                    </button>
-                  ))}
-                </div>
-                <FiltroDatas
-                  rotulo="Período"
+                <FiltroPeriodo
+                  periodo={preset}
                   de={de}
                   ate={ate}
-                  onChange={(d, a) => {
-                    setDe(d);
-                    setAte(a);
-                    setPreset(d && a ? "custom" : "hoje");
+                  padrao="hoje"
+                  aoMudar={(m) => {
+                    setPreset(m.periodo === "mes_anterior" ? "mes" : m.periodo);
+                    setDe(m.de);
+                    setAte(m.ate);
                   }}
                 />
               </div>
@@ -144,7 +140,9 @@ export function DialogoRelatorio({
             <div className="rounded-md border border-border/70 bg-card">
               <button
                 type="button"
-                onClick={() => { setComparativoAberto((v) => !v); }}
+                onClick={() => {
+                  setComparativoAberto((v) => !v);
+                }}
                 className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[12px] font-medium hover:bg-muted/40"
               >
                 <span className="flex items-center gap-2">
@@ -170,14 +168,16 @@ export function DialogoRelatorio({
                   </label>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-muted-foreground">Período secundário:</span>
-                    <FiltroDatas
-                      rotulo="Comparativo"
+                    <FiltroPeriodo
+                      periodo={cmpDe && cmpAte ? "custom" : "hoje"}
                       de={cmpDe}
                       ate={cmpAte}
-                      onChange={(d, a) => {
-                        setCmpDe(d);
-                        setCmpAte(a);
-                        if (d && a) setComparar(true);
+                      atalhos={[]}
+                      rotulo="Comparativo"
+                      aoMudar={(m) => {
+                        setCmpDe(m.de);
+                        setCmpAte(m.ate);
+                        if (m.de && m.ate) setComparar(true);
                       }}
                     />
                   </div>
@@ -228,11 +228,12 @@ export function DialogoRelatorio({
         </div>
 
         <DialogFooter className="border-t border-border/60 px-5 py-3">
-          {/* TODO(kit-ui): Excel com a identidade da empresa pelo kit de exportação. */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => data && exportarCsv(exportarDados(data))}
+            onClick={() => {
+              if (data) exportarCsv({ ...exportacao(data), fuso });
+            }}
             disabled={!data}
           >
             <FileText className="mr-1.5 h-4 w-4" /> Exportar CSV
@@ -240,7 +241,19 @@ export function DialogoRelatorio({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => data && imprimir(exportarDados(data))}
+            onClick={() => {
+              if (data) exportarExcel(exportacao(data)).catch(falhou);
+            }}
+            disabled={!data}
+          >
+            <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Exportar Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (data) imprimir(exportacao(data)).catch(falhou);
+            }}
             disabled={!data}
           >
             <Printer className="mr-1.5 h-4 w-4" /> Imprimir
@@ -250,8 +263,6 @@ export function DialogoRelatorio({
     </Dialog>
   );
 }
-
-const ROTULO_DO_PRESET = { hoje: "Hoje", "7d": "7 dias", "30d": "30 dias", mes: "Mês" } as const;
 
 function CorpoDoRelatorio({
   r,
@@ -369,7 +380,9 @@ function CorpoDoRelatorio({
               <button
                 key={m}
                 type="button"
-                onClick={() => { onModoPrevistos(m); }}
+                onClick={() => {
+                  onModoPrevistos(m);
+                }}
                 className={
                   "rounded-[5px] px-2.5 py-1 " +
                   (modoPrevistos === m

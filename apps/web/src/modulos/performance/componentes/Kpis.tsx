@@ -380,7 +380,9 @@ function CaixaEmAtraso({
         {t.ocorrenciasPendentes > 0 && (
           <a
             href="/admin/codigos"
-            onClick={(e) => { e.stopPropagation(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
             className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
             style={{ background: fundoDoStatus.warn, color: textoDoStatus.warn }}
           >

@@ -97,13 +97,17 @@ export function LinhaDeProducao({
         rotulo="CT-e Emitidos"
         valor={fmtInt(bloco.totalCtrcs)}
         sub="total no período"
-        onClick={() => { onCard("emitidos"); }}
+        onClick={() => {
+          onCard("emitidos");
+        }}
       />
       <CartaoDeProducao
         rotulo="Entregues"
         valor={fmtInt(bloco.entregues)}
         sub={bloco.totalCtrcs > 0 ? `${fmtPct100(producaoPct)} dos emitidos` : "sem emissões"}
-        onClick={() => { onCard("entregues"); }}
+        onClick={() => {
+          onCard("entregues");
+        }}
       />
       <CartaoDeProducao
         rotulo="No Prazo"
@@ -112,7 +116,9 @@ export function LinhaDeProducao({
         sub={noPrazoPct != null ? `${fmtPct100(noPrazoPct)} dos entregues` : "aguardando entregas"}
         tom={noPrazoPct != null && noPrazoPct >= slaMetaPct ? "good" : "neutral"}
         dica="Entregas que chegaram até a data combinada."
-        onClick={() => { onCard("no_prazo"); }}
+        onClick={() => {
+          onCard("no_prazo");
+        }}
       />
       <CartaoDeProducao
         rotulo="Fora do Prazo"
@@ -121,7 +127,9 @@ export function LinhaDeProducao({
         sub="exclui resp. cliente"
         tom={bloco.foraPrazo > 0 ? "bad" : "neutral"}
         dica="Entregas que chegaram depois da data combinada. Já exclui os atrasos de responsabilidade do cliente/parceiro."
-        onClick={() => { onCard("fora_prazo"); }}
+        onClick={() => {
+          onCard("fora_prazo");
+        }}
       />
       <CartaoDeProducao
         rotulo="Finalizado em Sistema"
@@ -133,14 +141,18 @@ export function LinhaDeProducao({
         }
         tom="info"
         dica="CTRCs que tiveram baixa no sistema sem entrega ao destinatário — devolução, indenização, cancelamento ou substituição."
-        onClick={() => { onCard("finalizado_sistema"); }}
+        onClick={() => {
+          onCard("finalizado_sistema");
+        }}
       />
       <CartaoDeProducao
         rotulo="% Produção"
         valor={fmtPct100(producaoPct)}
         sub={`entregues / emitidos · meta ${fmtPct100(slaMetaPct)}`}
         tom={producaoPct != null && producaoPct >= slaMetaPct ? "good" : "neutral"}
-        onClick={() => { onCard("producao_pct"); }}
+        onClick={() => {
+          onCard("producao_pct");
+        }}
       />
       <CartaoDeProducao
         rotulo="TDE aguardando programação"
@@ -153,7 +165,9 @@ export function LinhaDeProducao({
         }
         tom={tde && tde.aguardando > 0 ? "bad" : "neutral"}
         dica="Cargas com TDE (taxa de dificuldade de entrega, do relatório 455) que ainda não saíram para entrega: travadas em ocorrência ou paradas na unidade. A lista mostra cliente, destino, prazo e última ocorrência para montar a programação. As que já saíram estão no card “TDE romaneado” da tela Romaneio."
-        onClick={() => { onCard("tde"); }}
+        onClick={() => {
+          onCard("tde");
+        }}
       />
     </div>
   );

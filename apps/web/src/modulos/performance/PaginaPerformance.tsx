@@ -6,15 +6,33 @@ import {
   ordenarUnidades,
   resolverPeriodo,
 } from "@erp/dominio/performance/tela";
-import { type BaseDeData, BASES_DE_DATA } from "@erp/shared/contratos/performance";
+import {
+  type BaseDeData,
+  BASES_DE_DATA,
+  contratosPerformance,
+  SEM_TIPO_DOCUMENTO,
+} from "@erp/shared/contratos/performance";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
+import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight, FileBarChart, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { ExportMenu } from "@/componentes/comum/ExportMenu";
+import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
+import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
+import {
+  type EtiquetaFiltroOpcional,
+  FiltrandoPor,
+  FiltrosAvancados,
+  resumirNomes,
+} from "@/componentes/comum/FiltrosAvancados";
+import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { Button } from "@/componentes/ui/button";
+import { chamar } from "@/lib/api";
 
 import { cartoesDeAlerta } from "./alertas";
 import {
@@ -49,16 +67,7 @@ import {
   type TipoDaLista,
 } from "./busca";
 import { BannerDeAlertas } from "./componentes/Alertas";
-import { ExportarTela } from "./componentes/ExportarTela";
-import {
-  BuscaDocumento,
-  type Etiqueta,
-  FiltrandoPor,
-  FiltroDatas,
-  FiltroTexto,
-  resumirNomes,
-  SeletorMultiplo,
-} from "./componentes/Filtros";
+import { BuscaDocumento } from "./componentes/Filtros";
 import { GraficoSerie } from "./componentes/GraficoSerie";
 import { EsqueletoDeCards, LinhaDeKpis } from "./componentes/Kpis";
 import { type CliqueNosPrevistos, SecaoPrevistos } from "./componentes/Previstos";
@@ -69,6 +78,7 @@ import {
 } from "./componentes/Producao";
 import { DialogoRelatorio } from "./componentes/RelatorioPeriodo";
 import { TabelaDeUnidades } from "./componentes/TabelaUnidades";
+import { COLUNAS_DA_EXPORTACAO } from "./exportacao";
 import { textoDoStatus } from "./formato";
 
 const rota = getRouteApi("/_autenticado/performance/");
@@ -101,7 +111,9 @@ function useVisivel<E extends Element>(): [React.RefObject<E | null>, boolean] {
       if (e?.isIntersecting) setVisivel(true);
     });
     observador.observe(el);
-    return () => { observador.disconnect(); };
+    return () => {
+      observador.disconnect();
+    };
   }, [visivel]);
   return [ref, visivel];
 }
@@ -164,24 +176,21 @@ export function PaginaPerformance() {
     }),
     enabled: filialAberta,
   });
-  const [buscaTexto, setBuscaTexto] = useState<{
-    campo: "remetente" | "cidade_destino";
-    q: string;
-  }>({
-    campo: "remetente",
-    q: "",
-  });
-  const sugestoes = useQuery({
-    ...consultaSugestoes({
-      ...buscaTexto,
-      ...periodo,
-      parceiros: filtros.parceiros,
-      remetente: filtros.remetente,
-      destino: filtros.destino,
-      filiais: filtros.filiais,
-      codigos: filtros.codigos,
-    }),
-    enabled: !!r,
+  const sugestoesDe = (campo: "remetente" | "cidade_destino") => ({
+    chave: ["filtros-ctrc", "sugestoes", campo, periodo, filtros],
+    buscar: (q: string) =>
+      queryClient.query(
+        consultaSugestoes({
+          campo,
+          q,
+          ...periodo,
+          parceiros: filtros.parceiros,
+          remetente: filtros.remetente,
+          destino: filtros.destino,
+          filiais: filtros.filiais,
+          codigos: filtros.codigos,
+        }),
+      ),
   });
 
   const janela = janelaDaSerie(periodo.inicio, periodo.fim);
@@ -235,57 +244,67 @@ export function PaginaPerformance() {
     const descricao = codigos.data?.find((o) => o.codigo === cod)?.descricao;
     return descricao ? `${cod} — ${descricao}` : cod;
   });
-  const nomesTipos = busca.tipos.map((t) => (t === "__SEM_TIPO__" ? "sem tipo" : t));
-  const textoDoFiltro = (v: string) =>
-    v
-      .split("|")
-      .map((p) => p.trim())
-      .filter(Boolean);
-  const se = (ligado: unknown, e: Etiqueta): Etiqueta[] => (ligado ? [e] : []);
-  const etiquetas: Etiqueta[] = [
-    ...se(nomesUnidades.length > 0, {
+  const nomesTipos = busca.tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t));
+  const etiquetas: EtiquetaFiltroOpcional[] = [
+    nomesUnidades.length > 0 && {
       rotulo: "Unidade",
-      valor: resumirNomes(nomesUnidades),
-      limpar: () => { mudar({ unidades: [] }); },
-    }),
-    ...se(nomesParceiros.length > 0, {
+      ...resumirNomes(nomesUnidades),
+      limpar: () => {
+        mudar({ unidades: [] });
+      },
+    },
+    nomesParceiros.length > 0 && {
       rotulo: "Parceiros",
-      valor: resumirNomes(nomesParceiros),
-      limpar: () => { mudar({ parceiros: [] }); },
-    }),
-    ...se(busca.filiais.length > 0, {
+      ...resumirNomes(nomesParceiros),
+      limpar: () => {
+        mudar({ parceiros: [] });
+      },
+    },
+    busca.filiais.length > 0 && {
       rotulo: "Unidade responsável",
-      valor: resumirNomes(busca.filiais),
-      limpar: () => { mudar({ filiais: [] }); },
-    }),
-    ...se(busca.remetente.trim(), {
+      ...resumirNomes(busca.filiais),
+      limpar: () => {
+        mudar({ filiais: [] });
+      },
+    },
+    busca.remetente.trim() && {
       rotulo: "Remetente",
-      valor: resumirNomes(textoDoFiltro(busca.remetente)),
-      limpar: () => { mudar({ remetente: "" }); },
-    }),
-    ...se(busca.destino.trim(), {
+      ...resumirNomes(lerFiltroTexto(busca.remetente)),
+      limpar: () => {
+        mudar({ remetente: "" });
+      },
+    },
+    busca.destino.trim() && {
       rotulo: "Destino",
-      valor: resumirNomes(textoDoFiltro(busca.destino)),
-      limpar: () => { mudar({ destino: "" }); },
-    }),
-    ...se(nomesCodigos.length > 0, {
+      ...resumirNomes(lerFiltroTexto(busca.destino)),
+      limpar: () => {
+        mudar({ destino: "" });
+      },
+    },
+    nomesCodigos.length > 0 && {
       rotulo: "Ocorrência",
-      valor: resumirNomes(nomesCodigos),
-      limpar: () => { mudar({ codigos: [] }); },
-    }),
-    ...se(nomesTipos.length > 0, {
+      ...resumirNomes(nomesCodigos),
+      limpar: () => {
+        mudar({ codigos: [] });
+      },
+    },
+    nomesTipos.length > 0 && {
       rotulo: "Tipo documento",
-      valor: resumirNomes(nomesTipos),
-      limpar: () => { mudar({ tipos: [] }); },
-    }),
+      ...resumirNomes(nomesTipos),
+      limpar: () => {
+        mudar({ tipos: [] });
+      },
+    },
   ];
 
-  const cliqueNosPrevistos = (c: CliqueNosPrevistos) => { abrirLista(c.eixo === "faixa" ? "previstos_por_faixa" : "previstos_por_status", {
+  const cliqueNosPrevistos = (c: CliqueNosPrevistos) => {
+    abrirLista(c.eixo === "faixa" ? "previstos_por_faixa" : "previstos_por_status", {
       ...(c.eixo === "status" ? { statusPrevisto: c.chave } : {}),
       ...(c.eixo === "faixa" ? { faixaPrev: c.chave } : {}),
       ignorarPeriodo,
       base: "emissao",
-    }); };
+    });
+  };
 
   const erro = resumo.error ?? pont.error;
   const cobertura = r?.cobertura;
@@ -301,17 +320,30 @@ export function PaginaPerformance() {
           <h1 className="truncate text-[24px] font-semibold">
             {busca.periodo === "hoje" ? "Performance do dia" : `Performance — ${periodo.rotulo}`}
           </h1>
-          {/* TODO(kit-ui): SeloAtualizacao do kit (última sincronização dos dados). */}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => { setRelatorioAberto((v) => !v); }}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setRelatorioAberto((v) => !v);
+            }}
+          >
             <FileBarChart className="mr-1.5 h-3 w-3" />
             {relatorioAberto ? "Fechar relatório" : "Relatório de período"}
           </Button>
-          <ExportarTela
-            entrada={entrada}
-            periodo={busca.periodo}
-            empresa={nomeCurto}
+          <ExportMenu
+            arquivo={`performance-${busca.periodo}`}
+            titulo="Performance"
+            subtitulo={`${periodo.inicio} → ${periodo.fim}`}
+            colunas={COLUNAS_DA_EXPORTACAO}
+            linhas={[]}
+            carregarLinhas={async () => {
+              const r = await chamar(contratosPerformance.exportacao, { entrada });
+              if (r.truncado)
+                toast.warning("Arquivo limitado aos primeiros 10.000 CT-e. Reduza o período.");
+              return r.linhas;
+            }}
             desabilitado={resumo.isFetching}
           />
           <Button
@@ -326,18 +358,23 @@ export function PaginaPerformance() {
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-border/70 bg-card p-2">
-        <div className="flex rounded-md border border-border/70 p-0.5">
-          {(["hoje", "7d", "30d", "mes"] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => { mudar({ periodo: p, de: "", ate: "" }); }}
-              className={alternador(busca.periodo === p, "bg-[var(--brand)] text-white")}
-            >
-              {p === "hoje" ? "Hoje" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "Mês"}
-            </button>
-          ))}
-        </div>
+      <FiltrosAvancados
+        ativos={temFiltroLimpavel(busca)}
+        aoLimpar={() => void navegarNaTela({ search: limparFiltros(busca) })}
+      >
+        <FiltroPeriodo
+          periodo={busca.periodo}
+          de={busca.de}
+          ate={busca.ate}
+          rotulo={DATA_DA_BASE[busca.base]}
+          aoMudar={(m) => {
+            mudar({
+              periodo: m.periodo === "mes_anterior" ? "mes" : m.periodo,
+              de: m.de,
+              ate: m.ate,
+            });
+          }}
+        />
         <div
           className="flex rounded-md border border-border/70 p-0.5"
           title={DICA_DA_BASE[busca.base]}
@@ -345,7 +382,9 @@ export function PaginaPerformance() {
           {BASES_DE_DATA.map((b: BaseDeData) => (
             <button
               key={b}
-              onClick={() => { mudar({ base: b }); }}
+              onClick={() => {
+                mudar({ base: b });
+              }}
               title={DICA_DA_BASE[b]}
               className={alternador(busca.base === b, "bg-foreground text-background")}
             >
@@ -353,93 +392,106 @@ export function PaginaPerformance() {
             </button>
           ))}
         </div>
-        <FiltroDatas
-          rotulo={DATA_DA_BASE[busca.base]}
-          de={busca.de}
-          ate={busca.ate}
-          onChange={(de, ate) => { mudar({ de, ate, periodo: de && ate ? "custom" : "mes" }); }}
-        />
         <span className="text-[11px] text-muted-foreground" title={DICA_DA_BASE[busca.base]}>
           {BASE_CURTA[busca.base]}
         </span>
         <BuscaDocumento
           placeholder="CTRC..."
-          onBuscar={(v) => { abrirLista("emitidos", { ctrc: v, ignorarPeriodo: true }); }}
+          onBuscar={(v) => {
+            abrirLista("emitidos", { ctrc: v, ignorarPeriodo: true });
+          }}
         />
         <BuscaDocumento
           placeholder="Nota fiscal..."
-          onBuscar={(v) => { abrirLista("emitidos", { nf: v, ignorarPeriodo: true }); }}
+          onBuscar={(v) => {
+            abrirLista("emitidos", { nf: v, ignorarPeriodo: true });
+          }}
         />
-        <SeletorMultiplo
+        <FiltroMultiplo
           rotulo="Parceiros"
-          opcoes={(pagadores.data ?? []).map((p) => ({
-            id: p.cnpj,
+          textoVazio="todos"
+          opcoes={pagadores.data?.map((p) => ({
+            valor: p.cnpj,
             rotulo: p.nome,
-            sub: p.cnpjFormatado,
+            detalhe: p.cnpjFormatado,
           }))}
-          carregando={pagadores.isFetching}
           selecionados={busca.parceiros}
-          onChange={(ids) => { mudar({ parceiros: ids }); }}
+          aoMudar={(ids) => {
+            mudar({ parceiros: ids });
+          }}
         />
-        <SeletorMultiplo
+        <FiltroMultiplo
           rotulo="Unidade responsável"
-          opcoes={[...new Set([...(filiais.data?.siglas ?? []), ...busca.filiais])].map((s) => ({
-            id: s,
-            rotulo: s,
-          }))}
-          carregando={filiais.isFetching}
-          onAbrir={setFilialAberta}
+          opcoes={
+            filiais.data
+              ? [...new Set([...filiais.data.siglas, ...busca.filiais])].map((s) => ({ valor: s }))
+              : undefined
+          }
+          aoAbrir={setFilialAberta}
           selecionados={busca.filiais}
-          onChange={(ids) => { mudar({ filiais: ids }); }}
+          aoMudar={(ids) => {
+            mudar({ filiais: ids });
+          }}
+          monoespacado
         />
         <FiltroTexto
           rotulo="Remetente"
           valor={busca.remetente}
-          onChange={(v) => { mudar({ remetente: v }); }}
-          sugestoes={buscaTexto.campo === "remetente" ? (sugestoes.data ?? []) : []}
-          onBusca={(q) => { setBuscaTexto({ campo: "remetente", q }); }}
+          aoMudar={(v) => {
+            mudar({ remetente: v });
+          }}
+          sugestoes={sugestoesDe("remetente")}
         />
         <FiltroTexto
           rotulo="Destino"
           valor={busca.destino}
-          onChange={(v) => { mudar({ destino: v }); }}
-          sugestoes={buscaTexto.campo === "cidade_destino" ? (sugestoes.data ?? []) : []}
-          onBusca={(q) => { setBuscaTexto({ campo: "cidade_destino", q }); }}
+          aoMudar={(v) => {
+            mudar({ destino: v });
+          }}
+          sugestoes={sugestoesDe("cidade_destino")}
         />
-        <SeletorMultiplo
-          rotulo="Ocorrência"
-          dica="Filtra os CT-e cuja ocorrência EFETIVA atual (o status vigente do CT-e) é o código selecionado — o mesmo critério da lista detalhada. Não considera ocorrências antigas já superadas na jornada. Todos os cards, gráficos e a lista respeitam esse filtro."
-          opcoes={ordenarCodigosDisponiveis(codigos.data ?? []).map((o) => ({
-            id: o.codigo,
-            rotulo: `${o.codigo} — ${o.descricao ?? "sem descrição"}`,
-            sub: String(o.qtd),
-          }))}
-          carregando={codigos.isFetching}
-          onAbrir={setOcorrenciaAberta}
-          selecionados={busca.codigos}
-          onChange={(ids) => { mudar({ codigos: ids }); }}
-        />
-        <SeletorMultiplo
+        <span
+          className="inline-flex items-center"
+          title="Filtra os CT-e cuja ocorrência EFETIVA atual (o status vigente do CT-e) é o código selecionado — o mesmo critério da lista detalhada. Não considera ocorrências antigas já superadas na jornada. Todos os cards, gráficos e a lista respeitam esse filtro."
+        >
+          <FiltroMultiplo
+            rotulo="Ocorrência"
+            textoVazio="todos"
+            opcoes={
+              codigos.data
+                ? ordenarCodigosDisponiveis(codigos.data).map((o) => ({
+                    valor: o.codigo,
+                    rotulo: `${o.codigo} — ${o.descricao ?? "sem descrição"}`,
+                    detalhe: String(o.qtd),
+                  }))
+                : undefined
+            }
+            aoAbrir={setOcorrenciaAberta}
+            selecionados={busca.codigos}
+            aoMudar={(ids) => {
+              mudar({ codigos: ids });
+            }}
+          />
+        </span>
+        <FiltroMultiplo
           rotulo="Tipo documento"
-          opcoes={ordenarTiposDocumento(tiposOpcoes.data ?? [], tiposNoPeriodo.data).map((t) => ({
-            id: t.tipo,
-            rotulo: t.rotulo,
-            sub: String(t.qtd),
-          }))}
-          carregando={tiposOpcoes.isFetching}
-          onAbrir={setTipoAberto}
+          textoVazio="todos"
+          opcoes={
+            tiposOpcoes.data
+              ? ordenarTiposDocumento(tiposOpcoes.data, tiposNoPeriodo.data).map((t) => ({
+                  valor: t.tipo,
+                  rotulo: t.rotulo,
+                  detalhe: String(t.qtd),
+                }))
+              : undefined
+          }
+          aoAbrir={setTipoAberto}
           selecionados={busca.tipos}
-          onChange={(ids) => { mudar({ tipos: ids }); }}
+          aoMudar={(ids) => {
+            mudar({ tipos: ids });
+          }}
         />
-        {temFiltroLimpavel(busca) && (
-          <button
-            className="text-[12px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            onClick={() => void navegarNaTela({ search: limparFiltros(busca) })}
-          >
-            Limpar filtros
-          </button>
-        )}
-      </div>
+      </FiltrosAvancados>
 
       <FiltrandoPor etiquetas={etiquetas} />
 
@@ -457,15 +509,16 @@ export function PaginaPerformance() {
       {alertas.data && (
         <BannerDeAlertas
           cartoes={cartoesDeAlerta(alertas.data, pontEmissao.data?.porUnidade ?? [], nomeCurto)}
-          onClique={(c) => { abrirLista(c.lista, {
+          onClique={(c) => {
+            abrirLista(c.lista, {
               ...(c.unidades ? { unidades: c.unidades } : {}),
               ...(c.lista === "vencimento_proximo" || c.lista === "sem_atualizacao"
                 ? { ignorarPeriodo: true }
                 : {}),
               ...(c.lista === "nascido_atrasado" ? { abertos: true } : {}),
               base: "emissao",
-            }); }
-          }
+            });
+          }}
         />
       )}
 
@@ -514,11 +567,21 @@ export function PaginaPerformance() {
           configuracao={configuracao}
           nomeCurto={nomeCurto}
           acoes={{
-            emAtraso: () => { abrirLista("em_atraso"); },
-            emAtrasoFr: () => { abrirLista("em_atraso_fr"); },
-            emAtrasoCliente: () => { abrirLista("em_atraso_cliente"); },
-            nascidos: () => { abrirLista("nascido_em_atraso"); },
-            otif: () => { abrirLista("otif"); },
+            emAtraso: () => {
+              abrirLista("em_atraso");
+            },
+            emAtrasoFr: () => {
+              abrirLista("em_atraso_fr");
+            },
+            emAtrasoCliente: () => {
+              abrirLista("em_atraso_cliente");
+            },
+            nascidos: () => {
+              abrirLista("nascido_em_atraso");
+            },
+            otif: () => {
+              abrirLista("otif");
+            },
           }}
         />
       ) : (
@@ -546,7 +609,9 @@ export function PaginaPerformance() {
           bloco={bloco}
           tde={tde.data}
           slaMetaPct={configuracao.slaMetaPct}
-          onCard={(card) => { abrirLista(CARD_PARA_LISTA[card]); }}
+          onCard={(card) => {
+            abrirLista(CARD_PARA_LISTA[card]);
+          }}
         />
       ) : (
         <EsqueletoDeCards quantos={7} altura="h-[124px]" />
@@ -567,12 +632,17 @@ export function PaginaPerformance() {
         ordem={busca.ordem}
         carregando={resumo.isFetching}
         periodo={periodo}
-        empresa={nomeCurto}
         meta={configuracao.slaMetaPct / 100}
         alerta={configuracao.slaAlertaAmareloPct / 100}
-        onInverterOrdem={() => { mudar({ ordem: busca.ordem === "pior" ? "melhor" : "pior" }); }}
-        onUnidade={(sigla) => { abrirLista("emitidos", { unidades: [sigla] }); }}
-        onPenalizados={(sigla) => { abrirLista("penalizados_abertos", { unidades: [sigla] }); }}
+        onInverterOrdem={() => {
+          mudar({ ordem: busca.ordem === "pior" ? "melhor" : "pior" });
+        }}
+        onUnidade={(sigla) => {
+          abrirLista("emitidos", { unidades: [sigla] });
+        }}
+        onPenalizados={(sigla) => {
+          abrirLista("penalizados_abertos", { unidades: [sigla] });
+        }}
       />
 
       <div ref={refSerie}>
@@ -599,7 +669,7 @@ export function PaginaPerformance() {
         herdados={{
           entrada: filtros,
           codigos: busca.codigos,
-          etiquetas: etiquetas.map((e) => ({ rotulo: e.rotulo, valor: e.valor })),
+          etiquetas: etiquetas.flatMap((e) => (e ? [{ rotulo: e.rotulo, valor: e.valor }] : [])),
         }}
       />
 

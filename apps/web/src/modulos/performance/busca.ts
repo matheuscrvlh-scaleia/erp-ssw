@@ -1,5 +1,5 @@
 import { type Periodo, PERIODOS } from "@erp/dominio/performance/tela";
-import { type BaseDeData,BASES_DE_DATA } from "@erp/shared/contratos/performance";
+import { type BaseDeData, BASES_DE_DATA } from "@erp/shared/contratos/performance";
 import { defaultStringifySearch } from "@tanstack/react-router";
 
 /** Parâmetros da URL de /performance (os mesmos de hoje). */

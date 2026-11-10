@@ -1,15 +1,15 @@
 import { statusDoSla } from "@erp/dominio/performance/tela";
 import { type UnidadeResumo } from "@erp/shared/contratos/performance";
-import { Download } from "lucide-react";
 
-import { exportarCsv } from "../exportacao-local";
+import { ExportMenu } from "@/componentes/comum/ExportMenu";
+
 import { corDoStatus, fmtPct, fundoDoStatus, textoDoStatus } from "../formato";
 import { clicavel } from "./Kpis";
 
-export interface LinhaDaUnidade extends UnidadeResumo {
+export type LinhaDaUnidade = UnidadeResumo & {
   slaOp: number | null;
   nascidosPct: number | null;
-}
+};
 
 /** "Performance por unidade": ordenada pelo SLA Op.; clique abre os CT-e da unidade. */
 export function TabelaDeUnidades({
@@ -17,7 +17,6 @@ export function TabelaDeUnidades({
   ordem,
   carregando,
   periodo,
-  empresa,
   meta,
   alerta,
   onInverterOrdem,
@@ -28,29 +27,12 @@ export function TabelaDeUnidades({
   ordem: "pior" | "melhor";
   carregando: boolean;
   periodo: { inicio: string; fim: string };
-  empresa: string;
   meta: number;
   alerta: number;
   onInverterOrdem: () => void;
   onUnidade: (sigla: string) => void;
   onPenalizados: (sigla: string) => void;
 }) {
-  const exportar = () => { exportarCsv({
-      arquivo: "performance-por-unidade",
-      titulo: "Performance por unidade",
-      subtitulo: `${periodo.inicio} → ${periodo.fim}`,
-      empresa,
-      colunas: [
-        { chave: "sigla", titulo: "Unidade destino" },
-        { chave: "total", titulo: "Total CTRCs" },
-        { chave: "concluidos", titulo: "Concluídos" },
-        { chave: "penalizadosAbertos", titulo: "Penalizados em aberto" },
-        { chave: "penalizados", titulo: "Penalizados concluídos" },
-        { chave: "slaOp", titulo: "SLA Op. (%)" },
-        { chave: "nascidosPct", titulo: "Nascidos em atraso (%)" },
-      ],
-      linhas,
-    }); };
   return (
     <div className="rounded-[10px] border border-border/70 bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-3.5">
@@ -63,17 +45,22 @@ export function TabelaDeUnidades({
         </button>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground">{linhas.length} unidades</span>
-          {/* TODO(kit-ui): trocar pelo ExportMenu do kit (Excel/PDF/CSV/imprimir). */}
-          <button
-            type="button"
-            onClick={exportar}
-            disabled={linhas.length === 0}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-            title="Exportar tabela (CSV)"
-            aria-label="Exportar tabela"
-          >
-            <Download className="h-3.5 w-3.5" />
-          </button>
+          <ExportMenu
+            soIcone
+            arquivo="performance-por-unidade"
+            titulo="Performance por unidade"
+            subtitulo={`${periodo.inicio} → ${periodo.fim}`}
+            colunas={[
+              { chave: "sigla", titulo: "Unidade destino" },
+              { chave: "total", titulo: "Total CTRCs", formato: "inteiro" },
+              { chave: "concluidos", titulo: "Concluídos", formato: "inteiro" },
+              { chave: "penalizadosAbertos", titulo: "Penalizados em aberto", formato: "inteiro" },
+              { chave: "penalizados", titulo: "Penalizados concluídos", formato: "inteiro" },
+              { chave: "slaOp", titulo: "SLA Op. (%)", formato: "percentual" },
+              { chave: "nascidosPct", titulo: "Nascidos em atraso (%)", formato: "percentual" },
+            ]}
+            linhas={linhas}
+          />
         </div>
       </div>
       <div className="flex items-center gap-4 border-b border-border/60 bg-muted/30 px-5 py-2 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
@@ -100,8 +87,12 @@ export function TabelaDeUnidades({
             linha={l}
             meta={meta}
             alerta={alerta}
-            onClick={() => { onUnidade(l.sigla); }}
-            onPenalizados={() => { onPenalizados(l.sigla); }}
+            onClick={() => {
+              onUnidade(l.sigla);
+            }}
+            onPenalizados={() => {
+              onPenalizados(l.sigla);
+            }}
           />
         ))}
         {linhas.length === 0 && !carregando && (

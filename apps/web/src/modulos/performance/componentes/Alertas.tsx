@@ -65,7 +65,9 @@ export function BannerDeAlertas({
               <button
                 key={c.chave}
                 type="button"
-                onClick={() => { onClique(c); }}
+                onClick={() => {
+                  onClique(c);
+                }}
                 className="group relative flex items-start gap-3 rounded-[10px] border border-border/70 bg-card px-4 py-3 pr-9 text-left transition-colors hover:bg-muted/40 focus:ring-2 focus:ring-[var(--brand)]/40 focus:outline-none"
               >
                 <span

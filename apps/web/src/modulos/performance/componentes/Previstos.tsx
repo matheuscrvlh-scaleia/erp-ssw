@@ -93,10 +93,20 @@ export function SecaoPrevistos({
           )}
         </div>
         <div className="flex rounded-md border border-border/70 p-0.5 text-[12px]">
-          <button onClick={() => { onIgnorarPeriodo(true); }} className={alternador(ignorarPeriodo)}>
+          <button
+            onClick={() => {
+              onIgnorarPeriodo(true);
+            }}
+            className={alternador(ignorarPeriodo)}
+          >
             Todos em aberto
           </button>
-          <button onClick={() => { onIgnorarPeriodo(false); }} className={alternador(!ignorarPeriodo)}>
+          <button
+            onClick={() => {
+              onIgnorarPeriodo(false);
+            }}
+            className={alternador(!ignorarPeriodo)}
+          >
             Emitidos no período
             <span className="ml-1 opacity-70">(emissão)</span>
           </button>
@@ -106,7 +116,9 @@ export function SecaoPrevistos({
       <div className="grid grid-cols-1 gap-3 border-b border-border/60 p-4 md:grid-cols-[240px_1fr]">
         <button
           type="button"
-          onClick={() => { onClique({ eixo: "total" }); }}
+          onClick={() => {
+            onClique({ eixo: "total" });
+          }}
           className="group rounded-lg border border-border/70 border-l-[5px] border-l-kpi-positive bg-card p-4 text-left transition-colors hover:border-border hover:bg-muted/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <div className="flex items-start justify-between gap-2">
@@ -134,7 +146,9 @@ export function SecaoPrevistos({
               key={s.chave}
               rotulo={s.rotulo}
               somas={porStatus.get(s.chave)}
-              onClick={() => { onClique({ eixo: "status", chave: s.chave }); }}
+              onClick={() => {
+                onClique({ eixo: "status", chave: s.chave });
+              }}
             />
           ))}
         </div>
@@ -149,7 +163,9 @@ export function SecaoPrevistos({
               rotulo={f.rotulo}
               somas={porFaixa.get(f.chave)}
               perigo={f.perigo}
-              onClick={() => { onClique({ eixo: "faixa", chave: f.chave }); }}
+              onClick={() => {
+                onClique({ eixo: "faixa", chave: f.chave });
+              }}
             />
           ))}
         </div>
