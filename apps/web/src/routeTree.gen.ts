@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
+import { Route as AutenticadoColetasRouteImport } from './routes/_autenticado/coletas'
 import { Route as AutenticadoComprovantesRouteImport } from './routes/_autenticado/comprovantes'
 import { Route as AutenticadoOcorrenciasRouteImport } from './routes/_autenticado/ocorrencias'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
@@ -48,6 +49,11 @@ const AutenticadoCalendarioRoute = AutenticadoCalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoColetasRoute = AutenticadoColetasRouteImport.update({
+  id: '/coletas',
+  path: '/coletas',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoComprovantesRoute = AutenticadoComprovantesRouteImport.update({
   id: '/comprovantes',
   path: '/comprovantes',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/coletas': typeof AutenticadoColetasRoute
   '/comprovantes': typeof AutenticadoComprovantesRoute
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/coletas': typeof AutenticadoColetasRoute
   '/comprovantes': typeof AutenticadoComprovantesRoute
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
+  '/_autenticado/coletas': typeof AutenticadoColetasRoute
   '/_autenticado/comprovantes': typeof AutenticadoComprovantesRoute
   '/_autenticado/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/coletas'
     | '/comprovantes'
     | '/ocorrencias'
     | '/sem-acesso'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/coletas'
     | '/comprovantes'
     | '/ocorrencias'
     | '/sem-acesso'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/_autenticado/calendario'
+    | '/_autenticado/coletas'
     | '/_autenticado/comprovantes'
     | '/_autenticado/ocorrencias'
     | '/_autenticado/sem-acesso'
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoCalendarioRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/coletas': {
+      id: '/_autenticado/coletas'
+      path: '/coletas'
+      fullPath: '/coletas'
+      preLoaderRoute: typeof AutenticadoColetasRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/comprovantes': {
       id: '/_autenticado/comprovantes'
       path: '/comprovantes'
@@ -207,6 +226,7 @@ declare module '@tanstack/react-router' {
 
 interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
+  AutenticadoColetasRoute: typeof AutenticadoColetasRoute
   AutenticadoComprovantesRoute: typeof AutenticadoComprovantesRoute
   AutenticadoOcorrenciasRoute: typeof AutenticadoOcorrenciasRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
@@ -215,6 +235,7 @@ interface AutenticadoRouteChildren {
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
+  AutenticadoColetasRoute: AutenticadoColetasRoute,
   AutenticadoComprovantesRoute: AutenticadoComprovantesRoute,
   AutenticadoOcorrenciasRoute: AutenticadoOcorrenciasRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
