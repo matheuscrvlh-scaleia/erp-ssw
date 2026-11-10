@@ -5,7 +5,9 @@ import { type Redis } from "ioredis";
 
 import { type Ambiente } from "./config/env";
 import { registrarTratadorDeErros } from "./http/tratador-erros";
+import type { Armazenamento } from "./infra/armazenamento";
 import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
+import type { FilaDeJobs } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
 import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
@@ -16,15 +18,23 @@ import { rotasAhgora } from "./modulos/ahgora/rotas";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasBonificacaoEntrega } from "./modulos/bonificacao-entrega/rotas";
+import { rotasCadastros } from "./modulos/cadastros/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
+import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
 import { rotasCtrc } from "./modulos/ctrc/rotas";
 import { rotasFiltros } from "./modulos/filtros/rotas";
 import { type FilasDeIngestao } from "./modulos/ingestao-ssw/casos-de-uso";
 import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
 import { rotasPublicasSsw } from "./modulos/ingestao-ssw/rotas-publicas";
 import { rotasListagem } from "./modulos/listagem/rotas";
+import { rotasLogs } from "./modulos/logs/rotas";
 import { rotasPerformance } from "./modulos/performance/rotas";
+import { rotasPlataforma } from "./modulos/plataforma/rotas";
+import { rotasPrazos } from "./modulos/prazos/rotas";
 import { rotasRanking } from "./modulos/ranking/rotas";
+import { type DependenciasUsuarios } from "./modulos/usuarios/casos-de-uso";
+import { rotasUsuarios } from "./modulos/usuarios/rotas";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -48,7 +58,11 @@ export interface Dependencias {
   google: ProvedorGoogle | null;
   /** Filas do BullMQ (ingestão). Nulo = sem Redis: execuções manuais e o webhook respondem 503. */
   filasDeIngestao: FilasDeIngestao | null;
-  /** Chaves dos segredos de integração. Nulo = não salva senha nem confere o webhook. */
+  /** Fila do worker (recálculos); desligada sem Redis. */
+  fila: FilaDeJobs;
+  /** Bucket dos logos; nulo = envio de logo não configurado. */
+  armazenamento: Armazenamento | null;
+  /** Chaves dos segredos de integração. Nulo = sem cofre: não salva senha nem confere o webhook. */
   chavesDeSegredo: ChavesDeSegredo | null;
   agora: () => Date;
   /** Ponto (Ahgora): cofre de segredos, credencial de transição e HTTP. Sem ele, sem cofre. */
@@ -133,6 +147,26 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     executar: deps.executar,
     filas: deps.filasDeIngestao,
     chaves,
+    agora: deps.agora,
+  });
+
+  const usuarios: DependenciasUsuarios = {
+    correio: auth.correio,
+    senhas: deps.senhas,
+    webUrl: ambiente.WEB_URL,
+    agora: deps.agora,
+  };
+  await app.register(rotasUsuarios, { deps: usuarios, executar: deps.executar });
+  await app.register(rotasCadastros);
+  await app.register(rotasConfiguracoes, { cache: criarCacheDeConfiguracoes(deps.agora) });
+  await app.register(rotasPrazos, { fila: deps.fila });
+  await app.register(rotasLogs, { executar: deps.executar });
+  await app.register(rotasPlataforma, {
+    executar: deps.executar,
+    usuarios,
+    armazenamento: deps.armazenamento,
+    chavesDeSegredo: deps.chavesDeSegredo,
+    urlDoLogo: acesso.urlDoLogo,
     agora: deps.agora,
   });
 

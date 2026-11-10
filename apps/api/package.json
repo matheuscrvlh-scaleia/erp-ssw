@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1164.0",
     "@erp/db": "workspace:*",
     "@erp/dominio": "workspace:*",
     "@erp/shared": "workspace:*",

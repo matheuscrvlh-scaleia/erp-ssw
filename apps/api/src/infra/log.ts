@@ -3,7 +3,7 @@ import { type FastifyRequest, type FastifyServerOptions } from "fastify";
 import { type Ambiente } from "../config/env";
 
 /** Nada de segredo em log: token, cookie, senha, refresh e segredos de integração nunca são gravados. */
-const CAMINHOS_SENSIVEIS = [
+export const CAMINHOS_SENSIVEIS = [
   "req.headers.authorization",
   "req.headers.cookie",
   'req.headers["x-ftp-ingest-secret"]',
@@ -16,6 +16,8 @@ const CAMINHOS_SENSIVEIS = [
   "*.token",
   "tokenAcesso",
   "*.tokenAcesso",
+  "segredo",
+  "*.segredo",
 ];
 
 /** Parâmetros de query que carregam segredo (webhook do SSW manda `?secret=`; OAuth manda `code`/`state`). */

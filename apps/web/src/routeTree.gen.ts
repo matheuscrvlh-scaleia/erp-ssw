@@ -18,15 +18,24 @@ import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
 import { Route as AutenticadoAdminAhgoraRouteImport } from './routes/_autenticado/admin.ahgora'
 import { Route as AutenticadoAdminBonificacaoEntregaRouteImport } from './routes/_autenticado/admin.bonificacao-entrega'
+import { Route as AutenticadoAdminConfiguracoesRouteImport } from './routes/_autenticado/admin/configuracoes'
+import { Route as AutenticadoAdminDepartamentosRouteImport } from './routes/_autenticado/admin/departamentos'
 import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autenticado/admin.equipes'
 import { Route as AutenticadoAdminIngestaoRouteImport } from './routes/_autenticado/admin.ingestao'
+import { Route as AutenticadoAdminLogsRouteImport } from './routes/_autenticado/admin/logs'
+import { Route as AutenticadoAdminRolesRouteImport } from './routes/_autenticado/admin/roles'
 import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_autenticado/admin.ssw-diagnostico'
+import { Route as AutenticadoAdminUsuariosRouteImport } from './routes/_autenticado/admin/usuarios'
 import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
 import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
 import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
+import { Route as AutenticadoPlataformaAdministradoresRouteImport } from './routes/_autenticado/plataforma/administradores'
+import { Route as AutenticadoPlataformaLogsRouteImport } from './routes/_autenticado/plataforma/logs'
 import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
 import { Route as AutenticadoRankingRegrasRouteImport } from './routes/_autenticado/ranking.regras'
 import { Route as RankingPublicoTokenRouteImport } from './routes/ranking.publico.$token'
+import { Route as AutenticadoPlataformaEmpresasIndexRouteImport } from './routes/_autenticado/plataforma/empresas/index'
+import { Route as AutenticadoPlataformaEmpresasIdRouteImport } from './routes/_autenticado/plataforma/empresas/$id'
 import { Route as AutenticadoRankingEquipeIdRouteImport } from './routes/_autenticado/ranking.equipe.$id'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
@@ -74,6 +83,18 @@ const AutenticadoAdminBonificacaoEntregaRoute =
     path: '/admin/bonificacao-entrega',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoAdminConfiguracoesRoute =
+  AutenticadoAdminConfiguracoesRouteImport.update({
+    id: '/admin/configuracoes',
+    path: '/admin/configuracoes',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminDepartamentosRoute =
+  AutenticadoAdminDepartamentosRouteImport.update({
+    id: '/admin/departamentos',
+    path: '/admin/departamentos',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoAdminEquipesRoute = AutenticadoAdminEquipesRouteImport.update({
   id: '/admin/equipes',
   path: '/admin/equipes',
@@ -85,10 +106,26 @@ const AutenticadoAdminIngestaoRoute =
     path: '/admin/ingestao',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoAdminLogsRoute = AutenticadoAdminLogsRouteImport.update({
+  id: '/admin/logs',
+  path: '/admin/logs',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoAdminRolesRoute = AutenticadoAdminRolesRouteImport.update({
+  id: '/admin/roles',
+  path: '/admin/roles',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoAdminSswDiagnosticoRoute =
   AutenticadoAdminSswDiagnosticoRouteImport.update({
     id: '/admin/ssw-diagnostico',
     path: '/admin/ssw-diagnostico',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminUsuariosRoute =
+  AutenticadoAdminUsuariosRouteImport.update({
+    id: '/admin/usuarios',
+    path: '/admin/usuarios',
     getParentRoute: () => AutenticadoRoute,
   } as any)
 const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
@@ -108,6 +145,18 @@ const AutenticadoPerformanceListaRoute =
     path: '/performance/lista',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoPlataformaAdministradoresRoute =
+  AutenticadoPlataformaAdministradoresRouteImport.update({
+    id: '/plataforma/administradores',
+    path: '/plataforma/administradores',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoPlataformaLogsRoute =
+  AutenticadoPlataformaLogsRouteImport.update({
+    id: '/plataforma/logs',
+    path: '/plataforma/logs',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoRankingIndexRoute = AutenticadoRankingIndexRouteImport.update({
   id: '/ranking/',
   path: '/ranking/',
@@ -124,6 +173,18 @@ const RankingPublicoTokenRoute = RankingPublicoTokenRouteImport.update({
   path: '/ranking/publico/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutenticadoPlataformaEmpresasIndexRoute =
+  AutenticadoPlataformaEmpresasIndexRouteImport.update({
+    id: '/plataforma/empresas/',
+    path: '/plataforma/empresas/',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoPlataformaEmpresasIdRoute =
+  AutenticadoPlataformaEmpresasIdRouteImport.update({
+    id: '/plataforma/empresas/$id',
+    path: '/plataforma/empresas/$id',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoRankingEquipeIdRoute =
   AutenticadoRankingEquipeIdRouteImport.update({
     id: '/ranking/equipe/$id',
@@ -140,16 +201,25 @@ export interface FileRoutesByFullPath {
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
   '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
+  '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
   '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/logs': typeof AutenticadoAdminLogsRoute
+  '/admin/roles': typeof AutenticadoAdminRolesRoute
   '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
+  '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
+  '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
   '/performance/': typeof AutenticadoPerformanceIndexRoute
   '/ranking/': typeof AutenticadoRankingIndexRoute
+  '/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
   '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
+  '/plataforma/empresas/': typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -160,16 +230,25 @@ export interface FileRoutesByTo {
   '/': typeof AutenticadoIndexRoute
   '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
   '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
+  '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
   '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/logs': typeof AutenticadoAdminLogsRoute
+  '/admin/roles': typeof AutenticadoAdminRolesRoute
   '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
+  '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
+  '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
   '/performance': typeof AutenticadoPerformanceIndexRoute
   '/ranking': typeof AutenticadoRankingIndexRoute
+  '/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
   '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
+  '/plataforma/empresas': typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -182,16 +261,25 @@ export interface FileRoutesById {
   '/_autenticado/': typeof AutenticadoIndexRoute
   '/_autenticado/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
   '/_autenticado/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/_autenticado/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
+  '/_autenticado/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/_autenticado/admin/equipes': typeof AutenticadoAdminEquipesRoute
   '/_autenticado/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/_autenticado/admin/logs': typeof AutenticadoAdminLogsRoute
+  '/_autenticado/admin/roles': typeof AutenticadoAdminRolesRoute
   '/_autenticado/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
+  '/_autenticado/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
   '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
+  '/_autenticado/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/_autenticado/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
   '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
   '/_autenticado/performance/': typeof AutenticadoPerformanceIndexRoute
   '/_autenticado/ranking/': typeof AutenticadoRankingIndexRoute
+  '/_autenticado/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
   '/_autenticado/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
+  '/_autenticado/plataforma/empresas/': typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -204,16 +292,25 @@ export interface FileRouteTypes {
     | '/sem-acesso'
     | '/admin/ahgora'
     | '/admin/bonificacao-entrega'
+    | '/admin/configuracoes'
+    | '/admin/departamentos'
     | '/admin/equipes'
     | '/admin/ingestao'
+    | '/admin/logs'
+    | '/admin/roles'
     | '/admin/ssw-diagnostico'
+    | '/admin/usuarios'
     | '/ctrc/$numero'
     | '/performance/lista'
+    | '/plataforma/administradores'
+    | '/plataforma/logs'
     | '/ranking/regras'
     | '/ranking/publico/$token'
     | '/performance/'
     | '/ranking/'
+    | '/plataforma/empresas/$id'
     | '/ranking/equipe/$id'
+    | '/plataforma/empresas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -224,16 +321,25 @@ export interface FileRouteTypes {
     | '/'
     | '/admin/ahgora'
     | '/admin/bonificacao-entrega'
+    | '/admin/configuracoes'
+    | '/admin/departamentos'
     | '/admin/equipes'
     | '/admin/ingestao'
+    | '/admin/logs'
+    | '/admin/roles'
     | '/admin/ssw-diagnostico'
+    | '/admin/usuarios'
     | '/ctrc/$numero'
     | '/performance/lista'
+    | '/plataforma/administradores'
+    | '/plataforma/logs'
     | '/ranking/regras'
     | '/ranking/publico/$token'
     | '/performance'
     | '/ranking'
+    | '/plataforma/empresas/$id'
     | '/ranking/equipe/$id'
+    | '/plataforma/empresas'
   id:
     | '__root__'
     | '/_autenticado'
@@ -245,16 +351,25 @@ export interface FileRouteTypes {
     | '/_autenticado/'
     | '/_autenticado/admin/ahgora'
     | '/_autenticado/admin/bonificacao-entrega'
+    | '/_autenticado/admin/configuracoes'
+    | '/_autenticado/admin/departamentos'
     | '/_autenticado/admin/equipes'
     | '/_autenticado/admin/ingestao'
+    | '/_autenticado/admin/logs'
+    | '/_autenticado/admin/roles'
     | '/_autenticado/admin/ssw-diagnostico'
+    | '/_autenticado/admin/usuarios'
     | '/_autenticado/ctrc/$numero'
     | '/_autenticado/performance/lista'
+    | '/_autenticado/plataforma/administradores'
+    | '/_autenticado/plataforma/logs'
     | '/_autenticado/ranking/regras'
     | '/ranking/publico/$token'
     | '/_autenticado/performance/'
     | '/_autenticado/ranking/'
+    | '/_autenticado/plataforma/empresas/$id'
     | '/_autenticado/ranking/equipe/$id'
+    | '/_autenticado/plataforma/empresas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -330,6 +445,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoAdminBonificacaoEntregaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/configuracoes': {
+      id: '/_autenticado/admin/configuracoes'
+      path: '/admin/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AutenticadoAdminConfiguracoesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/departamentos': {
+      id: '/_autenticado/admin/departamentos'
+      path: '/admin/departamentos'
+      fullPath: '/admin/departamentos'
+      preLoaderRoute: typeof AutenticadoAdminDepartamentosRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/admin/equipes': {
       id: '/_autenticado/admin/equipes'
       path: '/admin/equipes'
@@ -344,11 +473,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoAdminIngestaoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/logs': {
+      id: '/_autenticado/admin/logs'
+      path: '/admin/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AutenticadoAdminLogsRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/roles': {
+      id: '/_autenticado/admin/roles'
+      path: '/admin/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AutenticadoAdminRolesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/admin/ssw-diagnostico': {
       id: '/_autenticado/admin/ssw-diagnostico'
       path: '/admin/ssw-diagnostico'
       fullPath: '/admin/ssw-diagnostico'
       preLoaderRoute: typeof AutenticadoAdminSswDiagnosticoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/usuarios': {
+      id: '/_autenticado/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AutenticadoAdminUsuariosRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/ctrc/$numero': {
@@ -372,6 +522,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoPerformanceListaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/plataforma/administradores': {
+      id: '/_autenticado/plataforma/administradores'
+      path: '/plataforma/administradores'
+      fullPath: '/plataforma/administradores'
+      preLoaderRoute: typeof AutenticadoPlataformaAdministradoresRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/plataforma/logs': {
+      id: '/_autenticado/plataforma/logs'
+      path: '/plataforma/logs'
+      fullPath: '/plataforma/logs'
+      preLoaderRoute: typeof AutenticadoPlataformaLogsRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/ranking/': {
       id: '/_autenticado/ranking/'
       path: '/ranking'
@@ -393,6 +557,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RankingPublicoTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_autenticado/plataforma/empresas/': {
+      id: '/_autenticado/plataforma/empresas/'
+      path: '/plataforma/empresas'
+      fullPath: '/plataforma/empresas/'
+      preLoaderRoute: typeof AutenticadoPlataformaEmpresasIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/plataforma/empresas/$id': {
+      id: '/_autenticado/plataforma/empresas/$id'
+      path: '/plataforma/empresas/$id'
+      fullPath: '/plataforma/empresas/$id'
+      preLoaderRoute: typeof AutenticadoPlataformaEmpresasIdRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/ranking/equipe/$id': {
       id: '/_autenticado/ranking/equipe/$id'
       path: '/ranking/equipe/$id'
@@ -409,15 +587,24 @@ interface AutenticadoRouteChildren {
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
   AutenticadoAdminAhgoraRoute: typeof AutenticadoAdminAhgoraRoute
   AutenticadoAdminBonificacaoEntregaRoute: typeof AutenticadoAdminBonificacaoEntregaRoute
+  AutenticadoAdminConfiguracoesRoute: typeof AutenticadoAdminConfiguracoesRoute
+  AutenticadoAdminDepartamentosRoute: typeof AutenticadoAdminDepartamentosRoute
   AutenticadoAdminEquipesRoute: typeof AutenticadoAdminEquipesRoute
   AutenticadoAdminIngestaoRoute: typeof AutenticadoAdminIngestaoRoute
+  AutenticadoAdminLogsRoute: typeof AutenticadoAdminLogsRoute
+  AutenticadoAdminRolesRoute: typeof AutenticadoAdminRolesRoute
   AutenticadoAdminSswDiagnosticoRoute: typeof AutenticadoAdminSswDiagnosticoRoute
+  AutenticadoAdminUsuariosRoute: typeof AutenticadoAdminUsuariosRoute
   AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
   AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
+  AutenticadoPlataformaAdministradoresRoute: typeof AutenticadoPlataformaAdministradoresRoute
+  AutenticadoPlataformaLogsRoute: typeof AutenticadoPlataformaLogsRoute
   AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
   AutenticadoPerformanceIndexRoute: typeof AutenticadoPerformanceIndexRoute
   AutenticadoRankingIndexRoute: typeof AutenticadoRankingIndexRoute
+  AutenticadoPlataformaEmpresasIdRoute: typeof AutenticadoPlataformaEmpresasIdRoute
   AutenticadoRankingEquipeIdRoute: typeof AutenticadoRankingEquipeIdRoute
+  AutenticadoPlataformaEmpresasIndexRoute: typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
@@ -427,15 +614,26 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoAdminAhgoraRoute: AutenticadoAdminAhgoraRoute,
   AutenticadoAdminBonificacaoEntregaRoute:
     AutenticadoAdminBonificacaoEntregaRoute,
+  AutenticadoAdminConfiguracoesRoute: AutenticadoAdminConfiguracoesRoute,
+  AutenticadoAdminDepartamentosRoute: AutenticadoAdminDepartamentosRoute,
   AutenticadoAdminEquipesRoute: AutenticadoAdminEquipesRoute,
   AutenticadoAdminIngestaoRoute: AutenticadoAdminIngestaoRoute,
+  AutenticadoAdminLogsRoute: AutenticadoAdminLogsRoute,
+  AutenticadoAdminRolesRoute: AutenticadoAdminRolesRoute,
   AutenticadoAdminSswDiagnosticoRoute: AutenticadoAdminSswDiagnosticoRoute,
+  AutenticadoAdminUsuariosRoute: AutenticadoAdminUsuariosRoute,
   AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
   AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
+  AutenticadoPlataformaAdministradoresRoute:
+    AutenticadoPlataformaAdministradoresRoute,
+  AutenticadoPlataformaLogsRoute: AutenticadoPlataformaLogsRoute,
   AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,
   AutenticadoPerformanceIndexRoute: AutenticadoPerformanceIndexRoute,
   AutenticadoRankingIndexRoute: AutenticadoRankingIndexRoute,
+  AutenticadoPlataformaEmpresasIdRoute: AutenticadoPlataformaEmpresasIdRoute,
   AutenticadoRankingEquipeIdRoute: AutenticadoRankingEquipeIdRoute,
+  AutenticadoPlataformaEmpresasIndexRoute:
+    AutenticadoPlataformaEmpresasIndexRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(

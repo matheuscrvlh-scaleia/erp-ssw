@@ -26,6 +26,8 @@ import { jobWebhookSsw } from "./fontes/webhook/job";
 import { criarRepositorioWebhook } from "./fontes/webhook/repositorio";
 import { limparIngestaoSsw, limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
+import { recalcularPrazos } from "./jobs/prazos/job";
+import { criarRepositorioPrazosDoWorker } from "./jobs/prazos/repositorio";
 import {
   type DefinicaoDeJob,
   type ExecutorDoWorker,
@@ -68,6 +70,7 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     bi2: criarRepositorioBi2(tx, empresaId),
     webhook: criarRepositorioWebhook(tx, empresaId),
     slaArquivos: criarRepositorioSlaArquivos(tx),
+    prazos: criarRepositorioPrazosDoWorker(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
@@ -107,6 +110,7 @@ const JOBS: readonly DefinicaoDeJob[] = [
   }),
   jobWebhookSsw,
   slaPelosArquivos,
+  recalcularPrazos,
 ];
 
 const processar = criarProcessador({ jobs: JOBS, executar, log, agora: () => new Date() });
