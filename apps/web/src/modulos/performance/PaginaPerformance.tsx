@@ -30,9 +30,15 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
-import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
+import { consultaPagadores } from "@/modulos/filtros/api";
+import {
+  BuscaDocumento,
+  SeletorDeFilial,
+  SeletorDePagador,
+  SeletorDeTexto,
+} from "@/modulos/filtros/componentes";
 
 import { cartoesDeAlerta } from "./alertas";
 import {
@@ -41,16 +47,13 @@ import {
   consultaCodigosDisponiveis,
   consultaConfiguracao,
   consultaOtif,
-  consultaPagadores,
   consultaPontualidade,
   consultaPrevistos,
   consultaResumo,
   consultaSerie,
-  consultaSugestoes,
   consultaTde,
   consultaTiposDocumento,
   consultaTiposNoPeriodo,
-  consultaUnidadesResponsaveis,
   entradaDoFiltro,
 } from "./api";
 import {
@@ -67,7 +70,6 @@ import {
   type TipoDaLista,
 } from "./busca";
 import { BannerDeAlertas } from "./componentes/Alertas";
-import { BuscaDocumento } from "./componentes/Filtros";
 import { GraficoSerie } from "./componentes/GraficoSerie";
 import { EsqueletoDeCards, LinhaDeKpis } from "./componentes/Kpis";
 import { type CliqueNosPrevistos, SecaoPrevistos } from "./componentes/Previstos";
@@ -153,45 +155,31 @@ export function PaginaPerformance() {
     enabled: liberadoDepois,
   });
   const pagadores = useQuery({
-    ...consultaPagadores({ ...periodo, unidades: filtros.unidades, filiais: filtros.filiais }),
+    ...consultaPagadores({
+      ...periodo,
+      unidades: filtros.unidades ?? undefined,
+      filiais: filtros.filiais ?? undefined,
+    }),
     enabled: !!r,
   });
+  // Contexto dos seletores compartilhados (sugestões e unidade responsável).
+  const contexto = {
+    ...periodo,
+    parceiros: busca.parceiros,
+    remetente: busca.remetente,
+    destino: busca.destino,
+    filiais: busca.filiais,
+    codigos: busca.codigos.map(Number).filter((n) => Number.isInteger(n)),
+  };
 
   const [ocorrenciaAberta, setOcorrenciaAberta] = useState(false);
   const [tipoAberto, setTipoAberto] = useState(false);
-  const [filialAberta, setFilialAberta] = useState(false);
   const codigos = useQuery({
     ...consultaCodigosDisponiveis(entrada),
     enabled: ocorrenciaAberta || busca.codigos.length > 0,
   });
   const tiposOpcoes = useQuery({ ...consultaTiposDocumento, enabled: tipoAberto });
   const tiposNoPeriodo = useQuery({ ...consultaTiposNoPeriodo(entrada), enabled: tipoAberto });
-  const filiais = useQuery({
-    ...consultaUnidadesResponsaveis({
-      ...periodo,
-      parceiros: filtros.parceiros,
-      remetente: filtros.remetente,
-      destino: filtros.destino,
-      codigos: filtros.codigos,
-    }),
-    enabled: filialAberta,
-  });
-  const sugestoesDe = (campo: "remetente" | "cidade_destino") => ({
-    chave: ["filtros-ctrc", "sugestoes", campo, periodo, filtros],
-    buscar: (q: string) =>
-      queryClient.query(
-        consultaSugestoes({
-          campo,
-          q,
-          ...periodo,
-          parceiros: filtros.parceiros,
-          remetente: filtros.remetente,
-          destino: filtros.destino,
-          filiais: filtros.filiais,
-          codigos: filtros.codigos,
-        }),
-      ),
-  });
 
   const janela = janelaDaSerie(periodo.inicio, periodo.fim);
   const [refSerie, serieVisivel] = useVisivel<HTMLDivElement>();
@@ -238,7 +226,7 @@ export function PaginaPerformance() {
       r?.unidades.find((u) => u.id === id)?.nome ?? (UUID.test(id) ? "unidade selecionada" : id),
   );
   const nomesParceiros = busca.parceiros.map(
-    (cnpj) => pagadores.data?.find((p) => p.cnpj === cnpj)?.nome ?? cnpj,
+    (cnpj) => pagadores.data?.find((p) => p.id === cnpj)?.nome ?? cnpj,
   );
   const nomesCodigos = busca.codigos.map((cod) => {
     const descricao = codigos.data?.find((o) => o.codigo === cod)?.descricao;
@@ -396,59 +384,53 @@ export function PaginaPerformance() {
           {BASE_CURTA[busca.base]}
         </span>
         <BuscaDocumento
+          valor=""
           placeholder="CTRC..."
-          onBuscar={(v) => {
-            abrirLista("emitidos", { ctrc: v, ignorarPeriodo: true });
+          className="w-[150px]"
+          aoMudar={(v) => {
+            if (v) abrirLista("emitidos", { ctrc: v, ignorarPeriodo: true });
           }}
         />
         <BuscaDocumento
+          valor=""
           placeholder="Nota fiscal..."
-          onBuscar={(v) => {
-            abrirLista("emitidos", { nf: v, ignorarPeriodo: true });
+          className="w-[150px]"
+          aoMudar={(v) => {
+            if (v) abrirLista("emitidos", { nf: v, ignorarPeriodo: true });
           }}
         />
-        <FiltroMultiplo
+        <SeletorDePagador
           rotulo="Parceiros"
-          textoVazio="todos"
-          opcoes={pagadores.data?.map((p) => ({
-            valor: p.cnpj,
-            rotulo: p.nome,
-            detalhe: p.cnpjFormatado,
-          }))}
+          opcoes={pagadores.data}
           selecionados={busca.parceiros}
           aoMudar={(ids) => {
             mudar({ parceiros: ids });
           }}
         />
-        <FiltroMultiplo
-          rotulo="Unidade responsável"
-          opcoes={
-            filiais.data
-              ? [...new Set([...filiais.data.siglas, ...busca.filiais])].map((s) => ({ valor: s }))
-              : undefined
-          }
-          aoAbrir={setFilialAberta}
-          selecionados={busca.filiais}
-          aoMudar={(ids) => {
-            mudar({ filiais: ids });
+        <SeletorDeFilial
+          selecionadas={busca.filiais}
+          contexto={contexto}
+          aoMudar={(siglas) => {
+            mudar({ filiais: siglas });
           }}
-          monoespacado
         />
-        <FiltroTexto
+        <SeletorDeTexto
           rotulo="Remetente"
+          campo="remetente"
           valor={busca.remetente}
+          contexto={contexto}
           aoMudar={(v) => {
             mudar({ remetente: v });
           }}
-          sugestoes={sugestoesDe("remetente")}
         />
-        <FiltroTexto
+        <SeletorDeTexto
           rotulo="Destino"
+          campo="cidade_destino"
           valor={busca.destino}
+          contexto={contexto}
           aoMudar={(v) => {
             mudar({ destino: v });
           }}
-          sugestoes={sugestoesDe("cidade_destino")}
         />
         <span
           className="inline-flex items-center"

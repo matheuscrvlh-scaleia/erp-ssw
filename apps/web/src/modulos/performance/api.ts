@@ -1,4 +1,4 @@
-import { contratosFiltrosCtrc as cf } from "@erp/shared/contratos/filtros-ctrc";
+import { contratosFiltros as cf } from "@erp/shared/contratos/filtros";
 import {
   type BaseDeData,
   contratosPerformance as c,
@@ -92,51 +92,8 @@ export const consultaRelatorio = (
     queryFn: () => chamar(c.relatorio, { entrada }),
   });
 
-// Opções dos filtros (servem a várias telas de CT-e).
-
-export const consultaPagadores = (entrada: {
-  inicio: string;
-  fim: string;
-  unidades: string[] | null;
-  filiais: string[] | null;
-}) =>
-  queryOptions({
-    queryKey: ["filtros-ctrc", "pagadores", entrada],
-    queryFn: () => chamar(cf.pagadores, { entrada }),
-  });
-
-export const consultaUnidadesResponsaveis = (entrada: {
-  inicio: string;
-  fim: string;
-  parceiros: string[] | null;
-  remetente: string | null;
-  destino: string | null;
-  codigos: string[] | null;
-}) =>
-  queryOptions({
-    queryKey: ["filtros-ctrc", "unidades-responsaveis", entrada],
-    queryFn: () => chamar(cf.unidadesResponsaveis, { entrada }),
-    staleTime: 60_000,
-  });
-
+/** Tipos de documento da base inteira (opções do seletor; a contagem vem de consultaTiposNoPeriodo). */
 export const consultaTiposDocumento = queryOptions({
-  queryKey: ["filtros-ctrc", "tipos-documento"],
+  queryKey: ["filtros", "tipos-documento"],
   queryFn: () => chamar(cf.tiposDocumento),
 });
-
-export const consultaSugestoes = (entrada: {
-  campo: "remetente" | "cidade_destino";
-  q: string;
-  inicio: string;
-  fim: string;
-  parceiros: string[] | null;
-  remetente: string | null;
-  destino: string | null;
-  filiais: string[] | null;
-  codigos: string[] | null;
-}) =>
-  queryOptions({
-    queryKey: ["filtros-ctrc", "sugestoes", entrada],
-    queryFn: () => chamar(cf.sugestoesTexto, { entrada }),
-    staleTime: 60_000,
-  });

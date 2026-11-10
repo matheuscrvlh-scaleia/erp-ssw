@@ -37,13 +37,44 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
 - **Q54 — código de ocorrência com letra** na coluna do SSW conta como "sem código" na saída para
   entrega, em vez de derrubar a consulta.
 
+## Listagem detalhada e detalhe do CT-e (spec 02)
+
+- **Q02 — CT-e pela série + número.** O link da NF na Listagem abre o CT-e certo (`/ctrc/33214?sigla=CAP`).
+  Número que existe em mais de uma série, aberto sem a série, mostra a lista para escolher (antes
+  abria um ao acaso). A busca "CAP033214" na Listagem procura série e número juntos.
+- **Q10 — filtros sem surpresa.** Unidade responsável que não é filial da empresa devolve lista vazia
+  (antes ignorava o filtro e mostrava tudo); o total da última página é o real; `%` e `_` digitados
+  em Remetente/Destino/Cidade são letras, não curingas.
+- **"a||b" não casa mais tudo.** Valor vazio entre barras é ignorado (mesma leitura
+  `lerFiltroTexto` da tela e do servidor); antes virava "contém nada" e trazia todos os CT-e.
+- **Q11 — dia de Brasília.** "Hoje", "Mês" e os demais atalhos de período, a coluna "Entrega
+  Realizada", as faixas de previsão e o "em rota" usam o dia de Brasília, não o do navegador.
+- **Q12 — conclusão sem "−1 dia".** O seletor Parceiros com base "Concluídos" usa a data de
+  conclusão como está.
+- **Q13 — a lista segue o card.** Unidade aberta a partir de um card filtra pelo cadastro da unidade;
+  o filtro e o gráfico "Ocorrências" usam o código efetivo do CT-e.
+- **Q21 — quarentena fora dos recortes.** Ocorrência em quarentena não conta em nenhum recorte da
+  Listagem (código 13, OTIF, TDE, sem atualização...).
+- **Q04 — exportação sem teto de 20 mil.** Exporta todas as páginas do filtro; acima de 100 mil
+  linhas sai com as primeiras 100 mil e um aviso dizendo quantas ficaram de fora (antes cortava em
+  20 mil sem avisar). O PDF da Listagem passa a ser o PDF da empresa (paisagem, todas as colunas),
+  não a impressão A4 que escondia seis colunas.
+- **Q07 — ordem estável.** Mesma data na ordenação: desempata pelo número do CT-e e pela série; a
+  mesma página não muda de uma consulta para outra.
+- **Q40 — sem `/dashboard`.** O endereço antigo do Dashboard cai na página "não encontrada", com o
+  botão "Ir para o início".
+- **Detalhe do CT-e.** O "Status do prazo" usa o dia de Brasília (Q11); "não encontrado" oferece
+  só "Voltar" (antes, "Voltar ao romaneio").
+
 ## Performance e relatório de período (`/performance`, spec 02)
 
 - **Q01 — relatório com a escala certa.** No Relatório de período, SLA de Pontualidade, SLA
   Operacional e SLA Cliente aparecem em 0–100% (antes "1,0%" no lugar de "95,0%" em parte dos
   cartões); os nomes dos indicadores ficam como estão.
 - **Q10 — unidade responsável que não é da empresa não mostra nada.** Filtro por filial que não é
-  própria (ex.: link antigo) devolve a tela vazia em vez de ignorar o filtro.
+  própria (ex.: link antigo) devolve a tela vazia em vez de ignorar o filtro. Em Remetente/Destino,
+  `%` e `_` digitados são letras e "a||b" ignora o vazio (mesma regra da Listagem, para o card e a
+  lista baterem).
 - **Q11 — dia de Brasília.** A faixa de vencimento dos Previstos, o atraso, o "vencendo em 48 h" e o
   TDE "em rota" usam o dia de Brasília (antes o dia UTC, que virava às 21h).
 - **Q13 — TDE e exportação seguem o filtro de Ocorrência.** O card "TDE aguardando programação" e o

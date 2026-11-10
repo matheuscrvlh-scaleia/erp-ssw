@@ -1,6 +1,7 @@
 import { type BaseDeData, type FiltroPerformanceValidado } from "@erp/shared/contratos/performance";
 
-import { btrim, padroesTextoFiltro, somenteDigitos } from "../nucleo/texto";
+import { padroesDeTexto } from "../listagem/texto";
+import { somenteDigitos } from "../nucleo/texto";
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -39,10 +40,8 @@ function semDuplicados(lista: string[]): string[] {
   return [...new Set(lista)];
 }
 
-function texto(valor: string | null | undefined): string[] | null {
-  const t = btrim(valor ?? "");
-  return t ? padroesTextoFiltro(valor ?? "") : null;
-}
+/** Mesma leitura da Listagem ("a|b", vazios ignorados, % e _ como letra), para card e lista baterem. */
+const texto = (valor: string | null | undefined): string[] | null => padroesDeTexto(valor);
 
 /** Itens sem dígito não casam nada (como o `NULL` do SQL de hoje). */
 export function codigosDoFiltro(codigos: readonly string[] | null | undefined): number[] | null {

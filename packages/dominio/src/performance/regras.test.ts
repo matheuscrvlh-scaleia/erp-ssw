@@ -1,7 +1,6 @@
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/performance";
 import { describe, expect, it } from "vitest";
 
-import { padroesTextoFiltro } from "../nucleo/texto";
 import { type CodigoDoCatalogo, codigosDePrejuizo, conjuntosDoCatalogo } from "./catalogo";
 import { normalizarFiltro } from "./filtro";
 import { arredondar, arredondarRazao, centavos } from "./numeros";
@@ -60,10 +59,19 @@ describe("arredondamento (ROUND do Postgres)", () => {
 });
 
 describe("filtro de texto com vários valores (T13)", () => {
-  it("monta os padrões ILIKE como o SQL de hoje", () => {
-    expect(padroesTextoFiltro("são paulo | campinas")).toEqual(["%são paulo%", "%campinas%"]);
-    expect(padroesTextoFiltro(" ara ")).toEqual(["%ara%"]);
-    expect(padroesTextoFiltro("a||b")).toEqual(["%a%", "%%", "%b%"]);
+  it("mesma regra da Listagem: vazios ignorados e curingas digitados viram letra", () => {
+    const f = normalizarFiltro(
+      {
+        inicio: "2026-11-01",
+        fim: "2026-11-10",
+        baseData: "emissao",
+        remetente: "são paulo | campinas",
+        destino: "a||50%",
+      },
+      [],
+    );
+    expect(f.remetente).toEqual(["%são paulo%", "%campinas%"]);
+    expect(f.destino).toEqual(["%a%", "%50\\%%"]);
   });
 });
 

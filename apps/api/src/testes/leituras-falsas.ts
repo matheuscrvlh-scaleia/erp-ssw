@@ -1,8 +1,7 @@
-import { type RepositorioFiltrosCtrc } from "../modulos/filtros-ctrc/casos-de-uso";
 import { type RepositorioPerformance } from "../modulos/performance/casos-de-uso";
 
 /*
- * Repositórios de leitura (Performance e opções de filtro) para os testes: tudo vazio por padrão;
+ * Repositório de leitura da Performance para os testes: tudo vazio por padrão;
  * cada teste troca só o método que interessa. As consultas reais são SQL; aqui só se testa o
  * caminho HTTP e a orquestração.
  */
@@ -31,18 +30,5 @@ export function criarPerformanceFalsa(): RepositorioPerformance {
     finalizadosPorCodigo: () => Promise.resolve([]),
     ctesParaExportar: () => Promise.resolve([]),
     ocorrenciasDosCtes: () => Promise.resolve([]),
-  };
-}
-
-export function criarFiltrosCtrcFalso(): RepositorioFiltrosCtrc {
-  return {
-    filiaisProprias: () => Promise.resolve([]),
-    codigosDoCatalogo: () => Promise.resolve([]),
-    siglasComCtrc: () => Promise.resolve([]),
-    sugestoes: () => Promise.resolve([]),
-    cidadesDasUnidades: () => Promise.resolve([]),
-    apelidosDeFiliais: () => Promise.resolve([]),
-    pagadores: () => Promise.resolve([]),
-    tiposDocumento: () => Promise.resolve([]),
   };
 }

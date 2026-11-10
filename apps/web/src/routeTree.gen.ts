@@ -16,7 +16,9 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
 import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
+import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -52,10 +54,21 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
+  id: '/ctrc/$numero',
+  path: '/ctrc/$numero',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoPerformanceIndexRoute =
   AutenticadoPerformanceIndexRouteImport.update({
     id: '/performance/',
     path: '/performance/',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoPerformanceListaRoute =
+  AutenticadoPerformanceListaRouteImport.update({
+    id: '/performance/lista',
+    path: '/performance/lista',
     getParentRoute: () => AutenticadoRoute,
   } as any)
 
@@ -66,6 +79,8 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/performance/': typeof AutenticadoPerformanceIndexRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +90,8 @@ export interface FileRoutesByTo {
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/performance': typeof AutenticadoPerformanceIndexRoute
 }
 export interface FileRoutesById {
@@ -86,6 +103,8 @@ export interface FileRoutesById {
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/_autenticado/performance/': typeof AutenticadoPerformanceIndexRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +116,8 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/calendario'
     | '/sem-acesso'
+    | '/ctrc/$numero'
+    | '/performance/lista'
     | '/performance/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -106,6 +127,8 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/sem-acesso'
     | '/'
+    | '/ctrc/$numero'
+    | '/performance/lista'
     | '/performance'
   id:
     | '__root__'
@@ -116,6 +139,8 @@ export interface FileRouteTypes {
     | '/_autenticado/calendario'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/ctrc/$numero'
+    | '/_autenticado/performance/lista'
     | '/_autenticado/performance/'
   fileRoutesById: FileRoutesById
 }
@@ -177,11 +202,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/ctrc/$numero': {
+      id: '/_autenticado/ctrc/$numero'
+      path: '/ctrc/$numero'
+      fullPath: '/ctrc/$numero'
+      preLoaderRoute: typeof AutenticadoCtrcNumeroRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/performance/': {
       id: '/_autenticado/performance/'
       path: '/performance'
       fullPath: '/performance/'
       preLoaderRoute: typeof AutenticadoPerformanceIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/performance/lista': {
+      id: '/_autenticado/performance/lista'
+      path: '/performance/lista'
+      fullPath: '/performance/lista'
+      preLoaderRoute: typeof AutenticadoPerformanceListaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
   }
@@ -191,6 +230,8 @@ interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
+  AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
   AutenticadoPerformanceIndexRoute: typeof AutenticadoPerformanceIndexRoute
 }
 
@@ -198,6 +239,8 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
+  AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
   AutenticadoPerformanceIndexRoute: AutenticadoPerformanceIndexRoute,
 }
 
