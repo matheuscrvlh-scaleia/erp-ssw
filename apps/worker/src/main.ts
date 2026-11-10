@@ -9,6 +9,8 @@ import { criarRepositorioAgendamentos } from "./agendamentos/repositorio";
 import { carregarAmbiente } from "./config/env";
 import { limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
+import { recalcularPrazos } from "./jobs/prazos/job";
+import { criarRepositorioPrazosDoWorker } from "./jobs/prazos/repositorio";
 import {
   type DefinicaoDeJob,
   type ExecutorDoWorker,
@@ -20,7 +22,7 @@ import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
 
 /** Todos os jobs do sistema. Job novo entra aqui. */
-const JOBS: readonly DefinicaoDeJob[] = [limparSessoes];
+const JOBS: readonly DefinicaoDeJob[] = [limparSessoes, recalcularPrazos];
 
 const PRAZO_DE_DESLIGAMENTO_MS = 30_000;
 
@@ -44,6 +46,7 @@ function repositorios(tx: Transacao): RepositoriosDoWorker {
   return {
     agendamentos: criarRepositorioAgendamentos(tx),
     manutencao: criarRepositorioManutencao(tx),
+    prazos: criarRepositorioPrazosDoWorker(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
