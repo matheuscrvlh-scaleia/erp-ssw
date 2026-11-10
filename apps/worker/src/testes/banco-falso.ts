@@ -88,6 +88,10 @@ export class BancoFalso {
             this.empresas.filter((e) => e.integracoes.includes(tipo)).map(({ id }) => ({ id })),
           ),
       },
+      segredos: {
+        foraDaVersao: () => Promise.resolve([]),
+        regravar: () => Promise.resolve(),
+      },
       manutencao: {
         apagarSessoesEncerradas: () => Promise.resolve(0),
         apagarTokensDeSenhaVencidos: () => Promise.resolve(0),

@@ -291,8 +291,11 @@ echo "SEGREDOS_CHAVE_ATUAL=1"
 ```
 
 **Rotação**: acrescentar a nova (`SEGREDOS_CHAVES=1:<antiga>,2:<nova>`), `SEGREDOS_CHAVE_ATUAL=2`,
-`./deploy.sh <tag atual>`: gravação nova sai com a 2, leitura usa a versão da linha. Rodar o job de
-recifrar (onda 2) e só remover a `1:` quando nenhuma linha estiver mais na versão 1.
+`./deploy.sh <tag atual>`: gravação nova sai com a 2, leitura usa a versão da linha. Pedir o job de
+recifrar (`docker compose run --rm worker node dist/main.js --recifrar-segredos`: só enfileira; o
+worker no ar regrava cada segredo, e o segredo anterior do webhook, com a chave atual e loga
+"segredos recifrados com a chave atual" com o total e as falhas). Só remover a `1:` quando o log
+disser `falhas: []` e nenhuma linha estiver mais na versão 1.
 
 **Nunca perder a chave**: sem ela os segredos do banco não decifram (recadastrar integração por
 integração). Guardar no gerenciador de senhas, **separada** do backup do banco: backup + chave

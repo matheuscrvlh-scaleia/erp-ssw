@@ -39,7 +39,9 @@ import { criarRepositorioWebhook } from "./fontes/webhook/repositorio";
 import { importarColetas050 } from "./jobs/coletas/job";
 import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparIngestaoSsw, limparSessoes } from "./jobs/manutencao/job";
+import { criarJobRecifrarSegredos, NOME_DO_JOB_RECIFRAR } from "./jobs/manutencao/recifrar";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
+import { criarRepositorioSegredos } from "./jobs/manutencao/repositorio-segredos";
 import { recalcularPrazos } from "./jobs/prazos/job";
 import { criarRepositorioPrazosDoWorker } from "./jobs/prazos/repositorio";
 import {
@@ -98,6 +100,7 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     projecoesRomaneio: criarRepositorioProjecoesRomaneio(tx, empresaId),
     coletas050: criarRepositorioGravacao050(tx),
     recalculo: criarRepositorioRecalculo(tx),
+    segredos: criarRepositorioSegredos(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
@@ -114,6 +117,16 @@ const filas = new Map(
   ]),
 );
 
+// Sob demanda: `node dist/main.js --recifrar-segredos` só pede o job (o worker no ar o roda) e sai.
+if (process.argv.includes("--recifrar-segredos")) {
+  await filas.get("manutencao")?.add(NOME_DO_JOB_RECIFRAR, {});
+  log.info("job recifrar-segredos enfileirado");
+  await Promise.all([...filas.values()].map((f) => f.close()));
+  await redis.quit();
+  await conexao.encerrar();
+  process.exit(0);
+}
+
 const enfileirador: Enfileirador = {
   enfileirar: async (job, dados, { deduplicar }) => {
     const fila = filas.get(filaDoJob(job));
@@ -129,6 +142,7 @@ const enfileiradorDeDominios = criarEnfileirador(redis);
 const JOBS: readonly DefinicaoDeJob[] = [
   limparSessoes,
   limparIngestaoSsw,
+  criarJobRecifrarSegredos(chavesDeSegredo),
   criarDespachante(enfileirador),
   criarJobBi2_0017({ buscar: fetch, cofre }),
   criarJobTokenSsw({
