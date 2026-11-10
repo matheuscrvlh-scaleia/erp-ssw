@@ -6,6 +6,8 @@ import {
 } from "@erp/shared/contratos/codigos-ocorrencia";
 import { type Responsavel } from "@erp/shared/contratos/ocorrencias";
 
+import { efeitoDaAlteracaoDeCodigo } from "../nucleo";
+
 /** origem: updateCodigoOcorrencia (src/features/admin/codigos, sistema atual) */
 export const RESPONSAVEL_DA_LETRA: Record<LetraDeResponsavel, Responsavel> = {
   F: "FR",
@@ -68,15 +70,24 @@ export function diferencas(
 }
 
 /**
- * Mudou o que as outras telas copiam para as ocorrências (penaliza / responsável): todas as
- * ocorrências do código precisam ser regravadas.
- * origem: propagate_codigo_changes (sistema atual)
+ * O que a alteração feita no Admin exige (regra do núcleo): regravar responsável/penaliza nas
+ * ocorrências do código e/ou recalcular os CT-e com o código. O Admin não muda tipo nem processo
+ * do SSW, então eles entram iguais dos dois lados.
  */
-export function classificacaoMudou(
-  antes: Pick<ClassificacaoDoCodigo, "penaliza" | "responsavel">,
-  depois: Pick<ClassificacaoDoCodigo, "penaliza" | "responsavel">,
-): boolean {
-  return antes.penaliza !== depois.penaliza || antes.responsavel !== depois.responsavel;
+export function efeitoDaAlteracao(
+  codigo: number,
+  antes: Pick<ClassificacaoDoCodigo, "descricao" | "responsavel" | "penaliza">,
+  depois: Pick<ClassificacaoDoCodigo, "descricao" | "responsavel" | "penaliza">,
+): ReturnType<typeof efeitoDaAlteracaoDeCodigo> {
+  const comoCadastro = (c: typeof antes) => ({
+    codigo,
+    descricao: c.descricao,
+    responsavel: c.responsavel,
+    penaliza: c.penaliza,
+    tipoSsw: null,
+    processoSsw: null,
+  });
+  return efeitoDaAlteracaoDeCodigo(comoCadastro(antes), comoCadastro(depois));
 }
 
 /** origem: bulkUpdateCodigos (src/features/admin/codigos, sistema atual) */

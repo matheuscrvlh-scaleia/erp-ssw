@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   alteracaoDoLote,
-  classificacaoMudou,
+  efeitoDaAlteracao,
   diferencas,
   estatisticasDoCatalogo,
   historicoDoCodigo,
@@ -30,8 +30,17 @@ describe("admin de códigos", () => {
   });
 
   it("só penaliza e responsável pedem regravar as ocorrências", () => {
-    expect(classificacaoMudou(CODIGO, { ...CODIGO })).toBe(false);
-    expect(classificacaoMudou(CODIGO, { ...CODIGO, responsavel: "cliente" })).toBe(true);
+    expect(efeitoDaAlteracao(13, CODIGO, { ...CODIGO })).toEqual({
+      regravarOcorrencias: null,
+      recalcularCtes: false,
+    });
+    expect(efeitoDaAlteracao(13, CODIGO, { ...CODIGO, responsavel: "cliente" })).toEqual({
+      regravarOcorrencias: { responsavel: "cliente", penaliza: CODIGO.penaliza },
+      recalcularCtes: false,
+    });
+    expect(efeitoDaAlteracao(13, CODIGO, { ...CODIGO, descricao: "Outra" }).recalcularCtes).toBe(
+      true,
+    );
     expect(alteracaoDoLote("penaliza_false")).toEqual({ penaliza: false });
     expect(alteracaoDoLote("desativar")).toEqual({ ativo: false });
   });

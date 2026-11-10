@@ -1,8 +1,8 @@
 import {
   alteracaoDoLote,
-  classificacaoMudou,
   type ClassificacaoDoCodigo,
   diferencas,
+  efeitoDaAlteracao,
   estatisticasDoCatalogo,
   historicoDoCodigo,
   registroAuditavel,
@@ -159,9 +159,10 @@ export async function salvarCodigo(
       });
     }
     // Código novo ainda não tem ocorrência (a ocorrência exige o código no catálogo).
-    const precisaPropagar = antes !== undefined && classificacaoMudou(antes, depois);
-    // TODO(nucleo): trocar por nucleo/recalculo-de-ctes — descrição mudou (efeitoDaAlteracaoDeCodigo
-    // .recalcularCtes, Q20) exige recalcular os CT-e com o código; o núcleo ainda não tem o lote.
+    const efeito = antes ? efeitoDaAlteracao(codigo, antes, depois) : null;
+    const precisaPropagar = efeito?.regravarOcorrencias != null;
+    // TODO(nucleo): efeito.recalcularCtes (descrição mudou, Q20) pede recalcular os CT-e com o
+    // código pelo núcleo; falta a gravação de CT-e em lote (gravar-cte, onda1/ingestao-ssw) na main.
     return {
       afetadas: await codigosOcorrencia.contarOcorrencias(ctx.empresaId, [codigo]),
       depoisDoCommit: await propagar(
@@ -210,7 +211,9 @@ export async function alterarEmLote(
       });
     }
     const aPropagar = mudancas
-      .filter(({ antes, depois }) => classificacaoMudou(antes, depois))
+      .filter(
+        ({ antes, depois }) => efeitoDaAlteracao(antes.codigo, antes, depois).regravarOcorrencias,
+      )
       .map(({ antes }) => antes.codigo);
     return {
       alterados: mudancas.length,
