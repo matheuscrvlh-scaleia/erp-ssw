@@ -8,15 +8,13 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 import {
   decidirEmpresa,
-  FILAS_DA_INGESTAO,
-  idDoJob,
-  JOBS_DA_INGESTAO,
   LIMITE_PADRAO_DOS_ORFAOS,
   receberArquivo,
   reprocessarOrfaos,
   sha256,
   type TipoIntegracao,
 } from "@erp/ingestao/casos-de-uso";
+import { filaDoJob, idDeExecucao } from "@erp/shared/ingestao";
 import { z } from "@erp/shared/zod";
 import { type FastifyReply, type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
@@ -167,10 +165,10 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
       if (!empresaId) return reply;
       // O ciclo roda no worker (singleton por empresa); a rota só pede a rodada.
       await servicos.enfileirador.enfileirar(
-        FILAS_DA_INGESTAO.ciclo,
-        JOBS_DA_INGESTAO.ciclo,
+        filaDoJob("ssw_ciclo_aplicar"),
+        "ssw_ciclo_aplicar",
         { empresaId },
-        { deduplicacao: idDoJob(JOBS_DA_INGESTAO.ciclo, empresaId) },
+        { deduplicacao: idDeExecucao("ssw_ciclo_aplicar", empresaId) },
       );
       return { ok: true, status: "enfileirado", resultados: [] };
     },

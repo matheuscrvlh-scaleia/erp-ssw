@@ -4,15 +4,11 @@
  */
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import {
-  AGENDA_DA_INGESTAO,
   aplicar036,
   aplicarBloco,
   descartarCiclo,
-  FILAS_DA_INGESTAO,
-  idDoJob,
   importarArquivoXml,
   importarRelatorioManual,
-  JOBS_DA_INGESTAO,
   LEASE_DO_CICLO_MS,
   LIMITE_PADRAO_DOS_ORFAOS,
   reprocessarOrfaos,
@@ -21,6 +17,7 @@ import {
   travaDoFtp,
 } from "@erp/ingestao/casos-de-uso";
 import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
+import { filaDoJob, idDeExecucao, JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
@@ -36,7 +33,8 @@ const iso = (d: Date | null) => (d ? d.toISOString() : null);
 const isoObrigatorio = (d: Date) => d.toISOString();
 
 /** Horário do FTP em português (Q37: o de produção, igual para todas as empresas). */
-const DESCRICAO_DA_AGENDA = `A cada minuto, exceto :00 e :30 (${AGENDA_DA_INGESTAO.ftp})`;
+const CRON_DO_FTP = JOBS_DE_INGESTAO.find((j) => j.job === "ftp")?.cron ?? "";
+const DESCRICAO_DA_AGENDA = `A cada minuto, exceto :00 e :30 (${CRON_DO_FTP} UTC)`;
 
 export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
   servicos: ServicosDaIngestao;
@@ -215,10 +213,10 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
       const { empresaId, deps } = await daEmpresa(request);
       // "Rodar agora" ignora a pausa; singleton por empresa (disparo repetido é descartado).
       await servicos.enfileirador.enfileirar(
-        FILAS_DA_INGESTAO.ftp,
-        JOBS_DA_INGESTAO.ftp,
+        filaDoJob("ftp"),
+        "ftp",
         { empresaId, manual: true },
-        { deduplicacao: idDoJob(JOBS_DA_INGESTAO.ftp, empresaId) },
+        { deduplicacao: idDeExecucao("ftp", empresaId) },
       );
       await deps.executar((r) =>
         r.auditar({

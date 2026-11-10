@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type ContextoBanco } from "@erp/db";
+import { ehJobDeIngestao, JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
 import { z } from "@erp/shared/zod";
 import { UnrecoverableError } from "bullmq";
 import { pino } from "pino";
@@ -15,6 +16,7 @@ import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparSessoes } from "./jobs/manutencao/job";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
 import { criarProcessador } from "./processador";
+import { BancoFalso, EMPRESA as EMPRESA_DO_BANCO } from "./testes/banco-falso";
 
 const log = pino({ level: "silent" });
 const EMPRESA = randomUUID();
@@ -22,32 +24,22 @@ const EMPRESA = randomUUID();
 function bancoFalso() {
   const contextos: ContextoBanco[] = [];
   const limites: Date[] = [];
-  const repositorios: RepositoriosDoWorker = {
-    agendamentos: { empresasAtivas: () => Promise.resolve([]) },
-    manutencao: {
-      apagarSessoesEncerradas: (limite) => {
-        limites.push(limite);
-        return Promise.resolve(3);
-      },
-      apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
-    },
-    ingestao: () => {
-      throw new Error("não usado");
-    },
-    retencaoDaIngestao: {
-      apagarLinhasAplicadasAntesDe: () => Promise.resolve(0),
-      apagarErrosAntesDe: () => Promise.resolve(0),
-      apagarArquivosCiclosEAplicacoesAntesDe: () => Promise.resolve(0),
-      apagarXmlAntesDe: () => Promise.resolve(0),
-      apagarOrfaosResolvidosAntesDe: () => Promise.resolve(0),
-      apagarSincronizacoesAntesDe: () => Promise.resolve(0),
-      apagar038Superadas: () => Promise.resolve(0),
-    },
-    integracao: () => Promise.resolve(null),
-  };
+  const banco = new BancoFalso();
   const executar: ExecutorDoWorker = (contexto, fn) => {
     contextos.push(contexto);
-    return fn(repositorios);
+    return banco.executar(contexto, (repositorios: RepositoriosDoWorker) =>
+      fn({
+        ...repositorios,
+        manutencao: {
+          ...repositorios.manutencao,
+          apagarSessoesEncerradas: (limite) => {
+            limites.push(limite);
+            return Promise.resolve(3);
+          },
+          apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
+        },
+      }),
+    );
   };
   return { executar, contextos, limites };
 }
@@ -109,7 +101,7 @@ describe("processador", () => {
 });
 
 describe("agendamentos", () => {
-  const empresas = [{ id: EMPRESA, fuso: "America/Manaus", integracoesAtivas: [] }];
+  const empresas = [{ id: EMPRESA, fuso: "America/Manaus" }];
 
   it("um por job da Plataforma e um por empresa nos jobs por empresa, no fuso dela", () => {
     expect(agendamentosDesejados([limparSessoes, porEmpresa], empresas)).toEqual([
@@ -154,24 +146,38 @@ describe("agendamentos", () => {
   });
 });
 
-describe("jobs da ingestão", () => {
-  const servicos = (agendada: boolean) =>
-    ({ agendada }) as unknown as Parameters<typeof criarJobsDaIngestao>[0];
+describe("jobs da ingestão por arquivo", () => {
+  const jobs = criarJobsDaIngestao(
+    // Os jobs testados aqui não usam Redis, SFTP nem cofre.
+    {} as unknown as Parameters<typeof criarJobsDaIngestao>[0],
+  );
 
-  it("sem INGESTAO_AGENDADA nenhum agenda; ligados, só nas empresas com SFTP", () => {
-    const empresas = [
-      { id: EMPRESA, fuso: "America/Sao_Paulo", integracoesAtivas: ["sftp"] },
-      { id: randomUUID(), fuso: "America/Sao_Paulo", integracoesAtivas: [] },
-    ];
-    expect(agendamentosDesejados(criarJobsDaIngestao(servicos(false)), empresas)).toEqual([]);
-    const ligados = agendamentosDesejados(criarJobsDaIngestao(servicos(true)), empresas);
-    expect(ligados.map((a) => a.id)).toEqual([
-      `ingestao.ftp:${EMPRESA}`,
-      `ingestao.ftp-retroativo:${EMPRESA}`,
-      `ingestao.ssw-ciclo-aplicar:${EMPRESA}`,
-      `ingestao.unidade-pelo-455:${EMPRESA}`,
-      "ingestao.limpeza",
+  it("têm os nomes e as filas do catálogo, sob demanda (quem agenda é o despachante)", () => {
+    for (const j of jobs) {
+      expect(ehJobDeIngestao(j.nome)).toBe(true);
+      expect(j.fila).toBe(`ingestao.${j.nome}`);
+      expect(j.escopo).toBe("empresa");
+      expect(j.agendamento).toBeNull();
+    }
+    expect(jobs.map((j) => j.nome)).toEqual(
+      JOBS_DE_INGESTAO.filter((j) => j.integracao === "sftp" || j.integracao === "xml_cte").map(
+        (j) => j.job,
+      ),
+    );
+  });
+
+  it("limpar_staging_038 aplica a retenção no contexto da empresa", async () => {
+    const banco = new BancoFalso();
+    const processar = criarProcessador({
+      jobs,
+      executar: banco.executar,
+      log,
+      agora: () => new Date("2026-11-10T06:40:00Z"),
+    });
+    await processar({ name: "limpar_staging_038", data: { empresaId: EMPRESA_DO_BANCO } });
+    expect(banco.contextos).toEqual([
+      { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },
     ]);
-    expect(ligados[0]?.padrao).toBe("1-29,31-59 * * * *");
+    expect(banco.retencoes).toContainEqual(new Date("2026-09-11T06:40:00Z"));
   });
 });

@@ -1,17 +1,14 @@
 /**
- * Jobs da ingestão SSW (spec 06 §4). Desligados por padrão: só agendam com
- * `AGENDAMENTOS_LIGADOS=true` **e** `INGESTAO_AGENDADA=true`, e só nas empresas com a integração
- * `sftp` ligada. Singleton por empresa + tipo pelas travas do Redis (FTP 4 min, ciclo 180 s).
+ * Handlers dos jobs da ingestão SSW por arquivo (spec 06 §4), com os nomes do catálogo
+ * `@erp/shared/ingestao`. Quem agenda é o despachante (uma execução por empresa com a integração
+ * ligada, só para os jobs em `INGESTAO_JOBS_LIGADOS`); a fila de cada job deduplica por empresa e
+ * as travas do Redis seguram o singleton entre disparos (FTP 4 min, ciclo 180 s).
  */
 import {
-  AGENDA_DA_INGESTAO,
   type ClienteSftp,
-  type CredenciaisDaEmpresa,
   type DependenciasDoFtp,
   type Enfileirador,
   type FilaDeAplicacao,
-  FILAS_DA_INGESTAO,
-  JOBS_DA_INGESTAO,
   LIMITE_PADRAO_DOS_ORFAOS,
   limparIngestao,
   type Progressos,
@@ -22,134 +19,146 @@ import {
   type Travas,
   unidadePelo455Recente,
 } from "@erp/ingestao/casos-de-uso";
+import { montarConfiguracaoSftp, type SftpDoAmbiente } from "@erp/ingestao/infra";
+import { filaDoJob } from "@erp/shared/ingestao";
 import { z } from "@erp/shared/zod";
 
+import { type Cofre, segredoDa } from "../../fontes/comum/integracao";
 import { type ContextoDoJob, definirJob } from "../registro";
 
-/** O que os jobs da ingestão usam além do banco (Redis, SFTP, fila de jobs). */
+/** O que os jobs da ingestão usam além do banco (Redis, SFTP, cofre, fila de jobs). */
 export interface ServicosDaIngestao {
   fila: FilaDeAplicacao;
   travas: Travas;
   progressos: Progressos;
+  /** Jobs de outros domínios (projeções do Romaneio, 050 de Coletas). */
   enfileirador: Enfileirador;
   sftp: ClienteSftp;
-  credenciais: CredenciaisDaEmpresa;
+  cofre: Cofre;
+  /** `SFTP_*` do ambiente: só valem com `parametros.usar_env` (transição da FR). */
+  sftpDoAmbiente: SftpDoAmbiente;
   esperar: (ms: number) => Promise<void>;
-  /** `INGESTAO_AGENDADA`: sem ele os jobs só rodam sob demanda (tela, rota pública). */
-  agendada: boolean;
 }
 
 const porEmpresa = z.object({ empresaId: z.uuid() });
-const doFtp = porEmpresa.extend({ manual: z.boolean().optional() });
 
-function empresaDoJob(ctx: ContextoDoJob): string {
-  if (!ctx.empresaId) throw new Error("Job da ingestão sem empresa.");
-  return ctx.empresaId;
-}
-
-function dependencias(ctx: ContextoDoJob, s: ServicosDaIngestao): DependenciasDoFtp {
-  const empresaId = empresaDoJob(ctx);
-  const executar: Transacional = (fn) => ctx.executar((r) => fn(r.ingestao(empresaId)));
+function dependencias(
+  { executar, agora }: ContextoDoJob,
+  empresaId: string,
+  s: ServicosDaIngestao,
+): DependenciasDoFtp {
+  const transacional: Transacional = (fn) => executar((r) => fn(r.ingestao(empresaId)));
   return {
     empresaId,
-    executar,
+    executar: transacional,
     fila: s.fila,
     travas: s.travas,
     enfileirador: s.enfileirador,
-    agora: ctx.agora,
+    agora,
     sftp: s.sftp,
-    credenciais: s.credenciais,
+    credenciais: {
+      sftp: async (id) => {
+        const integracao = await executar(({ integracoes }) => integracoes.ler(id, "sftp"));
+        const senha = integracao ? segredoDa(s.cofre, id, "sftp", integracao) : null;
+        return montarConfiguracaoSftp(integracao, senha, s.sftpDoAmbiente);
+      },
+    },
     progressos: s.progressos,
-    relogio: { agora: ctx.agora, esperar: s.esperar },
+    relogio: { agora, esperar: s.esperar },
   };
 }
 
 export function criarJobsDaIngestao(s: ServicosDaIngestao) {
-  const agenda = (cron: string) => (s.agendada ? cron : null);
-
   const ftp = definirJob({
-    nome: JOBS_DA_INGESTAO.ftp,
-    fila: FILAS_DA_INGESTAO.ftp,
+    nome: "ftp",
+    fila: filaDoJob("ftp"),
     escopo: "empresa",
-    integracao: "sftp",
-    dados: doFtp,
-    agendamento: agenda(AGENDA_DA_INGESTAO.ftp),
+    dados: porEmpresa.extend({ manual: z.boolean().default(false) }),
+    agendamento: null,
     async processar(ctx, dados) {
-      const r = await sincronizarFtp(dependencias(ctx, s), {
-        manual: dados.manual ?? false,
+      const r = await sincronizarFtp(dependencias(ctx, dados.empresaId, s), {
+        manual: dados.manual,
         retroativo: false,
       });
       ctx.log.info(r, "sincronização do FTP");
+      return r;
     },
   });
 
   const ftpRetroativo = definirJob({
-    nome: JOBS_DA_INGESTAO.ftpRetroativo,
-    fila: FILAS_DA_INGESTAO.ftp,
+    nome: "ftp_retroativo",
+    fila: filaDoJob("ftp_retroativo"),
     escopo: "empresa",
-    integracao: "sftp",
     dados: porEmpresa,
-    agendamento: agenda(AGENDA_DA_INGESTAO.ftpRetroativo),
-    async processar(ctx) {
-      const r = await sincronizarFtp(dependencias(ctx, s), { manual: false, retroativo: true });
+    agendamento: null,
+    async processar(ctx, dados) {
+      const r = await sincronizarFtp(dependencias(ctx, dados.empresaId, s), {
+        manual: false,
+        retroativo: true,
+      });
       ctx.log.info(r, "revarredura retroativa do FTP");
+      return r;
     },
   });
 
   const ciclo = definirJob({
-    nome: JOBS_DA_INGESTAO.ciclo,
-    fila: FILAS_DA_INGESTAO.ciclo,
+    nome: "ssw_ciclo_aplicar",
+    fila: filaDoJob("ssw_ciclo_aplicar"),
     escopo: "empresa",
-    integracao: "sftp",
     dados: porEmpresa,
-    agendamento: agenda(AGENDA_DA_INGESTAO.ciclo),
-    async processar(ctx) {
-      const r = await rodarCiclos(dependencias(ctx, s));
+    agendamento: null,
+    async processar(ctx, dados) {
+      const r = await rodarCiclos(dependencias(ctx, dados.empresaId, s));
       if (r.resultados.length > 0 || r.status !== "ok") ctx.log.info(r, "ciclo de aplicação");
+      return r;
     },
   });
 
-  const unidadePelo455 = definirJob({
-    nome: JOBS_DA_INGESTAO.unidadePelo455,
-    fila: FILAS_DA_INGESTAO.manutencao,
+  const slaArquivos = definirJob({
+    nome: "sla_arquivos",
+    fila: filaDoJob("sla_arquivos"),
     escopo: "empresa",
-    integracao: "sftp",
     dados: porEmpresa,
-    agendamento: agenda(AGENDA_DA_INGESTAO.unidadePelo455),
-    async processar(ctx) {
-      const alterados = await unidadePelo455Recente(dependencias(ctx, s));
+    agendamento: null,
+    async processar(ctx, dados) {
+      const alterados = await unidadePelo455Recente(dependencias(ctx, dados.empresaId, s));
       ctx.log.info({ alterados }, "unidade pelo 455");
-      // TODO(prazo): `calcular_sla_arquivos` roda depois deste job (spec de prazo/SLA).
+      // TODO(prazo): `calcular_sla_arquivos` roda depois deste passo (spec de prazo/SLA).
+      return { alterados };
     },
   });
 
+  // Retenção da ingestão por arquivo (Q49): 038 superado, linhas, erros, arquivos/ciclos, XML,
+  // órfãos e sincronizações. No contexto da empresa: o RLS limita à dela.
   const limpeza = definirJob({
-    nome: JOBS_DA_INGESTAO.limpeza,
-    fila: FILAS_DA_INGESTAO.manutencao,
-    escopo: "plataforma",
-    dados: z.object({}),
-    agendamento: agenda(AGENDA_DA_INGESTAO.limpeza),
+    nome: "limpar_staging_038",
+    fila: filaDoJob("limpar_staging_038"),
+    escopo: "empresa",
+    dados: porEmpresa,
+    agendamento: null,
     async processar(ctx) {
       const r = await ctx.executar((rep) => limparIngestao(rep.retencaoDaIngestao, ctx.agora()));
       ctx.log.info(r, "limpeza da ingestão");
+      return r;
     },
   });
 
   const xmlOrfaos = definirJob({
-    nome: JOBS_DA_INGESTAO.xmlOrfaos,
-    fila: FILAS_DA_INGESTAO.manutencao,
+    nome: "xml_orfaos_retry",
+    fila: filaDoJob("xml_orfaos_retry"),
     escopo: "empresa",
     dados: porEmpresa.extend({ limite: z.number().int().min(1).max(1000).optional() }),
     agendamento: null,
     async processar(ctx, dados) {
       const r = await reprocessarOrfaos(
-        dependencias(ctx, s).executar,
+        dependencias(ctx, dados.empresaId, s).executar,
         dados.limite ?? LIMITE_PADRAO_DOS_ORFAOS,
         ctx.agora(),
       );
       ctx.log.info(r, "órfãos de XML reprocessados");
+      return r;
     },
   });
 
-  return [ftp, ftpRetroativo, ciclo, unidadePelo455, limpeza, xmlOrfaos];
+  return [ftp, ftpRetroativo, ciclo, slaArquivos, limpeza, xmlOrfaos];
 }

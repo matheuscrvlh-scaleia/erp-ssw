@@ -38,7 +38,7 @@ export function criarProcessador(deps: DependenciasDoProcessador) {
       throw new UnrecoverableError(`Dados inválidos para ${job.name}: ${String(erro)}`);
     }
     const log = deps.log.child({ job: job.name, jobId: job.id, empresaId: contexto.empresaId });
-    await definicao.processar(
+    return definicao.processar(
       {
         executar: (fn) => deps.executar(contexto, fn),
         empresaId: contexto.empresaId,

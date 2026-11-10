@@ -15,6 +15,7 @@ import { BarraLateral } from "@/componentes/layout/BarraLateral";
 import { ModuloDesligado } from "@/componentes/layout/ModuloDesligado";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/componentes/ui/sidebar";
 import { ehSessaoVencida } from "@/lib/api";
+import { FaixaSaudeSsw } from "@/modulos/ingestao-ssw/FaixaSaudeSsw";
 
 /**
  * Layout das telas logadas. A guarda roda antes de montar a tela (a cada navegação): sem sessão
@@ -82,6 +83,7 @@ function LayoutAutenticado() {
           <span className="text-sm font-medium md:hidden">Painel BI</span>
         </header>
         <main className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6">
+          {acesso.empresa && <FaixaSaudeSsw empresaId={acesso.empresa.id} />}
           {decisao.tipo === "modulo_desligado" ? (
             <ModuloDesligado moduloNome={decisao.moduloNome} />
           ) : (

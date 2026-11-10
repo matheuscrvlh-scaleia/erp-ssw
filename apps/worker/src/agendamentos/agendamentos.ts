@@ -1,13 +1,12 @@
 import { type DefinicaoDeJob } from "../jobs/registro";
+import { type RepositorioDoDespachante } from "./ingestao";
 
 export interface EmpresaAgendavel {
   id: string;
   fuso: string;
-  /** Tipos de integração ligados (`empresa_integracoes.ativo`). */
-  integracoesAtivas: readonly string[];
 }
 
-export interface RepositorioAgendamentos {
+export interface RepositorioAgendamentos extends RepositorioDoDespachante {
   /** Empresas que recebem agendamento por empresa (ativas ou em implantação). */
   empresasAtivas(): Promise<EmpresaAgendavel[]>;
 }
@@ -44,11 +43,7 @@ export function agendamentosDesejados(
     if (job.escopo === "plataforma") {
       return [{ id: job.nome, job: job.nome, padrao, fuso: FUSO_DA_PLATAFORMA, dados: {} }];
     }
-    const integracao = job.integracao;
-    const alvo = integracao
-      ? empresas.filter((e) => e.integracoesAtivas.includes(integracao))
-      : empresas;
-    return alvo.map((e) => ({
+    return empresas.map((e) => ({
       id: `${job.nome}:${e.id}`,
       job: job.nome,
       padrao,

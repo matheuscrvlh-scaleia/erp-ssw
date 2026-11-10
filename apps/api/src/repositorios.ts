@@ -16,6 +16,8 @@ import { type RepositorioCtrc } from "./modulos/ctrc/casos-de-uso";
 import { criarRepositorioCtrc } from "./modulos/ctrc/repositorio";
 import { type RepositorioFiltros } from "./modulos/filtros/casos-de-uso";
 import { criarRepositorioFiltros } from "./modulos/filtros/repositorio";
+import { type RepositorioIngestaoSsw } from "./modulos/ingestao-ssw/casos-de-uso";
+import { criarRepositorioIngestaoSsw } from "./modulos/ingestao-ssw/repositorio";
 import { type RepositorioListagem } from "./modulos/listagem/casos-de-uso";
 import { criarRepositorioListagem } from "./modulos/listagem/repositorio";
 import { type RepositorioRanking } from "./modulos/ranking/casos-de-uso";
@@ -32,6 +34,7 @@ export interface Repositorios {
   auth: RepositorioAuth;
   bonificacaoEntrega: RepositorioBonificacaoEntrega;
   calendario: RepositorioCalendario;
+  ingestaoSsw: RepositorioIngestaoSsw;
   ctrc: RepositorioCtrc;
   filtros: RepositorioFiltros;
   listagem: RepositorioListagem;
@@ -46,6 +49,7 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     auth: criarRepositorioAuth(tx),
     bonificacaoEntrega: criarRepositorioBonificacaoEntrega(tx),
     calendario: criarRepositorioCalendario(tx),
+    ingestaoSsw: criarRepositorioIngestaoSsw(tx),
     ctrc: criarRepositorioCtrc(tx),
     filtros: criarRepositorioFiltros(tx),
     listagem: criarRepositorioListagem(tx),

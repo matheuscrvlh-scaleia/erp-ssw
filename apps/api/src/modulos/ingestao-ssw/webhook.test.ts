@@ -1,0 +1,128 @@
+import { describe, expect, it } from "vitest";
+
+import { type EmpresaDoWebhook, type EventoRecebido, receberWebhook } from "./webhook";
+
+const SEGREDO = "x".repeat(40);
+const EVENTO = JSON.stringify({
+  cte: { numeroCTe: "123456" },
+  ocorrencia: { codigo: "1", dataHoraEvento: "09-11-2026 10:30:00" },
+  cnpjTransportadora: "11222333000144",
+});
+
+function empresa(dados: Partial<EmpresaDoWebhook> = {}): EmpresaDoWebhook {
+  return {
+    id: "e1",
+    slug: "fr",
+    nome: "FR",
+    status: "ativa",
+    integracaoAtiva: true,
+    parametros: {},
+    segredo: { cifrado: "c", versaoChave: 1 },
+    ...dados,
+  };
+}
+
+/** O segredo "decifrado" é o próprio texto em `cifrado`, quando diferente de "c". */
+function montar(empresas: EmpresaDoWebhook[]) {
+  const eventos: EventoRecebido[] = [];
+  const enfileirados: unknown[] = [];
+  const portas = {
+    empresas: () => Promise.resolve(empresas),
+    segredo: (e: EmpresaDoWebhook) =>
+      e.segredo === null ? null : e.segredo.cifrado === "c" ? SEGREDO : e.segredo.cifrado,
+    registrarEvento: (e: EventoRecebido) => {
+      eventos.push(e);
+      return Promise.resolve(`ev${eventos.length}`);
+    },
+    marcarEvento: () => Promise.resolve(),
+    filas: {
+      enfileirar: (_job: string, dados: unknown) => {
+        enfileirados.push(dados);
+        return Promise.resolve("j1");
+      },
+      aguardar: () => Promise.resolve({ tipo: "pendente" as const }),
+      status: () => Promise.reject(new Error("não usado")),
+      tokenSswGeradoEm: () => Promise.resolve(null),
+      esquecerTokenSsw: () => Promise.resolve(),
+    },
+    agora: () => new Date("2026-11-10T12:00:00Z"),
+    aleatorio: () => 0.5,
+    avisar: () => undefined,
+  };
+  return { portas, eventos, enfileirados };
+}
+
+const req = (dados: Partial<Parameters<typeof receberWebhook>[1]> = {}) => ({
+  corpoBruto: EVENTO,
+  authorization: "",
+  segredoNaQuery: "",
+  empresaNaQuery: "",
+  ip: "1.2.3.4",
+  userAgent: null,
+  ...dados,
+});
+
+describe("receberWebhook", () => {
+  it("acha a empresa dona do segredo (Basic com o token na senha também vale)", async () => {
+    const outra = empresa({
+      id: "e0",
+      slug: "outra",
+      segredo: { cifrado: "y".repeat(40), versaoChave: 1 },
+    });
+    const { portas, eventos, enfileirados } = montar([outra, empresa()]);
+    const basic = Buffer.from(`ssw:${SEGREDO}`).toString("base64");
+    const r = await receberWebhook(portas, req({ authorization: `Basic ${basic}` }));
+    expect(r.status).toBe(200);
+    expect(eventos).toMatchObject([{ empresaId: "e1", autenticado: true, statusHttp: 200 }]);
+    expect(enfileirados).toMatchObject([{ empresaId: "e1", eventoId: "ev1" }]);
+  });
+
+  it("segredo de empresa desligada não autentica e nada é gravado", async () => {
+    const { portas, eventos } = montar([empresa({ integracaoAtiva: false })]);
+    const r = await receberWebhook(portas, req({ authorization: `Bearer ${SEGREDO}` }));
+    expect(r.status).toBe(401);
+    expect(r.corpo[0]?.retorno).toMatchObject({ motivo: "token_incorreto" });
+    expect(eventos).toEqual([]);
+  });
+
+  it("?empresa= desconhecida: 401; sem segredo cadastrado: 503 com evento", async () => {
+    const { portas, eventos } = montar([empresa({ segredo: null })]);
+    const desconhecida = await receberWebhook(portas, req({ empresaNaQuery: "xyz" }));
+    expect(desconhecida.corpo[0]?.retorno).toMatchObject({ motivo: "empresa_desconhecida" });
+
+    const semSegredo = await receberWebhook(
+      portas,
+      req({ empresaNaQuery: "FR", segredoNaQuery: SEGREDO }),
+    );
+    expect(semSegredo.status).toBe(503);
+    expect(eventos).toMatchObject([{ empresaId: "e1", motivoRejeicao: "webhook_nao_configurado" }]);
+  });
+
+  it("?empresa= com token errado grava a recusa na empresa", async () => {
+    const { portas, eventos } = montar([empresa()]);
+    const r = await receberWebhook(portas, req({ empresaNaQuery: "fr", segredoNaQuery: "errado" }));
+    expect(r.status).toBe(401);
+    expect(eventos).toMatchObject([{ motivoRejeicao: "token_incorreto", autenticado: false }]);
+  });
+
+  it("CNPJ fora da lista da empresa: 401 autenticado", async () => {
+    const { portas, eventos, enfileirados } = montar([
+      empresa({ parametros: { cnpjs_aceitos: ["99888777000166"] } }),
+    ]);
+    const r = await receberWebhook(portas, req({ segredoNaQuery: SEGREDO }));
+    expect(r.status).toBe(401);
+    expect(eventos).toMatchObject([{ motivoRejeicao: "cnpj_nao_autorizado", autenticado: true }]);
+    expect(enfileirados).toEqual([]);
+  });
+
+  it("evento sem número: 400 gravado, sem fila", async () => {
+    const { portas, eventos, enfileirados } = montar([empresa()]);
+    const r = await receberWebhook(
+      portas,
+      req({ segredoNaQuery: SEGREDO, corpoBruto: JSON.stringify({ ocorrencia: { codigo: "1" } }) }),
+    );
+    expect(r.status).toBe(400);
+    expect(eventos).toMatchObject([{ motivoRejeicao: "ctrc_obrigatorio" }]);
+    expect(enfileirados).toEqual([]);
+  });
+});

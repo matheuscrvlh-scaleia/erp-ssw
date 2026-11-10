@@ -20,6 +20,8 @@ import { Route as AutenticadoAdminAhgoraRouteImport } from './routes/_autenticad
 import { Route as AutenticadoAdminBonificacaoEntregaRouteImport } from './routes/_autenticado/admin.bonificacao-entrega'
 import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autenticado/admin.equipes'
 import { Route as AutenticadoAdminImportacaoSswRouteImport } from './routes/_autenticado/admin.importacao-ssw'
+import { Route as AutenticadoAdminIngestaoRouteImport } from './routes/_autenticado/admin.ingestao'
+import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_autenticado/admin.ssw-diagnostico'
 import { Route as AutenticadoAdminXmlCteRouteImport } from './routes/_autenticado/admin.xml-cte'
 import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
 import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
@@ -84,6 +86,18 @@ const AutenticadoAdminImportacaoSswRoute =
     path: '/admin/importacao-ssw',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoAdminIngestaoRoute =
+  AutenticadoAdminIngestaoRouteImport.update({
+    id: '/admin/ingestao',
+    path: '/admin/ingestao',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminSswDiagnosticoRoute =
+  AutenticadoAdminSswDiagnosticoRouteImport.update({
+    id: '/admin/ssw-diagnostico',
+    path: '/admin/ssw-diagnostico',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoAdminXmlCteRoute = AutenticadoAdminXmlCteRouteImport.update({
   id: '/admin/xml-cte',
   path: '/admin/xml-cte',
@@ -134,6 +148,8 @@ export interface FileRoutesByFullPath {
   '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
   '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
+  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
   '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
@@ -153,6 +169,8 @@ export interface FileRoutesByTo {
   '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
   '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
+  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
   '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
@@ -174,6 +192,8 @@ export interface FileRoutesById {
   '/_autenticado/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
   '/_autenticado/admin/equipes': typeof AutenticadoAdminEquipesRoute
   '/_autenticado/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
+  '/_autenticado/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/_autenticado/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
   '/_autenticado/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
@@ -195,6 +215,8 @@ export interface FileRouteTypes {
     | '/admin/bonificacao-entrega'
     | '/admin/equipes'
     | '/admin/importacao-ssw'
+    | '/admin/ingestao'
+    | '/admin/ssw-diagnostico'
     | '/admin/xml-cte'
     | '/ctrc/$numero'
     | '/performance/lista'
@@ -214,6 +236,8 @@ export interface FileRouteTypes {
     | '/admin/bonificacao-entrega'
     | '/admin/equipes'
     | '/admin/importacao-ssw'
+    | '/admin/ingestao'
+    | '/admin/ssw-diagnostico'
     | '/admin/xml-cte'
     | '/ctrc/$numero'
     | '/performance/lista'
@@ -234,6 +258,8 @@ export interface FileRouteTypes {
     | '/_autenticado/admin/bonificacao-entrega'
     | '/_autenticado/admin/equipes'
     | '/_autenticado/admin/importacao-ssw'
+    | '/_autenticado/admin/ingestao'
+    | '/_autenticado/admin/ssw-diagnostico'
     | '/_autenticado/admin/xml-cte'
     | '/_autenticado/ctrc/$numero'
     | '/_autenticado/performance/lista'
@@ -330,6 +356,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoAdminImportacaoSswRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/ingestao': {
+      id: '/_autenticado/admin/ingestao'
+      path: '/admin/ingestao'
+      fullPath: '/admin/ingestao'
+      preLoaderRoute: typeof AutenticadoAdminIngestaoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/ssw-diagnostico': {
+      id: '/_autenticado/admin/ssw-diagnostico'
+      path: '/admin/ssw-diagnostico'
+      fullPath: '/admin/ssw-diagnostico'
+      preLoaderRoute: typeof AutenticadoAdminSswDiagnosticoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/admin/xml-cte': {
       id: '/_autenticado/admin/xml-cte'
       path: '/admin/xml-cte'
@@ -390,6 +430,8 @@ interface AutenticadoRouteChildren {
   AutenticadoAdminBonificacaoEntregaRoute: typeof AutenticadoAdminBonificacaoEntregaRoute
   AutenticadoAdminEquipesRoute: typeof AutenticadoAdminEquipesRoute
   AutenticadoAdminImportacaoSswRoute: typeof AutenticadoAdminImportacaoSswRoute
+  AutenticadoAdminIngestaoRoute: typeof AutenticadoAdminIngestaoRoute
+  AutenticadoAdminSswDiagnosticoRoute: typeof AutenticadoAdminSswDiagnosticoRoute
   AutenticadoAdminXmlCteRoute: typeof AutenticadoAdminXmlCteRoute
   AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
   AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
@@ -407,6 +449,8 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
     AutenticadoAdminBonificacaoEntregaRoute,
   AutenticadoAdminEquipesRoute: AutenticadoAdminEquipesRoute,
   AutenticadoAdminImportacaoSswRoute: AutenticadoAdminImportacaoSswRoute,
+  AutenticadoAdminIngestaoRoute: AutenticadoAdminIngestaoRoute,
+  AutenticadoAdminSswDiagnosticoRoute: AutenticadoAdminSswDiagnosticoRoute,
   AutenticadoAdminXmlCteRoute: AutenticadoAdminXmlCteRoute,
   AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
   AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,

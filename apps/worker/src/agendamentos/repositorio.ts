@@ -1,6 +1,6 @@
 import { type Transacao } from "@erp/db";
 import { empresaIntegracoes, empresas } from "@erp/db/schema";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { type RepositorioAgendamentos } from "./agendamentos";
 
@@ -8,19 +8,21 @@ export function criarRepositorioAgendamentos(tx: Transacao): RepositorioAgendame
   return {
     empresasAtivas: () =>
       tx
-        .select({
-          id: empresas.id,
-          fuso: empresas.fuso,
-          integracoesAtivas: sql<
-            string[]
-          >`coalesce(array_agg(${empresaIntegracoes.tipo}) filter (where ${empresaIntegracoes.tipo} is not null), '{}')`,
-        })
+        .select({ id: empresas.id, fuso: empresas.fuso })
         .from(empresas)
-        .leftJoin(
-          empresaIntegracoes,
-          and(eq(empresaIntegracoes.empresaId, empresas.id), eq(empresaIntegracoes.ativo, true)),
+        .where(inArray(empresas.status, ["ativa", "implantacao"])),
+    empresasComIntegracao: (tipo) =>
+      tx
+        .select({ id: empresas.id })
+        .from(empresas)
+        .innerJoin(empresaIntegracoes, eq(empresaIntegracoes.empresaId, empresas.id))
+        .where(
+          and(
+            inArray(empresas.status, ["ativa", "implantacao"]),
+            eq(empresaIntegracoes.tipo, tipo),
+            eq(empresaIntegracoes.ativo, true),
+          ),
         )
-        .where(inArray(empresas.status, ["ativa", "implantacao"]))
-        .groupBy(empresas.id, empresas.fuso),
+        .orderBy(asc(empresas.criadoEm), asc(empresas.id)),
   };
 }

@@ -60,6 +60,7 @@ export function criarCenario(): Cenario {
   const banco = new BancoEmMemoria();
   const ambiente = ambienteDeTeste();
   const relogio = new Relogio();
+  banco.ingestao.agora = relogio.agora;
   const correio = new CorreioFalso();
   const tokens = criarEmissorDeTokens({
     chavePrivadaPem: ambiente.JWT_CHAVE_PRIVADA,
@@ -99,6 +100,8 @@ export async function construirAppDeTeste(
     limitador: deps.limitador,
     correio: cenario.correio,
     google,
+    filasDeIngestao: null,
+    chavesDeSegredo: null,
     agora: deps.agora,
     ...extras,
   });

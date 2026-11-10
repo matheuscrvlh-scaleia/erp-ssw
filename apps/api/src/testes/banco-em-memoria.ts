@@ -13,6 +13,7 @@ import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
 import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
 import { DadosDoRanking } from "./falsos-ranking";
+import { IngestaoEmMemoria } from "./ingestao-em-memoria";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -79,6 +80,7 @@ export class BancoEmMemoria {
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
   contextos: ContextoBanco[] = [];
+  readonly ingestao = new IngestaoEmMemoria();
   /** Telas de CT-e: repositórios falsos próprios (ver falsos-ctrc.ts). */
   ctrc = new CtrcFalso();
   filtros = new FiltrosFalso();
@@ -366,6 +368,8 @@ export class BancoEmMemoria {
           return Promise.resolve();
         },
       },
+
+      ingestaoSsw: this.ingestao.repositorio(),
     };
   }
 

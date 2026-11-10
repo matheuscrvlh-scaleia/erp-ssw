@@ -122,3 +122,27 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
 - **Ranking operacional:** "hoje" dos atalhos de período é o dia de Brasília (Q11), não o do
   navegador; filtros de filial e tipo de CT-e ainda não aparecem na tela (falta a consulta de
   opções da Performance).
+
+## Ingestão SSW: BI2, webhook e SSW API (`apps/worker/src/fontes`, spec 06)
+
+- **Q41 — BI2 só com o 0017.** 0174, 0013/0016, 0220, cadastros, reprocessos e o backfill do 0017
+  não existem mais; a tela Ingestão SSW perde os cards de backfill, a "ordem recomendada" e o
+  "Rodar D-1" (fica "Rodar data específica" do 0017).
+- **Q45 — tela Ingestão sem o cabeçalho explicativo.** Mostra só a última atividade do webhook (o
+  mesmo dado de hoje, lido dos eventos recebidos).
+- **Q02 — webhook casa o CT-e por sigla + número.** Ocorrência que chega só com o número da NF, ou
+  sem sigla, vai para o CT-e mais recente com aquele número; CT-e desconhecido sem sigla não é
+  criado e o evento fica "sem vínculo" (antes podia cair no CT-e da outra série e às vezes criava
+  CT-e sem sigla).
+- **Webhook responde antes de aplicar.** O SSW recebe "OCORRENCIA PROCESSADA COM SUCESSO" assim que
+  o evento é autenticado e gravado; a ocorrência entra no CT-e segundos depois (fila). Se a fila
+  estiver fora, a resposta é 503 e o SSW reenvia. Na tela, o evento aparece primeiro como
+  processado e muda para "sem vínculo" ou "erro" quando o processamento termina.
+- **Reprocessar evento** reenvia à fila em vez de responder o resultado na hora ("Evento reenviado
+  para processamento").
+- **Credenciais da SSW API:** "Última verificação" não diz mais se foi manual ou automática.
+- **Diagnóstico SSW** passa a mostrar a situação dos jobs (fila, falhas, próxima execução), as
+  sincronizações do BI2, os contadores do webhook (24 h e 7 dias) e os órfãos; saem o teste por
+  CNPJ e o teste do trackingdanfe (o enriquecimento pela SSW API está desligado).
+- **Guarda do conteúdo bruto do BI2 (`bi2_bruto`) por 400 dias**, como as sincronizações; eventos do
+  webhook e sincronizações do SSW, 90 dias.

@@ -13,15 +13,23 @@ const esquema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
-  /** Liga os agendamentos da ingestão SSW (FTP, ciclo, 455, limpeza); exige AGENDAMENTOS_LIGADOS. */
-  INGESTAO_AGENDADA: z
-    .enum(["true", "false"])
-    .default("false")
-    .transform((v) => v === "true"),
-  /** Cofre das integrações: `"1:<base64 de 32 bytes>,2:<…>"` (formato de `lerChavesDeSegredo`). */
-  SEGREDOS_CHAVES: z.string().optional(),
-  SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().optional(),
-  /** Só para integração com `parametros.usar_env` (transição da FR). */
+  /**
+   * Jobs de ingestão que o agendador dispara (separados por vírgula, ex.: `bi2_0017,ssw_token_check`).
+   * Vazio = nenhum: cada job é ligado de propósito, no ambiente que deve rodar.
+   */
+  INGESTAO_JOBS_LIGADOS: z
+    .string()
+    .default("")
+    .transform((v) =>
+      v
+        .split(",")
+        .map((j) => j.trim())
+        .filter(Boolean),
+    ),
+  /** Chaves mestras dos segredos de integração (`1:<base64 32 bytes>,2:...`) e a versão atual. */
+  SEGREDOS_CHAVES: z.string().min(1).optional(),
+  SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+  /** SFTP da ingestão: só vale para integração com `parametros.usar_env` (transição da FR). */
   SFTP_HOST: z.string().optional(),
   SFTP_PORTA: z.string().optional(),
   SFTP_USUARIO: z.string().optional(),
