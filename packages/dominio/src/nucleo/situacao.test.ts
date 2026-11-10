@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BAIXA_FR, CATALOGO_FR, ocorrencia } from "./apoio-testes";
+import { BAIXA_FR, CATALOGO_FR, ocorrencia } from "../testes/nucleo";
 import {
   atrasoDias,
   type CteParaSituacao,

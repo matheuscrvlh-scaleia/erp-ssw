@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { linha036 } from "../testes/romaneio";
 import {
   type ChaveCte,
   chaveDoCte,
@@ -16,7 +17,6 @@ import {
   ultimo036,
   viagensDoCte,
 } from "./projecoes";
-import { linha036 } from "./testes";
 
 const em = (iso: string) => new Date(iso);
 

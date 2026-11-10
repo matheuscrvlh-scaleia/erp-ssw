@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BAIXA_FR, CATALOGO_FR, cte, ocorrencia } from "./apoio-testes";
+import { BAIXA_FR, CATALOGO_FR, cte, ocorrencia } from "../testes/nucleo";
 import { campoDaColuna, mesclarEscritaBi2 } from "./bi2";
 import { CONFIGURACAO_PADRAO } from "./configuracao";
 import { type ContextoDoCte, prepararGravacaoDoCte, recalcularDerivadosDoCte } from "./derivar-cte";

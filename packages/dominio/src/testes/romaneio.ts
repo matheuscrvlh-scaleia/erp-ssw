@@ -1,13 +1,13 @@
 /** Montadores de dados para os testes do Romaneio (não entram no código de produção). */
-import { type Linha036 } from "./hoje";
+import { type Linha036 } from "../romaneio/hoje";
 import {
   type Cadastro,
   type CodigoCadastrado,
   criarCadastro,
   type FatoCte,
   type OcorrenciaDoCte,
-} from "./situacao";
-import { type Viagem } from "./viagens";
+} from "../romaneio/situacao";
+import { type Viagem } from "../romaneio/viagens";
 
 const codigo = (
   c: number,

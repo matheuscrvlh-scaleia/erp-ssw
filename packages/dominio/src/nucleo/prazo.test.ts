@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { domingoDePascoa, feriadosNacionaisDoAno } from "../calendario";
-import { ocorrencia } from "./apoio-testes";
+import { ocorrencia } from "../testes/nucleo";
 import { CONFIGURACAO_PADRAO } from "./configuracao";
 import {
   type CteParaPrazo,

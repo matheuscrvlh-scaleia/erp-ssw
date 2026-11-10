@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { fato, ocorrencia, viagem } from "@erp/dominio/romaneio/testes";
+import { fato, ocorrencia, viagem } from "@erp/dominio/testes/romaneio";
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 

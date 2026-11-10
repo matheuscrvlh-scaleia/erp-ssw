@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CATALOGO_FR, cte, ocorrencia } from "./apoio-testes";
+import { CATALOGO_FR, cte, ocorrencia } from "../testes/nucleo";
 import { calcularOcorrenciaEfetiva, efetivaParaLeitura, statusAtual } from "./ocorrencia-efetiva";
 
 const efetiva = (...args: Parameters<typeof calcularOcorrenciaEfetiva>) => {

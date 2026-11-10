@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CATALOGO_FR, ocorrencia } from "./apoio-testes";
+import { CATALOGO_FR, ocorrencia } from "../testes/nucleo";
 import { montarCatalogo } from "./codigos";
 import {
   cidadeDoComplemento,

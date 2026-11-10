@@ -1,5 +1,5 @@
 import { montarCatalogo } from "@erp/dominio/nucleo";
-import { CATALOGO_FR, ocorrencia } from "@erp/dominio/nucleo/apoio-testes";
+import { CATALOGO_FR, ocorrencia } from "@erp/dominio/testes/nucleo";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
 

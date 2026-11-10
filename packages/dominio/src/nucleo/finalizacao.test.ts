@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BAIXA_FR } from "./apoio-testes";
+import { BAIXA_FR } from "../testes/nucleo";
 import {
   codigoSituacao,
   dataConclusaoEfetiva,

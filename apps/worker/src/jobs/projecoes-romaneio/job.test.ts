@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { chaveDoCte } from "@erp/dominio/romaneio/projecoes";
-import { linha036 } from "@erp/dominio/romaneio/testes";
+import { linha036 } from "@erp/dominio/testes/romaneio";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
 

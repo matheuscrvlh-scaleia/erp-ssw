@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { CADASTRO_FR, fato, ocorrencia } from "../testes/romaneio";
 import { ctrcDigitado, normNome, normPlaca, sswNum, sswSigla } from "./normalizacao";
 import {
   analisarCte,
@@ -11,7 +12,6 @@ import {
   motivosDeNaoEntrega,
   totaisDoTopo,
 } from "./situacao";
-import { CADASTRO_FR, fato, ocorrencia } from "./testes";
 
 const ctx = (extra: Partial<ContextoDaRegra> = {}): ContextoDaRegra => ({
   cadastro: CADASTRO_FR,

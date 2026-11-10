@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 
 import { CONFIGURACAO_PADRAO, type OcorrenciaDoCte } from "@erp/dominio/nucleo";
-import { CATALOGO_FR } from "@erp/dominio/nucleo/apoio-testes";
+import { CATALOGO_FR } from "@erp/dominio/testes/nucleo";
 
 import { chaveDoCte, type CteDaIngestao, STATUS_CICLO_ABERTO } from "../aplicacao";
 import {

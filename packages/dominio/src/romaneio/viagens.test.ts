@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { CADASTRO_FR, fato, ocorrencia, viagem } from "../testes/romaneio";
 import { analisarCte, type FatoCte } from "./situacao";
-import { CADASTRO_FR, fato, ocorrencia, viagem } from "./testes";
 import {
   type ContextoPorViagem,
   type CteComViagens,

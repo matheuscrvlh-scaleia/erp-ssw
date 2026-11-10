@@ -1,7 +1,7 @@
 /** Dados de teste do núcleo: catálogo da FR, ocorrência e CT-e com valores neutros. */
-import { type CodigoCadastrado, montarCatalogo, type TipoSsw } from "./codigos";
-import { type CteNucleo } from "./derivar-cte";
-import { type OcorrenciaDoCte } from "./ocorrencia";
+import { type CodigoCadastrado, montarCatalogo, type TipoSsw } from "../nucleo/codigos";
+import { type CteNucleo } from "../nucleo/derivar-cte";
+import { type OcorrenciaDoCte } from "../nucleo/ocorrencia";
 
 const codigo = (
   numero: number,

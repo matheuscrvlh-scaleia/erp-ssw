@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CATALOGO_FR } from "./apoio-testes";
+import { CATALOGO_FR } from "../testes/nucleo";
 import { codigoNumericoOuNulo, codigosDeBaixa, normCodigoOcorr } from "./codigos";
 import { diaSp, difDias, hojeSp, horaSp, inicioDoDiaSp } from "./tempo";
 import {

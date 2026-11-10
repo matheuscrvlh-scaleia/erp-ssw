@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { CADASTRO_FR, linha036, ocorrencia } from "../testes/romaneio";
 import { type CteDoDia, ctesDaFaixa, romaneioDoDia } from "./hoje";
-import { CADASTRO_FR, linha036, ocorrencia } from "./testes";
 
 const DIA = "2026-11-10";
 const filtros = { dia: DIA, filiais: null, tipos: null };

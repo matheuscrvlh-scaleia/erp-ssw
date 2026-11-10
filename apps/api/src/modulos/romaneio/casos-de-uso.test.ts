@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type CodigoCadastrado } from "@erp/dominio/romaneio/situacao";
-import { fato, linha036, ocorrencia } from "@erp/dominio/romaneio/testes";
+import { fato, linha036, ocorrencia } from "@erp/dominio/testes/romaneio";
 import { contratosRomaneio as c } from "@erp/shared/contratos/romaneio";
 import { beforeEach, describe, expect, it } from "vitest";
 

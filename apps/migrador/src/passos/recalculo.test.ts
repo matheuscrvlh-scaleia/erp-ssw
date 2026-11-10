@@ -1,5 +1,5 @@
 import { recalcularDerivadosDoCte } from "@erp/dominio/nucleo";
-import { CATALOGO_FR, cte } from "@erp/dominio/nucleo/apoio-testes";
+import { CATALOGO_FR, cte } from "@erp/dominio/testes/nucleo";
 import { describe, expect, it } from "vitest";
 
 import { destinoFalso, origemFalsa } from "../testes/falsos";

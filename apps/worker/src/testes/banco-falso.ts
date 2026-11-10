@@ -12,7 +12,7 @@ import {
   type OcorrenciaDoCte,
   type TrocaDePrevisao,
 } from "@erp/dominio/nucleo";
-import { CATALOGO_FR } from "@erp/dominio/nucleo/apoio-testes";
+import { CATALOGO_FR } from "@erp/dominio/testes/nucleo";
 import { type CteDaIngestao } from "@erp/ingestao/aplicacao";
 import { type CadastrosDoNucleo, cteEmBranco } from "@erp/ingestao/casos-de-uso";
 import { estadoFalso, repositorioFalso } from "@erp/ingestao/testes";
