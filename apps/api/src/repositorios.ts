@@ -8,6 +8,8 @@ import { type RepositorioAuth } from "./modulos/auth/casos-de-uso";
 import { criarRepositorioAuth } from "./modulos/auth/repositorio";
 import { type RepositorioCalendario } from "./modulos/calendario/casos-de-uso";
 import { criarRepositorioCalendario } from "./modulos/calendario/repositorio";
+import { type RepositorioIngestaoSsw } from "./modulos/ingestao-ssw/casos-de-uso";
+import { criarRepositorioIngestaoSsw } from "./modulos/ingestao-ssw/repositorio";
 
 /**
  * Repositórios de todos os módulos, presos a uma transação com contexto. Módulo novo entra aqui
@@ -18,6 +20,7 @@ export interface Repositorios {
   auditoria: RepositorioAuditoria;
   auth: RepositorioAuth;
   calendario: RepositorioCalendario;
+  ingestaoSsw: RepositorioIngestaoSsw;
 }
 
 export function criarRepositorios(tx: Transacao): Repositorios {
@@ -26,6 +29,7 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     auditoria: criarRepositorioAuditoria(tx),
     auth: criarRepositorioAuth(tx),
     calendario: criarRepositorioCalendario(tx),
+    ingestaoSsw: criarRepositorioIngestaoSsw(tx),
   };
 }
 

@@ -1,3 +1,4 @@
+import { type ChavesDeSegredo, cifrarSegredo } from "@erp/db/segredos";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -13,6 +14,9 @@ import { type EmissorDeTokens } from "./infra/tokens";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { type FilasDeIngestao } from "./modulos/ingestao-ssw/casos-de-uso";
+import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
+import { rotasPublicasSsw } from "./modulos/ingestao-ssw/rotas-publicas";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -34,6 +38,10 @@ export interface Dependencias {
   /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
   correio: Correio | null;
   google: ProvedorGoogle | null;
+  /** Filas do BullMQ (ingestão). Nulo = sem Redis: execuções manuais e o webhook respondem 503. */
+  filasDeIngestao: FilasDeIngestao | null;
+  /** Chaves dos segredos de integração. Nulo = não salva senha nem confere o webhook. */
+  chavesDeSegredo: ChavesDeSegredo | null;
   agora: () => Date;
 }
 
@@ -92,6 +100,23 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+
+  const chaves = deps.chavesDeSegredo;
+  await app.register(rotasIngestaoSsw, {
+    deps: {
+      filas: deps.filasDeIngestao,
+      cifrador: chaves
+        ? { cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto) }
+        : null,
+      agora: deps.agora,
+    },
+  });
+  await app.register(rotasPublicasSsw, {
+    executar: deps.executar,
+    filas: deps.filasDeIngestao,
+    chaves,
+    agora: deps.agora,
+  });
 
   return app;
 }

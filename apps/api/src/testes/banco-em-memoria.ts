@@ -11,6 +11,7 @@ import { type Ator, type EventoDeAuditoria } from "../modulos/auditoria/auditori
 import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-uso";
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
+import { IngestaoEmMemoria } from "./ingestao-em-memoria";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -77,6 +78,7 @@ export class BancoEmMemoria {
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
   contextos: ContextoBanco[] = [];
+  readonly ingestao = new IngestaoEmMemoria();
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
   falharCom: Error | null = null;
 
@@ -354,6 +356,8 @@ export class BancoEmMemoria {
           return Promise.resolve();
         },
       },
+
+      ingestaoSsw: this.ingestao.repositorio(),
     };
   }
 

@@ -49,6 +49,10 @@ const esquema = z
     LOGO_URL_BASE: z.url().optional(),
     /** Token de leitura de /metrics; sem ele a rota não existe. */
     METRICAS_TOKEN: z.string().min(16).optional(),
+
+    /** Chaves mestras dos segredos de integração (`1:<base64 32 bytes>,2:...`) e a versão atual. */
+    SEGREDOS_CHAVES: z.string().min(1).optional(),
+    SEGREDOS_VERSAO_ATUAL: z.coerce.number().int().positive().default(1),
   })
   .superRefine((env, ctx) => {
     const google = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI];
