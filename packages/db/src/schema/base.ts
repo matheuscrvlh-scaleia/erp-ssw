@@ -5,10 +5,12 @@ import { type AnyPgColumn, pgPolicy, pgRole, pgSchema, timestamp } from "drizzle
 export const erp = pgSchema("erp");
 
 /**
- * Papéis do banco. Os dois são criados uma vez pelo DBA (`bootstrap/papeis.sql`), com senha fora
- * do repositório; as migrations só os referenciam. `erp_app` não tem BYPASSRLS.
+ * Papéis do banco. Criados uma vez pelo DBA (`bootstrap/papeis.sql`), com senha fora do
+ * repositório; as migrations só os referenciam. `erp_app` (API) e `erp_worker` (worker-ssw, ADR
+ * 0012) não têm BYPASSRLS; o `erp_worker` só tem GRANT nas tabelas que a ingestão usa.
  */
 export const papelApp = pgRole("erp_app").existing();
+export const papelWorker = pgRole("erp_worker").existing();
 export const papelMigracao = pgRole("erp_migracao").existing();
 
 /**
@@ -36,7 +38,8 @@ function politica(tabela: string, operacao: Operacao, regra: SQL) {
   return pgPolicy(`${tabela}_${operacao}`, {
     as: "permissive",
     for: operacao,
-    to: papelApp,
+    // O mesmo contexto (`SET LOCAL`) vale para a API e para o worker-ssw.
+    to: [papelApp, papelWorker],
     ...(usaUsing ? { using: regra } : {}),
     ...(usaCheck ? { withCheck: regra } : {}),
   });
