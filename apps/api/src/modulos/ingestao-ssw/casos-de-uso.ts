@@ -95,6 +95,8 @@ export interface RepositorioIngestaoSsw {
   empresasComWebhook(): Promise<EmpresaDoWebhook[]>;
   /** Grava o evento recebido (contexto da empresa do evento). */
   registrarEvento(evento: EventoRecebido): Promise<string>;
+  /** Eventos não autenticados com conteúdo guardado desde o instante (teto da quarentena). */
+  quarentenaDesde(desde: Date): Promise<number>;
   marcarEvento(eventoId: string, statusHttp: number, erro: string): Promise<void>;
 }
 

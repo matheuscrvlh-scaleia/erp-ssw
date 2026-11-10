@@ -382,7 +382,9 @@ export const passoSswWebhookEventos = definirTabela({
           autenticado: ou(o.auth_ok, false),
           motivoRejeicao: o.motivo_rejeicao,
           statusHttp: smallint(o.status_http, "status_http") ?? o.status_http,
-          payloadBruto: o.payload_bruto,
+          // Chamada não autenticada não guarda o conteúdo (ADR 0009); sem resumo do token, o
+          // sistema atual também não daria para reprocessar.
+          payloadBruto: o.auth_ok === true ? o.payload_bruto : null,
           // O sistema atual não guarda o resumo do token: evento antigo recusado não é reprocessado.
           tokenSha256: null,
           cteId: o.ctrc_id,

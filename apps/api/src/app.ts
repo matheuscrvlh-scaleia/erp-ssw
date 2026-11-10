@@ -9,7 +9,11 @@ import type { Armazenamento } from "./infra/armazenamento";
 import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
 import type { FilaDeJobs } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
-import { type LimitadorDeFalhas } from "./infra/limitador";
+import {
+  criarContadorEmMemoria,
+  criarContadorRedis,
+  type LimitadorDeFalhas,
+} from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
 import { type EmissorDeTokens } from "./infra/tokens";
@@ -183,6 +187,9 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     filas: deps.filasDeIngestao,
     chaves,
     agora: deps.agora,
+    falhas: redis
+      ? criarContadorRedis(redis, "webhook:falhas", 60_000)
+      : criarContadorEmMemoria(60_000, () => deps.agora().getTime()),
   });
 
   const usuarios: DependenciasUsuarios = {

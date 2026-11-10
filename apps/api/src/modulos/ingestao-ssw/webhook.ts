@@ -2,7 +2,8 @@
  * Recepção do webhook SSW2181 (`/api/public/ssw-ocorrencias`): o SSW posta uma ocorrência por
  * chamada. Aqui só se autentica (segredo da empresa), lê, registra o evento e enfileira; o
  * processamento (CT-e e ocorrência pelo núcleo) é do worker. Toda saída com empresa conhecida
- * grava `ssw_webhook_eventos`; sem empresa vai só para o log (sem o segredo).
+ * grava `ssw_webhook_eventos`; sem empresa vai só para o log (sem o segredo). Chamada não
+ * autenticada grava só metadados, salvo a quarentena de "token incorreto" (ADR 0009).
  * Especificação: docs/regras/06-ingestao.md §0.1, §3.17.
  */
 import { createHash } from "node:crypto";
@@ -56,6 +57,10 @@ export interface PortasDoWebhook {
   /** Decifra o segredo da empresa; `null` sem chave no servidor. */
   segredo(empresa: EmpresaDoWebhook): string | null;
   registrarEvento(evento: EventoRecebido): Promise<string>;
+  /** Eventos não autenticados com conteúdo guardado (quarentena) desde o instante. */
+  quarentenaDesde(empresaId: string, desde: Date): Promise<number>;
+  /** Conta uma falha do IP na janela; `false` = passou do limite (nada mais é gravado). */
+  falhaPermitida(ip: string | null): Promise<boolean>;
   marcarEvento(
     empresaId: string,
     eventoId: string,
@@ -104,6 +109,11 @@ export function resumoDoSegredo(texto: string): string {
 }
 
 const STATUS_QUE_INGERE = new Set(["ativa", "implantacao"]);
+/** Uma ocorrência do SSW tem poucos KB: acima disso a chamada recusada não guarda o conteúdo. */
+export const LIMITE_DA_QUARENTENA_BYTES = 16 * 1024;
+/** Teto de conteúdos guardados de chamadas recusadas por empresa em 24 h (o reprocesso lê 1000). */
+export const LIMITE_DIARIO_DA_QUARENTENA = 1000;
+const DIA_MS = 24 * 3_600_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `?empresa=<slug|id>` (sem diferenciar maiúsculas). origem: decidirEmpresaIngestao */
@@ -136,8 +146,20 @@ export async function autenticarWebhook(
   portas: PortasDoWebhook,
   req: CabecalhosDoWebhook,
 ): Promise<AutenticacaoDoWebhook> {
-  const erro = erroSsw(portas.agora());
+  const agora = portas.agora();
+  const erro = erroSsw(agora);
   const auth = extrairTokensAuthorization(req.authorization);
+  // Falha acima do limite do IP: responde e não grava nada (nem metadado).
+  const excedeuFalhas = async (): Promise<AutenticacaoDoWebhook | null> =>
+    (await portas.falhaPermitida(req.ip))
+      ? null
+      : {
+          tipo: "recusado",
+          resposta: {
+            status: 429,
+            corpo: respostaSsw2181(429, "MUITAS FALHAS DE AUTENTICACAO — aguarde um minuto", agora),
+          },
+        };
   let esperado = "";
   // Sem o texto do token: só os resumos (com o comprimento do segredo atual para o caso "contém").
   const resumos = () =>
@@ -151,6 +173,8 @@ export async function autenticarWebhook(
     resposta: RespostaDoWebhook,
     motivo: string,
   ): Promise<AutenticacaoDoWebhook> => {
+    const limitado = await excedeuFalhas();
+    if (limitado) return limitado;
     if (empresa) {
       await portas.registrarEvento({
         empresaId: empresa.id,
@@ -269,6 +293,8 @@ export async function autenticarWebhook(
         comprimento_recebido: comprimento,
       },
     );
+    const limitado = await excedeuFalhas();
+    if (limitado) return limitado;
     if (empresa === null) return { tipo: "recusado", resposta };
     return { tipo: "token_incorreto", empresa, resumos: resumos(), resposta };
   }
@@ -304,7 +330,8 @@ export async function processarWebhook(
 
   const corpo = lerJson(req.corpoBruto);
   if (autenticacao.tipo === "token_incorreto") {
-    await registrar(autenticacao.resposta.status, "token_incorreto", corpo ?? null, false);
+    const guardar = await cabeNaQuarentena(portas, req, autenticacao, corpo, agora);
+    await registrar(autenticacao.resposta.status, "token_incorreto", guardar ? corpo : null, false);
     return autenticacao.resposta;
   }
   if (corpo === undefined) {
@@ -355,6 +382,28 @@ export async function processarWebhook(
       protocolo,
     }),
   };
+}
+
+/**
+ * Chamada com token errado só guarda o conteúdo se puder ser o caso legítimo (o SSW trocou o
+ * token antes de nós): empresa pedida por `?empresa=`, token presente, corpo pequeno que é uma
+ * ocorrência válida de CNPJ aceito, e a empresa abaixo do teto diário. Mesmo guardado, só vira dado
+ * se o reprocesso achar o resumo do token entre o segredo atual e o anterior (ADR 0009).
+ */
+async function cabeNaQuarentena(
+  portas: PortasDoWebhook,
+  req: RequisicaoDoWebhook,
+  { empresa, resumos }: { empresa: EmpresaDoWebhook; resumos: string[] | null },
+  corpo: unknown,
+  agora: Date,
+): Promise<boolean> {
+  if (corpo === undefined || resumos === null) return false;
+  if (Buffer.byteLength(req.corpoBruto, "utf8") > LIMITE_DA_QUARENTENA_BYTES) return false;
+  if (lerEventoSsw2181(corpo).tipo === "falha") return false;
+  const aceitos = cnpjsAceitosDosParametros(empresa.parametros.cnpjs_aceitos);
+  if (!cnpjTransportadoraAceito(cnpjTransportadora(corpo), aceitos)) return false;
+  const desde = new Date(agora.getTime() - DIA_MS);
+  return (await portas.quarentenaDesde(empresa.id, desde)) < LIMITE_DIARIO_DA_QUARENTENA;
 }
 
 /** As duas etapas juntas (a rota faz a primeira no `onRequest`, antes de ler o corpo). */

@@ -245,6 +245,20 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
       return linha.id;
     },
 
+    quarentenaDesde: async (desde) => {
+      const [linha] = await tx
+        .select({ n: count() })
+        .from(sswWebhookEventos)
+        .where(
+          and(
+            eq(sswWebhookEventos.autenticado, false),
+            isNotNull(sswWebhookEventos.payloadBruto),
+            gte(sswWebhookEventos.recebidoEm, desde),
+          ),
+        );
+      return linha?.n ?? 0;
+    },
+
     marcarEvento: async (eventoId, statusHttp, erro) => {
       await tx
         .update(sswWebhookEventos)

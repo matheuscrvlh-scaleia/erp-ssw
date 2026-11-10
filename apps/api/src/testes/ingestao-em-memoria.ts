@@ -116,6 +116,12 @@ export class IngestaoEmMemoria {
         this.eventos.push({ ...evento, id, recebidoEm: this.agora(), cteId: null });
         return Promise.resolve(id);
       },
+      quarentenaDesde: (desde) =>
+        Promise.resolve(
+          this.eventos.filter(
+            (e) => !e.autenticado && e.payloadBruto !== null && e.recebidoEm >= desde,
+          ).length,
+        ),
       marcarEvento: (eventoId, statusHttp, erro) => {
         const e = this.eventos.find((x) => x.id === eventoId);
         if (e) Object.assign(e, { statusHttp, erroProcessamento: erro });

@@ -1,6 +1,7 @@
 import { type ChavesDeSegredo, contextoDoSegredo, decifrarSegredo } from "@erp/db/segredos";
 import { type FastifyPluginCallback, type FastifyRequest } from "fastify";
 
+import { type ContadorPorJanela } from "../../infra/limitador";
 import { type ExecutorComContexto } from "../../repositorios";
 import { type FilasDeIngestao } from "./casos-de-uso";
 import {
@@ -18,12 +19,16 @@ export const CAMINHO_DO_WEBHOOK = "/api/public/ssw-ocorrencias";
 const CACHE_MS = 60_000;
 /** O SSW manda uma ocorrência por chamada e em rajada: limite próprio, bem acima do geral. */
 const LIMITE_POR_MINUTO = 6_000;
+/** Falhas de autenticação por IP por minuto; acima disso nada é gravado (resposta 429). */
+export const LIMITE_DE_FALHAS_POR_MINUTO = 30;
 
 export interface OpcoesDoWebhookPublico {
   executar: ExecutorComContexto;
   filas: FilasDeIngestao | null;
   chaves: ChavesDeSegredo | null;
   agora: () => Date;
+  /** Falhas de autenticação por IP numa janela de 1 minuto. */
+  falhas: ContadorPorJanela;
 }
 
 const PLATAFORMA = { empresaId: null, usuarioId: null, plataforma: true };
@@ -90,6 +95,12 @@ export const rotasPublicasSsw: FastifyPluginCallback<OpcoesDoWebhookPublico> = (
       opcoes.executar(daEmpresa(evento.empresaId), ({ ingestaoSsw }) =>
         ingestaoSsw.registrarEvento(evento),
       ),
+    quarentenaDesde: (empresaId, desde) =>
+      opcoes.executar(daEmpresa(empresaId), ({ ingestaoSsw }) =>
+        ingestaoSsw.quarentenaDesde(desde),
+      ),
+    falhaPermitida: async (ip) =>
+      (await opcoes.falhas.somar(ip ?? "desconhecido")) <= LIMITE_DE_FALHAS_POR_MINUTO,
     marcarEvento: (empresaId, eventoId, status, erro) =>
       opcoes.executar(daEmpresa(empresaId), ({ ingestaoSsw }) =>
         ingestaoSsw.marcarEvento(eventoId, status, erro),

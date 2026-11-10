@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
 import { type FilasDeIngestao, type ResultadoDaExecucao } from "./casos-de-uso";
+import { LIMITE_DE_FALHAS_POR_MINUTO } from "./rotas-publicas";
 import { resumoDoSegredo } from "./webhook";
 
 const chaves = lerChavesDeSegredo(`1:${randomBytes(32).toString("base64")}`, 1);
@@ -261,6 +262,22 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
     expect(cenario.banco.ingestao.eventos).toMatchObject([
       { motivoRejeicao: "autorizacao_ausente", payloadBruto: null },
     ]);
+  });
+
+  it("limite próprio e baixo para falhas: depois dele, 429 sem gravar nada", async () => {
+    cadastrarWebhook();
+    const tentar = () =>
+      app.inject({ method: "POST", url: `${URL}?empresa=fr&secret=errado`, payload: EVENTO });
+    for (let i = 0; i < LIMITE_DE_FALHAS_POR_MINUTO; i++)
+      expect((await tentar()).statusCode).toBe(401);
+    expect((await tentar()).statusCode).toBe(429);
+    expect(cenario.banco.ingestao.eventos).toHaveLength(LIMITE_DE_FALHAS_POR_MINUTO);
+    const valido = await app.inject({
+      method: "POST",
+      url: `${URL}?secret=${SEGREDO_WEBHOOK}`,
+      payload: EVENTO,
+    });
+    expect(valido.statusCode).toBe(200);
   });
 
   it("fila fora: 503 para o SSW reenviar, com o evento marcado", async () => {

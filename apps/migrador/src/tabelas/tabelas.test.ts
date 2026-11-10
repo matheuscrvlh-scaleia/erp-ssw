@@ -885,6 +885,22 @@ describe("ingestão e logs", () => {
       cteId: "c1",
       statusHttp: 200,
     });
+    // Conteúdo de chamada não autenticada não migra (ADR 0009).
+    const corpo = JSON.stringify({ cte: { numeroCTe: "1" } });
+    expect(
+      migrada(
+        passoSswWebhookEventos,
+        { ...webhook, empresa_id: EMPRESA, auth_ok: false, payload_bruto: corpo },
+        null,
+      ).payloadBruto,
+    ).toBeNull();
+    expect(
+      migrada(
+        passoSswWebhookEventos,
+        { ...webhook, empresa_id: EMPRESA, auth_ok: true, payload_bruto: corpo },
+        null,
+      ).payloadBruto,
+    ).toEqual(corpo);
 
     const bi2 = {
       id: "b1",

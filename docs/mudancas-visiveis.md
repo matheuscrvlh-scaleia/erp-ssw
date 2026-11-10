@@ -260,3 +260,17 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   CSV) pelo botão "Importar 050" da própria tela; antes era só por Admin · Importação SSW.
 - **Histórico › Feriados com a regra do Calendário.** Municipal exige cidade e UF e a descrição tem
   ao menos 3 letras; o nacional cadastrado pela Plataforma aparece sem editar/excluir (Q28).
+
+## Segurança (revisão da onda 1)
+
+Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP) ou administra.
+
+- **Webhook SSW: recusa antes do corpo e só metadados.** Chamada sem token válido é recusada antes
+  de o corpo ser lido (JSON inválido sem token passa a receber 401, não 400) e grava só IP,
+  user-agent, motivo e o SHA-256 do token. A exceção é a quarentena de "token incorreto" (ADR 0009).
+  Mais de 30 falhas por minuto do mesmo IP recebem 429 sem gravar nada.
+- **Webhook SSW: "Reprocessar webhooks rejeitados por token" só reenvia o que confere.** Vale para o
+  evento cujo token é o segredo atual ou o anterior (o SSW trocou o token antes de nós, ou nós
+  antes dele). O cartão mostra "Total" (todos os recusados com conteúdo) e "Reenviados" (os que
+  conferem); os outros nunca viram dado. Eventos migrados do sistema atual não guardam o resumo do
+  token: não são reprocessáveis.
