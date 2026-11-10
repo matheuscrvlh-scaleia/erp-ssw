@@ -19,8 +19,21 @@ describe("lerBuscaDaLista", () => {
       dir: "desc",
       page: 1,
       codigos: [],
-      recortes: undefined,
-      abertos: undefined,
+    });
+    expect(b.recortes).toBeUndefined();
+    expect(b.abertos).toBeUndefined();
+  });
+
+  it('data impossível no link vira "sem data" (antes 2026-02-30 passava)', () => {
+    const b = lerBuscaDaLista({ periodo: "custom", de: "2026-02-30", ate: "2026-03-05" });
+    expect(b.de).toBe("");
+    expect(b.ate).toBe("2026-03-05");
+  });
+
+  it('ignorar_periodo e abertos ligam com true, 1 ou "1"', () => {
+    expect(lerBuscaDaLista({ ignorar_periodo: 1, abertos: "1" })).toMatchObject({
+      ignorar_periodo: true,
+      abertos: true,
     });
   });
 

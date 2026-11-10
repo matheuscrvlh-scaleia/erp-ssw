@@ -7,10 +7,11 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
-import { FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
+import { etiquetasQueLimpam, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
+import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
@@ -30,8 +31,8 @@ import {
   etiquetasDaBusca,
   filtrosDeCteDaBusca,
   linkDaListagem,
+  NAO_SAO_FILTRO,
   recortesDaBusca,
-  temFiltro,
 } from "./busca";
 import { CartaoDeMetrica, CodigosDoCard } from "./Cartoes";
 import { BarraDeFiltros } from "./Filtros";
@@ -86,18 +87,18 @@ export function PaginaOcorrencias() {
     [opcoes.data, conferentes.data],
   );
 
-  const etiquetas = etiquetasDaBusca(busca, {
-    parceiro: (cnpj) =>
-      opcoes.data?.parceiros.find((p) => p.id === cnpj)?.nome ?? formatarCnpjCpf(cnpj) ?? undefined,
-    unidade: (id) => opcoes.data?.unidades.find((u) => u.id === id)?.nome,
-    codigo: (codigo) => opcoes.data?.codigos.find((c) => c.codigo === codigo)?.descricao,
-    responsavel: (r) => rotulos[r],
-  }).map((e) => ({
-    ...e,
-    limpar: () => {
-      mudar(e.limpar);
-    },
-  }));
+  const etiquetas = etiquetasQueLimpam(
+    etiquetasDaBusca(busca, {
+      parceiro: (cnpj) =>
+        opcoes.data?.parceiros.find((p) => p.id === cnpj)?.nome ??
+        formatarCnpjCpf(cnpj) ??
+        undefined,
+      unidade: (id) => opcoes.data?.unidades.find((u) => u.id === id)?.nome,
+      codigo: (codigo) => opcoes.data?.codigos.find((c) => c.codigo === codigo)?.descricao,
+      responsavel: (r) => rotulos[r],
+    }),
+    mudar,
+  );
 
   const m = painel.data?.metricas ?? {
     total: 0,
@@ -168,7 +169,7 @@ export function PaginaOcorrencias() {
         opcoes={opcoesDosFiltros}
         codigosAcompanhados={painel.data?.codigosAcompanhados ?? null}
         nomeCurto={nomeCurto}
-        filtrando={temFiltro(ativos, busca)}
+        filtrando={temFiltro(ativos, busca.periodo, NAO_SAO_FILTRO)}
         mudar={mudar}
         aoLimpar={() => {
           limpar(camposMantidosAoLimpar(busca));

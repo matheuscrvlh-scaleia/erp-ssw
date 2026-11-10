@@ -5,12 +5,10 @@
  */
 import { recorteSemPeriodo } from "@erp/dominio/listagem/faixas";
 import {
-  type BaseData,
   BASES_DATA,
   type FaixaPrevisto,
   FAIXAS_PREVISTO,
   type FiltroListaEntrada,
-  type OrdemLista,
   ORDENS_LISTA,
   recortesSelecionados,
   STATUS_PREVISTO,
@@ -18,6 +16,7 @@ import {
   type TipoRecorte,
   TIPOS_RECORTE,
 } from "@erp/shared/contratos/listagem";
+import { z } from "@erp/shared/zod";
 import { defaultStringifySearch } from "@tanstack/react-router";
 
 import {
@@ -26,122 +25,61 @@ import {
   type Periodo,
   resolverPeriodo,
 } from "@/componentes/comum/periodo";
+import { campoFiltro, lerFiltros } from "@/hooks/filtros-na-url";
 
-const PERIODOS: readonly Periodo[] = [...ATALHOS_PERIODO, "custom"];
+const PERIODOS = [...ATALHOS_PERIODO, "custom"] as const satisfies readonly Periodo[];
 
-export interface BuscaDaLista {
-  tipo: TipoRecorte;
+/**
+ * Esquema da URL (os nomes de hoje, inclusive os em inglês: links antigos seguem valendo). Valor
+ * inválido volta ao padrão do campo; data impossível (2026-02-30) vira "sem data".
+ */
+const esquemaDaLista = z.object({
+  tipo: campoFiltro.opcao(TIPOS_RECORTE, "emitidos"),
   /** Recortes marcados além de `tipo`. */
-  recortes?: TipoRecorte[] | undefined;
-  codigo: number | null;
-  faixa_min: number | null;
-  faixa_max: number | null;
-  status_previsto: StatusPrevisto | null;
-  faixa_prev: FaixaPrevisto | null;
-  ignorar_periodo: boolean;
-  periodo: Periodo;
-  de: string;
-  ate: string;
-  unidades: string[];
-  filiais: string[];
-  parceiros: string[];
-  remetente: string;
-  destino: string;
-  busca: string;
-  ctrc: string;
-  nf: string;
-  codigos: number[];
-  tipos: string[];
-  cidade: string;
-  peso_min: number | null;
-  peso_max: number | null;
-  atraso_min: number | null;
-  atraso_max: number | null;
-  sort: OrdemLista;
-  dir: "asc" | "desc";
-  page: number;
-  base: BaseData;
+  recortes: campoFiltro
+    .lista()
+    .transform((l) => {
+      const validos = l.filter((t): t is TipoRecorte => TIPOS_RECORTE.some((r) => r === t));
+      return validos.length > 0 ? validos : undefined;
+    })
+    .catch(undefined),
+  codigo: campoFiltro.inteiro(),
+  faixa_min: campoFiltro.inteiro(),
+  faixa_max: campoFiltro.inteiro(),
+  status_previsto: campoFiltro.opcaoOuNada(STATUS_PREVISTO),
+  faixa_prev: campoFiltro.opcaoOuNada(FAIXAS_PREVISTO),
+  ignorar_periodo: campoFiltro.booleano(),
+  periodo: campoFiltro.opcao(PERIODOS, "mes"),
+  de: campoFiltro.data(),
+  ate: campoFiltro.data(),
+  unidades: campoFiltro.lista(),
+  filiais: campoFiltro.lista(),
+  parceiros: campoFiltro.lista(),
+  remetente: campoFiltro.texto(),
+  destino: campoFiltro.texto(),
+  busca: campoFiltro.texto(),
+  ctrc: campoFiltro.texto(),
+  nf: campoFiltro.texto(),
+  codigos: campoFiltro.inteiros(),
+  tipos: campoFiltro.lista(),
+  cidade: campoFiltro.texto(),
+  peso_min: campoFiltro.numero(),
+  peso_max: campoFiltro.numero(),
+  atraso_min: campoFiltro.inteiro(),
+  atraso_max: campoFiltro.inteiro(),
+  sort: campoFiltro.opcao(ORDENS_LISTA, "emissao"),
+  dir: campoFiltro.opcao(["desc", "asc"], "desc"),
+  page: campoFiltro.inteiro().transform((n) => Math.max(1, n ?? 1)),
+  base: campoFiltro.opcao(BASES_DATA, "emissao"),
   /** Marca no seletor Ocorrência só os códigos em aberto do recorte (alertas). */
-  abertos?: boolean | undefined;
-}
+  abertos: campoFiltro.booleano().transform((v) => v || undefined),
+});
 
-const DATA = /^\d{4}-\d{2}-\d{2}$/;
-
-function textos(v: unknown): string[] {
-  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
-  return typeof v === "string" && v.length > 0 ? [v] : [];
-}
-
-function inteiros(v: unknown): number[] {
-  const lista: unknown[] = Array.isArray(v) ? v : v === undefined || v === "" ? [] : [v];
-  return lista.map(Number).filter((n) => Number.isInteger(n));
-}
-
-function numero(v: unknown): number | null {
-  if (v === null || v === undefined || v === "") return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function inteiro(v: unknown): number | null {
-  const n = numero(v);
-  return n === null ? null : Math.trunc(n);
-}
-
-function texto(v: unknown): string {
-  if (typeof v === "string") return v;
-  return typeof v === "number" ? String(v) : "";
-}
-
-const sim = (v: unknown) => v === "1" || v === true || v === "true";
-
-function umDe<T extends string>(lista: readonly T[], v: unknown, padrao: T): T;
-function umDe<T extends string>(lista: readonly T[], v: unknown, padrao: null): T | null;
-function umDe<T extends string>(lista: readonly T[], v: unknown, padrao: T | null): T | null {
-  return lista.find((x) => x === v) ?? padrao;
-}
+export type BuscaDaLista = z.output<typeof esquemaDaLista>;
 
 /** Lê a URL tolerando links antigos (valor solto onde hoje vai lista, números como texto). */
 export function lerBuscaDaLista(bruto: Record<string, unknown>): BuscaDaLista {
-  const recortes = textos(bruto["recortes"]).flatMap((t) => {
-    const r = umDe(TIPOS_RECORTE, t, null);
-    return r ? [r] : [];
-  });
-  const de = texto(bruto["de"]);
-  const ate = texto(bruto["ate"]);
-  return {
-    tipo: umDe(TIPOS_RECORTE, bruto["tipo"], "emitidos"),
-    recortes: recortes.length > 0 ? recortes : undefined,
-    codigo: inteiro(bruto["codigo"]),
-    faixa_min: inteiro(bruto["faixa_min"]),
-    faixa_max: inteiro(bruto["faixa_max"]),
-    status_previsto: umDe(STATUS_PREVISTO, bruto["status_previsto"], null),
-    faixa_prev: umDe(FAIXAS_PREVISTO, bruto["faixa_prev"], null),
-    ignorar_periodo: sim(bruto["ignorar_periodo"]),
-    periodo: umDe(PERIODOS, bruto["periodo"], "mes"),
-    de: DATA.test(de) ? de : "",
-    ate: DATA.test(ate) ? ate : "",
-    unidades: textos(bruto["unidades"]),
-    filiais: textos(bruto["filiais"]),
-    parceiros: textos(bruto["parceiros"]),
-    remetente: texto(bruto["remetente"]),
-    destino: texto(bruto["destino"]),
-    busca: texto(bruto["busca"]),
-    ctrc: texto(bruto["ctrc"]),
-    nf: texto(bruto["nf"]),
-    codigos: inteiros(bruto["codigos"]),
-    tipos: textos(bruto["tipos"]),
-    cidade: texto(bruto["cidade"]),
-    peso_min: numero(bruto["peso_min"]),
-    peso_max: numero(bruto["peso_max"]),
-    atraso_min: inteiro(bruto["atraso_min"]),
-    atraso_max: inteiro(bruto["atraso_max"]),
-    sort: umDe(ORDENS_LISTA, bruto["sort"], "emissao"),
-    dir: bruto["dir"] === "asc" ? "asc" : "desc",
-    page: Math.max(1, inteiro(bruto["page"]) ?? 1),
-    base: umDe(BASES_DATA, bruto["base"], "emissao"),
-    abertos: sim(bruto["abertos"]) || undefined,
-  };
+  return lerFiltros(esquemaDaLista, bruto);
 }
 
 const ROTULO_DO_PERIODO: Record<AtalhoPeriodo, string> = {

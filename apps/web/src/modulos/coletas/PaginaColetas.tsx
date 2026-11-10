@@ -21,7 +21,11 @@ import { useState } from "react";
 import { consultaAcesso } from "@/acesso/sessao";
 import { CampoDetalhe, DrawerDetalhe, GradeDetalhe } from "@/componentes/comum/Detalhe";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
-import { FiltrandoPor, FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import {
+  etiquetasQueLimpam,
+  FiltrandoPor,
+  FiltrosAvancados,
+} from "@/componentes/comum/FiltrosAvancados";
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard, type StatusKpi } from "@/componentes/comum/KpiCard";
@@ -31,6 +35,7 @@ import { SeloAtualizacao } from "@/componentes/comum/SeloAtualizacao";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
+import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
@@ -47,7 +52,6 @@ import {
   ROTULO_DO_PRAZO,
   ROTULO_DO_STATUS,
   SEM_SOLICITANTE,
-  temFiltro,
 } from "./busca";
 import { Importador050 } from "./Importador050";
 
@@ -343,7 +347,7 @@ export function PaginaColetas() {
       </header>
 
       <FiltrosAvancados
-        ativos={temFiltro(ativos, busca)}
+        ativos={temFiltro(ativos, busca.periodo)}
         aoLimpar={() => {
           setPagina(1);
           limpar(busca.periodo === "custom" ? [] : ["periodo"]);
@@ -397,14 +401,7 @@ export function PaginaColetas() {
           <option value="REVERSA">Só reversa</option>
         </select>
       </FiltrosAvancados>
-      <FiltrandoPor
-        etiquetas={etiquetasDaBusca(busca).map((e) => ({
-          ...e,
-          limpar: () => {
-            mudar(e.limpar);
-          },
-        }))}
-      />
+      <FiltrandoPor etiquetas={etiquetasQueLimpam(etiquetasDaBusca(busca), mudar)} />
 
       {painel.isError && (
         <MensagemErro

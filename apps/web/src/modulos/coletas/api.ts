@@ -6,7 +6,7 @@ import {
 import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
-import { carregarTodasAsPaginas } from "@/modulos/compartilhado/paginas";
+import { carregarTodasAsPaginas } from "@/lib/paginas";
 
 /** O 050 chega pelo FTP a cada ciclo: o painel reconsulta para o selo e os números acompanharem. */
 export const consultaPainel = (filtros: FiltrosDeColetas) =>

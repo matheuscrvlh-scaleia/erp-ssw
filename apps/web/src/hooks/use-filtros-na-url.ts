@@ -4,7 +4,7 @@ import { useCallback, useMemo } from "react";
 
 import { type EsquemaFiltros, filtrosAtivos, lerFiltros, semPadroes } from "./filtros-na-url";
 
-export { campoFiltro } from "./filtros-na-url";
+export { campoFiltro, temFiltro } from "./filtros-na-url";
 
 /**
  * Filtros da tela guardados na URL (link compartilhável, F5 e "voltar" do navegador mantêm o

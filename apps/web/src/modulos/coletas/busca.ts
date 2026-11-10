@@ -6,7 +6,7 @@ import {
 } from "@erp/shared/contratos/coletas";
 import { z } from "@erp/shared/zod";
 
-import { type EtiquetaFiltro, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
+import { type EtiquetaDaBusca, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { type AtalhoPeriodo, type Intervalo } from "@/componentes/comum/periodo";
 import { campoFiltro } from "@/hooks/use-filtros-na-url";
 
@@ -61,14 +61,7 @@ export const ROTULO_DO_PRAZO: Record<StatusDePrazo, { texto: string; cor: string
 
 export const SEM_SOLICITANTE = "(sem solicitante)";
 
-/** "Limpar filtros" e a faixa contam o período só quando é intervalo escolhido. */
-export function temFiltro(ativos: readonly string[], b: BuscaColetas): boolean {
-  return ativos.some((c) => c !== "periodo" || b.periodo === "custom");
-}
-
-export type EtiquetaDaBusca = Omit<EtiquetaFiltro, "limpar"> & { limpar: Partial<BuscaColetas> };
-
-export function etiquetasDaBusca(b: BuscaColetas): EtiquetaDaBusca[] {
+export function etiquetasDaBusca(b: BuscaColetas): EtiquetaDaBusca<BuscaColetas>[] {
   return [
     ...(b.unidades.length > 0
       ? [{ rotulo: "Unidade", ...resumirNomes(b.unidades), limpar: { unidades: [] } }]

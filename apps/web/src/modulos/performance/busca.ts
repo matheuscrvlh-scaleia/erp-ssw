@@ -1,22 +1,27 @@
-import { type Periodo, PERIODOS } from "@erp/dominio/performance/tela";
+import { PERIODOS } from "@erp/dominio/performance/tela";
 import { type BaseDeData, BASES_DE_DATA } from "@erp/shared/contratos/performance";
+import { z } from "@erp/shared/zod";
 import { defaultStringifySearch } from "@tanstack/react-router";
 
-/** Parâmetros da URL de /performance (os mesmos de hoje). */
-export interface BuscaPerformance {
-  periodo: Periodo;
-  base: BaseDeData;
-  unidades: string[];
-  parceiros: string[];
-  ordem: "pior" | "melhor";
-  remetente: string;
-  destino: string;
-  filiais: string[];
-  codigos: string[];
-  tipos: string[];
-  de: string;
-  ate: string;
-}
+import { campoFiltro, lerFiltros } from "@/hooks/filtros-na-url";
+
+/** Parâmetros da URL de /performance (os mesmos de hoje: período "mes", base "emissao", ordem "pior"). */
+const esquemaPerformance = z.object({
+  periodo: campoFiltro.opcao(PERIODOS, "mes"),
+  base: campoFiltro.opcao(BASES_DE_DATA, "emissao"),
+  unidades: campoFiltro.lista(),
+  parceiros: campoFiltro.lista(),
+  ordem: campoFiltro.opcao(["pior", "melhor"], "pior"),
+  remetente: campoFiltro.texto(),
+  destino: campoFiltro.texto(),
+  filiais: campoFiltro.lista(),
+  codigos: campoFiltro.lista(),
+  tipos: campoFiltro.lista(),
+  de: campoFiltro.data(),
+  ate: campoFiltro.data(),
+});
+
+export type BuscaPerformance = z.output<typeof esquemaPerformance>;
 
 export const ROTULO_DA_BASE: Record<BaseDeData, string> = {
   emissao: "Emitidos",
@@ -39,34 +44,9 @@ export const BASE_CURTA: Record<BaseDeData, string> = {
   concluido: "por data de conclusão",
 };
 
-const DIA = /^\d{4}-\d{2}-\d{2}$/;
-
-function lista(v: unknown): string[] {
-  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
-  return typeof v === "string" && v.length > 0 ? [v] : [];
-}
-
-const texto = (v: unknown): string => (typeof v === "string" ? v : "");
-const dia = (v: unknown): string => (typeof v === "string" && DIA.test(v) ? v : "");
-
-/** Lê a URL com os mesmos padrões de hoje (período "mes", base "emissao", ordem "pior"). */
+/** Lê a URL; valor inválido (inclusive data impossível) volta ao padrão do campo. */
 export function validarBusca(bruta: Record<string, unknown>): BuscaPerformance {
-  const periodo = PERIODOS.find((p) => p === bruta["periodo"]) ?? "mes";
-  const base = BASES_DE_DATA.find((b) => b === bruta["base"]) ?? "emissao";
-  return {
-    periodo,
-    base,
-    unidades: lista(bruta["unidades"]),
-    parceiros: lista(bruta["parceiros"]),
-    ordem: bruta["ordem"] === "melhor" ? "melhor" : "pior",
-    remetente: texto(bruta["remetente"]),
-    destino: texto(bruta["destino"]),
-    filiais: lista(bruta["filiais"]),
-    codigos: lista(bruta["codigos"]),
-    tipos: lista(bruta["tipos"]),
-    de: dia(bruta["de"]),
-    ate: dia(bruta["ate"]),
-  };
+  return lerFiltros(esquemaPerformance, bruta);
 }
 
 /** Filtros da tela (sem o período), no formato dos contratos. Lista vazia = sem filtro. */

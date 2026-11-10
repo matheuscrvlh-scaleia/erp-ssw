@@ -7,7 +7,7 @@ import {
 import { somarDias } from "@erp/shared/datas";
 import { z } from "@erp/shared/zod";
 
-import { type EtiquetaFiltro, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
+import { type EtiquetaDaBusca, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { type Intervalo } from "@/componentes/comum/periodo";
 import { campoFiltro } from "@/hooks/use-filtros-na-url";
 
@@ -105,14 +105,10 @@ export function podeAlterar(a: Anotacao, usuarioId: string, admin: boolean): boo
   return admin || a.autorId === usuarioId;
 }
 
-export type EtiquetaDaBusca = Omit<EtiquetaFiltro, "limpar"> & {
-  limpar: Partial<BuscaHistorico>;
-};
-
 export function etiquetasDaBusca(
   b: BuscaHistorico,
   nomes: { unidade: (id: string) => string | undefined; autor: (id: string) => string | undefined },
-): EtiquetaDaBusca[] {
+): EtiquetaDaBusca<BuscaHistorico>[] {
   const unidades = b.unidades.flatMap((u) => nomes.unidade(u) ?? []);
   return [
     ...(b.unidades.length === 0

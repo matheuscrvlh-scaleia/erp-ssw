@@ -17,7 +17,11 @@ import { useState } from "react";
 import { DrawerDetalhe } from "@/componentes/comum/Detalhe";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
-import { FiltrandoPor, FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import {
+  etiquetasQueLimpam,
+  FiltrandoPor,
+  FiltrosAvancados,
+} from "@/componentes/comum/FiltrosAvancados";
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard } from "@/componentes/comum/KpiCard";
@@ -26,6 +30,7 @@ import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
+import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
@@ -42,7 +47,7 @@ import { nomesDosPagadores } from "@/modulos/filtros/regras";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { carregarListaInteira, consultaLista, consultaPainel } from "./api";
-import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, temFiltro } from "./busca";
+import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, NAO_SAO_FILTRO } from "./busca";
 
 const TITULO_DO_STATUS: Record<StatusDeComprovante, string> = {
   todos: "CT-e entregues",
@@ -174,7 +179,7 @@ export function PaginaComprovantes() {
       </header>
 
       <FiltrosAvancados
-        ativos={temFiltro(ativos, busca)}
+        ativos={temFiltro(ativos, busca.periodo, NAO_SAO_FILTRO)}
         aoLimpar={() => {
           limpar(busca.periodo === "custom" ? ["size"] : ["periodo", "size"]);
         }}
@@ -248,15 +253,10 @@ export function PaginaComprovantes() {
         />
       </FiltrosAvancados>
       <FiltrandoPor
-        etiquetas={etiquetasDaBusca(
-          busca,
-          nomesDosPagadores(pagadores.data ?? [], busca.pagadores),
-        ).map((e) => ({
-          ...e,
-          limpar: () => {
-            mudar(e.limpar);
-          },
-        }))}
+        etiquetas={etiquetasQueLimpam(
+          etiquetasDaBusca(busca, nomesDosPagadores(pagadores.data ?? [], busca.pagadores)),
+          mudar,
+        )}
       />
 
       {painel.isError ? (

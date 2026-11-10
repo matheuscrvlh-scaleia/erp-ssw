@@ -12,7 +12,11 @@ e leitor de tela. Componentes em `apps/web/src/componentes/comum/`, exportação
 | Tabela | `TabelaDados` |
 | "Anterior" / "Próxima" de lista paginada fora da `TabelaDados` | `BotoesDePagina` |
 | Barra de filtros | `FiltrosAvancados` + `FiltroPeriodo` / `FiltroMultiplo` / `FiltroTexto` + `FiltrandoPor` |
-| Filtros na URL | `useFiltrosNaUrl` + `campoFiltro` |
+| Filtros na URL | `useFiltrosNaUrl` + `campoFiltro` (ou `lerFiltros` no `validateSearch`) |
+| "Limpar filtros" / faixa "Filtrando por" | `temFiltro` + `EtiquetaDaBusca<B>` + `etiquetasQueLimpam` |
+| Todas as páginas de uma lista (exportar) | `carregarTodasAsPaginas` (`@/lib/paginas`) |
+| Número, percentual, moeda, peso, data | `@erp/shared/formatacao` (`formatarPercentual`, `formatarPeso`...) |
+| Fuso da empresa / "hoje" | `useFusoDaEmpresa` + `hojeNoFuso(fuso)` (nunca o relógio do navegador) |
 | Detalhe | `DrawerDetalhe` / `ModalDetalhe` + `GradeDetalhe` / `CampoDetalhe` |
 | Gráfico | `GraficoLinha` / `GraficoBarras` |
 | Sem dados / erro | `EstadoVazio` / `MensagemErro` (`mensagemAmigavel` para toast) |
@@ -208,9 +212,14 @@ function Tela() {
 - `useFiltrosNaUrl(esquema)` → `{ filtros, definir(mudanca), limpar(manter?), ativos }`. Filtro no
   valor padrão sai da URL; parâmetros de fora do esquema ficam. Campo inválido (link antigo) volta
   ao padrão sem derrubar a tela. Declare o esquema fora do componente.
-- `campoFiltro`: `texto(max?)`, `lista()`, `data()`, `opcao(opcoes, padrao)`, `pagina()`,
-  `booleano(padrao?)` — todos com `.catch` (o roteador lê `?ctrc=123` como número e aceita valor
+- `campoFiltro`: `texto(max?)`, `lista()`, `data()` (recusa data impossível, ex.: 2026-02-30),
+  `opcao(opcoes, padrao)`, `opcaoOuNada(opcoes)`, `pagina()`, `booleano(padrao?)` (aceita `1`/`"1"`),
+  `numero()`, `inteiro()`, `inteiros()` — todos com `.catch` (o roteador lê `?ctrc=123` como número e aceita valor
   solto onde se espera lista).
+- `temFiltro(ativos, periodo, naoSaoFiltro?)`: algum filtro ligado; o período só conta quando é
+  intervalo escolhido. A regra pura da tela devolve `EtiquetaDaBusca<Busca>[]` (com `limpar` =
+  campos que voltam ao padrão) e a tela passa `etiquetasQueLimpam(etiquetas, definir)` ao
+  `FiltrandoPor`.
 - `resolverPeriodo(periodo, de, ate, hoje, padrao?)`: atalhos `hoje`, `7d`, `30d`, `mes`,
   `mes_anterior`; `hoje` é o dia de Brasília (Q11), passado de fora.
 - Múltipla escolha marca na hora e só reconsulta após 600 ms sem clique ou ao fechar

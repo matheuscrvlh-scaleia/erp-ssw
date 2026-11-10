@@ -6,6 +6,18 @@ import { enderecoDaLista, limparFiltros, validarBusca } from "./busca";
 import { indicadoresDoRelatorio } from "./relatorio";
 
 describe("busca da URL", () => {
+  it("data impossível (2026-02-30) e código numérico do link", () => {
+    const b = validarBusca({
+      periodo: "custom",
+      de: "2026-02-30",
+      ate: "2026-03-01",
+      codigos: [13],
+    });
+    expect(b.de).toBe("");
+    expect(b.ate).toBe("2026-03-01");
+    expect(b.codigos).toEqual(["13"]);
+  });
+
   it("mesmos padrões de hoje e valor solto vira lista", () => {
     expect(
       validarBusca({ periodo: "x", unidades: "ARA", de: "10/11/2026", ordem: "melhor" }),

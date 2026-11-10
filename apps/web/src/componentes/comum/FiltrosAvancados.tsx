@@ -44,6 +44,25 @@ export interface EtiquetaFiltro {
   limpar?: (() => void) | undefined;
 }
 
+/**
+ * Etiqueta montada pela regra pura da tela: `limpar` diz quais campos da busca voltam ao padrão.
+ * A tela liga ao `definir` da URL com `etiquetasQueLimpam`.
+ */
+export type EtiquetaDaBusca<B> = Omit<EtiquetaFiltro, "limpar"> & { limpar: Partial<B> };
+
+/** Liga cada etiqueta ao `definir` da tela: o "x" tira aquele filtro da URL. */
+export function etiquetasQueLimpam<B>(
+  etiquetas: readonly EtiquetaDaBusca<B>[],
+  definir: (mudanca: Partial<B>) => void,
+): EtiquetaFiltro[] {
+  return etiquetas.map((e) => ({
+    ...e,
+    limpar: () => {
+      definir(e.limpar);
+    },
+  }));
+}
+
 /** `false`/`null`/`""` são ignorados: monte a lista com `cond && {...}`. */
 export type EtiquetaFiltroOpcional = EtiquetaFiltro | false | null | undefined | "";
 

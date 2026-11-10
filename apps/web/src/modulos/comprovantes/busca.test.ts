@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { lerFiltros } from "@/hooks/filtros-na-url";
+import { temFiltro } from "@/hooks/filtros-na-url";
 
-import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, temFiltro } from "./busca";
+import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, NAO_SAO_FILTRO } from "./busca";
 
 const ler = (b: Record<string, unknown>) => lerFiltros(esquemaDaBusca, b);
 
 describe("busca de /comprovantes", () => {
   it("status do card não é filtro; intervalo de datas é", () => {
     const b = ler({ status: "pendentes", page: 3 });
-    expect(temFiltro(["status", "page"], b)).toBe(false);
-    expect(temFiltro(["filiais"], ler({ filiais: "RIO" }))).toBe(true);
+    expect(temFiltro(["status", "page"], b.periodo, NAO_SAO_FILTRO)).toBe(false);
+    expect(temFiltro(["filiais"], ler({ filiais: "RIO" }).periodo, NAO_SAO_FILTRO)).toBe(true);
   });
 
   it("monta os filtros da API e as etiquetas", () => {

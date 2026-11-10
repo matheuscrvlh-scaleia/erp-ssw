@@ -6,7 +6,7 @@ import {
 import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
-import { carregarTodasAsPaginas } from "@/modulos/compartilhado/paginas";
+import { carregarTodasAsPaginas } from "@/lib/paginas";
 
 export const consultaPainel = (filtros: FiltrosDeComprovantes) =>
   queryOptions({

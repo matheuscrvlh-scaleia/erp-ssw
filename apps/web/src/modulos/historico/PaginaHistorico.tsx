@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
-import { FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
+import { etiquetasQueLimpam, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
@@ -504,15 +504,13 @@ export function PaginaHistorico() {
         </label>
       </div>
       <FiltrandoPor
-        etiquetas={etiquetasDaBusca(busca, {
-          unidade: (id) => d?.unidades.find((u) => u.id === id)?.nome,
-          autor: (id) => d?.autores.find((a) => a.id === id)?.nome,
-        }).map((e) => ({
-          ...e,
-          limpar: () => {
-            definir(e.limpar);
-          },
-        }))}
+        etiquetas={etiquetasQueLimpam(
+          etiquetasDaBusca(busca, {
+            unidade: (id) => d?.unidades.find((u) => u.id === id)?.nome,
+            autor: (id) => d?.autores.find((a) => a.id === id)?.nome,
+          }),
+          definir,
+        )}
       />
 
       {consulta.isLoading ? (
