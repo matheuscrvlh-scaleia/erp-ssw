@@ -6,7 +6,6 @@ import {
 import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
-import { carregarTodasAsPaginas } from "@/lib/paginas";
 
 export const consultaPainel = (filtros: FiltrosDeComprovantes) =>
   queryOptions({
@@ -26,6 +25,4 @@ export const consultaLista = (
   });
 
 export const carregarListaInteira = (filtros: FiltrosDeComprovantes, status: StatusDeComprovante) =>
-  carregarTodasAsPaginas((pagina, tamanho) =>
-    chamar(c.lista, { entrada: { ...filtros, status, pagina, tamanho } }),
-  );
+  chamar(c.exportar, { entrada: { ...filtros, status } }).then((r) => r.linhas);

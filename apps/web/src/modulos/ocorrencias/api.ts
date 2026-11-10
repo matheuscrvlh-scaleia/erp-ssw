@@ -8,7 +8,6 @@ import {
 import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
-import { carregarTodasAsPaginas } from "@/lib/paginas";
 
 export const consultaPainel = (entrada: FiltrosDeCte & Recortes) =>
   queryOptions({
@@ -45,8 +44,6 @@ export const consultaCodigosDoCard = (filtros: FiltrosDeCte, card: Card) =>
     staleTime: 60_000,
   });
 
-/** Todas as páginas da lista com os mesmos filtros (exportação). */
-export const carregarListaInteira = (entrada: EntradaDaLista) =>
-  carregarTodasAsPaginas((pagina, tamanho) =>
-    chamar(c.lista, { entrada: { ...entrada, pagina, tamanho } }),
-  );
+/** A lista inteira com os mesmos filtros, numa leitura só (exportação). */
+export const carregarListaInteira = ({ pagina: _p, tamanho: _t, ...filtros }: EntradaDaLista) =>
+  chamar(c.exportar, { entrada: filtros }).then((r) => r.linhas);
