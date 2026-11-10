@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
 import { segredoConfere } from "./rotas-publicas";
-import { type ServicosDaIngestao } from "./servicos";
+import { type SegredoDaIngestao, type ServicosDaIngestao } from "./servicos";
 
 const SEGREDO = "segredo-do-ftp-de-teste";
 const LINHA =
@@ -26,6 +26,9 @@ let empresaId: string;
 let estado: ReturnType<typeof estadoFalso>;
 let enfileirador: ReturnType<typeof enfileiradorFalso>;
 let integracoes: string[];
+let segredos: SegredoDaIngestao[];
+const OUTRA = "00000000-0000-4000-8000-000000000002";
+const SEGREDO_DA_OUTRA = "segredo-da-outra-empresa";
 
 beforeEach(async () => {
   cenario = criarCenario();
@@ -34,13 +37,18 @@ beforeEach(async () => {
   estado = estadoFalso();
   enfileirador = enfileiradorFalso();
   integracoes = ["sftp"];
+  segredos = [
+    { empresaId, segredo: SEGREDO },
+    { empresaId: OUTRA, segredo: SEGREDO_DA_OUTRA },
+  ];
   const servicos: ServicosDaIngestao = {
     executarNaEmpresa: () => executarFalso(estado),
     empresasParaIngestao: () =>
       Promise.resolve([
         { id: empresaId, slug: "fr", nome: "FR", status: "ativa", integracoesAtivas: integracoes },
+        { id: OUTRA, slug: "outra", nome: "Outra", status: "ativa", integracoesAtivas: ["sftp"] },
       ]),
-    tokenDoCron: () => Promise.resolve("token-do-cron-de-teste"),
+    segredosDaIngestao: () => Promise.resolve(segredos),
     fila: filaFalsa(),
     travas: travasFalsas(),
     progressos: {
@@ -49,7 +57,6 @@ beforeEach(async () => {
       limpar: () => Promise.resolve(),
     },
     enfileirador,
-    segredoDoFtp: SEGREDO,
   };
   app = await construirAppDeTeste(cenario, null, { ingestao: servicos });
 });
@@ -115,11 +122,32 @@ describe("rotas públicas", () => {
     const r = await app.inject({
       method: "POST",
       url: "/api/public/ssw-ciclo-aplicar?empresa=fr",
-      headers: { "x-cron-token": "token-do-cron-de-teste" },
+      headers: { "x-cron-token": SEGREDO },
       payload: {},
     });
     expect(r.json()).toMatchObject({ ok: true, status: "enfileirado" });
     expect(enfileirador.jobs).toEqual([{ nome: "ssw_ciclo_aplicar", dados: { empresaId } }]);
+  });
+
+  it("o segredo é da empresa: escolhe a empresa e não serve para pedir outra", async () => {
+    const daOutra = await importar({ "x-ftp-ingest-secret": SEGREDO_DA_OUTRA }, { empresa: "fr" });
+    expect(daOutra.statusCode).toBe(404);
+    expect(estado.linhas).toHaveLength(0);
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/public/ssw-ciclo-aplicar",
+      headers: { "x-ftp-ingest-secret": SEGREDO_DA_OUTRA },
+      payload: {},
+    });
+    expect(r.json()).toMatchObject({ ok: true });
+    expect(enfileirador.jobs).toEqual([{ nome: "ssw_ciclo_aplicar", dados: { empresaId: OUTRA } }]);
+  });
+
+  it("sem segredo cadastrado em nenhuma empresa: 503 dizendo onde cadastrar", async () => {
+    segredos = [];
+    const r = await importar({ "x-ftp-ingest-secret": SEGREDO });
+    expect(r.statusCode).toBe(503);
+    expect(r.json()).toMatchObject({ motivo: "ingest_secret_nao_configurado" });
   });
 
   it("rotas 410 do sistema antigo não existem (Q46)", async () => {

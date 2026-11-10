@@ -279,3 +279,7 @@ Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP
   a conta desativada não usa as telas da Plataforma. Pelo Google, volta para o login com erro.
 - **Admin comum não desativa quem está acima.** Desativar ou reativar um Super Admin é só do Super
   Admin ou da Plataforma; quem é da equipe da Plataforma, só a Plataforma (ADR 0007).
+- **Rotas públicas da ingestão com segredo por empresa** (ADR 0010). `x-ftp-ingest-secret` (e
+  `x-cron-token`) passam a ser o segredo da integração "Rotas públicas da ingestão" da empresa; o
+  `FTP_INGEST_SECRET` global e o `backfill_cron_token` saem. Cadastrando o valor de hoje para a FR,
+  quem chama não percebe; pedir outra empresa com esse segredo dá 404.

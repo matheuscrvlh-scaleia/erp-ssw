@@ -517,6 +517,8 @@ usuários da janela.
    caddy` e `./deploy.sh <tag atual>` (a API passa a usar o `WEB_URL` novo nos e-mails e no CORS).
    O Caddy emite o certificado assim que o DNS responde com o IP da VPS (segundos). URLs, telas e
    rotas públicas (`/api/public/*`, webhook do SSW) são as mesmas: integrações externas não mudam.
+   Antes, em Plataforma → Empresa → Integrações, cadastrar e ligar "Rotas públicas da ingestão"
+   com o mesmo valor do `FTP_INGEST_SECRET` de hoje (ADR 0010); sem isso as rotas respondem 503.
 6. **Conferir**: login de usuários reais (senha antiga validada e regravada em argon2id),
    `/readyz`, telas principais, logs sem 5xx, primeiros jobs ok.
 

@@ -1,6 +1,7 @@
 /**
  * Rotas públicas da ingestão SSW, nos mesmos caminhos de hoje (spec 06 §6). Sem sessão: segredo
- * por cabeçalho comparado em tempo constante; nunca a chave publicável. Q46 b: as rotas 410
+ * por cabeçalho comparado em tempo constante; nunca a chave publicável. O segredo é da empresa
+ * (integração `ingestao_publica`, cifrado) e é ele que diz qual empresa chama (ADR 0010). Q46 b: as rotas 410
  * (`ftp-xml-import`, `ssw-ingest`, `enriquecer-*`) não são recriadas; `xml-recuperar-orfaos` é
  * código morto (§9).
  */
@@ -19,7 +20,7 @@ import { z } from "@erp/shared/zod";
 import { type FastifyReply, type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { type ServicosDaIngestao } from "./servicos";
+import { type SegredoDaIngestao, type ServicosDaIngestao } from "./servicos";
 
 /** Arquivos em base64 (455 CSV chega dividido, mas a parte retroativa pode vir inteira). */
 const LIMITE_COM_ARQUIVO = 64 * 1024 * 1024;
@@ -58,10 +59,23 @@ function empresaPedida(
 const erro = (reply: FastifyReply, status: number, motivo: string, mensagem: string) =>
   reply.status(status).send({ ok: false, motivo, erro: mensagem });
 
+/** Segredos decifrados guardados por 60 s (como o cadastro do webhook). */
+const CACHE_MS = 60_000;
+
 export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
   servicos: ServicosDaIngestao;
   agora: () => Date;
 }> = (app, { servicos, agora }, pronto) => {
+  let cache: { ate: number; segredos: SegredoDaIngestao[] } | null = null;
+  async function segredos() {
+    const instante = agora().getTime();
+    if (cache && cache.ate > instante) return cache.segredos;
+    cache = { ate: instante + CACHE_MS, segredos: await servicos.segredosDaIngestao() };
+    return cache.segredos;
+  }
+  /** Empresa dona do segredo recebido em cada chamada autenticada. */
+  const empresaDoSegredo = new WeakMap<FastifyRequest, string>();
+
   /**
    * `onRequest`: confere o segredo antes de o corpo (até 64 MB) ser lido e validado. Sem segredo
    * válido a resposta sai aqui e o handler nunca roda.
@@ -71,18 +85,28 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
       if (!(await autorizado(request, reply, aceitaCron))) return reply;
     };
 
-  /** Segredo do FTP (ou também o token do cron); devolve `false` se já respondeu o erro. */
+  /**
+   * Acha a empresa pelo segredo (`x-ftp-ingest-secret` ou, nas rotas de cron, `x-cron-token`);
+   * devolve `false` se já respondeu o erro.
+   */
   async function autorizado(request: FastifyRequest, reply: FastifyReply, aceitaCron: boolean) {
-    const segredoFtp = cabecalho(request, "x-ftp-ingest-secret");
-    if (segredoConfere(segredoFtp, servicos.segredoDoFtp)) return true;
-    if (
-      aceitaCron &&
-      segredoConfere(cabecalho(request, "x-cron-token"), await servicos.tokenDoCron())
-    ) {
+    const recebidos = [
+      cabecalho(request, "x-ftp-ingest-secret"),
+      aceitaCron ? cabecalho(request, "x-cron-token") : undefined,
+    ];
+    const cadastrados = await segredos();
+    const dona = cadastrados.find((c) => recebidos.some((r) => segredoConfere(r, c.segredo)));
+    if (dona) {
+      empresaDoSegredo.set(request, dona.empresaId);
       return true;
     }
-    if (!servicos.segredoDoFtp && !aceitaCron) {
-      await erro(reply, 503, "ingest_secret_nao_configurado", "FTP_INGEST_SECRET não configurado.");
+    if (cadastrados.length === 0) {
+      await erro(
+        reply,
+        503,
+        "ingest_secret_nao_configurado",
+        "Segredo das rotas públicas não cadastrado: Plataforma → Empresa → Integrações.",
+      );
     } else {
       await erro(reply, 401, "token_invalido", "Segredo ausente ou inválido.");
     }
@@ -95,11 +119,10 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
     tipo: TipoIntegracao,
     corpo: z.infer<typeof corpoComEmpresa>,
   ) {
-    const d = decidirEmpresa(
-      empresaPedida(request, corpo),
-      tipo,
-      await servicos.empresasParaIngestao(),
-    );
+    // Só a empresa dona do segredo: pedir outra (`?empresa=`, `x-empresa`, corpo) dá 404.
+    const dona = empresaDoSegredo.get(request);
+    const empresas = (await servicos.empresasParaIngestao()).filter((e) => e.id === dona);
+    const d = decidirEmpresa(empresaPedida(request, corpo), tipo, empresas);
     if (!d.ok) {
       await erro(reply, d.status, d.motivo, d.erro);
       return null;

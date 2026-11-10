@@ -138,6 +138,7 @@ export const TIPOS_INTEGRACAO = [
   "ssw_webhook",
   "ahgora",
   "xml_cte",
+  "ingestao_publica",
 ] as const;
 
 /**

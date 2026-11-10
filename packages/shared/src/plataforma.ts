@@ -20,6 +20,7 @@ export const TIPOS_INTEGRACAO = [
   "ssw_webhook",
   "ahgora",
   "xml_cte",
+  "ingestao_publica",
 ] as const;
 export type TipoIntegracao = (typeof TIPOS_INTEGRACAO)[number];
 
@@ -94,6 +95,13 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
       },
     ],
     tela: "/admin/xml-cte",
+  },
+  ingestao_publica: {
+    nome: "Rotas públicas da ingestão",
+    descricao:
+      "Segredo que quem chama /api/public/ftp-relatorio-import, ssw-ciclo-aplicar e xml-orfaos-retry manda no cabeçalho x-ftp-ingest-secret (ou x-cron-token). Identifica a empresa.",
+    campos: [],
+    segredo: "Segredo das rotas públicas",
   },
 };
 
