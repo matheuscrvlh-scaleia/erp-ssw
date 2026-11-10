@@ -1,5 +1,5 @@
 {
-  "id": "aed7ae12-c098-45f1-9f0c-86ba9d61d949",
+  "id": "3d0aef6f-f70f-4d0d-891d-2dcffd5b06da",
   "prevId": "52f88c7b-67a0-4ece-b6a1-855114109daf",
   "version": "7",
   "dialect": "postgresql",
@@ -3194,6 +3194,24 @@
         "data_prevista_entrega": {
           "name": "data_prevista_entrega",
           "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previsao_ssw_data": {
+          "name": "previsao_ssw_data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previsao_ssw_fonte": {
+          "name": "previsao_ssw_fonte",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previsao_ssw_data_base": {
+          "name": "previsao_ssw_data_base",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -7213,141 +7231,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "erp.romaneio_conferente_cte": {
-      "name": "romaneio_conferente_cte",
-      "schema": "erp",
-      "columns": {
-        "empresa_id": {
-          "name": "empresa_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sigla": {
-          "name": "sigla",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "numero": {
-          "name": "numero",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "conferente": {
-          "name": "conferente",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "romaneio": {
-          "name": "romaneio",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "atualizado_em": {
-          "name": "atualizado_em",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "romaneio_conferente_cte_conferente_idx": {
-          "name": "romaneio_conferente_cte_conferente_idx",
-          "columns": [
-            {
-              "expression": "empresa_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "conferente",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"erp\".\"romaneio_conferente_cte\".\"conferente\" is not null",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "romaneio_conferente_cte_empresa_id_empresas_id_fk": {
-          "name": "romaneio_conferente_cte_empresa_id_empresas_id_fk",
-          "tableFrom": "romaneio_conferente_cte",
-          "tableTo": "empresas",
-          "schemaTo": "erp",
-          "columnsFrom": [
-            "empresa_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "romaneio_conferente_cte_pk": {
-          "name": "romaneio_conferente_cte_pk",
-          "columns": [
-            "empresa_id",
-            "sigla",
-            "numero"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {
-        "romaneio_conferente_cte_select": {
-          "name": "romaneio_conferente_cte_select",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "erp_app"
-          ],
-          "using": "\"erp\".\"romaneio_conferente_cte\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
-        },
-        "romaneio_conferente_cte_insert": {
-          "name": "romaneio_conferente_cte_insert",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "erp_app"
-          ],
-          "withCheck": "\"erp\".\"romaneio_conferente_cte\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
-        },
-        "romaneio_conferente_cte_update": {
-          "name": "romaneio_conferente_cte_update",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "erp_app"
-          ],
-          "using": "\"erp\".\"romaneio_conferente_cte\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid",
-          "withCheck": "\"erp\".\"romaneio_conferente_cte\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
-        },
-        "romaneio_conferente_cte_delete": {
-          "name": "romaneio_conferente_cte_delete",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "erp_app"
-          ],
-          "using": "\"erp\".\"romaneio_conferente_cte\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
-        }
-      },
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "erp.romaneio_cte_atual": {
       "name": "romaneio_cte_atual",
       "schema": "erp",
@@ -9914,39 +9797,6 @@
         "auditoria_criado_idx": {
           "name": "auditoria_criado_idx",
           "columns": [
-            {
-              "expression": "criado_em",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "auditoria_entidade_idx": {
-          "name": "auditoria_entidade_idx",
-          "columns": [
-            {
-              "expression": "empresa_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "entidade",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "entidade_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
             {
               "expression": "criado_em",
               "isExpression": false,
