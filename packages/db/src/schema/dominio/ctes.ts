@@ -16,6 +16,7 @@
  *
  * Origem: public.ctrcs, public.ctrc_prazo_historico.
  */
+import { FONTES_DE_PRAZO } from "@erp/shared/dominio/prazo";
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
@@ -40,19 +41,8 @@ import { parceiros } from "./parceiros";
 
 export const prazoOrigem = erp.enum("prazo_origem", ["proprio", "parceiro"]);
 
-/** De onde veio a previsão de entrega gravada. */
-export const fontesDePrazo = [
-  "xml_dprog",
-  "consulta_prazo_oc80",
-  "consulta_prazo_emissao",
-  "regra_parceiro",
-  "regra_transbordo",
-  "regra_unidade",
-  "fora_malha",
-  "bi2",
-  "ssw_manual",
-  "ssw_038",
-] as const;
+/** De onde veio a previsão de entrega gravada (lista única em @erp/shared). */
+export const fontesDePrazo = FONTES_DE_PRAZO;
 
 const dia = (nome: string) => date(nome, { mode: "string" });
 
@@ -150,6 +140,11 @@ export const ctes = erp.table(
     prazoFonte: text("prazo_fonte", { enum: fontesDePrazo }),
     dataBasePrazo: instante("data_base_prazo"),
     dataPrevistaEntrega: dia("data_prevista_entrega"),
+    // Última previsão vinda do SSW (038/930/XML), guardada à parte para o CT-e voltar a ela quando a
+    // regra de prazo configurado sai (decisão Q19). Gravada pela ingestão; lida pelo núcleo.
+    previsaoSswData: dia("previsao_ssw_data"),
+    previsaoSswFonte: text("previsao_ssw_fonte", { enum: fontesDePrazo }),
+    previsaoSswDataBase: instante("previsao_ssw_data_base"),
     // calculada pelo backend: 2 dias corridos (48 h); nulo para pagador/parceiro com raiz de CNPJ 00193687 (TROCA). origem: prazo_padrao_do_ctrc
     prazoPadraoDias: smallint("prazo_padrao_dias"),
     // calculada pelo backend: data_emissao + prazo_padrao_dias; nulo se a previsão é anterior à emissão. Nascido em atraso = previsão < esta data. origem: prazo_padrao_data_do_ctrc
