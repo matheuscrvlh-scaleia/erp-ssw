@@ -1,0 +1,242 @@
+# ERP SSW na VPS: caddy (borda) + web (SPA) + api (Fastify) + worker (BullMQ) + redis, e o
+# migrador (execução única, fora do `up`). Runbook: docs/deploy.md. Variáveis em infra/.env
+# (fora do git; modelo em .env.example).
+#
+#   docker compose config --quiet                 # confere a interpolação
+#   ./deploy.sh <tag> [--migrar]                  # deploy sem queda (rola web e api)
+#   docker compose run --rm migrador migrar       # migrations com o papel erp_migracao
+#
+# Redes:
+#   borda   — só o caddy; portas publicadas (80/443) e saída para o ACME.
+#   interna — caddy ↔ web ↔ api. Sem saída para a internet.
+#   dados   — api e worker ↔ redis. Sem saída para a internet.
+#   saida   — api, worker e migrador → Postgres (Supabase), SMTP, Google, SSW, FTP.
+# Só o caddy publica porta. Docker ignora o ufw para porta publicada: nunca publicar outra.
+#
+# Cada serviço recebe só as variáveis que usa (lista explícita, nada de env_file com tudo): a
+# API não enxerga a senha do erp_migracao, o caddy não enxerga segredo nenhum. Variável opcional
+# fica COMENTADA no .env quando não se usa (vazia, a validação do boot recusa).
+
+name: erp
+
+x-log: &log
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+    tag: "{{.Name}}"
+
+# Endurecimento comum: raiz somente leitura, sem capability, sem escalar privilégio.
+x-endurecido: &endurecido
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+  logging: *log
+
+services:
+  caddy:
+    <<: *endurecido
+    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-caddy:${CADDY_TAG:?defina CADDY_TAG no .env}
+    build:
+      context: ./docker
+      dockerfile: caddy.Dockerfile
+    # O binário do Caddy precisa só desta para abrir 80/443 sem root.
+    cap_add: [NET_BIND_SERVICE]
+    ports:
+      - "${PORTA_HTTP:-80}:80"
+      - "${PORTA_HTTPS:-443}:443"
+      - "${PORTA_HTTPS:-443}:443/udp"
+    environment:
+      DOMINIO: ${DOMINIO:?defina DOMINIO no .env}
+      ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL no .env}
+      CSP_CABECALHO: ${CSP_CABECALHO:-Content-Security-Policy}
+      LOGO_ORIGEM: ${LOGO_ORIGEM:-'self'}
+      LIMITE_CORPO_PUBLICO_MB: ${LIMITE_CORPO_PUBLICO_MB:-64}
+      LIMITE_CORPO_API_MB: ${LIMITE_CORPO_API_MB:-1}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificados e chave da conta ACME: estado da VPS que vale backup (docs/deploy.md §7).
+      - caddy_dados:/data
+      - caddy_config:/config
+    tmpfs:
+      - /tmp:size=16m
+    networks: [borda, interna]
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 256M }
+    stop_grace_period: 30s
+
+  web:
+    <<: *endurecido
+    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-web:${IMAGEM_TAG:?defina IMAGEM_TAG no .env}
+    build:
+      context: ..
+      dockerfile: infra/docker/web.Dockerfile
+    tmpfs:
+      - /tmp:size=16m
+    networks: [interna]
+    deploy:
+      replicas: ${WEB_REPLICAS:-1}
+      resources:
+        limits: { cpus: "0.5", memory: 128M }
+    stop_grace_period: 10s
+
+  api:
+    <<: *endurecido
+    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-api:${IMAGEM_TAG:?defina IMAGEM_TAG no .env}
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile
+    init: true
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORTA: "3001"
+      # Um proxy (a borda) na frente: o IP do cliente sai do X-Forwarded-For que ela grava.
+      PROXIES_CONFIAVEIS: "1"
+      LOG_NIVEL: ${LOG_NIVEL:-info}
+      DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL (papel erp_app) no .env}
+      DB_MAX_CONEXOES: ${API_DB_MAX_CONEXOES:-10}
+      DB_TIMEOUT_CONSULTA_MS: ${API_DB_TIMEOUT_CONSULTA_MS:-30000}
+      REDIS_URL: redis://:${REDIS_SENHA:?defina REDIS_SENHA no .env}@redis:6379/0
+      WEB_URL: https://${DOMINIO:?defina DOMINIO no .env}
+      CORS_ORIGENS: ${CORS_ORIGENS:-}
+      JWT_CHAVE_PRIVADA: ${JWT_CHAVE_PRIVADA:?defina JWT_CHAVE_PRIVADA no .env}
+      JWT_KID: ${JWT_KID:?defina JWT_KID no .env}
+      COOKIE_SEGREDO: ${COOKIE_SEGREDO:?defina COOKIE_SEGREDO no .env}
+      SMTP_HOST: ${SMTP_HOST:?defina SMTP_HOST no .env}
+      SMTP_PORTA: ${SMTP_PORTA:-587}
+      SMTP_SEGURO: ${SMTP_SEGURO:-false}
+      EMAIL_REMETENTE: ${EMAIL_REMETENTE:?defina EMAIL_REMETENTE no .env}
+      # Opcionais: só entram se estiverem no .env (ausente ≠ vazio).
+      JWT_CHAVES_ANTERIORES:
+      REFRESH_DIAS:
+      SMTP_USUARIO:
+      SMTP_SENHA:
+      GOOGLE_CLIENT_ID:
+      GOOGLE_CLIENT_SECRET:
+      GOOGLE_REDIRECT_URI:
+      LOGO_URL_BASE:
+      METRICAS_TOKEN:
+      SEGREDOS_CHAVES:
+      SEGREDOS_CHAVE_ATUAL:
+    volumes:
+      # CA do Supabase para sslmode=verify-full (docs/deploy.md §4.1).
+      - ./certs:/etc/erp/certs:ro
+    tmpfs:
+      - /tmp:size=64m
+    networks: [interna, dados, saida]
+    depends_on:
+      redis: { condition: service_healthy }
+    deploy:
+      replicas: ${API_REPLICAS:-2}
+      resources:
+        limits: { cpus: "${API_CPUS:-1.5}", memory: "${API_MEMORIA:-768M}" }
+        reservations: { memory: 256M }
+    # SIGTERM: a API para de aceitar e termina o que está em andamento (até 10 s; server.ts).
+    stop_grace_period: 15s
+
+  worker:
+    <<: *endurecido
+    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-worker:${IMAGEM_TAG:?defina IMAGEM_TAG no .env}
+    build:
+      context: ..
+      dockerfile: infra/docker/worker.Dockerfile
+    init: true
+    environment:
+      NODE_ENV: production
+      LOG_NIVEL: ${LOG_NIVEL:-info}
+      DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL (papel erp_app) no .env}
+      DB_MAX_CONEXOES: ${WORKER_DB_MAX_CONEXOES:-5}
+      DB_TIMEOUT_CONSULTA_MS: ${WORKER_DB_TIMEOUT_CONSULTA_MS:-120000}
+      REDIS_URL: redis://:${REDIS_SENHA:?defina REDIS_SENHA no .env}@redis:6379/0
+      PORTA_SAUDE: "3002"
+      # Desligado até a virada (docs/deploy.md §10): o sistema atual ainda faz a ingestão.
+      AGENDAMENTOS_LIGADOS: ${AGENDAMENTOS_LIGADOS:-false}
+      SEGREDOS_CHAVES:
+      SEGREDOS_CHAVE_ATUAL:
+    volumes:
+      - ./certs:/etc/erp/certs:ro
+    tmpfs:
+      # Arquivos do FTP em trânsito (o 455 tem ~39 MB).
+      - /tmp:size=512m
+    networks: [dados, saida]
+    depends_on:
+      redis: { condition: service_healthy }
+    deploy:
+      # Uma réplica basta hoje; o BullMQ aceita mais (cada job vai para um só worker).
+      replicas: 1
+      resources:
+        limits: { cpus: "1.0", memory: 1024M }
+    # SIGTERM: para de pegar job e espera os em andamento (até 30 s; main.ts). O BullMQ devolve
+    # para a fila o que não terminar.
+    stop_grace_period: 40s
+
+  redis:
+    <<: *endurecido
+    image: ${REDIS_IMAGEM:-redis:7.4.12-alpine@sha256:7b1753b4c5ad8458906c272a8132b8c15f5557b000379eb115fb239706a384b7}
+    # Usuário redis da imagem (sem root, sem gosu/chown no entrypoint).
+    user: "999:1000"
+    environment:
+      REDIS_SENHA: ${REDIS_SENHA:?defina REDIS_SENHA no .env}
+    # A senha entra pelo ambiente (o Redis troca o título do processo, então ela não aparece no ps).
+    command:
+      - sh
+      - -c
+      - exec redis-server /usr/local/etc/redis/redis.conf --requirepass "$$REDIS_SENHA"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_dados:/data
+    tmpfs:
+      - /tmp:size=8m
+    networks: [dados]
+    healthcheck:
+      test: ["CMD-SHELL", 'REDISCLI_AUTH="$$REDIS_SENHA" redis-cli ping | grep -q PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        # maxmemory 384mb (redis.conf) + folga para o fork da persistência.
+        limits: { cpus: "0.5", memory: 512M }
+    stop_grace_period: 30s
+
+  migrador:
+    <<: *endurecido
+    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-migrador:${IMAGEM_TAG:?defina IMAGEM_TAG no .env}
+    build:
+      context: ..
+      dockerfile: infra/docker/migrador.Dockerfile
+    # Execução única: fica fora do `up` (perfil) e sai com `run --rm`.
+    profiles: [ferramentas]
+    restart: "no"
+    init: true
+    environment:
+      DATABASE_URL_MIGRACAO: ${DATABASE_URL_MIGRACAO:-}
+    # Variáveis próprias do migrador de dados (apps/migrador), se ele precisar de mais alguma.
+    env_file:
+      - path: ./migrador.env
+        required: false
+    volumes:
+      - ./certs:/etc/erp/certs:ro
+    tmpfs:
+      - /tmp:size=256m
+    networks: [saida]
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 2048M }
+
+networks:
+  borda: {}
+  interna:
+    internal: true
+  dados:
+    internal: true
+  saida: {}
+
+volumes:
+  caddy_dados: {}
+  caddy_config: {}
+  redis_dados: {}
