@@ -13,3 +13,6 @@ infra/.deploy-historico
 infra/migrador.env
 infra/certs/*
 !infra/certs/.gitkeep
+
+# Verificadores SCRAM dos papéis (só para criar os papéis no banco; apagar depois)
+.migrador-papeis.json
