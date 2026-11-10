@@ -3,6 +3,8 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import {
   formatarData,
   formatarDataHora,
+  formatarDecimal,
+  formatarInteiro,
   formatarMoeda,
   formatarPercentual,
 } from "@erp/shared/formatacao";
@@ -49,9 +51,6 @@ export function paraDiaIso(valor: unknown, fuso: string): string | null {
   return instante ? hojeNoFuso(fuso, instante) : null;
 }
 
-const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
-const inteiro = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
-
 function textoLivre(valor: unknown): string {
   if (typeof valor === "boolean") return valor ? "Sim" : "Não";
   if (Array.isArray(valor)) return valor.map(textoLivre).join(", ");
@@ -72,9 +71,9 @@ export function textoDaCelula(
   const numero = paraNumero(valor);
   switch (formato) {
     case "inteiro":
-      return numero == null ? textoLivre(valor) : inteiro.format(numero);
+      return numero == null ? textoLivre(valor) : formatarInteiro(numero);
     case "decimal":
-      return numero == null ? textoLivre(valor) : decimal.format(numero);
+      return numero == null ? textoLivre(valor) : formatarDecimal(numero);
     case "percentual":
       return numero == null ? textoLivre(valor) : formatarPercentual(numero);
     case "moeda":

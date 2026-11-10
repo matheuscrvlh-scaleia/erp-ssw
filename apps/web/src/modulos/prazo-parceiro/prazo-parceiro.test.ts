@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { lerFiltros } from "@/hooks/filtros-na-url";
 
 import { esquemaDetalhe, esquemaPrazo, filtrosDaBusca } from "./busca";
-import { fmtPP, tomDoSla } from "./componentes";
+import { tomDoSla } from "./componentes";
 import { opcoesDeTipo } from "./tipos";
 
 const intervalo = { inicio: "2026-10-12", fim: "2026-11-10" };
@@ -41,12 +41,6 @@ describe("filtrosDaBusca", () => {
 });
 
 describe("formatos", () => {
-  it("diferença em pontos percentuais com sinal", () => {
-    expect(fmtPP(0.023)).toBe("+2,3 pp");
-    expect(fmtPP(-0.01)).toBe("-1,0 pp");
-    expect(fmtPP(null)).toBe("—");
-  });
-
   it("tom pela meta e pelo alerta do SLA", () => {
     const sla = { meta: 0.95, alerta: 0.9 };
     expect(tomDoSla(0.96, sla)).toBe("bom");

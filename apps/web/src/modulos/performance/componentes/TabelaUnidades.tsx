@@ -4,7 +4,7 @@ import { formatarPercentual } from "@erp/shared/formatacao";
 
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 
-import { corDoStatus, fundoDoStatus, textoDoStatus } from "../formato";
+import { corDoStatus, fundoDoStatus, textoDoStatus } from "../cores";
 import { clicavel } from "./Kpis";
 
 export type LinhaDaUnidade = UnidadeResumo & {

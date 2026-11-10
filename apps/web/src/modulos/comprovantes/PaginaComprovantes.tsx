@@ -4,6 +4,12 @@ import {
   type StatusDeComprovante,
 } from "@erp/shared/contratos/comprovantes";
 import { hojeNoFuso } from "@erp/shared/datas";
+import {
+  formatarData,
+  formatarDiaMes,
+  formatarInteiro,
+  formatarPercentual,
+} from "@erp/shared/formatacao";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
@@ -23,7 +29,6 @@ import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
-import { data, diaMes, inteiro, percentual } from "@/modulos/compartilhado/formatos";
 import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
@@ -87,14 +92,14 @@ const colunasDoResumo = (coluna: string): ColunaTabela<LinhaResumo>[] => [
   { chave: "pct", titulo: "%", formato: "percentual" },
 ];
 
-const pct = (p: number | null) => (p === null ? "—" : percentual(p));
+const pct = (p: number | null) => (p === null ? "—" : formatarPercentual(p));
 
 export function PaginaComprovantes() {
   const fuso = useFusoDaEmpresa();
   const { filtros: busca, definir, limpar, ativos } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = resolverPeriodo(busca.periodo, busca.de, busca.ate, hojeNoFuso(fuso));
   const filtros = filtrosDaBusca(busca, periodo);
-  const subtitulo = `Entrega de ${data(periodo.inicio)} a ${data(periodo.fim)}`;
+  const subtitulo = `Entrega de ${formatarData(periodo.inicio)} a ${formatarData(periodo.fim)}`;
 
   const painel = useQuery(consultaPainel(filtros));
   // A lista lateral abre pelo card (o status fica na URL) e só consulta aberta.
@@ -267,7 +272,7 @@ export function PaginaComprovantes() {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
               rotulo="CT-e entregue"
-              valor={inteiro(totais.entregues)}
+              valor={formatarInteiro(totais.entregues)}
               status="bom"
               detalhe="Período completo"
               aoClicar={() => {
@@ -276,7 +281,7 @@ export function PaginaComprovantes() {
             />
             <KpiCard
               rotulo="Digitalizados"
-              valor={inteiro(totais.digitalizados)}
+              valor={formatarInteiro(totais.digitalizados)}
               status="bom"
               detalhe="Com ocorrência 88"
               aoClicar={() => {
@@ -294,7 +299,7 @@ export function PaginaComprovantes() {
             />
             <KpiCard
               rotulo="Pendentes"
-              valor={inteiro(totais.pendentes)}
+              valor={formatarInteiro(totais.pendentes)}
               status="ruim"
               detalhe="Sem ocorrência 88"
               aoClicar={() => {
@@ -307,7 +312,10 @@ export function PaginaComprovantes() {
             <h2 className="label-xs mb-2">Tendência por dia de entrega</h2>
             <GraficoBarras
               descricao="Entregues e digitalizados por dia de entrega"
-              dados={(painel.data?.porDia ?? []).map((d) => ({ ...d, rotulo: diaMes(d.dia) }))}
+              dados={(painel.data?.porDia ?? []).map((d) => ({
+                ...d,
+                rotulo: formatarDiaMes(d.dia),
+              }))}
               eixoX="rotulo"
               formato="inteiro"
               carregando={painel.isLoading}
@@ -317,9 +325,10 @@ export function PaginaComprovantes() {
               ]}
               dica={(d) => (
                 <div className="text-[12px]">
-                  <p className="font-semibold">{data(d.dia)}</p>
+                  <p className="font-semibold">{formatarData(d.dia)}</p>
                   <p>
-                    {inteiro(d.digitalizados)} de {inteiro(d.entregues)} · {pct(d.pct)}
+                    {formatarInteiro(d.digitalizados)} de {formatarInteiro(d.entregues)} ·{" "}
+                    {pct(d.pct)}
                   </p>
                   {!d.coberto && <p className="text-muted-foreground">Sem o 930 deste dia</p>}
                 </div>
@@ -388,7 +397,7 @@ export function PaginaComprovantes() {
               definir({ page });
             },
           }}
-          rotuloTotal={(n) => `${inteiro(n)} CT-e`}
+          rotuloTotal={(n) => `${formatarInteiro(n)} CT-e`}
         />
       </DrawerDetalhe>
     </div>

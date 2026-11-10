@@ -6,6 +6,7 @@ import {
   type LetraDeResponsavel,
   LETRAS_DE_RESPONSAVEL,
 } from "@erp/shared/contratos/codigos-ocorrencia";
+import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertTriangle, Plus, Settings2, Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -19,7 +20,6 @@ import { Button } from "@/componentes/ui/button";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { inteiro, percentual } from "@/modulos/compartilhado/formatos";
 import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
 
 import { CHAVE_DOS_CODIGOS, consultaCodigos } from "./api";
@@ -71,7 +71,7 @@ function LinhaPendente({
       <span className="font-mono font-bold">#{codigo.codigo}</span>
       <span className="min-w-[160px] flex-1 truncate">{codigo.descricao}</span>
       <span className="text-muted-foreground tabular-nums">
-        {inteiro(codigo.frequencia30d)} em 30d
+        {formatarInteiro(codigo.frequencia30d)} em 30d
       </span>
       <select
         aria-label={`Responsável do código ${String(codigo.codigo)}`}
@@ -157,7 +157,8 @@ export function PaginaCodigos() {
   const classificar = (x: CodigoDoAdmin, letra: LetraDeResponsavel, penaliza: boolean) =>
     void salvar(
       { codigo: x.codigo, descricao: x.descricao, letra, penaliza, ativo: x.ativo, notas: x.notas },
-      (n) => `Código ${String(x.codigo)} classificado · ${inteiro(n)} ocorrência(s) atualizadas`,
+      (n) =>
+        `Código ${String(x.codigo)} classificado · ${formatarInteiro(n)} ocorrência(s) atualizadas`,
     );
   const aplicarLote = async (acao: AcaoEmLote) => {
     if (
@@ -169,7 +170,7 @@ export function PaginaCodigos() {
     }
     try {
       const r = await chamar(c.lote, { entrada: { codigos: [...selecionados], acao } });
-      toast.success(`${inteiro(r.alterados)} código(s) atualizados`);
+      toast.success(`${formatarInteiro(r.alterados)} código(s) atualizados`);
       setSelecionados(new Set());
       await atualizar();
     } catch (e) {
@@ -294,25 +295,25 @@ export function PaginaCodigos() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           rotulo="Classificados"
-          valor={`${inteiro(estatisticas?.classificados ?? 0)} / ${inteiro(estatisticas?.total ?? 0)}`}
+          valor={`${formatarInteiro(estatisticas?.classificados ?? 0)} / ${formatarInteiro(estatisticas?.total ?? 0)}`}
           status="bom"
           detalhe="Códigos com responsável e penaliza definidos"
         />
         <KpiCard
           rotulo="Pendentes de classificação"
-          valor={inteiro(estatisticas?.pendentes ?? 0)}
+          valor={formatarInteiro(estatisticas?.pendentes ?? 0)}
           status={(estatisticas?.pendentes ?? 0) > 0 ? "alerta" : "bom"}
           detalhe="Códigos novos ou marcados para revisar"
         />
         <KpiCard
           rotulo="Ocorrências aguardando"
-          valor={inteiro(estatisticas?.ocorrenciasEmPendentes ?? 0)}
+          valor={formatarInteiro(estatisticas?.ocorrenciasEmPendentes ?? 0)}
           status={(estatisticas?.ocorrenciasEmPendentes ?? 0) > 0 ? "alerta" : "bom"}
           detalhe="Ocorrências em códigos pendentes"
         />
         <KpiCard
           rotulo="Precisão do cálculo"
-          valor={percentual(precisao)}
+          valor={formatarPercentual(precisao)}
           status={statusDaPrecisao(precisao)}
           detalhe="Ocorrências de 30 dias em códigos já classificados"
           progresso={precisao}
@@ -445,7 +446,7 @@ export function PaginaCodigos() {
           abrir(x);
         }}
         configurarColunas
-        rotuloTotal={(n) => `${inteiro(n)} código(s)`}
+        rotuloTotal={(n) => `${formatarInteiro(n)} código(s)`}
         exportacao={{ arquivo: "codigos-ocorrencia", titulo: "Códigos de ocorrência" }}
       />
 
@@ -456,7 +457,10 @@ export function PaginaCodigos() {
         nomeCurto={nomeCurto}
         fuso={fuso}
         aoSalvar={(s) =>
-          salvar(s, (n) => `Salvo · ${inteiro(n)} ocorrência(s) atualizadas retroativamente`)
+          salvar(
+            s,
+            (n) => `Salvo · ${formatarInteiro(n)} ocorrência(s) atualizadas retroativamente`,
+          )
         }
       />
     </div>

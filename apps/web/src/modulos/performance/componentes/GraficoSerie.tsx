@@ -1,11 +1,9 @@
 import { valorDaMetrica } from "@erp/dominio/performance/serie";
 import { type Granularidade, type PontoSerie } from "@erp/shared/contratos/performance";
-import { formatarPercentual } from "@erp/shared/formatacao";
+import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
 import { useState } from "react";
 
 import { GraficoLinha } from "@/componentes/comum/Graficos";
-
-import { fmtInt } from "../formato";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -14,17 +12,18 @@ const DEFINICAO = {
     rotulo: "SLA Operacional",
     pct: true,
     detalhe: (p: PontoSerie) =>
-      `${fmtInt(p.totalCtrcs)} emitidos · ${fmtInt(p.foraPrazoOp)} fora do prazo`,
+      `${formatarInteiro(p.totalCtrcs)} emitidos · ${formatarInteiro(p.foraPrazoOp)} fora do prazo`,
   },
   sla_cli: {
     rotulo: "SLA Cliente",
     pct: true,
-    detalhe: (p: PontoSerie) => `${fmtInt(p.noPrazoCli)} no prazo · ${fmtInt(p.foraPrazoCli)} fora`,
+    detalhe: (p: PontoSerie) =>
+      `${formatarInteiro(p.noPrazoCli)} no prazo · ${formatarInteiro(p.foraPrazoCli)} fora`,
   },
   volume: {
     rotulo: "CT-e emitidos",
     pct: false,
-    detalhe: (p: PontoSerie) => `${fmtInt(p.entregue)} entregues`,
+    detalhe: (p: PontoSerie) => `${formatarInteiro(p.entregue)} entregues`,
   },
 } as const;
 type Metrica = keyof typeof DEFINICAO;
@@ -107,7 +106,11 @@ export function GraficoSerie({
             </div>
             <div className="mt-0.5 tabular-nums">
               {def.rotulo}:{" "}
-              {d.valor == null ? "—" : def.pct ? formatarPercentual(d.valor) : fmtInt(d.valor)}
+              {d.valor == null
+                ? "—"
+                : def.pct
+                  ? formatarPercentual(d.valor)
+                  : formatarInteiro(d.valor)}
             </div>
             <div className="text-[11px] text-muted-foreground tabular-nums">
               {def.detalhe(d.ponto)}

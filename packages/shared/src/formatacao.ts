@@ -1,4 +1,9 @@
-/** Formatação pt-BR usada nas telas e exportações. Entradas vazias viram "—". */
+/**
+ * Formatação pt-BR de todas as telas e exportações (um lugar só). Entradas vazias viram "—".
+ * Cada tela passa as opções que reproduzem o que o sistema atual mostra nela.
+ */
+import { hojeNoFuso } from "./datas";
+
 const TRACO = "—";
 
 const inteiro = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
@@ -37,16 +42,91 @@ export function formatarPercentual(
   return escala === "fracao" ? texto : `${texto}%`;
 }
 
-export function formatarMoeda(valor: number | null | undefined): string {
+/** Até `casas` decimais (padrão 2), sem zeros à direita: `1234.5` → `"1.234,5"`. */
+export function formatarDecimal(valor: number | null | undefined, casas = 2): string {
   if (valor == null || !Number.isFinite(valor)) return TRACO;
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: casas }).format(valor);
 }
 
-/** `"2026-11-10"` → `"10/11/2026"` (sem passar por Date: data de calendário não tem fuso). */
-export function formatarData(iso: string | null | undefined): string {
+/** `"R$ 1.234,50"`; `{ centavos: false }` → `"R$ 1.235"` (cards e tabelas que somam frete). */
+export function formatarMoeda(
+  valor: number | null | undefined,
+  { centavos = true }: { centavos?: boolean } = {},
+): string {
+  if (valor == null || !Number.isFinite(valor)) return TRACO;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    ...(centavos ? {} : { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+  }).format(valor);
+}
+
+export interface OpcoesPeso {
+  /** Casas em toneladas (de 1.000 kg para cima). Padrão 1. */
+  tonelada?: number;
+  /** Casas em quilos. Padrão 0. */
+  quilo?: number;
+  /** Mostra sempre as casas ("1,0 t"); sem isso, zeros à direita somem ("1 t"). */
+  fixas?: boolean;
+}
+
+/**
+ * Peso em kg, de 1.000 kg para cima em toneladas. Cada tela mantém as casas de hoje: Performance
+ * `{}` ("1,5 t"), Romaneio `{ fixas: true }` ("1,0 t"), detalhe do CT-e
+ * `{ tonelada: 3, quilo: 3, fixas: true }` ("1,250 t").
+ */
+export function formatarPeso(
+  kg: number | null | undefined,
+  { tonelada = 1, quilo = 0, fixas = false }: OpcoesPeso = {},
+): string {
+  if (kg == null || !Number.isFinite(kg)) return TRACO;
+  const emToneladas = kg >= 1000;
+  const casas = emToneladas ? tonelada : quilo;
+  const texto = new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: fixas ? casas : 0,
+    maximumFractionDigits: casas,
+  }).format(emToneladas ? kg / 1000 : kg);
+  return `${texto} ${emToneladas ? "t" : "kg"}`;
+}
+
+/** Diferença em pontos percentuais, com sinal: fração `0.023` → `"+2,3 pp"`. */
+export function formatarPontos(fracao: number | null | undefined): string {
+  if (fracao == null || !Number.isFinite(fracao)) return TRACO;
+  const pontos = fracao * 100;
+  const texto = new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(pontos);
+  return `${pontos > 0 ? "+" : ""}${texto} pp`;
+}
+
+/** Participação de `valor` em `total` ("12,5%"); sem total, "—". */
+export function formatarParticipacao(valor: number, total: number): string {
+  return total > 0 ? formatarPercentual(valor / total) : TRACO;
+}
+
+const SO_DATA = /^\d{4}-\d{2}-\d{2}$/;
+const INSTANTE_COM_FUSO = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}.*(Z|[+-]\d{2}(:?\d{2})?)$/;
+
+/**
+ * `"2026-11-10"` → `"10/11/2026"` (data de calendário não passa por Date: não tem fuso). Instante
+ * com fuso (`"2026-11-10T02:00:00Z"`) vira o dia no fuso da empresa (Q11).
+ */
+export function formatarData(iso: string | null | undefined, fuso = "America/Sao_Paulo"): string {
   if (!iso) return TRACO;
-  const [ano, mes, dia] = iso.slice(0, 10).split("-");
-  return ano && mes && dia ? `${dia}/${mes}/${ano}` : TRACO;
+  let dia = iso.slice(0, 10);
+  if (!SO_DATA.test(iso) && INSTANTE_COM_FUSO.test(iso)) {
+    const instante = new Date(iso);
+    if (!Number.isNaN(instante.getTime())) dia = hojeNoFuso(fuso, instante);
+  }
+  const [ano, mes, d] = dia.split("-");
+  return ano && mes && d ? `${d}/${mes}/${ano}` : TRACO;
+}
+
+/** `"2026-11-10"` → `"10/11"` (eixo de gráfico, tabela por dia). */
+export function formatarDiaMes(iso: string): string {
+  const [, mes, dia] = iso.slice(0, 10).split("-");
+  return mes && dia ? `${dia}/${mes}` : iso;
 }
 
 /**

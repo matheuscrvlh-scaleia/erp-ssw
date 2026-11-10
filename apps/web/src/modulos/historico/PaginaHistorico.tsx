@@ -8,6 +8,7 @@ import {
   TIPOS_ANOTACAO,
 } from "@erp/shared/contratos/historico";
 import { diaDaSemana, hojeNoFuso, somarDias } from "@erp/shared/datas";
+import { formatarData, formatarInteiro } from "@erp/shared/formatacao";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Bookmark, CalendarDays, Plus, Search } from "lucide-react";
@@ -23,7 +24,6 @@ import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { data as formatarData, inteiro } from "@/modulos/compartilhado/formatos";
 
 import { CHAVE_DO_HISTORICO, consultaHistorico } from "./api";
 import {
@@ -90,7 +90,7 @@ function CartaoTotal({ rotulo, valor }: { rotulo: string; valor: number }) {
     <div className="rounded-lg border border-l-[5px] border-border/60 border-l-kpi-positive bg-card p-4">
       <p className="text-[11px] tracking-wide text-muted-foreground uppercase">{rotulo}</p>
       <p className="mt-1 text-[24px] font-semibold text-kpi-positive tabular-nums">
-        {inteiro(valor)}
+        {formatarInteiro(valor)}
       </p>
     </div>
   );

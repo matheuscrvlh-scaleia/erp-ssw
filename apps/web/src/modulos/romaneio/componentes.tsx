@@ -1,3 +1,4 @@
+import { formatarInteiro } from "@erp/shared/formatacao";
 /**
  * Peças visuais próprias do Romaneio (cards de totalizador, chips de faixa). Visual da
  * tela de hoje (features/romaneio/TotCard.tsx, Fase2Views.tsx).
@@ -14,8 +15,6 @@ import {
 
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { cn } from "@/lib/utils";
-
-import { nfInt } from "./formatos";
 
 /** Props de clique acessível (card que vira botão). */
 function clicavel(aoClicar: (() => void) | undefined) {
@@ -167,7 +166,7 @@ export function FaixaChip({
       )}
     >
       <span>{rotulo}</span>
-      <span className="font-semibold tabular-nums">{nfInt.format(valor)}</span>
+      <span className="font-semibold tabular-nums">{formatarInteiro(valor)}</span>
     </button>
   );
 }

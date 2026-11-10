@@ -3,6 +3,7 @@ import {
   ROTULO_DO_TIPO_DE_FALTA,
   TIPOS_DE_FALTA,
 } from "@erp/shared/contratos/bonificacao-entrega";
+import { formatarDiaMes } from "@erp/shared/formatacao";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -21,7 +22,7 @@ import {
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { diaCurto, periodoDoMes } from "../ranking/periodo";
+import { periodoDoMes } from "../ranking/periodo";
 import { CHAVE_DAS_FALTAS, consultaFaltas } from "./api";
 
 type TipoDeFalta = (typeof TIPOS_DE_FALTA)[number];
@@ -175,7 +176,7 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
           <tbody className="divide-y divide-border/40">
             {lista.map((f) => (
               <tr key={f.id}>
-                <td className="px-3 py-1.5 font-mono">{diaCurto(f.dataFalta)}</td>
+                <td className="px-3 py-1.5 font-mono">{formatarDiaMes(f.dataFalta)}</td>
                 <td className="px-3 py-1.5">{f.colaboradorNome}</td>
                 <td className="px-3 py-1.5">{ROTULO_DO_TIPO_DE_FALTA[f.tipo]}</td>
                 <td className="px-3 py-1.5 text-muted-foreground">{f.observacao ?? "—"}</td>

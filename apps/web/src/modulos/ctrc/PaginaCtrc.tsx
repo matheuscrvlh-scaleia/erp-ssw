@@ -9,6 +9,7 @@ import {
   formatarDataHora,
   formatarInteiro,
   formatarMoeda,
+  formatarPeso,
 } from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi, Link, useRouter } from "@tanstack/react-router";
@@ -49,7 +50,6 @@ import {
   formatarCep,
   formatarChave,
   formatarCnpjOuTraco,
-  formatarPeso,
   identificacao,
   nasceuEmAtraso,
   origemDaPrevisao,
@@ -343,7 +343,10 @@ function Detalhe({
           </Cartao>
 
           <Cartao titulo="Carga & Frete">
-            <Campo rotulo="Peso" valor={formatarPeso(ctrc.peso)} />
+            <Campo
+              rotulo="Peso"
+              valor={formatarPeso(ctrc.peso, { tonelada: 3, quilo: 3, fixas: true })}
+            />
             <Campo rotulo="Volumes" valor={formatarInteiro(ctrc.volumes)} />
             <Campo rotulo="Valor do frete" valor={formatarMoeda(ctrc.valorFrete)} />
           </Cartao>

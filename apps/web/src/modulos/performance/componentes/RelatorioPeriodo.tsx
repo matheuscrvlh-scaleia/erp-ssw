@@ -4,7 +4,7 @@ import {
   type RelatorioPeriodo,
 } from "@erp/shared/contratos/performance";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarPercentual } from "@erp/shared/formatacao";
+import { formatarInteiro, formatarMoeda, formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import {
   FileBarChart,
@@ -34,12 +34,10 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaRelatorio } from "../api";
-import { fmtInt } from "../formato";
 import { type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "../relatorio";
 import { DistribuicaoPontualidade } from "./Kpis";
 
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
-const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export interface FiltrosHerdados {
   entrada: Omit<FiltroPerformanceEntrada, "inicio" | "fim" | "baseData">;
@@ -349,8 +347,8 @@ function CorpoDoRelatorio({
           <span className={titulo}>Penalizantes</span>
           {cmp && (
             <span className="text-[10px] text-muted-foreground">
-              comparativo: {fmtInt(cmp.penalizantes.ocorrencias)} ocorrências ·{" "}
-              {fmtInt(cmp.penalizantes.ctrcsAfetados)} CTRCs
+              comparativo: {formatarInteiro(cmp.penalizantes.ocorrencias)} ocorrências ·{" "}
+              {formatarInteiro(cmp.penalizantes.ctrcsAfetados)} CTRCs
             </span>
           )}
         </div>
@@ -359,11 +357,13 @@ function CorpoDoRelatorio({
             className="text-[22px] font-semibold tabular-nums"
             style={{ color: "var(--status-bad)" }}
           >
-            {fmtInt(r.penalizantes.ocorrencias)}
+            {formatarInteiro(r.penalizantes.ocorrencias)}
           </span>
           <span className="text-[11px] text-muted-foreground">
             ocorrências ·{" "}
-            <strong className="text-foreground">{fmtInt(r.penalizantes.ctrcsAfetados)}</strong>{" "}
+            <strong className="text-foreground">
+              {formatarInteiro(r.penalizantes.ctrcsAfetados)}
+            </strong>{" "}
             CTRCs afetados
           </span>
         </div>
@@ -374,8 +374,8 @@ function CorpoDoRelatorio({
           <div>
             <div className="text-[12px] font-medium">Previstos</div>
             <div className="text-[10px] text-muted-foreground">
-              CTRCs ainda não entregues · {fmtInt(prev.total.qtd)} no total ·{" "}
-              {reais(prev.total.frete)}
+              CTRCs ainda não entregues · {formatarInteiro(prev.total.qtd)} no total ·{" "}
+              {formatarMoeda(prev.total.frete)}
             </div>
           </div>
           <div className="flex rounded-md border border-border/70 p-0.5 text-[11px]">
@@ -428,8 +428,10 @@ function CorpoDoRelatorio({
                     >
                       {b.key}
                     </div>
-                    <div className="text-[15px] font-semibold tabular-nums">{fmtInt(b.qtd)}</div>
-                    <div className="text-[9px] text-muted-foreground">{reais(b.frete)}</div>
+                    <div className="text-[15px] font-semibold tabular-nums">
+                      {formatarInteiro(b.qtd)}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground">{formatarMoeda(b.frete)}</div>
                   </div>
                 ))}
                 {itens.length === 0 && (
@@ -450,7 +452,7 @@ function CorpoDoRelatorio({
           <div className="flex items-baseline justify-between border-b border-border/70 px-3 py-2 text-[12px] font-medium">
             <span>Finalizado em Sistema por código</span>
             <span className="text-[10px] text-muted-foreground">
-              total: {fmtInt(a.finalizadoSistema)} CTRCs
+              total: {formatarInteiro(a.finalizadoSistema)} CTRCs
             </span>
           </div>
           <table className="w-full text-[12px]">
@@ -466,7 +468,7 @@ function CorpoDoRelatorio({
                 <tr key={f.codigo} className="border-t border-border/70">
                   <td className="px-3 py-2 font-mono text-[11px]">{f.codigo}</td>
                   <td className="px-3 py-2">{f.descricao ?? "—"}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmtInt(f.qtd)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatarInteiro(f.qtd)}</td>
                 </tr>
               ))}
             </tbody>
@@ -577,10 +579,10 @@ function TabelaSlaPorUnidade({ r, meta }: { r: RelatorioPeriodo; meta: number })
                       </div>
                     ) : null}
                   </td>
-                  <td className={td}>{fmtInt(u.total)}</td>
-                  {comp(fmtInt(c?.total ?? 0))}
-                  <td className={td}>{fmtInt(u.entregues)}</td>
-                  {comp(fmtInt(c?.entregues ?? 0))}
+                  <td className={td}>{formatarInteiro(u.total)}</td>
+                  {comp(formatarInteiro(c?.total ?? 0))}
+                  <td className={td}>{formatarInteiro(u.entregues)}</td>
+                  {comp(formatarInteiro(c?.entregues ?? 0))}
                   <td className={td}>{formatarPercentual(u.producaoPct, { escala: "cem" })}</td>
                   {comp(formatarPercentual(c?.producaoPct ?? null, { escala: "cem" }))}
                   <td className={`${td} ${corDoSla(u.slaOperacionalPct)}`}>
@@ -610,8 +612,8 @@ function TabelaDeImpacto({ r }: { r: RelatorioPeriodo }) {
       <div className="flex items-baseline justify-between border-b border-border/70 px-3 py-2 text-[12px] font-medium">
         <span>Impacto por código de última ocorrência</span>
         <span className="text-[10px] text-muted-foreground">
-          base: {fmtInt(r.impactoBaseComOcorrencia)} CTRCs com ocorrência registrada
-          {cmp && ` · comparativo: ${fmtInt(cmp.impactoBaseComOcorrencia)}`}
+          base: {formatarInteiro(r.impactoBaseComOcorrencia)} CTRCs com ocorrência registrada
+          {cmp && ` · comparativo: ${formatarInteiro(cmp.impactoBaseComOcorrencia)}`}
         </span>
       </div>
       <div className="overflow-x-auto">
@@ -635,10 +637,12 @@ function TabelaDeImpacto({ r }: { r: RelatorioPeriodo }) {
                   <td className="px-3 py-2">
                     <span className={i.penaliza ? "text-red-600" : ""}>{i.descricao ?? "—"}</span>
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmtInt(i.totalCtrcs)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {formatarInteiro(i.totalCtrcs)}
+                  </td>
                   {cmp && (
                     <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
-                      {c ? fmtInt(c.totalCtrcs) : "—"}
+                      {c ? formatarInteiro(c.totalCtrcs) : "—"}
                     </td>
                   )}
                   <td className="px-3 py-2 text-right tabular-nums">{pct(i.pctDoTotal)}</td>

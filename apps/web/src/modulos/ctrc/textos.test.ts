@@ -1,10 +1,9 @@
-import { formatarData } from "@erp/shared/formatacao";
+import { formatarData, formatarPeso } from "@erp/shared/formatacao";
 import { describe, expect, it } from "vitest";
 
 import {
   formatarCep,
   formatarChave,
-  formatarPeso,
   identificacao,
   nasceuEmAtraso,
   origemDaPrevisao,
@@ -29,9 +28,9 @@ describe("detalhe do CT-e — textos", () => {
   });
 
   it("peso em kg ou t, CEP e chave", () => {
-    expect(formatarPeso(850)).toBe("850,000 kg");
-    expect(formatarPeso(1500)).toBe("1,500 t");
-    expect(formatarPeso(null)).toBe("—");
+    expect(formatarPeso(850, { tonelada: 3, quilo: 3, fixas: true })).toBe("850,000 kg");
+    expect(formatarPeso(1500, { tonelada: 3, quilo: 3, fixas: true })).toBe("1,500 t");
+    expect(formatarPeso(null, { tonelada: 3, quilo: 3, fixas: true })).toBe("—");
     expect(formatarCep("69000000")).toBe("69000-000");
     expect(formatarCep(" 123 ")).toBe("123");
     expect(formatarChave("1".repeat(44))).toBe(Array(11).fill("1111").join(" "));

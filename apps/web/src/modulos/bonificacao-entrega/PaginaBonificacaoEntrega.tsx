@@ -9,7 +9,7 @@ import {
   NIVEIS_DE_BONIFICACAO,
 } from "@erp/shared/contratos/bonificacao-entrega";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarMoeda } from "@erp/shared/formatacao";
+import { formatarDiaMes, formatarMoeda } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -31,7 +31,7 @@ import { Switch } from "@/componentes/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
+import { mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracao, consultaUnidades } from "./api";
 import { ComoFuncionaBonificacao } from "./ComoFuncionaBonificacao";
 import { QuadroDeFaltas } from "./QuadroDeFaltas";
@@ -148,7 +148,7 @@ function LinhaPessoa({ p }: { p: ResumoPessoa }) {
                     key={`${l.dataRomaneio}-${l.romaneio}-${l.funcao}`}
                     className="border-t border-border/30"
                   >
-                    <td className="py-1 font-mono">{diaCurto(l.dataRomaneio)}</td>
+                    <td className="py-1 font-mono">{formatarDiaMes(l.dataRomaneio)}</td>
                     <td className="py-1 font-mono text-muted-foreground">{l.romaneio}</td>
                     <td className="py-1 text-muted-foreground">{l.funcao}</td>
                     <td className="py-1 text-right tabular-nums">{l.nfsCarregadas}</td>
@@ -466,7 +466,7 @@ export function PaginaBonificacaoEntrega() {
                   <tbody className="divide-y divide-border/40">
                     {porDia.map(([dia, ls]) => (
                       <tr key={dia}>
-                        <td className="px-3 py-1.5 font-mono">{diaCurto(dia)}</td>
+                        <td className="px-3 py-1.5 font-mono">{formatarDiaMes(dia)}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums">
                           {new Set(ls.map((l) => l.romaneio)).size}
                         </td>

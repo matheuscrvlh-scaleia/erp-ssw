@@ -4,14 +4,6 @@ import { cn } from "@/lib/utils";
 
 import { type Periodo, PERIODOS } from "./busca";
 
-export const nfInt = new Intl.NumberFormat("pt-BR");
-/** Diferença em pontos percentuais, com sinal ("+2,3 pp"). Entrada em fração. */
-export function fmtPP(n: number | null | undefined): string {
-  if (n === null || n === undefined || Number.isNaN(n)) return "—";
-  const v = n * 100;
-  return `${v > 0 ? "+" : ""}${v.toFixed(1).replace(".", ",")} pp`;
-}
-
 export type Tom = "bom" | "alerta" | "ruim" | "neutro";
 
 const COR: Record<Tom, string> = {

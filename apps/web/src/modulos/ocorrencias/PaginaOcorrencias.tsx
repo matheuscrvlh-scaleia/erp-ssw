@@ -1,5 +1,6 @@
 import { formatarCnpjCpf } from "@erp/dominio/nucleo";
 import { hojeNoFuso } from "@erp/shared/datas";
+import { formatarData, formatarInteiro, formatarParticipacao } from "@erp/shared/formatacao";
 import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, RefreshCw } from "lucide-react";
@@ -12,7 +13,6 @@ import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
-import { data, inteiro, participacao } from "@/modulos/compartilhado/formatos";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import {
@@ -179,8 +179,8 @@ export function PaginaOcorrencias() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <CartaoDeMetrica
           rotulo="Total de ocorrências"
-          valor={inteiro(m.total)}
-          apoio={`${inteiro(m.ctrcs)} CT-e distintos`}
+          valor={formatarInteiro(m.total)}
+          apoio={`${formatarInteiro(m.ctrcs)} CT-e distintos`}
           dica={
             busca.campoData === "emissao"
               ? "Ocorrências dos CT-e com emissão dentro do período selecionado."
@@ -203,8 +203,8 @@ export function PaginaOcorrencias() {
           rotulo="Penalizantes"
           selo="CT-e distintos"
           tom="ruim"
-          valor={inteiro(m.penalizantes)}
-          apoio={`${participacao(m.penalizantes, m.ctrcs)} dos CT-e`}
+          valor={formatarInteiro(m.penalizantes)}
+          apoio={`${formatarParticipacao(m.penalizantes, m.ctrcs)} dos CT-e`}
           dica={`CT-e com pelo menos uma ocorrência penalizante de responsabilidade da ${nomeCurto} (exclui responsável cliente) E que estão em atraso: não entregues, sem código finalizador e com prazo de entrega já vencido. Clique para filtrar a tela por eles.`}
           ativo={busca.resp === "penalizantes"}
           aoClicar={() => {
@@ -222,8 +222,8 @@ export function PaginaOcorrencias() {
         <CartaoDeMetrica
           rotulo="Não penalizantes"
           selo="CT-e distintos"
-          valor={inteiro(m.naoPenalizantes)}
-          apoio={`${participacao(m.naoPenalizantes, m.ctrcs)} dos CT-e`}
+          valor={formatarInteiro(m.naoPenalizantes)}
+          apoio={`${formatarParticipacao(m.naoPenalizantes, m.ctrcs)} dos CT-e`}
           dica={`CT-e que não atendem às duas condições juntas: ou não tiveram ocorrência de responsabilidade da ${nomeCurto}, ou ainda estão dentro do prazo, ou já foram entregues ou baixados sem entrega. Clique para filtrar a tela por eles.`}
           ativo={busca.resp === "externas"}
           aoClicar={() => {
@@ -240,8 +240,8 @@ export function PaginaOcorrencias() {
         />
         <CartaoDeMetrica
           rotulo="Pendentes de classificação"
-          valor={inteiro(m.pendentes)}
-          apoio={`${participacao(m.pendentes, m.total)} das ocorrências`}
+          valor={formatarInteiro(m.pendentes)}
+          apoio={`${formatarParticipacao(m.pendentes, m.total)} das ocorrências`}
           tom={m.pendentes > 0 ? "alerta" : "normal"}
           dica="Códigos sem cadastro, ou marcados como pendentes de classificação. Não entram em penalizantes nem em não penalizantes. Clique para filtrar a tela por eles."
           ativo={busca.resp === "pendentes"}
@@ -263,8 +263,8 @@ export function PaginaOcorrencias() {
         <div className="flex items-center gap-2 rounded-[10px] border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] font-medium text-amber-900">
           <AlertTriangle className="h-3.5 w-3.5" />
           <span>
-            <strong>{inteiro(m.pendentes)}</strong> ocorrência(s) precisam ser classificadas para os
-            números ficarem 100% exatos.
+            <strong>{formatarInteiro(m.pendentes)}</strong> ocorrência(s) precisam ser classificadas
+            para os números ficarem 100% exatos.
           </span>
           <button
             type="button"
@@ -312,7 +312,7 @@ export function PaginaOcorrencias() {
         carregando={lista.isLoading}
         erro={lista.error}
         nomeCurto={nomeCurto}
-        subtitulo={`${data(periodo.inicio)} a ${data(periodo.fim)}`}
+        subtitulo={`${formatarData(periodo.inicio)} a ${formatarData(periodo.fim)}`}
         carregarTodas={() => carregarListaInteira(entradaDaLista)}
         aoTentarDeNovo={() => {
           void lista.refetch();

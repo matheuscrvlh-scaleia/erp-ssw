@@ -8,7 +8,12 @@ import {
   TAMANHOS_DA_LISTA,
 } from "@erp/shared/contratos/prazo-parceiro";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
+import {
+  formatarData,
+  formatarInteiro,
+  formatarPercentual,
+  formatarPontos,
+} from "@erp/shared/formatacao";
 import { useIsFetching, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -62,9 +67,7 @@ import {
   BotoesDePeriodo,
   CartaoMetrica,
   classeDoSla,
-  fmtPP,
   LinhasCarregando,
-  nfInt,
   tomDoSla,
 } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
@@ -258,9 +261,9 @@ export function PaginaPrazoParceiro() {
         <div className="flex items-start gap-2 rounded-[10px] border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-900">
           <TrendingUp className="mt-0.5 h-3.5 w-3.5" />
           <span>
-            Sua performance real é <strong>{fmtPP(t.diferencaPp)}</strong> melhor do que aparece.{" "}
-            <strong>{nfInt.format(t.nascidosAtrasados)}</strong> CTRC(s) foram emitidos a menos de
-            48 horas da previsão de entrega neste período.
+            Sua performance real é <strong>{formatarPontos(t.diferencaPp)}</strong> melhor do que
+            aparece. <strong>{formatarInteiro(t.nascidosAtrasados)}</strong> CTRC(s) foram emitidos
+            a menos de 48 horas da previsão de entrega neste período.
           </span>
         </div>
       )}
@@ -284,7 +287,8 @@ export function PaginaPrazoParceiro() {
           )}
           <span>
             O impacto de prazos herdados {a.deltaGapPp > 0 ? "aumentou" : "diminuiu"}{" "}
-            <strong>{fmtPP(Math.abs(a.deltaGapPp))}</strong> em relação ao período anterior.
+            <strong>{formatarPontos(Math.abs(a.deltaGapPp))}</strong> em relação ao período
+            anterior.
           </span>
         </div>
       )}
@@ -311,7 +315,7 @@ export function PaginaPrazoParceiro() {
         <CartaoMetrica
           rotulo="Diferença"
           selo="atribuído a parceiros"
-          valor={t ? fmtPP(t.diferencaPp) : "—"}
+          valor={t ? formatarPontos(t.diferencaPp) : "—"}
           tom={t && t.diferencaPp > 0 ? "bom" : "neutro"}
           dica="o quanto sua performance está sendo puxada para baixo por prazos herdados"
           carregando={visao.isLoading}
@@ -342,7 +346,7 @@ export function PaginaPrazoParceiro() {
                     <span className="h-2 w-2 rounded-full bg-[var(--brand)]" /> Prazo próprio
                   </div>
                   <div className="mt-0.5 text-[18px] font-medium tabular-nums">
-                    {nfInt.format(t.totalProprio)}{" "}
+                    {formatarInteiro(t.totalProprio)}{" "}
                     <span className="text-[11px] text-muted-foreground">
                       ({formatarPercentual(t.pctPrazoProprio, { casas: 0 })})
                     </span>
@@ -353,7 +357,7 @@ export function PaginaPrazoParceiro() {
                     <span className="h-2 w-2 rounded-full bg-amber-400" /> Prazo do parceiro
                   </div>
                   <div className="mt-0.5 text-[18px] font-medium tabular-nums">
-                    {nfInt.format(t.totalParceiro)}{" "}
+                    {formatarInteiro(t.totalParceiro)}{" "}
                     <span className="text-[11px] text-muted-foreground">
                       ({formatarPercentual(t.pctPrazoParceiro, { casas: 0 })})
                     </span>
@@ -361,8 +365,8 @@ export function PaginaPrazoParceiro() {
                 </div>
               </div>
               <p className="mt-3 text-[11px] text-muted-foreground">
-                {nfInt.format(t.totalParceiro)} CTRC(s) usaram o prazo importado do parceiro neste
-                período.
+                {formatarInteiro(t.totalParceiro)} CTRC(s) usaram o prazo importado do parceiro
+                neste período.
               </p>
             </>
           ) : (
@@ -401,7 +405,7 @@ export function PaginaPrazoParceiro() {
           ) : (
             <>
               <div className="mt-3 text-[36px] font-medium tabular-nums">
-                {nfInt.format(t?.nascidosAtrasados ?? 0)}
+                {formatarInteiro(t?.nascidosAtrasados ?? 0)}
               </div>
               <div className="text-[11px] text-muted-foreground">
                 CTRC(s) no período
@@ -479,9 +483,11 @@ export function PaginaPrazoParceiro() {
                     <div className="font-medium">{p.nome}</div>
                     {p.usaSsw && <span className="text-[10px] text-muted-foreground">usa SSW</span>}
                   </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{nfInt.format(p.total)}</td>
                   <td className="px-3 py-1.5 text-right tabular-nums">
-                    {nfInt.format(p.qtdParceiro)}{" "}
+                    {formatarInteiro(p.total)}
+                  </td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">
+                    {formatarInteiro(p.qtdParceiro)}{" "}
                     <span className="text-muted-foreground">
                       ({formatarPercentual(p.pctParceiro, { casas: 0 })})
                     </span>
@@ -492,7 +498,7 @@ export function PaginaPrazoParceiro() {
                       p.pctNascidos > 0.1 && "font-medium text-[var(--status-bad)]",
                     )}
                   >
-                    {nfInt.format(p.nascidosAtrasados)}{" "}
+                    {formatarInteiro(p.nascidosAtrasados)}{" "}
                     <span className="opacity-75">
                       ({formatarPercentual(p.pctNascidos, { casas: 0 })})
                     </span>
@@ -644,7 +650,7 @@ export function PaginaPrazoParceiro() {
                 </option>
               ))}
             </select>
-            <span className="ml-2">{nfInt.format(lista.data?.total ?? 0)} CTRC(s)</span>
+            <span className="ml-2">{formatarInteiro(lista.data?.total ?? 0)} CTRC(s)</span>
           </label>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">

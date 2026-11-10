@@ -1,8 +1,12 @@
 import { type Recorte, type TotaisDoTopo } from "@erp/shared/contratos/romaneio";
-import { formatarPercentual } from "@erp/shared/formatacao";
+import {
+  formatarInteiro,
+  formatarMoeda,
+  formatarPercentual,
+  formatarPeso,
+} from "@erp/shared/formatacao";
 
 import { AlternarCardsSecundarios, FaixaChip, GradeCards, TotCard } from "./componentes";
-import { fmtMoeda, fmtPeso, nfInt } from "./formatos";
 
 export interface PropsCardsDoPeriodo {
   totais: TotaisDoTopo | undefined;
@@ -28,7 +32,7 @@ export function CardsDoPeriodo({
   const pctBase = (n: number) =>
     base > 0 ? `${formatarPercentual(n / base)} do total do período` : undefined;
   const otifPct = t && base > 0 ? (t.otifProblemas / base) * 100 : null;
-  const n = (v: number | undefined) => nfInt.format(v ?? 0);
+  const n = (v: number | undefined) => formatarInteiro(v ?? 0);
   return (
     <div className="space-y-1">
       <GradeCards>
@@ -43,7 +47,7 @@ export function CardsDoPeriodo({
         />
         <TotCard
           rotulo="Peso total"
-          valor={fmtPeso(t?.peso ?? 0)}
+          valor={formatarPeso(t?.peso ?? 0, { fixas: true })}
           dica="Peso somado das mercadorias do período. Acima de 1.000 kg aparece em toneladas."
         />
         <TotCard
@@ -53,7 +57,7 @@ export function CardsDoPeriodo({
         />
         <TotCard
           rotulo="Frete total"
-          valor={fmtMoeda(t?.frete ?? 0)}
+          valor={formatarMoeda(t?.frete ?? 0)}
           dica="Valor de frete somado de todas as cargas do período."
         />
         <TotCard
@@ -118,7 +122,7 @@ export function CardsDoPeriodo({
         <TotCard
           rotulo="TDE romaneado"
           valor={n(t?.tdeRomaneado)}
-          base={`${n(t?.tdeRomaneadoEmRota)} em rota · ${n(t?.tdeRomaneadoEntregue)} entregues · ${fmtMoeda(t?.tdeRomaneadoValor ?? 0)} de TDE · ${n(t?.tdeCtes)} CTRC com TDE no período`}
+          base={`${n(t?.tdeRomaneadoEmRota)} em rota · ${n(t?.tdeRomaneadoEntregue)} entregues · ${formatarMoeda(t?.tdeRomaneadoValor ?? 0)} de TDE · ${n(t?.tdeCtes)} CTRC com TDE no período`}
           dica="Cargas com TDE (taxa de dificuldade de entrega, do relatório 455) que já saíram para entrega: em rota ou entregues. As que ainda aguardam programação estão no card “TDE aguardando programação” da tela Performance."
           aoClicar={() => {
             aoAbrir("tde_romaneado");
@@ -138,7 +142,7 @@ export function CardsDoPeriodo({
         )}
         <TotCard
           rotulo="Prejuízo"
-          valor={fmtMoeda(t?.prejuizoFrete ?? 0)}
+          valor={formatarMoeda(t?.prejuizoFrete ?? 0)}
           base={`${n(t?.prejuizoCtes)} CTRC`}
           dica="Frete das cargas com problema de responsabilidade da transportadora no período."
           aoClicar={() => {

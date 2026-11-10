@@ -1,6 +1,11 @@
 import { type CteDaFaixa, type FaixaDoDia, type LinhaDoDia } from "@erp/shared/contratos/romaneio";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
+import {
+  formatarData,
+  formatarInteiro,
+  formatarMoeda,
+  formatarPercentual,
+} from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -22,7 +27,6 @@ import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 import { consultaCtesDoDia, consultaHoje, consultaOpcoes } from "./api";
 import { type Abertura } from "./busca";
 import { CardAba, FaixaChip, GradeCards, PrejuizoSubtitulo } from "./componentes";
-import { fmtMoedaInteira, nfInt } from "./formatos";
 
 const SEM_TIPO = "__SEM_TIPO__";
 
@@ -96,14 +100,14 @@ function GavetaDaFaixa({
               <SheetTitle>
                 {rotulo}
                 {somenteEmRota ? " · em rota" : ""}
-                {q.data ? ` · ${nfInt.format(total)} CT-e` : ""}
+                {q.data ? ` · ${formatarInteiro(total)} CT-e` : ""}
               </SheetTitle>
               <SheetDescription>
                 {somenteEmRota
                   ? "CT-e desta faixa que ainda não foram entregues, inclusive os que receberam ocorrência depois da saída."
                   : "CT-e dos romaneios emitidos hoje nesta faixa de prazo, em qualquer status."}
                 {q.data && total > q.data.limite
-                  ? ` Mostrando os ${nfInt.format(q.data.limite)} primeiros de ${nfInt.format(total)}.`
+                  ? ` Mostrando os ${formatarInteiro(q.data.limite)} primeiros de ${formatarInteiro(total)}.`
                   : ""}
               </SheetDescription>
             </div>
@@ -278,17 +282,17 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
       <GradeCards>
         <CardAba
           rotulo="Romaneios de hoje"
-          valor={r ? nfInt.format(r.romaneios) : "—"}
+          valor={r ? formatarInteiro(r.romaneios) : "—"}
           explicacao="Quantidade de romaneios de entrega emitidos hoje."
         />
         <CardAba
           rotulo="CT-e nos romaneios"
-          valor={r ? nfInt.format(r.ctes) : "—"}
-          dica={r ? `${fmtMoedaInteira(r.frete)} de frete` : undefined}
+          valor={r ? formatarInteiro(r.ctes) : "—"}
+          dica={r ? `${formatarMoeda(r.frete, { centavos: false })} de frete` : undefined}
         />
         <CardAba
           rotulo="Já entregues"
-          valor={r ? nfInt.format(r.entregues) : "—"}
+          valor={r ? formatarInteiro(r.entregues) : "—"}
           dica={
             perf !== null
               ? `${formatarPercentual(perf, { escala: "cem" })} de performance`
@@ -298,17 +302,19 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
         />
         <CardAba
           rotulo="Em rota de entrega"
-          valor={r ? nfInt.format(emRota) : "—"}
+          valor={r ? formatarInteiro(emRota) : "—"}
           dica={
-            r ? `${nfInt.format(r.ctes)} CT-e − ${nfInt.format(r.entregues)} entregues` : undefined
+            r
+              ? `${formatarInteiro(r.ctes)} CT-e − ${formatarInteiro(r.entregues)} entregues`
+              : undefined
           }
           explicacao="CT-e nos romaneios − Já entregues: o que saiu hoje e ainda não foi entregue, inclusive o que recebeu ocorrência depois da saída. As faixas de “Em rota agora” somam este número."
         />
         <CardAba
           rotulo="Prejuízo"
           sub={<PrejuizoSubtitulo />}
-          valor={r ? fmtMoedaInteira(r.prejuizoFrete) : "—"}
-          dica={r ? `${nfInt.format(r.prejuizoCtes)} CT-e` : undefined}
+          valor={r ? formatarMoeda(r.prejuizoFrete, { centavos: false }) : "—"}
+          dica={r ? `${formatarInteiro(r.prejuizoCtes)} CT-e` : undefined}
           tom={r && r.prejuizoFrete > 0 ? "ruim" : undefined}
         />
       </GradeCards>
@@ -317,7 +323,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
         {/* Fotografia: o que nasceu em cada faixa (não diminui com a entrega). */}
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-muted-foreground">
-            Total no romaneio{r ? ` (${nfInt.format(r.ctes)} CT-e)` : ""}:
+            Total no romaneio{r ? ` (${formatarInteiro(r.ctes)} CT-e)` : ""}:
           </span>
           <FaixaChip
             rotulo="Vencida"
@@ -350,14 +356,14 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
               abrir("sem_prev", false);
             }}
           >
-            sem prazo definido: {nfInt.format(r?.prazo.semPrev ?? 0)}
+            sem prazo definido: {formatarInteiro(r?.prazo.semPrev ?? 0)}
           </button>
           <InfoTip texto="Fotografia: TODOS os CT-e dos romaneios emitidos hoje, em qualquer status (em rota, entregue, devolvido, travado). Compara a data prevista com o dia de hoje, por isso a soma das faixas é igual ao total de CT-e. Este número NÃO diminui quando a carga é entregue — é o retrato do que nasceu em cada faixa. Clique para ver a lista." />
         </div>
         {/* Quebra do card "Em rota de entrega" por prazo. */}
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-muted-foreground">
-            Em rota agora{r ? ` (${nfInt.format(emRota)} CT-e)` : ""}:
+            Em rota agora{r ? ` (${formatarInteiro(emRota)} CT-e)` : ""}:
           </span>
           <FaixaChip
             rotulo="Vencida"
@@ -390,7 +396,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
               abrir("sem_prev", true);
             }}
           >
-            sem prazo definido: {nfInt.format(r?.prazoNaoEntregue.semPrev ?? 0)}
+            sem prazo definido: {formatarInteiro(r?.prazoNaoEntregue.semPrev ?? 0)}
           </button>
           <InfoTip texto="Os mesmos CT-e do card “Em rota de entrega” (CT-e nos romaneios − Já entregues), separados pelo prazo: a soma das faixas é igual ao card. Inclui quem recebeu ocorrência depois da saída (ausente, recusa, pendência…) e ainda não foi entregue. Clique para ver a lista." />
         </div>
@@ -559,11 +565,15 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
                       "—"
                     )}
                   </td>
-                  <td className="px-3 py-1 text-right tabular-nums">{nfInt.format(l.ctes)}</td>
-                  <td className="px-3 py-1 text-right tabular-nums">{fmtMoedaInteira(l.frete)}</td>
-                  <td className="px-3 py-1 text-right tabular-nums">{nfInt.format(l.entregues)}</td>
+                  <td className="px-3 py-1 text-right tabular-nums">{formatarInteiro(l.ctes)}</td>
                   <td className="px-3 py-1 text-right tabular-nums">
-                    {nfInt.format(l.naoEntregues)}
+                    {formatarMoeda(l.frete, { centavos: false })}
+                  </td>
+                  <td className="px-3 py-1 text-right tabular-nums">
+                    {formatarInteiro(l.entregues)}
+                  </td>
+                  <td className="px-3 py-1 text-right tabular-nums">
+                    {formatarInteiro(l.naoEntregues)}
                   </td>
                   <td className="px-3 py-1 text-right font-medium tabular-nums">
                     {l.performance !== null
@@ -571,7 +581,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
                       : "—"}
                   </td>
                   <td className="px-3 py-1 text-right tabular-nums">
-                    {l.fretePerdido > 0 ? fmtMoedaInteira(l.fretePerdido) : "—"}
+                    {l.fretePerdido > 0 ? formatarMoeda(l.fretePerdido, { centavos: false }) : "—"}
                   </td>
                 </tr>
               );

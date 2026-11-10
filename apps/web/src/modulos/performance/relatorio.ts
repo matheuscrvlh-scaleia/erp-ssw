@@ -6,9 +6,7 @@ import {
   subtituloDoPrejuizo,
 } from "@erp/dominio/performance/relatorio";
 import { type BlocoProducao, type RelatorioPeriodo } from "@erp/shared/contratos/performance";
-import { formatarPercentual } from "@erp/shared/formatacao";
-
-import { fmtInt } from "./formato";
+import { formatarInteiro, formatarMoeda, formatarPercentual } from "@erp/shared/formatacao";
 
 export type TomDoIndicador = "neutro" | "bom" | "ruim";
 
@@ -22,8 +20,6 @@ export interface Indicador {
   tom: TomDoIndicador;
   comparativo: { valor: string; delta: Delta | null } | null;
 }
-
-const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Tom do SLA no relatório: verde na meta, vermelho abaixo de meta − 5, neutro entre os dois. */
 function tomDoSla(v: number | null, meta: number): TomDoIndicador {
@@ -65,34 +61,34 @@ export function indicadoresDoRelatorio(
     {
       secao: "Produção",
       rotulo: "CT-e emitidos",
-      valor: fmtInt(a.totalCtrcs),
+      valor: formatarInteiro(a.totalCtrcs),
       sub: "Total no período",
       tom: "neutro",
       comparativo: cmp(
-        (b) => fmtInt(b.totalCtrcs),
+        (b) => formatarInteiro(b.totalCtrcs),
         (b) => deltaPctAbs(a.totalCtrcs, b.totalCtrcs, true),
       ),
     },
     {
       secao: "Produção",
       rotulo: "Entregues",
-      valor: fmtInt(a.entregues),
-      sub: `de ${fmtInt(a.totalCtrcs)} emitidos`,
+      valor: formatarInteiro(a.entregues),
+      sub: `de ${formatarInteiro(a.totalCtrcs)} emitidos`,
       tom: "neutro",
       comparativo: cmp(
-        (b) => fmtInt(b.entregues),
+        (b) => formatarInteiro(b.entregues),
         (b) => deltaPctAbs(a.entregues, b.entregues, true),
       ),
     },
     {
       secao: "Produção",
       rotulo: "Finalizado em Sistema",
-      valor: fmtInt(a.finalizadoSistema),
+      valor: formatarInteiro(a.finalizadoSistema),
       sub: "CTRCs baixados sem entrega (12/36/61/77/92/93/94/99)",
       dica: "CTRCs finalizados no sistema por códigos de baixa administrativa",
       tom: "neutro",
       comparativo: cmp(
-        (b) => fmtInt(b.finalizadoSistema),
+        (b) => formatarInteiro(b.finalizadoSistema),
         (b) => deltaPctAbs(a.finalizadoSistema, b.finalizadoSistema, false),
       ),
     },
@@ -100,7 +96,7 @@ export function indicadoresDoRelatorio(
       secao: "Produção",
       rotulo: "% Produção",
       valor: formatarPercentual(d.pctProducao, { escala: "cem" }),
-      sub: `${fmtInt(a.entregues)} / ${fmtInt(a.totalCtrcs)} entregues no período`,
+      sub: `${formatarInteiro(a.entregues)} / ${formatarInteiro(a.totalCtrcs)} entregues no período`,
       dica: "Percentual de CT-e emitidos no período que já foram entregues",
       tom: "neutro",
       comparativo: cmpDerivado("pctProducao", true),
@@ -110,7 +106,7 @@ export function indicadoresDoRelatorio(
       rotulo: "% No prazo",
       valor: formatarPercentual(d.pctNoPrazo, { escala: "cem" }),
       legenda: "Entregues até a data combinada",
-      sub: `${fmtInt(a.noPrazo)} de ${fmtInt(d.totalPrazo)} com prazo`,
+      sub: `${formatarInteiro(a.noPrazo)} de ${formatarInteiro(d.totalPrazo)} com prazo`,
       tom: d.pctNoPrazo != null && d.pctNoPrazo >= meta ? "bom" : "neutro",
       comparativo: cmpDerivado("pctNoPrazo", true),
     },
@@ -128,7 +124,7 @@ export function indicadoresDoRelatorio(
       rotulo: "% Penalizado Op.",
       valor: formatarPercentual(d.pctPenalizadoPont, { escala: "cem" }),
       legenda: "Entregues depois da data combinada",
-      sub: `${fmtInt(a.foraPrazo)} fora do prazo`,
+      sub: `${formatarInteiro(a.foraPrazo)} fora do prazo`,
       dica: "Entregues fora do prazo sobre os CT-e emitidos (complemento do SLA Operacional)",
       tom: d.pctPenalizadoPont != null && d.pctPenalizadoPont > 100 - meta ? "ruim" : "neutro",
       comparativo: cmpDerivado("pctPenalizadoPont", false),
@@ -151,7 +147,7 @@ export function indicadoresDoRelatorio(
       valor: formatarPercentual(a.slaClientePct, { escala: "cem" }),
       sub:
         a.slaClientePct != null
-          ? `${fmtInt(a.noPrazoCliente)} no prazo · ${fmtInt(a.foraPrazoCliente)} fora`
+          ? `${formatarInteiro(a.noPrazoCliente)} no prazo · ${formatarInteiro(a.foraPrazoCliente)} fora`
           : a.totalCliente === 0
             ? "Sem CTRCs de responsabilidade do cliente"
             : "Aguardando dados de pontualidade",
@@ -177,12 +173,12 @@ export function indicadoresDoRelatorio(
     {
       secao: "Qualidade",
       rotulo: "Prejuízo",
-      valor: reais(a.valorFretePerdido),
-      sub: `${subtituloDoPrejuizo(codigosDoFiltro)} · ${formatarPercentual(a.pctFretePerdido, { escala: "cem" })} de ${reais(a.valorFreteTotal)} (romaneados)`,
+      valor: formatarMoeda(a.valorFretePerdido),
+      sub: `${subtituloDoPrejuizo(codigosDoFiltro)} · ${formatarPercentual(a.pctFretePerdido, { escala: "cem" })} de ${formatarMoeda(a.valorFreteTotal)} (romaneados)`,
       dica: "Valor de frete de CTRCs romaneados (com ocorrência 85) cuja ocorrência penalizante é o(s) código(s) indicado(s), sobre o valor total de romaneados no período",
       tom: "ruim",
       comparativo: cmp(
-        (b) => reais(b.valorFretePerdido),
+        (b) => formatarMoeda(b.valorFretePerdido),
         (b) => deltaPctAbs(a.valorFretePerdido, b.valorFretePerdido, false),
       ),
     },
@@ -204,7 +200,7 @@ export function linhasDoCsv(
   const unidades = r.porUnidade.map((u) => ({
     secao: "SLA por unidade",
     item: u.sigla,
-    valor: `${fmtInt(u.total)} emitidos · SLA Pont. ${formatarPercentual(u.slaOperacionalPct, { escala: "cem" })} · SLA Op. ${formatarPercentual(u.slaPontualidadePct, { escala: "cem" })}`,
+    valor: `${formatarInteiro(u.total)} emitidos · SLA Pont. ${formatarPercentual(u.slaOperacionalPct, { escala: "cem" })} · SLA Op. ${formatarPercentual(u.slaPontualidadePct, { escala: "cem" })}`,
     comparativo: comparadas.has(u.sigla)
       ? `SLA Pont. ${formatarPercentual(comparadas.get(u.sigla)?.slaOperacionalPct ?? null, { escala: "cem" })}`
       : "",

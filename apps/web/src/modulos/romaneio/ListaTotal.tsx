@@ -19,7 +19,13 @@ import {
   type OrdemLista,
   TAMANHOS_DE_PAGINA,
 } from "@erp/shared/contratos/romaneio";
-import { formatarData, formatarDataHora } from "@erp/shared/formatacao";
+import {
+  formatarData,
+  formatarDataHora,
+  formatarInteiro,
+  formatarMoeda,
+  formatarPeso,
+} from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
@@ -61,7 +67,6 @@ import {
   veTodos,
 } from "./busca";
 import { CampoAdiado, SelectLista } from "./componentes";
-import { fmtMoeda, fmtPeso, nfInt } from "./formatos";
 import {
   alternarLinha,
   alternarTodas,
@@ -266,7 +271,7 @@ export function ListaTotal({ busca: b, definir, filtros, otifVisivel }: PropsDaL
           </DropdownMenu>
           {b.agrupar !== "none" && (
             <Badge variant="secondary" className="text-[10px]">
-              paginação desativada (até {nfInt.format(LIMITE_AGRUPADO)})
+              paginação desativada (até {formatarInteiro(LIMITE_AGRUPADO)})
             </Badge>
           )}
         </div>
@@ -274,10 +279,10 @@ export function ListaTotal({ busca: b, definir, filtros, otifVisivel }: PropsDaL
           {total > 0 && (
             <span className="text-[11px] text-muted-foreground">
               {cabecalho === true ? (
-                <>todas as {nfInt.format(total)} linhas marcadas para exportar</>
+                <>todas as {formatarInteiro(total)} linhas marcadas para exportar</>
               ) : (
                 <>
-                  {nfInt.format(marcadas)} de {nfInt.format(total)} marcadas para exportar ·{" "}
+                  {formatarInteiro(marcadas)} de {formatarInteiro(total)} marcadas para exportar ·{" "}
                   <button
                     type="button"
                     className="text-[var(--brand)] underline-offset-2 hover:underline"
@@ -667,14 +672,16 @@ function Linha({
         {l.bairro ?? "—"}
       </td>
       <td className="whitespace-nowrap px-3 py-1 text-right tabular-nums">
-        {fmtMoeda(l.valorMercadoria)}
-      </td>
-      <td className="whitespace-nowrap px-3 py-1 text-right tabular-nums">{fmtPeso(l.peso)}</td>
-      <td className="px-3 py-1 text-right tabular-nums">
-        {l.volumes === null ? "—" : nfInt.format(l.volumes)}
+        {formatarMoeda(l.valorMercadoria)}
       </td>
       <td className="whitespace-nowrap px-3 py-1 text-right tabular-nums">
-        {fmtMoeda(l.valorFrete)}
+        {formatarPeso(l.peso, { fixas: true })}
+      </td>
+      <td className="px-3 py-1 text-right tabular-nums">
+        {l.volumes === null ? "—" : formatarInteiro(l.volumes)}
+      </td>
+      <td className="whitespace-nowrap px-3 py-1 text-right tabular-nums">
+        {formatarMoeda(l.valorFrete)}
       </td>
       <td
         className="px-3 py-1 text-muted-foreground"
@@ -725,7 +732,7 @@ function Linha({
                 key={a}
                 variant="outline"
                 className="border-amber-500/60 text-[10px] text-amber-700 dark:text-amber-400"
-                title={`TDE (taxa de dificuldade de entrega): ${fmtMoeda(l.tde)}`}
+                title={`TDE (taxa de dificuldade de entrega): ${formatarMoeda(l.tde)}`}
               >
                 TDE
               </Badge>
@@ -812,18 +819,18 @@ function Grupo({
             {aberto ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             {rotulo}
             <span className="ml-2 text-[11px] font-normal text-muted-foreground">
-              {nfInt.format(soma.ctes)} notas
+              {formatarInteiro(soma.ctes)} notas
             </span>
           </button>
         </td>
         <td className="px-3 py-1.5 text-right text-[12px] font-medium tabular-nums">
-          {fmtPeso(soma.peso)}
+          {formatarPeso(soma.peso, { fixas: true })}
         </td>
         <td className="px-3 py-1.5 text-right text-[12px] font-medium tabular-nums">
-          {nfInt.format(soma.volumes)}
+          {formatarInteiro(soma.volumes)}
         </td>
         <td className="px-3 py-1.5 text-right text-[12px] font-medium tabular-nums">
-          {fmtMoeda(soma.frete)}
+          {formatarMoeda(soma.frete)}
         </td>
         <td colSpan={COLUNAS_DA_TABELA - COLUNAS_ANTES_DO_PESO - 3} />
       </tr>

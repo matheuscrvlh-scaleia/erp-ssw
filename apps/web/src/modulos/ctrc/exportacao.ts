@@ -9,17 +9,12 @@ import {
   formatarDataHora,
   formatarInteiro,
   formatarMoeda,
+  formatarPeso,
 } from "@erp/shared/formatacao";
 
 import { type ColunaExportacao } from "@/lib/exportacao";
 
-import {
-  formatarChave,
-  formatarCnpjOuTraco,
-  formatarPeso,
-  textoDaPerformance,
-  textoDoAtraso,
-} from "./textos";
+import { formatarChave, formatarCnpjOuTraco, textoDaPerformance, textoDoAtraso } from "./textos";
 
 export const COLUNAS_DO_PDF: readonly ColunaExportacao[] = [
   { chave: "secao", titulo: "Seção", largura: 30 },
@@ -87,7 +82,7 @@ export function linhasDoPdf(c: DetalheCtrc, fuso: string): LinhaDoPdf[] {
     [
       "Carga & Frete",
       [
-        ["Peso", formatarPeso(c.peso)],
+        ["Peso", formatarPeso(c.peso, { tonelada: 3, quilo: 3, fixas: true })],
         ["Volumes", formatarInteiro(c.volumes)],
         ["Valor do frete", formatarMoeda(c.valorFrete)],
       ],

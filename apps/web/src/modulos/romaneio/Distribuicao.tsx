@@ -1,5 +1,5 @@
 import { type FiltrosRomaneio } from "@erp/shared/contratos/romaneio";
-import { formatarPercentual } from "@erp/shared/formatacao";
+import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 
 import { consultaDistribuicao, consultaPerformanceCarros } from "./api";
 import { type Abertura } from "./busca";
-import { nfInt } from "./formatos";
 
 type Visao = "codigo" | "placa";
 
@@ -105,7 +104,7 @@ function BarrasPorCodigo({
       <div className="text-[10px] text-muted-foreground/80">
         {q.isLoading
           ? "carregando…"
-          : `${nfInt.format(total)} CT-es não finalizados em ${nfInt.format(barras.length)} códigos${
+          : `${formatarInteiro(total)} CT-es não finalizados em ${formatarInteiro(barras.length)} códigos${
               barras.length > 16 ? " · role a lista para ver todos" : ""
             } · clique numa barra para filtrar`}
       </div>
@@ -127,7 +126,7 @@ function BarrasPorCodigo({
                   <button
                     type="button"
                     disabled={codigo === null}
-                    title={`${nfInt.format(b.qtd)} CTRCs — ${b.descricao ?? "sem descrição"}`}
+                    title={`${formatarInteiro(b.qtd)} CTRCs — ${b.descricao ?? "sem descrição"}`}
                     onClick={() => {
                       if (codigo !== null)
                         aoAbrir({ codigos: [codigo], recorte: "em_rota", status: "andamento" });
@@ -145,7 +144,7 @@ function BarrasPorCodigo({
                         }}
                       />
                     </span>
-                    <span className="w-10 shrink-0 tabular-nums">{nfInt.format(b.qtd)}</span>
+                    <span className="w-10 shrink-0 tabular-nums">{formatarInteiro(b.qtd)}</span>
                   </button>
                 </li>
               );
@@ -184,7 +183,7 @@ function TabelaCarros({
         <div className="text-[10px] text-muted-foreground/80">
           {q.isLoading
             ? "carregando…"
-            : `${nfInt.format(linhas.length)} carros · clique numa linha para ver as cargas`}
+            : `${formatarInteiro(linhas.length)} carros · clique numa linha para ver as cargas`}
         </div>
         <ExportMenu
           arquivo="romaneio-performance-carro"
@@ -260,10 +259,10 @@ function TabelaCarros({
                   </td>
                   <td className="px-3 py-1 font-mono text-[11px]">{placa ?? "—"}</td>
                   <td className="px-3 py-1 text-right tabular-nums">
-                    {nfInt.format(r.romaneados)}
+                    {formatarInteiro(r.romaneados)}
                   </td>
                   <td className="px-3 py-1 text-right tabular-nums">
-                    {nfInt.format(r.prejudicadas)}
+                    {formatarInteiro(r.prejudicadas)}
                   </td>
                   <td className="px-3 py-1 text-right tabular-nums">
                     {formatarPercentual(100 - pct, { escala: "cem", casas: 2 })}
@@ -287,10 +286,10 @@ function TabelaCarros({
                   Total
                 </td>
                 <td className="px-3 py-1.5 text-right tabular-nums">
-                  {nfInt.format(total.romaneados)}
+                  {formatarInteiro(total.romaneados)}
                 </td>
                 <td className="px-3 py-1.5 text-right tabular-nums">
-                  {nfInt.format(total.prejudicadas)}
+                  {formatarInteiro(total.prejudicadas)}
                 </td>
                 <td className="px-3 py-1.5 text-right tabular-nums">
                   {formatarPercentual(100 - pctPrejudicada(total), { escala: "cem", casas: 2 })}

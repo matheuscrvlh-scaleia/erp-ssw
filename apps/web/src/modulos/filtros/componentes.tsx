@@ -12,6 +12,7 @@ import {
   SEM_TIPO_DOCUMENTO,
   type TipoDocumentoOpcao,
 } from "@erp/shared/contratos/filtros";
+import { formatarInteiro } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Search, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
@@ -21,7 +22,6 @@ import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { chamar } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { inteiro } from "@/modulos/compartilhado/formatos";
 
 import {
   consultaFiliaisProprias,
@@ -277,7 +277,7 @@ export function SeletorDeTipoDocumento({
           ? ordenarTiposDocumento(tipos.data, contagem).map((t) => ({
               valor: t.tipo,
               rotulo: t.tipo === SEM_TIPO_DOCUMENTO ? "Sem tipo" : t.tipo,
-              detalhe: contagem && t.qtd > 0 ? inteiro(t.qtd) : undefined,
+              detalhe: contagem && t.qtd > 0 ? formatarInteiro(t.qtd) : undefined,
               apagada: contagem !== undefined && t.qtd === 0,
             }))
           : undefined

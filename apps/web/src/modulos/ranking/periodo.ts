@@ -21,9 +21,3 @@ export function mesDe(dia: string): string {
 export function mesAnterior(hoje: string): { inicio: string; fim: string } {
   return periodoDoMes(mesDe(somarDias(`${mesDe(hoje)}-01`, -1)));
 }
-
-/** "dd/mm" de uma data AAAA-MM-DD. */
-export function diaCurto(iso: string): string {
-  const [, m, d] = iso.slice(0, 10).split("-");
-  return `${d}/${m}`;
-}

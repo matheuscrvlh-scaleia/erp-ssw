@@ -3,6 +3,7 @@ import {
   type ResultadoDaImportacao050,
   TAMANHO_MAXIMO_DO_050,
 } from "@erp/shared/contratos/coletas";
+import { formatarData, formatarDataHora, formatarInteiro } from "@erp/shared/formatacao";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileUp, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -12,7 +13,6 @@ import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/componentes/ui/dialog";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { data, dataHora, inteiro } from "@/modulos/compartilhado/formatos";
 
 import { CHAVE_DAS_COLETAS } from "./api";
 
@@ -28,11 +28,11 @@ export function conferenciaDoResumo(r: ResultadoDaImportacao050): {
 } {
   if (r.resumoSsw === null) return { ok: true, texto: "sem quadro de resumo" };
   if (r.resumoSsw.quantidade === r.lidas) {
-    return { ok: true, texto: `ok — ${inteiro(r.resumoSsw.quantidade)} coletas no resumo` };
+    return { ok: true, texto: `ok — ${formatarInteiro(r.resumoSsw.quantidade)} coletas no resumo` };
   }
   return {
     ok: false,
-    texto: `resumo do SSW diz ${inteiro(r.resumoSsw.quantidade)}, lidas ${inteiro(r.lidas)}`,
+    texto: `resumo do SSW diz ${formatarInteiro(r.resumoSsw.quantidade)}, lidas ${formatarInteiro(r.lidas)}`,
   };
 }
 
@@ -86,7 +86,7 @@ export function Importador050({
     if (novos.length > 0) {
       const gravadas = novos.reduce((s, n) => s + n.resultado.gravadas, 0);
       toast.success(
-        `${inteiro(gravadas)} coleta(s) gravada(s) de ${String(novos.length)} arquivo(s)`,
+        `${formatarInteiro(gravadas)} coleta(s) gravada(s) de ${String(novos.length)} arquivo(s)`,
       );
       await queryClient.invalidateQueries({ queryKey: CHAVE_DAS_COLETAS });
     }
@@ -141,22 +141,22 @@ export function Importador050({
                       <td className="max-w-[180px] truncate px-3 py-1.5" title={arquivo}>
                         {arquivo}
                       </td>
-                      <td className="px-3 py-1.5">{dataHora(r.emitidoEm, fuso)}</td>
+                      <td className="px-3 py-1.5">{formatarDataHora(r.emitidoEm, fuso)}</td>
                       <td className="px-3 py-1.5">
                         {r.periodoCadastro
-                          ? `${data(r.periodoCadastro.inicio)} a ${data(r.periodoCadastro.fim)}`
+                          ? `${formatarData(r.periodoCadastro.inicio)} a ${formatarData(r.periodoCadastro.fim)}`
                           : "—"}
                       </td>
-                      <td className="px-3 py-1.5 text-right">{inteiro(r.lidas)}</td>
+                      <td className="px-3 py-1.5 text-right">{formatarInteiro(r.lidas)}</td>
                       <td className="px-3 py-1.5 text-right">
-                        {inteiro(r.gravadas)}
+                        {formatarInteiro(r.gravadas)}
                         {r.ignoradas > 0 && (
                           <span
                             className="text-muted-foreground"
                             title="Sem unidade/número, repetidas no arquivo ou já gravadas por um relatório mais novo"
                           >
                             {" "}
-                            (+{inteiro(r.ignoradas)} ignoradas)
+                            (+{formatarInteiro(r.ignoradas)} ignoradas)
                           </span>
                         )}
                       </td>

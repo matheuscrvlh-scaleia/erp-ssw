@@ -1,11 +1,9 @@
 import { verificarParticao } from "@erp/dominio/performance/tela";
 import { type BlocoProducao, type TdeAguardando } from "@erp/shared/contratos/performance";
-import { formatarPercentual } from "@erp/shared/formatacao";
+import { formatarInteiro, formatarMoeda, formatarPercentual } from "@erp/shared/formatacao";
 import { ArrowRight } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
-
-import { fmtBRL, fmtInt } from "../formato";
 
 export type CardDeProducao =
   | "emitidos"
@@ -96,7 +94,7 @@ export function LinhaDeProducao({
     <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
       <CartaoDeProducao
         rotulo="CT-e Emitidos"
-        valor={fmtInt(bloco.totalCtrcs)}
+        valor={formatarInteiro(bloco.totalCtrcs)}
         sub="total no período"
         onClick={() => {
           onCard("emitidos");
@@ -104,7 +102,7 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="Entregues"
-        valor={fmtInt(bloco.entregues)}
+        valor={formatarInteiro(bloco.entregues)}
         sub={
           bloco.totalCtrcs > 0
             ? `${formatarPercentual(producaoPct, { escala: "cem" })} dos emitidos`
@@ -116,7 +114,7 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="No Prazo"
-        valor={fmtInt(bloco.noPrazo)}
+        valor={formatarInteiro(bloco.noPrazo)}
         legenda="Entregues até a data combinada"
         sub={
           noPrazoPct != null
@@ -131,7 +129,7 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="Fora do Prazo"
-        valor={fmtInt(bloco.foraPrazo)}
+        valor={formatarInteiro(bloco.foraPrazo)}
         legenda="Entregues depois da data combinada"
         sub="exclui resp. cliente"
         tom={bloco.foraPrazo > 0 ? "ruim" : "neutro"}
@@ -142,7 +140,7 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="Finalizado em Sistema"
-        valor={fmtInt(bloco.finalizadoSistema)}
+        valor={formatarInteiro(bloco.finalizadoSistema)}
         sub={
           bloco.totalCtrcs > 0
             ? `${formatarPercentual((bloco.finalizadoSistema / bloco.totalCtrcs) * 100, { escala: "cem" })} dos emitidos`
@@ -165,11 +163,11 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="TDE aguardando programação"
-        valor={tde ? fmtInt(tde.aguardando) : "…"}
+        valor={tde ? formatarInteiro(tde.aguardando) : "…"}
         legenda="Com TDE e ainda sem saída para entrega"
         sub={
           tde
-            ? `${fmtBRL(tde.valor)} de TDE · ${fmtInt(tde.total)} CT-e com TDE no período`
+            ? `${formatarMoeda(tde.valor, { centavos: false })} de TDE · ${formatarInteiro(tde.total)} CT-e com TDE no período`
             : "carregando"
         }
         tom={tde && tde.aguardando > 0 ? "ruim" : "neutro"}
@@ -200,13 +198,15 @@ export function VerificacaoDaParticao({
           : "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400")
       }
     >
-      <strong className="font-medium">Verificação:</strong> Entregues ({fmtInt(bloco.entregues)}) +
-      Finalizado em Sistema ({fmtInt(bloco.finalizadoSistema)}) + Previstos no período (
-      {fmtInt(bloco.previstos)}) = <strong className="font-medium">{fmtInt(soma)}</strong> de{" "}
-      {fmtInt(bloco.totalCtrcs)} CT-e emitidos{" "}
+      <strong className="font-medium">Verificação:</strong> Entregues (
+      {formatarInteiro(bloco.entregues)}) + Finalizado em Sistema (
+      {formatarInteiro(bloco.finalizadoSistema)}) + Previstos no período (
+      {formatarInteiro(bloco.previstos)}) ={" "}
+      <strong className="font-medium">{formatarInteiro(soma)}</strong> de{" "}
+      {formatarInteiro(bloco.totalCtrcs)} CT-e emitidos{" "}
       {diferenca === 0
         ? "— partição fecha 100%."
-        : `— diferença de ${fmtInt(Math.abs(diferenca))} CTRC.`}
+        : `— diferença de ${formatarInteiro(Math.abs(diferenca))} CTRC.`}
       {ignorarPeriodo && (
         <>
           {" "}

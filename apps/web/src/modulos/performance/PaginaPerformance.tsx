@@ -82,8 +82,8 @@ import {
 } from "./componentes/Producao";
 import { DialogoRelatorio } from "./componentes/RelatorioPeriodo";
 import { TabelaDeUnidades } from "./componentes/TabelaUnidades";
+import { textoDoStatus } from "./cores";
 import { COLUNAS_DA_EXPORTACAO } from "./exportacao";
-import { textoDoStatus } from "./formato";
 
 const rota = getRouteApi("/_autenticado/performance/");
 

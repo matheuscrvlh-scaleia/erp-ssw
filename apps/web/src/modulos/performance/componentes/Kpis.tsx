@@ -10,12 +10,12 @@ import {
   type Pontualidade,
   type ResumoPerformance,
 } from "@erp/shared/contratos/performance";
-import { formatarPercentual } from "@erp/shared/formatacao";
+import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
 import { type KeyboardEvent, type ReactNode } from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 
-import { corDoStatus, fmtInt, fundoDoStatus, textoDoStatus } from "../formato";
+import { corDoStatus, fundoDoStatus, textoDoStatus } from "../cores";
 
 /** Props de um bloco clicável por mouse e teclado (Enter/Espaço). */
 export function clicavel(acao: (() => void) | undefined, pararPropagacao = false) {
@@ -159,7 +159,7 @@ export function DistribuicaoPontualidade({
     <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
       <div className="font-medium">{s.rotulo}</div>
       <div className="mt-0.5 font-medium tabular-nums">
-        {fmtInt(s.valor)} CTRCs{total > 0 ? ` · ${pct1(pct(s.valor))}` : ""}
+        {formatarInteiro(s.valor)} CTRCs{total > 0 ? ` · ${pct1(pct(s.valor))}` : ""}
       </div>
       <div className="mt-1 font-normal">{s.dica}</div>
     </TooltipContent>
@@ -180,7 +180,7 @@ export function DistribuicaoPontualidade({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${s.rotulo}: ${fmtInt(s.valor)} (${pct1(pct(s.valor))})`}
+                      aria-label={`${s.rotulo}: ${formatarInteiro(s.valor)} (${pct1(pct(s.valor))})`}
                       className="h-full transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--brand)]"
                       style={{ width: `${Math.max(1.5, pct(s.valor))}%`, backgroundColor: s.cor }}
                     />
@@ -207,7 +207,7 @@ export function DistribuicaoPontualidade({
                     {s.rotulo}
                   </span>
                   <span className="shrink-0 text-[11px] font-medium tabular-nums text-foreground">
-                    {fmtInt(s.valor)}
+                    {formatarInteiro(s.valor)}
                   </span>
                   {total > 0 && (
                     <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
@@ -272,7 +272,7 @@ export function LinhaDeKpis({
   const foraDaConta = Math.max(0, (t?.total ?? 0) - nascAvaliados);
   const nascSub =
     nascPct != null
-      ? `${fmtInt(nascQtd)} de ${fmtInt(nascAvaliados)} CTRCs chegaram com prazo menor que o padrão${foraDaConta > 0 ? ` · ${fmtInt(foraDaConta)} fora da conta (TROCA ou sem previsão)` : ""}`
+      ? `${formatarInteiro(nascQtd)} de ${formatarInteiro(nascAvaliados)} CTRCs chegaram com prazo menor que o padrão${foraDaConta > 0 ? ` · ${formatarInteiro(foraDaConta)} fora da conta (TROCA ou sem previsão)` : ""}`
       : (t?.total ?? 0) === 0
         ? "Sem CTRCs no período"
         : "Nenhum CTRC do período pode ser avaliado";
@@ -331,7 +331,7 @@ export function LinhaDeKpis({
           sub={
             otifPct == null
               ? "Sem CTRCs no período"
-              : `${fmtInt(otif?.problemas ?? 0)} de ${fmtInt(otif?.total ?? 0)} CTRCs tiveram algum problema no percurso — quanto menor, melhor`
+              : `${formatarInteiro(otif?.problemas ?? 0)} de ${formatarInteiro(otif?.total ?? 0)} CTRCs tiveram algum problema no percurso — quanto menor, melhor`
           }
           onClick={otifPct != null && (otif?.problemas ?? 0) > 0 ? acoes.otif : undefined}
         />
@@ -342,7 +342,7 @@ export function LinhaDeKpis({
         status={statusDoRetorno(taxa, metaTaxa)}
         selo={acimaDaMeta ? "acima" : metaTaxa != null ? "ok" : undefined}
         statusDoSelo={acimaDaMeta ? "ruim" : "bom"}
-        sub={`${metaTaxa != null ? `meta ≤ ${formatarPercentual(metaTaxa, { separador: "." })}` : "sem meta definida"} · base: ${fmtInt(resumo.totais.ctrcsConcluidos)} CT-e concluídos`}
+        sub={`${metaTaxa != null ? `meta ≤ ${formatarPercentual(metaTaxa, { separador: "." })}` : "sem meta definida"} · base: ${formatarInteiro(resumo.totais.ctrcsConcluidos)} CT-e concluídos`}
         titulo="CTRCs com ocorrência 13 (Entrega prejudicada pelo horário) sobre os CT-e concluídos no período (entregues + finalizados sem entrega). CT-e em aberto não entram na conta."
       />
       <CaixaEmAtraso resumo={resumo} nomeCurto={nomeCurto} acoes={acoes} />
@@ -392,7 +392,7 @@ function CaixaEmAtraso({
         )}
       </div>
       <div className="num-hero mt-3 font-bold tracking-normal text-kpi-alert">
-        {fmtInt(t.ctrcsEmAtraso)}
+        {formatarInteiro(t.ctrcsEmAtraso)}
       </div>
       {temAtraso && (
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -412,8 +412,8 @@ function CaixaEmAtraso({
         </div>
       )}
       <div className="mt-2 text-[11px] text-muted-foreground">
-        CT-e em aberto com prazo vencido · de {fmtInt(t.ctrcsEmAberto)} em aberto
-        {t.ctrcsSemPrazo > 0 ? ` · ${fmtInt(t.ctrcsSemPrazo)} sem prazo definido` : ""}
+        CT-e em aberto com prazo vencido · de {formatarInteiro(t.ctrcsEmAberto)} em aberto
+        {t.ctrcsSemPrazo > 0 ? ` · ${formatarInteiro(t.ctrcsSemPrazo)} sem prazo definido` : ""}
       </div>
     </div>
   );
@@ -450,7 +450,7 @@ function SubAtraso({
           (destaque ? "text-kpi-alert" : "text-foreground")
         }
       >
-        {fmtInt(valor)}
+        {formatarInteiro(valor)}
       </div>
     </div>
   );

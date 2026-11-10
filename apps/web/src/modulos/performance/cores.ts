@@ -1,15 +1,6 @@
 import { type Status } from "@erp/dominio/performance/tela";
 
-export const fmtInt = (v: number): string => v.toLocaleString("pt-BR");
-
-export const fmtBRL = (v: number): string =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-
-export function fmtPeso(kg: number): string {
-  if (!kg) return "0 kg";
-  if (kg >= 1000) return `${(kg / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} t`;
-  return `${kg.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg`;
-}
+/** Cores de cada status (bom, alerta, ruim) nos cards e na tabela da Performance. */
 
 export const corDoStatus: Record<Status, string> = {
   bom: "var(--status-good)",

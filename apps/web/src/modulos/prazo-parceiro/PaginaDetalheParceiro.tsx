@@ -4,7 +4,12 @@
  */
 import { type NascidoAtrasado } from "@erp/shared/contratos/prazo-parceiro";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
+import {
+  formatarData,
+  formatarInteiro,
+  formatarPercentual,
+  formatarPontos,
+} from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw } from "lucide-react";
@@ -28,14 +33,7 @@ import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaDetalhe, consultaOpcoes } from "./api";
 import { esquemaDetalhe, filtrosDaBusca, ROTULO_PERIODO } from "./busca";
-import {
-  BotoesDePeriodo,
-  CartaoMetrica,
-  fmtPP,
-  LinhasCarregando,
-  nfInt,
-  tomDoSla,
-} from "./componentes";
+import { BotoesDePeriodo, CartaoMetrica, LinhasCarregando, tomDoSla } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
 
 const rota = getRouteApi("/_autenticado/prazo-parceiro_/$id");
@@ -167,7 +165,7 @@ export function PaginaDetalheParceiro() {
           rotulo="Performance total"
           valor={r ? formatarPercentual(r.performanceTotal) : "—"}
           tom={r && tomDoSla(r.performanceTotal, sla)}
-          dica={`${nfInt.format(r?.totalCtes ?? 0)} CTRC(s) no período`}
+          dica={`${formatarInteiro(r?.totalCtes ?? 0)} CTRC(s) no período`}
           carregando={q.isLoading}
         />
         <CartaoMetrica
@@ -175,16 +173,16 @@ export function PaginaDetalheParceiro() {
           rotulo="Performance própria"
           valor={r ? formatarPercentual(r.performancePropria) : "—"}
           tom={r && tomDoSla(r.performancePropria, sla)}
-          dica={`apenas ${nfInt.format(r?.totalProprio ?? 0)} CTRC(s) com prazo próprio`}
+          dica={`apenas ${formatarInteiro(r?.totalProprio ?? 0)} CTRC(s) com prazo próprio`}
           carregando={q.isLoading}
           destaque
         />
         <CartaoMetrica
           tamanho="medio"
           rotulo="Diferença"
-          valor={fmtPP(diferenca)}
+          valor={formatarPontos(diferenca)}
           tom={diferenca > 0 ? "bom" : "neutro"}
-          dica={`${nfInt.format(r?.nascidosAtrasados ?? 0)} CTRC(s) nasceram em atraso`}
+          dica={`${formatarInteiro(r?.nascidosAtrasados ?? 0)} CTRC(s) nasceram em atraso`}
           carregando={q.isLoading}
         />
       </div>
@@ -211,7 +209,7 @@ export function PaginaDetalheParceiro() {
                     style={{ width: `${(h.qtd / maiorFaixa) * 100}%` }}
                   />
                 </div>
-                <span className="w-10 text-right tabular-nums">{nfInt.format(h.qtd)}</span>
+                <span className="w-10 text-right tabular-nums">{formatarInteiro(h.qtd)}</span>
               </li>
             ))}
           </ul>
