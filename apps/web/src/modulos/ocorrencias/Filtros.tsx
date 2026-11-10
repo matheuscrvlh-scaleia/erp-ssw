@@ -4,21 +4,11 @@ import { FiltroMultiplo, type OpcaoFiltro } from "@/componentes/comum/FiltroMult
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
-import { CampoDeTexto, classeDoSegmento } from "@/modulos/compartilhado/CampoDeTexto";
+import { CampoDeTexto, classeDoSegmento, listaDoTexto } from "@/modulos/compartilhado/CampoDeTexto";
 import { InfoTip } from "@/modulos/compartilhado/InfoTip";
 
 import { type BuscaOcorrencias } from "./busca";
 import { rotulosDoResponsavel } from "./rotulos";
-
-/** Lista digitada "RIO, SPO" → ["RIO", "SPO"]. */
-export const listaDoTexto = (texto: string) => [
-  ...new Set(
-    texto
-      .split(/[,;|]/)
-      .map((t) => t.trim().toUpperCase())
-      .filter(Boolean),
-  ),
-];
 
 export interface OpcoesDosFiltros {
   parceiros: readonly OpcaoFiltro[] | undefined;

@@ -45,3 +45,13 @@ export function classeDoSegmento(ativo: boolean): string {
     (ativo ? "bg-[var(--brand)] text-white" : "text-muted-foreground hover:bg-muted")
   );
 }
+
+/** Lista digitada "RIO, SPO" → ["RIO", "SPO"]. */
+export const listaDoTexto = (texto: string) => [
+  ...new Set(
+    texto
+      .split(/[,;|]/)
+      .map((t) => t.trim().toUpperCase())
+      .filter(Boolean),
+  ),
+];

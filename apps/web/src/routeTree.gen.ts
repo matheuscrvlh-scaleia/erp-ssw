@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
+import { Route as AutenticadoComprovantesRouteImport } from './routes/_autenticado/comprovantes'
 import { Route as AutenticadoOcorrenciasRouteImport } from './routes/_autenticado/ocorrencias'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
 
@@ -47,6 +48,11 @@ const AutenticadoCalendarioRoute = AutenticadoCalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoComprovantesRoute = AutenticadoComprovantesRouteImport.update({
+  id: '/comprovantes',
+  path: '/comprovantes',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoOcorrenciasRoute = AutenticadoOcorrenciasRouteImport.update({
   id: '/ocorrencias',
   path: '/ocorrencias',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/comprovantes': typeof AutenticadoComprovantesRoute
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
 }
@@ -72,6 +79,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/comprovantes': typeof AutenticadoComprovantesRoute
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
+  '/_autenticado/comprovantes': typeof AutenticadoComprovantesRoute
   '/_autenticado/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/comprovantes'
     | '/ocorrencias'
     | '/sem-acesso'
   fileRoutesByTo: FileRoutesByTo
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/comprovantes'
     | '/ocorrencias'
     | '/sem-acesso'
     | '/'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/_autenticado/calendario'
+    | '/_autenticado/comprovantes'
     | '/_autenticado/ocorrencias'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
@@ -169,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoCalendarioRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/comprovantes': {
+      id: '/_autenticado/comprovantes'
+      path: '/comprovantes'
+      fullPath: '/comprovantes'
+      preLoaderRoute: typeof AutenticadoComprovantesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/ocorrencias': {
       id: '/_autenticado/ocorrencias'
       path: '/ocorrencias'
@@ -188,6 +207,7 @@ declare module '@tanstack/react-router' {
 
 interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
+  AutenticadoComprovantesRoute: typeof AutenticadoComprovantesRoute
   AutenticadoOcorrenciasRoute: typeof AutenticadoOcorrenciasRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
@@ -195,6 +215,7 @@ interface AutenticadoRouteChildren {
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
+  AutenticadoComprovantesRoute: AutenticadoComprovantesRoute,
   AutenticadoOcorrenciasRoute: AutenticadoOcorrenciasRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
