@@ -69,8 +69,8 @@ export interface PortasDoWebhook {
   avisar: (dados: Record<string, unknown>, mensagem: string) => void;
 }
 
-export interface RequisicaoDoWebhook {
-  corpoBruto: string;
+/** O que dá para saber antes de ler o corpo. */
+export interface CabecalhosDoWebhook {
   authorization: string;
   segredoNaQuery: string;
   empresaNaQuery: string;
@@ -78,10 +78,25 @@ export interface RequisicaoDoWebhook {
   userAgent: string | null;
 }
 
+export interface RequisicaoDoWebhook extends CabecalhosDoWebhook {
+  corpoBruto: string;
+}
+
 export interface RespostaDoWebhook {
   status: number;
   corpo: RetornoSsw2181[];
 }
+
+/** Resultado da autenticação, decidida só pelos cabeçalhos e pela query (antes do corpo). */
+export type AutenticacaoDoWebhook =
+  | { tipo: "autenticado"; empresa: EmpresaDoWebhook; resumos: string[] | null }
+  | {
+      tipo: "token_incorreto";
+      empresa: EmpresaDoWebhook;
+      resumos: string[] | null;
+      resposta: RespostaDoWebhook;
+    }
+  | { tipo: "recusado"; resposta: RespostaDoWebhook };
 
 /** SHA-256 em hex: o que se guarda da credencial recebida e o que o reprocesso compara. */
 export function resumoDoSegredo(texto: string): string {
@@ -104,18 +119,25 @@ function resolverEmpresa(
   return { tipo: "ok", empresa };
 }
 
-/** origem: handler POST de src/routes/api/public/ssw-ocorrencias.ts (sistema atual) */
-export async function receberWebhook(
-  portas: PortasDoWebhook,
-  req: RequisicaoDoWebhook,
-): Promise<RespostaDoWebhook> {
-  const agora = portas.agora();
-  const erro = (codigo: number, descricao: string, extras: Record<string, unknown> = {}) => ({
+function erroSsw(agora: Date) {
+  return (codigo: number, descricao: string, extras: Record<string, unknown> = {}) => ({
     status: statusHttpDoErro(codigo),
     corpo: respostaSsw2181(codigo, descricao, agora, extras),
   });
+}
+
+/**
+ * Autentica pela credencial e pela empresa pedida, sem ler o corpo. Recusa com empresa conhecida
+ * grava só metadados (IP, user-agent, motivo, resumo do token). "Token incorreto" com empresa
+ * conhecida segue para `processarWebhook`, que decide o que guardar.
+ * origem: handler POST de src/routes/api/public/ssw-ocorrencias.ts (sistema atual)
+ */
+export async function autenticarWebhook(
+  portas: PortasDoWebhook,
+  req: CabecalhosDoWebhook,
+): Promise<AutenticacaoDoWebhook> {
+  const erro = erroSsw(portas.agora());
   const auth = extrairTokensAuthorization(req.authorization);
-  const base = { ip: req.ip, userAgent: req.userAgent };
   let esperado = "";
   // Sem o texto do token: só os resumos (com o comprimento do segredo atual para o caso "contém").
   const resumos = () =>
@@ -124,23 +146,26 @@ export async function receberWebhook(
           resumoDoSegredo,
         )
       : null;
-  const registrar = (
-    empresaId: string,
-    statusHttp: number,
-    motivo: string | null,
-    payload: unknown,
-    autenticado = false,
-  ) =>
-    portas.registrarEvento({
-      ...base,
-      empresaId,
-      statusHttp,
-      motivoRejeicao: motivo,
-      payloadBruto: payload,
-      tokenSha256: resumos(),
-      autenticado,
-      erroProcessamento: null,
-    });
+  const recusar = async (
+    empresa: EmpresaDoWebhook | null,
+    resposta: RespostaDoWebhook,
+    motivo: string,
+  ): Promise<AutenticacaoDoWebhook> => {
+    if (empresa) {
+      await portas.registrarEvento({
+        empresaId: empresa.id,
+        ip: req.ip,
+        userAgent: req.userAgent,
+        autenticado: false,
+        motivoRejeicao: motivo,
+        statusHttp: resposta.status,
+        payloadBruto: null,
+        tokenSha256: resumos(),
+        erroProcessamento: null,
+      });
+    }
+    return { tipo: "recusado", resposta };
+  };
   const avisar = (motivo: string, extra: Record<string, unknown> = {}) => {
     portas.avisar(
       {
@@ -155,38 +180,42 @@ export async function receberWebhook(
     );
   };
 
-  const corpo = lerJson(req.corpoBruto);
-  if (corpo === undefined) {
-    avisar("json_invalido");
-    return erro(400, "NAO FOI POSSIVEL PROCESSAR A REQUISICAO (json invalido)");
-  }
-
   const cadastradas = await portas.empresas();
   let empresa: EmpresaDoWebhook | null = null;
   if (req.empresaNaQuery) {
     const r = resolverEmpresa(cadastradas, req.empresaNaQuery);
     if (r.tipo === "erro") {
       avisar(r.motivo);
-      return erro(401, "EMPRESA INVALIDA OU WEBHOOK DESLIGADO", { motivo: r.motivo });
+      return recusar(
+        null,
+        erro(401, "EMPRESA INVALIDA OU WEBHOOK DESLIGADO", { motivo: r.motivo }),
+        r.motivo,
+      );
     }
     empresa = r.empresa;
     esperado = portas.segredo(empresa)?.trim() ?? "";
     if (!esperado) {
-      await registrar(empresa.id, 503, "webhook_nao_configurado", corpo);
-      return erro(
-        503,
-        "WEBHOOK NAO CONFIGURADO — cadastre o segredo em Plataforma → Empresa → Integrações",
+      return recusar(
+        empresa,
+        erro(
+          503,
+          "WEBHOOK NAO CONFIGURADO — cadastre o segredo em Plataforma → Empresa → Integrações",
+        ),
+        "webhook_nao_configurado",
       );
     }
   }
 
   if (!req.authorization && !req.segredoNaQuery) {
     avisar("autorizacao_ausente");
-    if (empresa) await registrar(empresa.id, 401, "autorizacao_ausente", corpo);
-    return erro(
-      401,
-      "AUTORIZACAO AUSENTE — envie header 'Authorization: Bearer <token>' ou parametro ?secret=<token>",
-      { motivo: "autorizacao_ausente" },
+    return recusar(
+      empresa,
+      erro(
+        401,
+        "AUTORIZACAO AUSENTE — envie header 'Authorization: Bearer <token>' ou parametro ?secret=<token>",
+        { motivo: "autorizacao_ausente" },
+      ),
+      "autorizacao_ausente",
     );
   }
   if (
@@ -196,11 +225,14 @@ export async function receberWebhook(
     !req.segredoNaQuery
   ) {
     avisar("token_header_vazio");
-    if (empresa) await registrar(empresa.id, 401, "token_header_vazio", corpo);
-    return erro(
-      401,
-      "TOKEN DO HEADER VAZIO — Authorization foi recebido sem credencial valida apos o esquema",
-      { motivo: "token_header_vazio" },
+    return recusar(
+      empresa,
+      erro(
+        401,
+        "TOKEN DO HEADER VAZIO — Authorization foi recebido sem credencial valida apos o esquema",
+        { motivo: "token_header_vazio" },
+      ),
+      "token_header_vazio",
     );
   }
 
@@ -228,8 +260,7 @@ export async function receberWebhook(
       comprimentoRecebido: comprimento,
       esperadoTamanho: esperado.length,
     });
-    if (empresa) await registrar(empresa.id, 401, "token_incorreto", corpo);
-    return erro(
+    const resposta = erro(
       401,
       `TOKEN INVALIDO — valor recebido via ${origem} nao confere com o configurado`,
       {
@@ -238,14 +269,57 @@ export async function receberWebhook(
         comprimento_recebido: comprimento,
       },
     );
+    if (empresa === null) return { tipo: "recusado", resposta };
+    return { tipo: "token_incorreto", empresa, resumos: resumos(), resposta };
+  }
+  return { tipo: "autenticado", empresa, resumos: resumos() };
+}
+
+/** Com a autenticação já decidida: lê o corpo, registra o evento e enfileira. */
+export async function processarWebhook(
+  portas: PortasDoWebhook,
+  req: RequisicaoDoWebhook,
+  autenticacao: Exclude<AutenticacaoDoWebhook, { tipo: "recusado" }>,
+): Promise<RespostaDoWebhook> {
+  const agora = portas.agora();
+  const erro = erroSsw(agora);
+  const { empresa, resumos } = autenticacao;
+  const registrar = (
+    statusHttp: number,
+    motivo: string | null,
+    payload: unknown,
+    autenticado: boolean,
+  ) =>
+    portas.registrarEvento({
+      empresaId: empresa.id,
+      ip: req.ip,
+      userAgent: req.userAgent,
+      statusHttp,
+      motivoRejeicao: motivo,
+      payloadBruto: payload,
+      tokenSha256: resumos,
+      autenticado,
+      erroProcessamento: null,
+    });
+
+  const corpo = lerJson(req.corpoBruto);
+  if (autenticacao.tipo === "token_incorreto") {
+    await registrar(autenticacao.resposta.status, "token_incorreto", corpo ?? null, false);
+    return autenticacao.resposta;
+  }
+  if (corpo === undefined) {
+    portas.avisar({ ip: req.ip, motivo: "json_invalido" }, "webhook SSW2181 json_invalido");
+    return erro(400, "NAO FOI POSSIVEL PROCESSAR A REQUISICAO (json invalido)");
   }
 
   const cnpj = cnpjTransportadora(corpo);
-  if (
-    !cnpjTransportadoraAceito(cnpj, cnpjsAceitosDosParametros(empresa.parametros.cnpjs_aceitos))
-  ) {
-    avisar("cnpj_nao_autorizado", { cnpjRecebido: cnpj || "(vazio)" });
-    await registrar(empresa.id, 401, "cnpj_nao_autorizado", corpo, true);
+  const aceitos = cnpjsAceitosDosParametros(empresa.parametros.cnpjs_aceitos);
+  if (!cnpjTransportadoraAceito(cnpj, aceitos)) {
+    portas.avisar(
+      { ip: req.ip, motivo: "cnpj_nao_autorizado", cnpjRecebido: cnpj || "(vazio)" },
+      "webhook SSW2181 cnpj_nao_autorizado",
+    );
+    await registrar(401, "cnpj_nao_autorizado", corpo, true);
     return erro(
       401,
       `CNPJ TRANSPORTADORA NAO AUTORIZADO — '${cnpj || "(vazio)"}' nao esta na allowlist`,
@@ -255,11 +329,11 @@ export async function receberWebhook(
 
   const lido = lerEventoSsw2181(corpo);
   if (lido.tipo === "falha") {
-    await registrar(empresa.id, lido.status, lido.motivo, corpo, true);
+    await registrar(lido.status, lido.motivo, corpo, true);
     return erro(lido.status, lido.descricao);
   }
 
-  const eventoId = await registrar(empresa.id, 200, null, corpo, true);
+  const eventoId = await registrar(200, null, corpo, true);
   const protocolo = gerarProtocolo(agora, portas.aleatorio);
   try {
     if (portas.filas === null) throw new Error("fila de processamento indisponível");
@@ -281,6 +355,16 @@ export async function receberWebhook(
       protocolo,
     }),
   };
+}
+
+/** As duas etapas juntas (a rota faz a primeira no `onRequest`, antes de ler o corpo). */
+export async function receberWebhook(
+  portas: PortasDoWebhook,
+  req: RequisicaoDoWebhook,
+): Promise<RespostaDoWebhook> {
+  const autenticacao = await autenticarWebhook(portas, req);
+  if (autenticacao.tipo === "recusado") return autenticacao.resposta;
+  return processarWebhook(portas, req, autenticacao);
 }
 
 /** Corpo vazio vale como `{}` (como hoje); JSON inválido = `undefined`. */

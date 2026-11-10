@@ -248,6 +248,21 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
     });
   });
 
+  it("sem token válido, recusa antes de ler o corpo e não guarda o conteúdo", async () => {
+    cadastrarWebhook();
+    const r = await app.inject({
+      method: "POST",
+      url: `${URL}?empresa=fr`,
+      headers: { "content-type": "application/json" },
+      payload: "{nao é json",
+    });
+    expect(r.statusCode).toBe(401);
+    expect(r.json()).toMatchObject([{ retorno: { motivo: "autorizacao_ausente" } }]);
+    expect(cenario.banco.ingestao.eventos).toMatchObject([
+      { motivoRejeicao: "autorizacao_ausente", payloadBruto: null },
+    ]);
+  });
+
   it("fila fora: 503 para o SSW reenviar, com o evento marcado", async () => {
     cadastrarWebhook();
     filas.falhar = true;
@@ -262,6 +277,7 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
   });
 
   it("JSON inválido é recusado no formato do SSW", async () => {
+    cadastrarWebhook();
     const r = await app.inject({
       method: "POST",
       url: URL,

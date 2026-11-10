@@ -62,6 +62,15 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
   servicos: ServicosDaIngestao;
   agora: () => Date;
 }> = (app, { servicos, agora }, pronto) => {
+  /**
+   * `onRequest`: confere o segredo antes de o corpo (até 64 MB) ser lido e validado. Sem segredo
+   * válido a resposta sai aqui e o handler nunca roda.
+   */
+  const autenticar =
+    (aceitaCron: boolean) => async (request: FastifyRequest, reply: FastifyReply) => {
+      if (!(await autorizado(request, reply, aceitaCron))) return reply;
+    };
+
   /** Segredo do FTP (ou também o token do cron); devolve `false` se já respondeu o erro. */
   async function autorizado(request: FastifyRequest, reply: FastifyReply, aceitaCron: boolean) {
     const segredoFtp = cabecalho(request, "x-ftp-ingest-secret");
@@ -105,6 +114,7 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
     {
       bodyLimit: LIMITE_COM_ARQUIVO,
       config: limite(240),
+      onRequest: autenticar(false),
       schema: {
         body: corpoComEmpresa.extend({
           nome: z.string().optional(),
@@ -116,7 +126,6 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
       },
     },
     async (request, reply) => {
-      if (!(await autorizado(request, reply, false))) return reply;
       const corpo = request.body;
       if (!corpo.nome || !corpo.base64) {
         return erro(reply, 400, "nome_ou_base64_ausentes", "Informe nome e base64 do arquivo.");
@@ -157,10 +166,10 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
     {
       bodyLimit: LIMITE_SEM_ARQUIVO,
       config: limite(120),
+      onRequest: autenticar(true),
       schema: { body: corpoComEmpresa.optional() },
     },
     async (request, reply) => {
-      if (!(await autorizado(request, reply, true))) return reply;
       const empresaId = await empresaDe(request, reply, "sftp", request.body ?? {});
       if (!empresaId) return reply;
       // O ciclo roda no worker (singleton por empresa); a rota só pede a rodada.
@@ -179,6 +188,7 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
     {
       bodyLimit: LIMITE_SEM_ARQUIVO,
       config: limite(30),
+      onRequest: autenticar(true),
       schema: {
         body: corpoComEmpresa
           .extend({ limite: z.number().int().min(1).max(1000).optional() })
@@ -186,7 +196,6 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
       },
     },
     async (request, reply) => {
-      if (!(await autorizado(request, reply, true))) return reply;
       const corpo = request.body ?? {};
       const empresaId = await empresaDe(request, reply, "xml_cte", corpo);
       if (!empresaId) return reply;

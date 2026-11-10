@@ -3,7 +3,14 @@ import { type FastifyPluginCallback, type FastifyRequest } from "fastify";
 
 import { type ExecutorComContexto } from "../../repositorios";
 import { type FilasDeIngestao } from "./casos-de-uso";
-import { type EmpresaDoWebhook, type PortasDoWebhook, receberWebhook } from "./webhook";
+import {
+  type AutenticacaoDoWebhook,
+  autenticarWebhook,
+  type CabecalhosDoWebhook,
+  type EmpresaDoWebhook,
+  type PortasDoWebhook,
+  processarWebhook,
+} from "./webhook";
 
 export const CAMINHO_DO_WEBHOOK = "/api/public/ssw-ocorrencias";
 
@@ -24,6 +31,17 @@ const daEmpresa = (empresaId: string) => ({ empresaId, usuarioId: null, platafor
 
 function textoDe(valor: unknown): string {
   return typeof valor === "string" ? valor.trim() : "";
+}
+
+function cabecalhosDe(request: FastifyRequest): CabecalhosDoWebhook {
+  const query = typeof request.query === "object" && request.query !== null ? request.query : {};
+  return {
+    authorization: request.headers.authorization ?? "",
+    segredoNaQuery: textoDe(Reflect.get(query, "secret")),
+    empresaNaQuery: textoDe(Reflect.get(query, "empresa")),
+    ip: ipDa(request),
+    userAgent: request.headers["user-agent"] ?? null,
+  };
 }
 
 function ipDa(request: FastifyRequest): string {
@@ -101,20 +119,34 @@ export const rotasPublicasSsw: FastifyPluginCallback<OpcoesDoWebhookPublico> = (
     };
   });
 
+  // Autenticado no `onRequest`: a recusa sai antes de o corpo ser lido.
+  const autenticacoes = new WeakMap<FastifyRequest, AutenticacaoDoWebhook>();
   app.post(
     CAMINHO_DO_WEBHOOK,
-    { config: { rateLimit: { max: LIMITE_POR_MINUTO, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: LIMITE_POR_MINUTO, timeWindow: "1 minute" } },
+      onRequest: async (request, reply) => {
+        const autenticacao = await autenticarWebhook(portas, cabecalhosDe(request));
+        if (autenticacao.tipo === "recusado") {
+          const { status, corpo } = autenticacao.resposta;
+          return reply.header("cache-control", "no-store").code(status).send(corpo);
+        }
+        autenticacoes.set(request, autenticacao);
+      },
+    },
     async (request, reply) => {
-      const query =
-        typeof request.query === "object" && request.query !== null ? request.query : {};
-      const resposta = await receberWebhook(portas, {
-        corpoBruto: typeof request.body === "string" ? request.body : "",
-        authorization: request.headers.authorization ?? "",
-        segredoNaQuery: textoDe(Reflect.get(query, "secret")),
-        empresaNaQuery: textoDe(Reflect.get(query, "empresa")),
-        ip: ipDa(request),
-        userAgent: request.headers["user-agent"] ?? null,
-      });
+      const autenticacao = autenticacoes.get(request);
+      if (!autenticacao || autenticacao.tipo === "recusado") {
+        throw new Error("webhook sem autenticação decidida no onRequest");
+      }
+      const resposta = await processarWebhook(
+        portas,
+        {
+          ...cabecalhosDe(request),
+          corpoBruto: typeof request.body === "string" ? request.body : "",
+        },
+        autenticacao,
+      );
       void reply.header("cache-control", "no-store").code(resposta.status);
       return resposta.corpo;
     },

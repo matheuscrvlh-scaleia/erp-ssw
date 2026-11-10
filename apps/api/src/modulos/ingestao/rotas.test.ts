@@ -93,6 +93,24 @@ describe("rotas públicas", () => {
     expect(desligada.json()).toMatchObject({ motivo: "integracao_desligada" });
   });
 
+  it("sem segredo, recusa antes de ler e validar o corpo (onRequest)", async () => {
+    const invalido = await app.inject({
+      method: "POST",
+      url: "/api/public/ftp-relatorio-import",
+      headers: { "content-type": "application/json" },
+      payload: "{nao é json",
+    });
+    expect(invalido.statusCode).toBe(401);
+    const foraDoSchema = await importar({}, { nome: 123 });
+    expect(foraDoSchema.statusCode).toBe(401);
+    const orfaos = await app.inject({
+      method: "POST",
+      url: "/api/public/xml-orfaos-retry",
+      payload: { limite: "muitos" },
+    });
+    expect(orfaos.statusCode).toBe(401);
+  });
+
   it("ssw-ciclo-aplicar aceita o token do cron e só enfileira o job", async () => {
     const r = await app.inject({
       method: "POST",
