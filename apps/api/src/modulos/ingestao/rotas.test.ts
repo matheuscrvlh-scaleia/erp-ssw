@@ -1,3 +1,4 @@
+import { EXEMPLOS } from "@erp/shared/contratos/worker-ssw";
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -44,7 +45,7 @@ function ciclo(cicloChave: string, status: string) {
 }
 
 describe("telas de ingestão (só Plataforma)", () => {
-  it("403 para quem não é da Plataforma; leituras vêm do banco e da situação do worker-ssw", async () => {
+  it("403 para quem não é da Plataforma; pipeline vem do banco e da situação do worker-ssw", async () => {
     const admin = cenario.banco.criarUsuario({ email: "admin@fr.com.br" });
     cenario.banco.vincular(admin.id, empresaId, { papel: "admin" });
     const negado = await app.inject({
@@ -54,12 +55,7 @@ describe("telas de ingestão (só Plataforma)", () => {
     expect(negado.statusCode).toBe(403);
 
     ciclo("2026-11-10_1000", "aberto");
-    workerSsw.situacaoDaEmpresa = {
-      jobs: [
-        { job: "aplicar-ciclos", estado: "rodando" },
-        { job: "sincronizar-ftp", estado: "rodando" },
-      ],
-    };
+    workerSsw.situacaoDaEmpresa = { jobs: [{ job: "aplicar-ciclos", estado: "rodando" }] };
     const headers = await plataforma();
     const pipeline = await app.inject({ url: `${BASE}/pipeline`, headers });
     expect(pipeline.statusCode).toBe(200);
@@ -67,14 +63,25 @@ describe("telas de ingestão (só Plataforma)", () => {
       ciclos: [{ cicloChave: "2026-11-10_1000", status: "aberto" }],
       aplicacaoRodando: true,
     });
-    const ftp = await app.inject({ url: `${BASE}/ftp`, headers });
-    expect(ftp.json()).toMatchObject({ ativo: true, travaAtiva: true, progresso: null });
 
     // worker-ssw fora: a tela continua com o que está no banco.
     workerSsw.fora = true;
     const semWorker = await app.inject({ url: `${BASE}/pipeline`, headers });
     expect(semWorker.statusCode).toBe(200);
     expect(semWorker.json()).toMatchObject({ aplicacaoRodando: false });
+  });
+
+  it("FTP: estado do worker-ssw com o histórico do banco; fora do ar, a pausa do banco", async () => {
+    workerSsw.respostas.ftp = EXEMPLOS.ftp;
+    const headers = await plataforma();
+    const ftp = await app.inject({ url: `${BASE}/ftp`, headers });
+    expect(ftp.statusCode).toBe(200);
+    expect(ftp.json()).toEqual({ ...EXEMPLOS.ftp, historico: [] });
+
+    workerSsw.fora = true;
+    cenario.banco.ingestao.ftpAtivo.set(empresaId, false);
+    const fora = await app.inject({ url: `${BASE}/ftp`, headers });
+    expect(fora.json()).toMatchObject({ ativo: false, travaAtiva: false, progresso: null });
   });
 
   it("rodar o FTP: auditoria gravada antes do pedido; repetido na fila é descartado", async () => {
@@ -86,86 +93,128 @@ describe("telas de ingestão (só Plataforma)", () => {
     const r = await app.inject({ method: "POST", url: `${BASE}/ftp/rodar`, headers });
     expect(r.statusCode).toBe(200);
     expect(workerSsw.pedidos).toEqual([
-      {
-        empresaId,
-        job: "sincronizar-ftp",
-        dados: { manual: true },
-        deduplicar: `sincronizar-ftp__${empresaId}`,
-      },
+      { empresaId, job: "sincronizar-ftp", dados: { manual: true }, deduplicar: true },
     ]);
     expect(auditadoAntes).toBe(true);
 
-    workerSsw.naFila.add(`sincronizar-ftp__${empresaId}`);
+    workerSsw.naFila.add("sincronizar-ftp");
     const repetido = await app.inject({ method: "POST", url: `${BASE}/ftp/rodar`, headers });
     expect(repetido.statusCode).toBe(200);
     expect(workerSsw.pedidos).toHaveLength(1);
   });
 
-  it("pausar o FTP é configuração da empresa, sem o worker-ssw", async () => {
-    await app.close();
-    app = await construirAppDeTeste(cenario, null);
+  it("pausar e liberar a trava do FTP passam pelo worker-ssw, auditados antes", async () => {
+    workerSsw.respostas.pausarFtp = EXEMPLOS.ok;
+    workerSsw.respostas.liberarTravaFtp = EXEMPLOS.ok;
+    let auditadoAntes = false;
+    workerSsw.aoOperar = (operacao) => {
+      if (operacao === "pausarFtp") {
+        auditadoAntes = cenario.banco.auditoria.some((a) => a.acao === "pausar");
+      }
+    };
     const headers = await plataforma();
-    const r = await app.inject({
+    const pausa = await app.inject({
       method: "POST",
       url: `${BASE}/ftp/ativo`,
       headers,
       payload: { ativo: false },
     });
-    expect(r.statusCode).toBe(200);
-    expect(cenario.banco.ingestao.ftpAtivo.get(empresaId)).toBe(false);
+    expect(pausa.statusCode).toBe(200);
+    expect(auditadoAntes).toBe(true);
     expect(cenario.banco.auditoria.at(-1)).toMatchObject({ acao: "pausar", empresaId });
+    const trava = await app.inject({ method: "POST", url: `${BASE}/ftp/liberar-trava`, headers });
+    expect(trava.statusCode).toBe(200);
+    expect(workerSsw.operacoes).toEqual([
+      { empresaId, operacao: "pausarFtp", corpo: { ativo: false } },
+      { empresaId, operacao: "liberarTravaFtp" },
+    ]);
   });
 
-  it("descartar ciclo apaga a staging e pede ao worker-ssw as projeções do Romaneio", async () => {
-    ciclo("2026-11-10_1000", "aberto");
-    cenario.banco.ingestao.staging.set("2026-11-10_1000", [
+  it("retomar e descartar ciclo: o worker-ssw decide e responde no formato da tela", async () => {
+    workerSsw.respostas.retomarCiclo = EXEMPLOS.cicloRetomado;
+    workerSsw.respostas.descartarCiclo = EXEMPLOS.cicloDescartado;
+    const headers = await plataforma();
+    const retomar = await app.inject({
+      method: "POST",
+      url: `${BASE}/ciclos/2026-11-10_1000/retomar`,
+      headers,
+    });
+    expect(retomar.json()).toEqual(EXEMPLOS.cicloRetomado);
+    const descartar = await app.inject({
+      method: "POST",
+      url: `${BASE}/ciclos/2026-11-10_1000/descartar`,
+      headers,
+      payload: { motivo: "arquivo errado" },
+    });
+    expect(descartar.json()).toEqual(EXEMPLOS.cicloDescartado);
+    expect(workerSsw.operacoes).toEqual([
+      { empresaId, operacao: "retomarCiclo", parametros: { chave: "2026-11-10_1000" } },
       {
-        relatorio: "036",
-        sigla: "CAP",
-        numero: "33214",
-        dados: { romaneio: "R1", data_emissao: "2026-11-10" },
+        empresaId,
+        operacao: "descartarCiclo",
+        parametros: { chave: "2026-11-10_1000" },
+        corpo: { motivo: "arquivo errado" },
       },
-      { relatorio: "930", sigla: "CAP", numero: "33214", dados: {} },
     ]);
+    expect(cenario.banco.auditoria.at(-1)).toMatchObject({
+      acao: "descartar",
+      entidade: "ingestao_ciclos",
+      entidadeId: "2026-11-10_1000",
+    });
+  });
+
+  it("descartar sem motivo é recusado pela tela, sem chamar o worker-ssw", async () => {
     const r = await app.inject({
       method: "POST",
       url: `${BASE}/ciclos/2026-11-10_1000/descartar`,
       headers: await plataforma(),
-      payload: { motivo: "arquivo errado" },
+      payload: { motivo: "" },
     });
-    expect(r.statusCode).toBe(200);
-    expect(r.json()).toEqual({ cicloChave: "2026-11-10_1000", totalRemovido: 2 });
-    expect(cenario.banco.ingestao.ciclos[0]?.status).toBe("descartado");
-    expect(workerSsw.pedidos).toEqual([
-      {
-        empresaId,
-        job: "projecoes-romaneio",
-        dados: {
-          chaves: [{ sigla: "CAP", numero: "33214" }],
-          descartadas: [
-            {
-              sigla: "CAP",
-              numero: "33214",
-              relatorios: ["036"],
-              romaneios: ["R1"],
-              dias: ["2026-11-10"],
-            },
-          ],
-        },
-      },
-    ]);
+    expect(r.statusCode).toBe(422);
+    expect(workerSsw.operacoes).toEqual([]);
   });
 
-  it("ciclo aplicado não se descarta", async () => {
-    ciclo("2026-11-09_1000", "aplicado");
-    const r = await app.inject({
+  it("importar relatório e XML e aplicar: corpo da tela traduzido para o do worker-ssw", async () => {
+    workerSsw.respostas.importarRelatorio = EXEMPLOS.relatorioImportado;
+    workerSsw.respostas.aplicar = EXEMPLOS.resultadoDaAplicacao;
+    workerSsw.respostas.importarXml = EXEMPLOS.resultadoDoXml;
+    const headers = await plataforma();
+    const relatorio = await app.inject({
       method: "POST",
-      url: `${BASE}/ciclos/2026-11-09_1000/descartar`,
-      headers: await plataforma(),
-      payload: { motivo: "arquivo errado" },
+      url: `${BASE}/relatorios`,
+      headers,
+      payload: { relatorio: "930", conteudo: "CTRC;OCORRÊNCIA\n", nome: "930.csv" },
     });
-    expect(r.statusCode).toBe(409);
-    expect(workerSsw.pedidos).toEqual([]);
+    expect(relatorio.json()).toEqual(EXEMPLOS.relatorioImportado);
+    const aplicar = await app.inject({
+      method: "POST",
+      url: `${BASE}/aplicar`,
+      headers,
+      payload: { dryRun: true },
+    });
+    expect(aplicar.json()).toEqual(EXEMPLOS.resultadoDaAplicacao);
+    const xml = await app.inject({
+      method: "POST",
+      url: `${BASE}/xml`,
+      headers,
+      payload: { nome: "ctes.zip", base64: EXEMPLOS.xml.conteudoBase64 },
+    });
+    expect(xml.json()).toEqual(EXEMPLOS.resultadoDoXml);
+
+    expect(workerSsw.operacoes.map((o) => [o.operacao, o.corpo])).toEqual([
+      [
+        "importarRelatorio",
+        {
+          relatorio: "930",
+          nomeArquivo: "930.csv",
+          conteudoBase64: Buffer.from("CTRC;OCORRÊNCIA\n", "utf8").toString("base64"),
+          aceitarDivergencia: false,
+        },
+      ],
+      ["aplicar", { simular: true, limite: 4000, offset: 0 }],
+      ["importarXml", EXEMPLOS.xml],
+    ]);
+    expect(cenario.banco.auditoria.map((a) => a.acao)).toEqual(["importar", "simular", "importar"]);
   });
 
   it("reprocessar órfãos espera o resultado do worker-ssw", async () => {
@@ -183,10 +232,17 @@ describe("telas de ingestão (só Plataforma)", () => {
     expect(workerSsw.pedidos[0]).toMatchObject({ job: "reprocessar-xml-orfaos" });
   });
 
-  it("ações sem pedido no contrato do worker-ssw respondem 503 com o aviso", async () => {
+  it("sem o worker-ssw configurado: ações 503 (sem auditoria), leituras seguem", async () => {
+    await app.close();
+    app = await construirAppDeTeste(cenario, null);
     const headers = await plataforma();
     const r = await app.inject({ method: "POST", url: `${BASE}/ftp/liberar-trava`, headers });
     expect(r.statusCode).toBe(503);
-    expect(r.json()).toMatchObject({ erro: { codigo: "INDISPONIVEL" } });
+    expect(r.json()).toMatchObject({
+      erro: { mensagem: "Integração com o worker do SSW não configurada." },
+    });
+    expect(cenario.banco.auditoria).toEqual([]);
+    const ftp = await app.inject({ url: `${BASE}/ftp`, headers });
+    expect(ftp.statusCode).toBe(200);
   });
 });

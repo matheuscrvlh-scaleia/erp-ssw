@@ -507,7 +507,7 @@ async function pedirProcessamento(
   await workerSsw.pedirExecucao(empresaId, {
     job: "processar-webhook-ssw",
     dados: { eventoId, protocolo },
-    deduplicar: `ssw_webhook__${eventoId}`,
+    deduplicar: true,
   });
 }
 
@@ -518,7 +518,7 @@ async function situacaoDosJobs(deps: DependenciasIngestaoSsw, empresaId: string)
   if (deps.workerSsw === null) return null;
   try {
     const { jobs } = await deps.workerSsw.situacao(empresaId);
-    return new Map(jobs.map((j) => [j.job, j]));
+    return new Map<string, (typeof jobs)[number]>(jobs.map((j) => [j.job, j]));
   } catch {
     return null;
   }
@@ -562,8 +562,19 @@ export async function diagnosticoSsw(
       ativos: s?.estado === "rodando" ? 1 : 0,
       atrasados: 0,
       falhos: s?.estado === "falhou" ? 1 : 0,
-      ultimaConclusao: s?.estado === "concluida" ? (s.ultimaExecucao ?? null) : null,
-      ultimasFalhas: [],
+      ultimaConclusao:
+        s?.ultimaExecucao?.estado === "concluida" ? s.ultimaExecucao.terminadaEm : null,
+      ultimasFalhas:
+        s?.ultimaExecucao?.estado === "falhou"
+          ? [
+              {
+                id: s.ultimaExecucao.execucaoId,
+                quando: s.ultimaExecucao.terminadaEm,
+                erro: s.ultimaExecucao.erro ?? "",
+                tentativas: 1,
+              },
+            ]
+          : [],
     };
   });
   return {

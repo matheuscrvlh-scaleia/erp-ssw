@@ -1,10 +1,6 @@
 import { type IntegracaoDaIngestao } from "@erp/shared/ingestao";
 
-import {
-  type CicloLido,
-  type LinhaApagada,
-  type RepositorioIngestao,
-} from "../modulos/ingestao/casos-de-uso";
+import { type CicloLido, type RepositorioIngestao } from "../modulos/ingestao/casos-de-uso";
 import {
   type EventoLido,
   type IntegracaoLida,
@@ -32,14 +28,10 @@ export class IngestaoEmMemoria {
   sincronizacoes: SincronizacaoLida[] = [];
   ultimaAplicacao: Date | null = null;
   ciclos: (CicloLido & { empresaId: string })[] = [];
-  /** Linhas de staging por ciclo (o que o descarte apaga). */
-  staging = new Map<string, LinhaApagada[]>();
   ftpAtivo = new Map<string, boolean>();
 
   /** Repositório das telas Admin › Importação SSW e XML CT-e. */
   repositorioDasTelas(): RepositorioIngestao {
-    const doCiclo = (empresaId: string, chave: string) =>
-      this.ciclos.find((c) => c.empresaId === empresaId && c.cicloChave === chave) ?? null;
     return {
       ultimosCiclos: (empresaId, limite) =>
         Promise.resolve(this.ciclos.filter((c) => c.empresaId === empresaId).slice(0, limite)),
@@ -47,25 +39,10 @@ export class IngestaoEmMemoria {
       relatoriosEsperados: () => Promise.resolve([]),
       ultimasAplicacoes: () => Promise.resolve([]),
       ftpAtivo: (empresaId) => Promise.resolve(this.ftpAtivo.get(empresaId) ?? true),
-      gravarFtpAtivo: (empresaId, ativo) => {
-        this.ftpAtivo.set(empresaId, ativo);
-        return Promise.resolve();
-      },
       ultimasSincronizacoes: () => Promise.resolve([]),
       ultimosArquivosXml: () => Promise.resolve([]),
       estatisticasDosOrfaos: () =>
         Promise.resolve({ pendentes: 0, expirados: 0, casados: 0, maisAntigo: null }),
-      ciclo: (empresaId, chave) => Promise.resolve(doCiclo(empresaId, chave)),
-      apagarStagingDoCiclo: (_empresaId, chave) => {
-        const apagadas = this.staging.get(chave) ?? [];
-        this.staging.delete(chave);
-        return Promise.resolve({ linhas: apagadas.length, erros: 0, apagadas });
-      },
-      marcarCicloDescartado: (empresaId, chave, motivo) => {
-        const c = doCiclo(empresaId, chave);
-        if (c) Object.assign(c, { status: "descartado", motivo });
-        return Promise.resolve();
-      },
     };
   }
 

@@ -1,26 +1,67 @@
 /**
- * Cliente do HTTP interno do worker-ssw (ADR 0012): pede execuções, consulta o fim delas e lê a
- * situação dos jobs da empresa. Só na rede interna, com o token de serviço. Worker fora do ar,
- * lento ou com resposta fora do contrato vira "tente de novo" para o operador; o detalhe vai
- * para o log.
+ * Cliente do HTTP interno do worker-ssw (ADR 0012): pede execuções, consulta o fim delas, lê a
+ * situação dos jobs da empresa e repassa as operações manuais da Importação SSW. Só na rede
+ * interna, com o token de serviço. Erro de negócio do worker-ssw (409, 400, 404) chega ao operador
+ * com a mensagem dele; worker fora do ar, lento ou com resposta fora do contrato vira "tente de
+ * novo", e o detalhe vai para o log.
  */
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import { montarCaminho } from "@erp/shared/contrato";
 import {
-  contratoWorkerSsw as c,
-  type Execucao,
+  consultaDaExecucao,
+  DADOS_DOS_JOBS,
+  erroInterno,
+  execucaoCriada,
   type JobPedivel,
   type PedidoDeExecucao,
-  type SituacaoDoWorkerSsw,
+  pedidoDeExecucao,
+  PREFIXO_INTERNO,
+  type SituacaoDaEmpresa,
+  situacaoDaEmpresa,
+  type SituacaoDaExecucao,
+  situacaoDaExecucao,
 } from "@erp/shared/contratos/worker-ssw";
+import { type CodigoErro } from "@erp/shared/erros";
 import { type z } from "@erp/shared/zod";
 
+/**
+ * Operações manuais da tela Admin › Importação SSW (ADR 0012, "Operações manuais"). O corpo é o
+ * da tela, já validado pelo contrato dela; a resposta vem no formato que a tela usa.
+ */
+export const OPERACOES_MANUAIS = {
+  retomarCiclo: { metodo: "POST", caminho: "/empresas/:empresaId/ciclos/:chave/retomar" },
+  descartarCiclo: { metodo: "POST", caminho: "/empresas/:empresaId/ciclos/:chave/descartar" },
+  importarRelatorio: { metodo: "POST", caminho: "/empresas/:empresaId/relatorios" },
+  aplicar: { metodo: "POST", caminho: "/empresas/:empresaId/aplicacoes" },
+  ftp: { metodo: "GET", caminho: "/empresas/:empresaId/ftp" },
+  pausarFtp: { metodo: "PUT", caminho: "/empresas/:empresaId/ftp/ativo" },
+  liberarTravaFtp: { metodo: "POST", caminho: "/empresas/:empresaId/ftp/liberar-trava" },
+  importarXml: { metodo: "POST", caminho: "/empresas/:empresaId/xml" },
+} as const;
+export type OperacaoManual = keyof typeof OPERACOES_MANUAIS;
+
+export interface PedidoDeOperacao {
+  /** Parâmetros do caminho além da empresa (ex.: `chave` do ciclo). */
+  parametros?: Record<string, string>;
+  corpo?: unknown;
+}
+
 export interface ClienteWorkerSsw {
-  /** Id da execução; `null` = a chave `deduplicar` já está na fila ou rodando (409). */
+  /** Id da execução; `null` = `deduplicar` e o job já está na fila ou rodando (409). */
   pedirExecucao(empresaId: string, pedido: PedidoDeExecucao): Promise<string | null>;
   /** Espera até `aguardarMs` (máx. 60 s) a execução terminar; devolve o estado em que ficou. */
-  consultarExecucao(job: JobPedivel, execucaoId: string, aguardarMs: number): Promise<Execucao>;
-  situacao(empresaId: string): Promise<SituacaoDoWorkerSsw>;
+  consultarExecucao(
+    job: JobPedivel,
+    execucaoId: string,
+    aguardarMs: number,
+  ): Promise<SituacaoDaExecucao>;
+  situacao(empresaId: string): Promise<SituacaoDaEmpresa>;
+  operacao<T extends z.ZodType>(
+    empresaId: string,
+    operacao: OperacaoManual,
+    saida: T,
+    pedido?: PedidoDeOperacao,
+  ): Promise<z.output<T>>;
 }
 
 export interface ConfigWorkerSsw {
@@ -33,6 +74,16 @@ export interface ConfigWorkerSsw {
 
 /** Tempo de resposta do worker-ssw, além da espera pedida na consulta. */
 export const TIMEOUT_DO_WORKER_SSW_MS = 5_000;
+/**
+ * Operação manual que grava (importar até 64 MB, aplicar um bloco, descartar): abaixo dos 60 s
+ * que a borda espera pela resposta da API.
+ */
+const TIMEOUT_DA_OPERACAO_QUE_GRAVA_MS = 55_000;
+const SO_LEITURA_OU_RAPIDA: ReadonlySet<OperacaoManual> = new Set([
+  "ftp",
+  "pausarFtp",
+  "liberarTravaFtp",
+]);
 
 export const MENSAGEM_WORKER_SSW_NAO_CONFIGURADO =
   "Integração com o worker do SSW não configurada.";
@@ -46,66 +97,115 @@ export function exigirWorkerSsw(cliente: ClienteWorkerSsw | null): ClienteWorker
   return cliente;
 }
 
+/** Erros do worker-ssw que são do operador (a mensagem já fala com ele). */
+const CODIGOS_REPASSADOS: ReadonlySet<CodigoErro> = new Set([
+  "ENTRADA_INVALIDA",
+  "NAO_ENCONTRADO",
+  "CONFLITO",
+]);
+
+/** Erro de negócio do corpo de uma resposta 4xx; `null` = não é (vira "não respondeu"). */
+async function erroDeNegocioDa(resposta: Response): Promise<ErroDeNegocio | null> {
+  const lido = erroInterno.safeParse(await resposta.json().catch(() => null));
+  if (!lido.success) return null;
+  const { codigo, mensagem } = lido.data.erro;
+  const repassado = [...CODIGOS_REPASSADOS].find((c) => c === codigo);
+  return repassado ? new ErroDeNegocio(repassado, mensagem) : null;
+}
+
 export function criarClienteWorkerSsw(config: ConfigWorkerSsw): ClienteWorkerSsw {
-  const base = config.url.replace(/\/+$/, "");
+  const base = `${config.url.replace(/\/+$/, "")}${PREFIXO_INTERNO}`;
 
   async function chamar<T extends z.ZodType>(
     operacao: string,
+    metodo: string,
     caminho: string,
     saida: T,
-    opcoes: { corpo?: unknown; esperaMs?: number; aceitar409?: boolean } = {},
+    opcoes: { corpo?: unknown; timeoutMs: number; aceitar409?: boolean },
   ): Promise<z.output<T> | null> {
+    let repassar: ErroDeNegocio | null = null;
     try {
+      const comCorpo = opcoes.corpo !== undefined;
       const resposta = await config.buscar(`${base}${caminho}`, {
-        method: opcoes.corpo === undefined ? "GET" : "POST",
+        method: metodo,
         headers: {
           authorization: `Bearer ${config.token}`,
-          ...(opcoes.corpo === undefined ? {} : { "content-type": "application/json" }),
+          ...(comCorpo ? { "content-type": "application/json" } : {}),
         },
-        ...(opcoes.corpo === undefined ? {} : { body: JSON.stringify(opcoes.corpo) }),
-        signal: AbortSignal.timeout((opcoes.esperaMs ?? 0) + TIMEOUT_DO_WORKER_SSW_MS),
+        ...(comCorpo ? { body: JSON.stringify(opcoes.corpo) } : {}),
+        signal: AbortSignal.timeout(opcoes.timeoutMs),
       });
       if (resposta.status === 409 && opcoes.aceitar409) return null;
-      if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+      if (!resposta.ok) {
+        repassar = resposta.status < 500 ? await erroDeNegocioDa(resposta) : null;
+        throw new Error(`HTTP ${resposta.status}`);
+      }
       return saida.parse(await resposta.json());
     } catch (erro) {
+      if (repassar) throw repassar;
       config.aoFalhar(erro, operacao);
       throw new ErroDeNegocio("INDISPONIVEL", MENSAGEM_WORKER_SSW_FORA);
     }
   }
 
+  async function obrigatorio<T>(resposta: Promise<T | null>): Promise<T> {
+    const r = await resposta;
+    if (r === null) throw new ErroDeNegocio("INDISPONIVEL", MENSAGEM_WORKER_SSW_FORA);
+    return r;
+  }
+
   return {
     async pedirExecucao(empresaId, pedido) {
+      const valido = pedidoDeExecucao.parse(pedido);
+      DADOS_DOS_JOBS[valido.job].parse(valido.dados ?? {});
       const criada = await chamar(
         `pedir ${pedido.job}`,
-        montarCaminho(c.pedirExecucao.caminho, { empresaId }),
-        c.pedirExecucao.saida,
-        { corpo: c.pedirExecucao.entrada.parse(pedido), aceitar409: true },
+        "POST",
+        montarCaminho("/empresas/:empresaId/execucoes", { empresaId }),
+        execucaoCriada,
+        { corpo: valido, timeoutMs: TIMEOUT_DO_WORKER_SSW_MS, aceitar409: true },
       );
       return criada?.execucaoId ?? null;
     },
 
-    async consultarExecucao(job, execucaoId, aguardarMs) {
-      const { aguardarMs: espera } = c.consultarExecucao.entrada.parse({ aguardarMs });
-      const caminho = montarCaminho(c.consultarExecucao.caminho, { job, execucaoId });
-      const execucao = await chamar(
-        `consultar ${job}`,
-        `${caminho}?aguardarMs=${espera}`,
-        c.consultarExecucao.saida,
-        { esperaMs: espera },
+    consultarExecucao(job, execucaoId, aguardarMs) {
+      const { aguardarMs: espera } = consultaDaExecucao.parse({ aguardarMs });
+      const caminho = montarCaminho("/execucoes/:job/:execucaoId", { job, execucaoId });
+      return obrigatorio(
+        chamar(`consultar ${job}`, "GET", `${caminho}?aguardarMs=${espera}`, situacaoDaExecucao, {
+          timeoutMs: espera + TIMEOUT_DO_WORKER_SSW_MS,
+        }),
       );
-      if (execucao === null) throw new ErroDeNegocio("INDISPONIVEL", MENSAGEM_WORKER_SSW_FORA);
-      return execucao;
     },
 
-    async situacao(empresaId) {
-      const situacao = await chamar(
-        "situação",
-        montarCaminho(c.situacao.caminho, { empresaId }),
-        c.situacao.saida,
+    situacao(empresaId) {
+      return obrigatorio(
+        chamar(
+          "situação",
+          "GET",
+          montarCaminho("/empresas/:empresaId/situacao", { empresaId }),
+          situacaoDaEmpresa,
+          { timeoutMs: TIMEOUT_DO_WORKER_SSW_MS },
+        ),
       );
-      if (situacao === null) throw new ErroDeNegocio("INDISPONIVEL", MENSAGEM_WORKER_SSW_FORA);
-      return situacao;
+    },
+
+    operacao(empresaId, operacao, saida, pedido = {}) {
+      const { metodo, caminho } = OPERACOES_MANUAIS[operacao];
+      return obrigatorio(
+        chamar(
+          operacao,
+          metodo,
+          montarCaminho(caminho, { ...pedido.parametros, empresaId }),
+          saida,
+          {
+            corpo: pedido.corpo,
+            timeoutMs: SO_LEITURA_OU_RAPIDA.has(operacao)
+              ? TIMEOUT_DO_WORKER_SSW_MS
+              : TIMEOUT_DA_OPERACAO_QUE_GRAVA_MS,
+          },
+        ),
+      );
     },
   };
 }

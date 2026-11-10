@@ -32,7 +32,7 @@ import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
 import { rotasCtrc } from "./modulos/ctrc/rotas";
 import { rotasFiltros } from "./modulos/filtros/rotas";
 import { rotasHistorico } from "./modulos/historico/rotas";
-import { rotasIngestao } from "./modulos/ingestao/rotas";
+import { rotasIngestao } from "./modulos/ingestao/rotas-admin";
 import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
 import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasLogs } from "./modulos/logs/rotas";

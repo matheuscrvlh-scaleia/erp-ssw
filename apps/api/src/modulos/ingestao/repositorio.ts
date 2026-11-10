@@ -1,6 +1,6 @@
 /**
- * Leituras das telas de ingestão nas tabelas que o worker-ssw grava (ADR 0012), a pausa do FTP e
- * o descarte de ciclo. Toda consulta leva a empresa (além do RLS).
+ * Leituras das telas de ingestão nas tabelas que o worker-ssw grava (ADR 0012). Toda consulta leva
+ * a empresa (além do RLS).
  */
 import { type Transacao } from "@erp/db";
 import {
@@ -8,15 +8,13 @@ import {
   ingestaoAplicacoes,
   ingestaoArquivos,
   ingestaoCiclos,
-  ingestaoErros,
-  ingestaoLinhas,
   ingestaoRelatoriosEsperados,
   xmlCteArquivos,
   xmlCteOrfaos,
   xmlFtpSincronizacoes,
 } from "@erp/db/schema";
 import { configuracoesVigentes } from "@erp/dominio/configuracoes";
-import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { type ArquivoLido, type CicloLido, type RepositorioIngestao } from "./casos-de-uso";
 
@@ -54,9 +52,6 @@ const COLUNAS_DO_ARQUIVO = {
 };
 
 export function criarRepositorioIngestao(tx: Transacao): RepositorioIngestao {
-  const doCiclo = (empresaId: string, cicloChave: string) =>
-    and(eq(ingestaoArquivos.empresaId, empresaId), eq(ingestaoArquivos.cicloChave, cicloChave));
-
   return {
     async ultimosCiclos(empresaId, limite) {
       const linhas = await tx
@@ -124,24 +119,6 @@ export function criarRepositorioIngestao(tx: Transacao): RepositorioIngestao {
       return configuracoesVigentes(linhas).get(FTP_ATIVO) !== "false";
     },
 
-    async gravarFtpAtivo(empresaId, ativo, usuarioId) {
-      const valor = String(ativo);
-      await tx
-        .insert(configuracoes)
-        .values({
-          empresaId,
-          chave: FTP_ATIVO,
-          valor,
-          descricao: "",
-          grupo: "ingestao",
-          atualizadoPor: usuarioId,
-        })
-        .onConflictDoUpdate({
-          target: [configuracoes.empresaId, configuracoes.chave],
-          set: { valor, atualizadoEm: sql`now()`, atualizadoPor: usuarioId },
-        });
-    },
-
     async ultimasSincronizacoes(empresaId, limite) {
       const linhas = await tx
         .select({
@@ -201,57 +178,6 @@ export function criarRepositorioIngestao(tx: Transacao): RepositorioIngestao {
         casados: r?.casados ?? 0,
         maisAntigo: r?.maisAntigo ? new Date(r.maisAntigo) : null,
       };
-    },
-
-    async ciclo(empresaId, cicloChave) {
-      const [c] = await tx
-        .select()
-        .from(ingestaoCiclos)
-        .where(
-          and(eq(ingestaoCiclos.empresaId, empresaId), eq(ingestaoCiclos.cicloChave, cicloChave)),
-        );
-      return c ? comoCiclo(c) : null;
-    },
-
-    async apagarStagingDoCiclo(empresaId, cicloChave) {
-      const lotes = (
-        await tx
-          .select({ loteId: ingestaoArquivos.loteId })
-          .from(ingestaoArquivos)
-          .where(and(doCiclo(empresaId, cicloChave), isNotNull(ingestaoArquivos.loteId)))
-      ).flatMap((a) => (a.loteId ? [a.loteId] : []));
-      if (lotes.length === 0) return { linhas: 0, erros: 0, apagadas: [] };
-      const apagadas = await tx
-        .delete(ingestaoLinhas)
-        .where(and(eq(ingestaoLinhas.empresaId, empresaId), inArray(ingestaoLinhas.loteId, lotes)))
-        .returning({
-          relatorio: ingestaoLinhas.relatorio,
-          sigla: ingestaoLinhas.sigla,
-          numero: ingestaoLinhas.numero,
-          dados: ingestaoLinhas.dados,
-        });
-      const erros = await tx
-        .delete(ingestaoErros)
-        .where(and(eq(ingestaoErros.empresaId, empresaId), inArray(ingestaoErros.loteId, lotes)))
-        .returning({ id: ingestaoErros.id });
-      return { linhas: apagadas.length, erros: erros.length, apagadas };
-    },
-
-    async marcarCicloDescartado(empresaId, cicloChave, motivo) {
-      await tx
-        .update(ingestaoArquivos)
-        .set({
-          status: "descartado",
-          mensagem: sql`coalesce(${ingestaoArquivos.mensagem}, '') || ' [ciclo descartado]'`,
-          atualizadoEm: sql`now()`,
-        })
-        .where(doCiclo(empresaId, cicloChave));
-      await tx
-        .update(ingestaoCiclos)
-        .set({ status: "descartado", motivo, atualizadoEm: sql`now()` })
-        .where(
-          and(eq(ingestaoCiclos.empresaId, empresaId), eq(ingestaoCiclos.cicloChave, cicloChave)),
-        );
     },
   };
 }

@@ -1,19 +1,37 @@
 /**
  * Telas de ingestão (Admin › Importação SSW e Admin › XML CT-e) na empresa ativa. A ingestão é do
- * worker-ssw (ADR 0012): as leituras vêm do banco (tabelas compartilhadas) e da situação dos jobs
- * no HTTP interno dele; as ações pedem execuções a ele, com a auditoria gravada antes do pedido.
- * Spec 06 §3.13 e §5.
+ * worker-ssw (ADR 0012): as leituras puras (pipeline, aplicações, arquivos XML, histórico do FTP)
+ * vêm do banco; as ações e o estado do FTP passam pelo HTTP interno dele, com a auditoria gravada
+ * antes de chamar. Quem grava e decide é o worker-ssw. Spec 06 §3.13 e §5.
  */
-import { ErroDeNegocio } from "@erp/dominio/erros";
 import { type SaidaDe } from "@erp/shared/contrato";
 import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
+import {
+  cicloDescartado,
+  cicloRetomado,
+  ok,
+  pedidoDeAplicacao,
+  pedidoDeDescarte,
+  pedidoDeFtpAtivo,
+  pedidoDeRelatorio,
+  pedidoDeXml,
+  relatorioImportado,
+  resultadoDaAplicacao,
+  resultadoDoXml,
+  situacaoDoFtp,
+} from "@erp/shared/contratos/worker-ssw";
 import { JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
-import { registro036 } from "@erp/shared/relatorios-ssw";
+import { type z } from "@erp/shared/zod";
 
-import { conflito, naoEncontrado } from "../../http/erros";
-import { type ClienteWorkerSsw, exigirWorkerSsw } from "../../infra/worker-ssw";
+import { conflito } from "../../http/erros";
+import {
+  type ClienteWorkerSsw,
+  exigirWorkerSsw,
+  type OperacaoManual,
+  type PedidoDeOperacao,
+} from "../../infra/worker-ssw";
 import { type Executor } from "../../repositorios";
-import { type Ator } from "../auditoria/auditoria";
+import { type Ator, type EventoDeAuditoria } from "../auditoria/auditoria";
 
 // --- Portas -----------------------------------------------------------------------------------
 
@@ -65,22 +83,13 @@ export type ArquivoXmlLido = Omit<SaidaDe<typeof c.arquivosXml>["arquivos"][numb
   criadoEm: Date;
 };
 
-/** Linha de staging apagada pelo descarte (o que ela trouxe às projeções do Romaneio). */
-export interface LinhaApagada {
-  relatorio: string;
-  sigla: string | null;
-  numero: string | null;
-  dados: unknown;
-}
-
 export interface RepositorioIngestao {
   ultimosCiclos(empresaId: string, limite: number): Promise<CicloLido[]>;
   ultimosArquivos(empresaId: string, limite: number): Promise<ArquivoLido[]>;
   relatoriosEsperados(empresaId: string): Promise<SaidaDe<typeof c.pipeline>["esperados"]>;
   ultimasAplicacoes(empresaId: string, limite: number): Promise<AplicacaoLida[]>;
-  /** `ftp_sync_ativo` da empresa (ou o global); ausente = ligado. */
+  /** `ftp_sync_ativo` da empresa (ou o global); ausente = ligado. Só sem o worker-ssw. */
   ftpAtivo(empresaId: string): Promise<boolean>;
-  gravarFtpAtivo(empresaId: string, ativo: boolean, usuarioId: string): Promise<void>;
   ultimasSincronizacoes(empresaId: string, limite: number): Promise<SincronizacaoLida[]>;
   ultimosArquivosXml(empresaId: string, limite: number): Promise<ArquivoXmlLido[]>;
   estatisticasDosOrfaos(empresaId: string): Promise<{
@@ -89,13 +98,6 @@ export interface RepositorioIngestao {
     casados: number;
     maisAntigo: Date | null;
   }>;
-  ciclo(empresaId: string, cicloChave: string): Promise<CicloLido | null>;
-  /** Apaga as linhas e os erros de staging dos arquivos do ciclo; devolve as linhas apagadas. */
-  apagarStagingDoCiclo(
-    empresaId: string,
-    cicloChave: string,
-  ): Promise<{ linhas: number; erros: number; apagadas: LinhaApagada[] }>;
-  marcarCicloDescartado(empresaId: string, cicloChave: string, motivo: string): Promise<void>;
 }
 
 export interface DependenciasIngestao {
@@ -114,18 +116,25 @@ const DESCRICAO_DA_AGENDA = `A cada minuto, exceto :00 e :30 (${CRON_DO_FTP} UTC
 /** Espera do "reprocessar órfãos": o teto do HTTP interno. */
 const PRAZO_DOS_ORFAOS_MS = 60_000;
 
-/** Teto de chaves por pedido de projeção do Romaneio (o zod do job no worker-ssw). */
-const MAX_CHAVES_POR_PROJECAO = 50_000;
+type Registro = Omit<EventoDeAuditoria, "empresaId" | "antes">;
 
 /**
- * Ações que eram feitas aqui e passaram para o worker-ssw sem pedido no contrato do ADR 0012
- * (importar relatório ou XML pela tela, aplicação manual, retomar ciclo, liberar a trava do FTP).
+ * Operação manual: confere a configuração, grava a auditoria (quem pediu) e só então chama o
+ * worker-ssw. Nada roda sem rastro; se a chamada falhar, a auditoria mostra a tentativa.
  */
-export function acaoSemPedidoNoWorkerSsw(): never {
-  throw new ErroDeNegocio(
-    "INDISPONIVEL",
-    "Esta ação agora é feita pelo worker do SSW e ainda não pode ser pedida por esta tela. Fale com o suporte.",
-  );
+async function auditarEPedir<T extends z.ZodType>(
+  db: Db,
+  deps: DependenciasIngestao,
+  ator: Ator,
+  empresaId: string,
+  registro: Registro,
+  operacao: OperacaoManual,
+  saida: T,
+  pedido?: PedidoDeOperacao,
+): Promise<z.output<T>> {
+  const workerSsw = exigirWorkerSsw(deps.workerSsw);
+  await db(({ auditoria }) => auditoria.registrar(ator, { ...registro, empresaId, antes: null }));
+  return workerSsw.operacao(empresaId, operacao, saida, pedido);
 }
 
 /** Jobs rodando agora no worker-ssw; fora ou não configurado = nenhum (a tela continua). */
@@ -189,115 +198,132 @@ export async function lerAplicacoes(
   };
 }
 
-/** Relatórios que alimentam as projeções do Romaneio. */
-const RELATORIOS_DAS_PROJECOES: ReadonlySet<string> = new Set(["036", "306", "038", "455csv"]);
-
-interface LinhasDescartadas {
-  sigla: string;
-  numero: string;
-  relatorios: string[];
-  romaneios: string[];
-  dias: string[];
-}
-
-/** Agrupa por CT-e o que as linhas apagadas trouxeram para as projeções do Romaneio. */
-function descartadasPorCte(apagadas: readonly LinhaApagada[]): LinhasDescartadas[] {
-  const porCte = new Map<
-    string,
-    { sigla: string; numero: string; r: Set<string>; rom: Set<string>; dias: Set<string> }
-  >();
-  for (const l of apagadas) {
-    if (!RELATORIOS_DAS_PROJECOES.has(l.relatorio) || l.sigla === null || l.numero === null) {
-      continue;
-    }
-    const k = `${l.sigla}|${l.numero}`;
-    const d = porCte.get(k) ?? {
-      sigla: l.sigla,
-      numero: l.numero,
-      r: new Set<string>(),
-      rom: new Set<string>(),
-      dias: new Set<string>(),
-    };
-    d.r.add(l.relatorio);
-    if (l.relatorio === "036") {
-      const { romaneio, data_emissao } = registro036.parse(l.dados);
-      if (romaneio !== null) d.rom.add(romaneio);
-      if (data_emissao !== null) d.dias.add(data_emissao);
-    }
-    porCte.set(k, d);
-  }
-  return [...porCte.values()].map((d) => ({
-    sigla: d.sigla,
-    numero: d.numero,
-    relatorios: [...d.r],
-    romaneios: [...d.rom],
-    dias: [...d.dias],
-  }));
-}
-
-const formatarDataHora = (d: Date) =>
-  d.toLocaleString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-
-/**
- * Descarta um ciclo não aplicado: apaga as linhas e os erros de todos os arquivos dele (Q51 b),
- * audita e pede ao worker-ssw que as projeções do Romaneio tirem o que essas linhas trouxeram.
- */
-export async function descartarCiclo(
+export function retomarCiclo(
   db: Db,
   deps: DependenciasIngestao,
   ator: Ator,
   empresaId: string,
-  cicloChave: string,
+  chave: string,
+): Promise<SaidaDe<typeof c.retomarCiclo>> {
+  return auditarEPedir(
+    db,
+    deps,
+    ator,
+    empresaId,
+    {
+      acao: "retomar",
+      entidade: "ingestao_ciclos",
+      entidadeId: chave,
+      resumo: `Ciclo ${chave} retomado`,
+      depois: {},
+    },
+    "retomarCiclo",
+    cicloRetomado,
+    { parametros: { chave } },
+  );
+}
+
+/** Descarta um ciclo não aplicado (Q51 b); o worker-ssw recalcula as projeções afetadas. */
+export function descartarCiclo(
+  db: Db,
+  deps: DependenciasIngestao,
+  ator: Ator,
+  empresaId: string,
+  chave: string,
   motivo: string,
 ): Promise<SaidaDe<typeof c.descartarCiclo>> {
-  const workerSsw = exigirWorkerSsw(deps.workerSsw);
-  const apagadas = await db(async ({ ingestao, auditoria }) => {
-    const ciclo = await ingestao.ciclo(empresaId, cicloChave);
-    if (!ciclo) throw naoEncontrado(`Ciclo ${cicloChave} não encontrado.`);
-    if (ciclo.status === "aplicado") {
-      const quando = ciclo.aplicadoEm ? formatarDataHora(ciclo.aplicadoEm) : "?";
-      throw conflito(
-        `Ciclo ${cicloChave} já foi aplicado à produção em ${quando} — descarte não permitido.`,
-      );
-    }
-    const r = await ingestao.apagarStagingDoCiclo(empresaId, cicloChave);
-    const total = r.linhas + r.erros;
-    await ingestao.marcarCicloDescartado(
-      empresaId,
-      cicloChave,
-      `${motivo} — removidas ${total} linhas de staging: linhas ${r.linhas}, erros ${r.erros}`,
-    );
-    await auditoria.registrar(ator, {
-      empresaId,
+  return auditarEPedir(
+    db,
+    deps,
+    ator,
+    empresaId,
+    {
       acao: "descartar",
       entidade: "ingestao_ciclos",
-      entidadeId: cicloChave,
-      resumo: `Ciclo ${cicloChave} descartado (${total} linhas removidas)`,
-      antes: null,
-      depois: { motivo, linhas: r.linhas, erros: r.erros },
-    });
-    return r;
+      entidadeId: chave,
+      resumo: `Ciclo ${chave} descartado`,
+      depois: { motivo },
+    },
+    "descartarCiclo",
+    cicloDescartado,
+    { parametros: { chave }, corpo: pedidoDeDescarte.parse({ motivo }) },
+  );
+}
+
+/** Relatório colado na tela: vai ao worker-ssw como o texto em UTF-8, em base64. */
+export function importarRelatorio(
+  db: Db,
+  deps: DependenciasIngestao,
+  ator: Ator,
+  empresaId: string,
+  entrada: z.output<typeof c.importarRelatorio.entrada>,
+): Promise<SaidaDe<typeof c.importarRelatorio>> {
+  const corpo = pedidoDeRelatorio.parse({
+    relatorio: entrada.relatorio,
+    nomeArquivo: entrada.nome,
+    conteudoBase64: Buffer.from(entrada.conteudo, "utf8").toString("base64"),
+    aceitarDivergencia: entrada.aceitarDivergencia,
   });
-  const descartadas = descartadasPorCte(apagadas.apagadas);
-  for (let i = 0; i < descartadas.length; i += MAX_CHAVES_POR_PROJECAO) {
-    const bloco = descartadas.slice(i, i + MAX_CHAVES_POR_PROJECAO);
-    await workerSsw.pedirExecucao(empresaId, {
-      job: "projecoes-romaneio",
-      dados: { chaves: bloco.map(({ sigla, numero }) => ({ sigla, numero })), descartadas: bloco },
-    });
-  }
-  return { cicloChave, totalRemovido: apagadas.linhas + apagadas.erros };
+  return auditarEPedir(
+    db,
+    deps,
+    ator,
+    empresaId,
+    {
+      acao: "importar",
+      entidade: "ingestao_arquivos",
+      entidadeId: entrada.nome,
+      resumo: `Relatório ${entrada.relatorio} importado à mão`,
+      depois: { relatorio: entrada.relatorio, aceitarDivergencia: entrada.aceitarDivergencia },
+    },
+    "importarRelatorio",
+    relatorioImportado,
+    { corpo },
+  );
+}
+
+/** Aplicação manual de um bloco, ou só a simulação (`dryRun`). */
+export function aplicar(
+  db: Db,
+  deps: DependenciasIngestao,
+  ator: Ator,
+  empresaId: string,
+  entrada: z.output<typeof c.aplicar.entrada>,
+): Promise<SaidaDe<typeof c.aplicar>> {
+  const { dryRun, limite, offset } = entrada;
+  return auditarEPedir(
+    db,
+    deps,
+    ator,
+    empresaId,
+    {
+      acao: dryRun ? "simular" : "aplicar",
+      entidade: "ingestao_aplicacoes",
+      entidadeId: null,
+      resumo: dryRun ? "Simulou a aplicação manual" : "Aplicação manual de um bloco",
+      depois: { limite, offset },
+    },
+    "aplicar",
+    resultadoDaAplicacao,
+    { corpo: pedidoDeAplicacao.parse({ simular: dryRun, limite, offset }) },
+  );
 }
 
 // --- FTP ----------------------------------------------------------------------------------------
 
+async function situacaoDoFtpNoWorker(deps: DependenciasIngestao, empresaId: string) {
+  if (deps.workerSsw === null) return null;
+  try {
+    return await deps.workerSsw.operacao(empresaId, "ftp", situacaoDoFtp);
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Situação da sincronização do FTP: pausa, agenda e histórico (banco) e se ela está rodando
- * (worker-ssw). O progresso arquivo a arquivo fica no Redis do worker-ssw, fora do contrato.
+ * Situação do FTP: pausa, trava e progresso vêm do worker-ssw (o progresso vive no Redis dele) e
+ * o histórico das sincronizações, do banco. Worker-ssw fora ou não configurado: a tela continua,
+ * com a pausa gravada no banco, sem trava nem progresso.
  */
 export async function lerFtp(
   db: Db,
@@ -308,12 +334,14 @@ export async function lerFtp(
     ativo: await ingestao.ftpAtivo(empresaId),
     historico: await ingestao.ultimasSincronizacoes(empresaId, 10),
   }));
-  const rodando = await jobsRodando(deps, empresaId);
+  const situacao = await situacaoDoFtpNoWorker(deps, empresaId);
   return {
-    ativo,
-    agenda: DESCRICAO_DA_AGENDA,
-    travaAtiva: rodando.has("sincronizar-ftp"),
-    progresso: null,
+    ...(situacao ?? {
+      ativo,
+      agenda: DESCRICAO_DA_AGENDA,
+      travaAtiva: false,
+      progresso: null,
+    }),
     historico: historico.map((h) => ({
       ...h,
       executadoEm: h.executadoEm.toISOString(),
@@ -347,24 +375,56 @@ export async function rodarFtpAgora(
   await workerSsw.pedirExecucao(empresaId, {
     job: "sincronizar-ftp",
     dados: { manual: true },
-    deduplicar: `sincronizar-ftp__${empresaId}`,
+    deduplicar: true,
   });
 }
 
-/** Pausa é configuração da empresa (`ftp_sync_ativo`): o worker-ssw lê a cada execução. */
-export async function pausarOuRetomarFtp(db: Db, ator: Ator, empresaId: string, ativo: boolean) {
-  await db(async ({ ingestao, auditoria }) => {
-    await ingestao.gravarFtpAtivo(empresaId, ativo, ator.usuarioId);
-    await auditoria.registrar(ator, {
-      empresaId,
+export async function pausarOuRetomarFtp(
+  db: Db,
+  deps: DependenciasIngestao,
+  ator: Ator,
+  empresaId: string,
+  ativo: boolean,
+) {
+  await auditarEPedir(
+    db,
+    deps,
+    ator,
+    empresaId,
+    {
       acao: ativo ? "retomar" : "pausar",
       entidade: "configuracoes",
       entidadeId: "ftp_sync_ativo",
       resumo: ativo ? "Sincronização do FTP retomada" : "Sincronização do FTP pausada",
-      antes: null,
       depois: { ativo },
-    });
-  });
+    },
+    "pausarFtp",
+    ok,
+    { corpo: pedidoDeFtpAtivo.parse({ ativo }) },
+  );
+}
+
+export async function liberarTravaFtp(
+  db: Db,
+  deps: DependenciasIngestao,
+  ator: Ator,
+  empresaId: string,
+) {
+  await auditarEPedir(
+    db,
+    deps,
+    ator,
+    empresaId,
+    {
+      acao: "liberar_trava",
+      entidade: "empresa_integracoes",
+      entidadeId: "sftp",
+      resumo: "Trava do FTP liberada à mão",
+      depois: {},
+    },
+    "liberarTravaFtp",
+    ok,
+  );
 }
 
 // --- XML CT-e -----------------------------------------------------------------------------------
@@ -381,6 +441,32 @@ export async function lerArquivosXml(
     arquivos: arquivos.map((a) => ({ ...a, criadoEm: a.criadoEm.toISOString() })),
     orfaos: { ...orfaos, maisAntigo: iso(orfaos.maisAntigo) },
   };
+}
+
+/** XML ou zip enviado pela tela, em base64 (com ou sem o prefixo `data:`). */
+export function importarXml(
+  db: Db,
+  deps: DependenciasIngestao,
+  ator: Ator,
+  empresaId: string,
+  entrada: z.output<typeof c.importarXml.entrada>,
+): Promise<SaidaDe<typeof c.importarXml>> {
+  return auditarEPedir(
+    db,
+    deps,
+    ator,
+    empresaId,
+    {
+      acao: "importar",
+      entidade: "xml_cte_arquivos",
+      entidadeId: entrada.nome,
+      resumo: `XML de CT-e importado à mão (${entrada.nome})`,
+      depois: {},
+    },
+    "importarXml",
+    resultadoDoXml,
+    { corpo: pedidoDeXml.parse({ nomeArquivo: entrada.nome, conteudoBase64: entrada.base64 }) },
+  );
 }
 
 /**
@@ -406,7 +492,7 @@ export async function reprocessarOrfaos(
   );
   const execucaoId = await workerSsw.pedirExecucao(empresaId, {
     job: "reprocessar-xml-orfaos",
-    deduplicar: `reprocessar-xml-orfaos__${empresaId}`,
+    deduplicar: true,
   });
   const fim =
     execucaoId === null

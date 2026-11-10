@@ -210,7 +210,12 @@ describe("Plataforma › Diagnóstico SSW", () => {
         {
           job: "sincronizar-ftp",
           estado: "rodando",
-          ultimaExecucao: "2026-11-10T11:59:00.000Z",
+          ultimaExecucao: {
+            execucaoId: "7",
+            estado: "falhou",
+            terminadaEm: "2026-11-10T11:59:00.000Z",
+            erro: "FTP recusou a senha.",
+          },
           proximaExecucao: "2026-11-10T12:01:00.000Z",
         },
       ],
@@ -224,6 +229,14 @@ describe("Plataforma › Diagnóstico SSW", () => {
       agendado: true,
       ativos: 1,
       proximaExecucao: "2026-11-10T12:01:00.000Z",
+      ultimasFalhas: [
+        {
+          id: "7",
+          quando: "2026-11-10T11:59:00.000Z",
+          erro: "FTP recusou a senha.",
+          tentativas: 1,
+        },
+      ],
     });
 
     workerSsw.fora = true;

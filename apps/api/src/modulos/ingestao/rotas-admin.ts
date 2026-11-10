@@ -10,19 +10,23 @@ import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirAdminPlataforma, exigirEmpresa } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import {
-  acaoSemPedidoNoWorkerSsw,
+  aplicar,
   type DependenciasIngestao,
   descartarCiclo,
+  importarRelatorio,
+  importarXml,
   lerAplicacoes,
   lerArquivosXml,
   lerFtp,
   lerPipeline,
+  liberarTravaFtp,
   pausarOuRetomarFtp,
   reprocessarOrfaos,
+  retomarCiclo,
   rodarFtpAgora,
 } from "./casos-de-uso";
 
-/** Arquivo em base64 da tela: o mesmo teto de antes (a resposta é o aviso do worker-ssw). */
+/** Arquivo em base64 da tela: o mesmo teto de antes (o worker-ssw tem o mesmo). */
 const LIMITE_COM_ARQUIVO = 64 * 1024 * 1024;
 const soPlataforma = [exigirEmpresa, exigirAdminPlataforma];
 
@@ -46,7 +50,14 @@ export const rotasIngestao: FastifyPluginCallbackZod<{ deps: DependenciasIngesta
       schema: { params: c.retomarCiclo.parametros, response: { 200: c.retomarCiclo.saida } },
       preHandler: soPlataforma,
     },
-    () => acaoSemPedidoNoWorkerSsw(),
+    async (request) =>
+      retomarCiclo(
+        request.db,
+        deps,
+        await atorDa(request),
+        await empresa(request),
+        request.params.chave,
+      ),
   );
 
   app.post(
@@ -77,7 +88,14 @@ export const rotasIngestao: FastifyPluginCallbackZod<{ deps: DependenciasIngesta
       schema: { body: c.importarRelatorio.entrada, response: { 200: c.importarRelatorio.saida } },
       preHandler: soPlataforma,
     },
-    () => acaoSemPedidoNoWorkerSsw(),
+    async (request) =>
+      importarRelatorio(
+        request.db,
+        deps,
+        await atorDa(request),
+        await empresa(request),
+        request.body,
+      ),
   );
 
   app.post(
@@ -86,7 +104,8 @@ export const rotasIngestao: FastifyPluginCallbackZod<{ deps: DependenciasIngesta
       schema: { body: c.aplicar.entrada, response: { 200: c.aplicar.saida } },
       preHandler: soPlataforma,
     },
-    () => acaoSemPedidoNoWorkerSsw(),
+    async (request) =>
+      aplicar(request.db, deps, await atorDa(request), await empresa(request), request.body),
   );
 
   app.get(
@@ -119,6 +138,7 @@ export const rotasIngestao: FastifyPluginCallbackZod<{ deps: DependenciasIngesta
     async (request) => {
       await pausarOuRetomarFtp(
         request.db,
+        deps,
         await atorDa(request),
         await empresa(request),
         request.body.ativo,
@@ -130,7 +150,10 @@ export const rotasIngestao: FastifyPluginCallbackZod<{ deps: DependenciasIngesta
   app.post(
     c.liberarTravaFtp.caminho,
     { schema: { response: { 200: c.liberarTravaFtp.saida } }, preHandler: soPlataforma },
-    () => acaoSemPedidoNoWorkerSsw(),
+    async (request) => {
+      await liberarTravaFtp(request.db, deps, await atorDa(request), await empresa(request));
+      return { ok: true as const };
+    },
   );
 
   app.post(
@@ -140,7 +163,8 @@ export const rotasIngestao: FastifyPluginCallbackZod<{ deps: DependenciasIngesta
       schema: { body: c.importarXml.entrada, response: { 200: c.importarXml.saida } },
       preHandler: soPlataforma,
     },
-    () => acaoSemPedidoNoWorkerSsw(),
+    async (request) =>
+      importarXml(request.db, deps, await atorDa(request), await empresa(request), request.body),
   );
 
   app.get(
