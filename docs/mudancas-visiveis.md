@@ -274,3 +274,8 @@ Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP
   antes dele). O cartão mostra "Total" (todos os recusados com conteúdo) e "Reenviados" (os que
   conferem); os outros nunca viram dado. Eventos migrados do sistema atual não guardam o resumo do
   token: não são reprocessáveis.
+- **Conta desativada não entra.** Com a senha certa, o login responde "Sua conta foi desativada por
+  um administrador." (antes entrava e via a tela "Sem acesso"); a sessão aberta deixa de renovar e
+  a conta desativada não usa as telas da Plataforma. Pelo Google, volta para o login com erro.
+- **Admin comum não desativa quem está acima.** Desativar ou reativar um Super Admin é só do Super
+  Admin ou da Plataforma; quem é da equipe da Plataforma, só a Plataforma (ADR 0007).

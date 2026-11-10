@@ -6,6 +6,7 @@ import {
   escolherEmpresaModelo,
   exigirPodeAlterarLogin,
   exigirPodeMexerEmSuperAdmin,
+  exigirPodeMudarAtivo,
   exigirPodeRemoverAdminPlataforma,
   podeAlterarLogin,
   setorLegado,
@@ -87,6 +88,45 @@ describe("login de outra pessoa", () => {
         plataforma: true,
         papelAntes: "admin",
         papelDepois: "super_admin",
+      });
+    }).not.toThrow();
+  });
+});
+
+describe("desativar ou reativar", () => {
+  const alvo: AlvoDoLogin = {
+    plataforma: false,
+    papelDeQuemPede: "admin",
+    empresaAtiva: "a",
+    empresasDoAlvo: ["a"],
+    papeisDoAlvo: ["operador"],
+    alvoEhPlataforma: false,
+  };
+  it("admin comum só mexe em quem não é Super Admin nem da Plataforma", () => {
+    expect(() => {
+      exigirPodeMudarAtivo(alvo);
+    }).not.toThrow();
+    expect(() => {
+      exigirPodeMudarAtivo({ ...alvo, papeisDoAlvo: ["super_admin"] });
+    }).toThrow("Apenas o Super Admin pode desativar ou reativar um Super Admin.");
+    expect(() => {
+      exigirPodeMudarAtivo({ ...alvo, alvoEhPlataforma: true });
+    }).toThrow("só a Plataforma o desativa");
+  });
+  it("Super Admin e Plataforma podem", () => {
+    expect(() => {
+      exigirPodeMudarAtivo({
+        ...alvo,
+        papelDeQuemPede: "super_admin",
+        papeisDoAlvo: ["super_admin"],
+      });
+    }).not.toThrow();
+    expect(() => {
+      exigirPodeMudarAtivo({
+        ...alvo,
+        plataforma: true,
+        alvoEhPlataforma: true,
+        papeisDoAlvo: ["super_admin"],
       });
     }).not.toThrow();
   });
