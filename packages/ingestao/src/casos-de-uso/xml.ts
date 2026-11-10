@@ -83,9 +83,12 @@ async function aplicarXml(
     const c = lerCancelamentoXml(xml);
     const cte = await casarCancelamento(r, c.chaveCte);
     if (!cte) return { casado: false, chaveCte: c.chaveCte, numeroCte: null };
-    // `cancelado_em`/`motivo_cancelamento` não existem no modelo novo (sem leitor — modelo.md).
+    // `cancelado_em` = instante do evento (a trava do BI2 lê); `motivo_cancelamento` não tem
+    // leitor e não existe no modelo novo (modelo.md, Q50).
+    const em = c.dhEvento === null ? null : new Date(c.dhEvento);
+    const canceladoEm = em === null || Number.isNaN(em.getTime()) ? null : em;
     const ocorrencias = (await r.ocorrenciasDosCtes([cte.id])).get(cte.id) ?? [];
-    await regravarCte(r, cad, cte, { statusAtual: "CANCELADO" }, ocorrencias, agora);
+    await regravarCte(r, cad, cte, { statusAtual: "CANCELADO", canceladoEm }, ocorrencias, agora);
     return { casado: true, chaveCte: c.chaveCte, numeroCte: null };
   }
   const d = lerCteXml(xml, proprios);

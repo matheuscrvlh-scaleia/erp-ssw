@@ -88,6 +88,7 @@ describe("ctes", () => {
     data_emissao: null,
     data_embarque: null,
     data_entrega_realizada: null,
+    cancelado_em: null,
     data_conclusao_efetiva: null,
     unidade_id: null,
     parceiro_id: null,

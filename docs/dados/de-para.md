@@ -43,7 +43,7 @@ não deveria existir; se existir, migra o de `atualizado_em` mais novo e reporta
 
 Fica de fora (sem leitor): `cnpj_transportadora`, `endereco_remetente`, `telefone_remetente`,
 `email_remetente`, `cep_remetente`, `cidade_remetente`, `uf_remetente`, `motivo_cancelamento`,
-`cancelado_em`, `valor_nf`, `situacao_bi2`, `cte_complementar_de`, `tomador_nome`,
+`valor_nf`, `situacao_bi2`, `cte_complementar_de`, `tomador_nome`,
 `tomador_cnpj`, `chave_cte_anterior`, `data_entrega_negociada`, `enriquecimento_tentado_em`,
 `prazo_ssw_indisponivel`, `romaneio_numero`, `romaneio_situacao`, `ajudante_2_nome`,
 `ajudante_3_nome`.

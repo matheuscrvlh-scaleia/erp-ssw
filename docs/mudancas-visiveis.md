@@ -53,8 +53,8 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   atualização das projeções (até 30 min mais atual).
 - **Q39 — 050 aparece no painel de arquivos** do pipeline (registrado como relatório 050).
 - **Q43 — XML de CT-e grava a chave da NF-e** quando o CT-e ainda não tem; o upload manual segue na
-  tela. Cancelamento por XML marca o status "CANCELADO" (as colunas `cancelado_em` e
-  `motivo_cancelamento` não existem mais).
+  tela. Cancelamento por XML marca o status "CANCELADO" e a data do cancelamento (`cancelado_em`,
+  que a trava do BI2 lê, como hoje); a coluna `motivo_cancelamento` não existe mais.
 - **Q44 — 455 de largura fixa saiu**: o importador manual e o leitor não existem mais; arquivo
   "455" é lido como 455 CSV.
 - **Q46 — rotas que respondiam 410** (`ftp-xml-import`, `ssw-ingest`, `enriquecer-85`,

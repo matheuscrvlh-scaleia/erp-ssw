@@ -15,16 +15,19 @@ export function ehFonteBi2(fonte: FonteDaEscrita): boolean {
 /** Colunas que a mescla do BI2 lê. */
 export interface CteParaBi2 {
   dataEntregaRealizada: Date | null;
+  /** Instante do cancelamento (XML); CT-e cancelado não conta como em andamento. */
+  canceladoEm: Date | null;
   ocorrEfetivaCodigo: string | null;
   /** Nomes das colunas (snake_case, como no banco) cujo valor veio dos arquivos do SSW. */
   camposSsw: readonly string[];
 }
 
 /**
- * Mescla a escrita do BI2 num CT-e existente. CT-e em andamento → "descartar" (vale para todo
- * CT-e, com ou sem `campos_ssw` — Q25 do dono). Fonte `bi2` mantém as colunas do SSW (e, com a
- * previsão, a fonte e a base do prazo) e a própria marca; `bi2_0017_prazo_entregue` passa tudo
- * (previsão ajustada depois da entrega, em CT-e encerrado).
+ * Mescla a escrita do BI2 num CT-e existente. CT-e em andamento (não cancelado, não entregue,
+ * não finalizado) → "descartar" (vale para todo CT-e, com ou sem `campos_ssw` — Q25 do dono).
+ * Fonte `bi2` mantém as colunas do SSW (e, com a previsão, a fonte e a base do prazo) e a própria
+ * marca; `bi2_0017_prazo_entregue` passa tudo (previsão ajustada depois da entrega, em CT-e
+ * encerrado).
  * origem: _trg_ctrcs_bi2_preserva_ssw (sistema atual); decisão prazo-ajustado-depois-da-entrega-2026-11-06
  */
 export function mesclarEscritaBi2<T extends CteParaBi2>(
@@ -37,7 +40,7 @@ export function mesclarEscritaBi2<T extends CteParaBi2>(
   const encerrado =
     estaEntregue(antigo.dataEntregaRealizada, antigo.ocorrEfetivaCodigo) ||
     estaFinalizadoSemEntrega(antigo.dataEntregaRealizada, antigo.ocorrEfetivaCodigo, codigosBaixa);
-  if (!encerrado) return "descartar";
+  if (antigo.canceladoEm === null && !encerrado) return "descartar";
   if (fonte === "bi2_0017_prazo_entregue") return novo;
   const manter = new Set(antigo.camposSsw.map(campoDaColuna));
   if (manter.has("dataPrevistaEntrega")) {

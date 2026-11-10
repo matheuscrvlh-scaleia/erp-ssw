@@ -36,6 +36,7 @@ function linhaGravada(extra: Partial<LinhaCteGravada> = {}): LinhaCteGravada {
     criado_em: "2026-11-03T10:00:00+00:00",
     duplicado_de: null,
     data_entrega_realizada: null,
+    cancelado_em: null,
     pagador_cnpj: "12.345.678/0001-90",
     parceiro_cnpj: null,
     unidade_destino: null,

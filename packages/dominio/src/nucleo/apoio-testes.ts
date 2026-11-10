@@ -60,6 +60,7 @@ export function cte(extra: Partial<CteNucleo> = {}): CteNucleo {
     criadoEm: new Date("2026-11-03T10:00:00Z"),
     duplicadoDe: null,
     dataEntregaRealizada: null,
+    canceladoEm: null,
     pagadorCnpj: null,
     parceiroCnpj: null,
     filial: null,

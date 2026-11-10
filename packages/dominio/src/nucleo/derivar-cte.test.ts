@@ -47,6 +47,15 @@ describe("escrita do BI2 (§9)", () => {
     );
   });
 
+  it("CT-e cancelado pelo XML não conta como em andamento (cancelado_em)", () => {
+    const cancelado = cte({
+      ocorrEfetivaCodigo: "85",
+      canceladoEm: new Date("2026-11-04T12:00:00Z"),
+    });
+    const doBi2Cancelado = { ...cancelado, dataEntregaRealizada: new Date("2026-11-05T12:00:00Z") };
+    expect(mesclarEscritaBi2(cancelado, doBi2Cancelado, "bi2", BAIXA_FR)).toEqual(doBi2Cancelado);
+  });
+
   it("CT-e encerrado: fonte bi2 mantém as colunas do SSW (previsão leva fonte e base) e a marca", () => {
     expect(mesclarEscritaBi2(encerrado, doBi2, "bi2", BAIXA_FR)).toEqual({
       ...doBi2,

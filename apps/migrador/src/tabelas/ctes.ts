@@ -28,6 +28,7 @@ export interface OrigemCte {
   data_emissao: string;
   data_embarque: string | null;
   data_entrega_realizada: string | null;
+  cancelado_em: string | null;
   data_conclusao_efetiva: string | null;
   unidade_id: string | null;
   parceiro_id: string | null;
@@ -129,7 +130,7 @@ const COLUNAS_DO_CTRC = `o.id, o.empresa_id, o.numero_ctrc, o.sigla_ctrc, o.chav
   o.ult_ocorr_local_0174, o.ult_ocorr_instrucao_0174, o.ocorr_036_codigo, o.ocorr_036_descricao,
   o.ocorr_036_data, o.ocorr_efetiva_codigo, o.ocorr_efetiva_descricao, o.ocorr_efetiva_data,
   o.ocorr_efetiva_fonte, o.ocorr_efetiva_local, o.cancelado_mesmo_dia, o.fora_universo,
-  o.campos_ssw, o.created_at, o.updated_at`;
+  o.campos_ssw, o.created_at, o.updated_at, o.cancelado_em`;
 
 export interface ApoioCte {
   /** Sigla que o 455 deu ao CT-e sem sigla (mesmo número e emissão). */
@@ -263,6 +264,7 @@ export function transformarCte(o: OrigemCte, apoio: ApoioCte, filtros: Filtros) 
       dataEmissao: o.data_emissao,
       dataEmbarque: o.data_embarque,
       dataEntregaRealizada: o.data_entrega_realizada,
+      canceladoEm: o.cancelado_em,
       dataConclusaoEfetiva: o.data_conclusao_efetiva,
       unidadeId: o.unidade_id,
       parceiroId: o.parceiro_id,

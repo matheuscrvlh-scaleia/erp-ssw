@@ -43,6 +43,13 @@
       "when": 1794329927161,
       "tag": "0005_conferente_e_historico_de_registro",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794333492405,
+      "tag": "0006_cte_cancelado_em",
+      "breakpoints": true
     }
   ]
 }

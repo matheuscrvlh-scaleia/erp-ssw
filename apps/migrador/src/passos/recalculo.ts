@@ -68,6 +68,7 @@ export interface LinhaCteGravada {
   criado_em: string;
   duplicado_de: string | null;
   data_entrega_realizada: string | null;
+  cancelado_em: string | null;
   pagador_cnpj: string | null;
   parceiro_cnpj: string | null;
   unidade_destino: string | null;
@@ -115,6 +116,7 @@ const COLUNAS_DO_CTE = [
   iso("criado_em"),
   "duplicado_de::text as duplicado_de",
   iso("data_entrega_realizada"),
+  iso("cancelado_em"),
   "pagador_cnpj",
   "parceiro_cnpj",
   "unidade_destino",
@@ -177,6 +179,7 @@ export function paraCteNucleo(l: LinhaCteGravada): CteNucleo {
     criadoEm: instanteObrigatorio(l.criado_em),
     duplicadoDe: l.duplicado_de,
     dataEntregaRealizada: instante(l.data_entrega_realizada),
+    canceladoEm: instante(l.cancelado_em),
     pagadorCnpj: l.pagador_cnpj,
     parceiroCnpj: l.parceiro_cnpj,
     unidadeDestino: l.unidade_destino,

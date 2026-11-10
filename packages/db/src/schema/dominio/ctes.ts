@@ -194,6 +194,10 @@ export const ctes = erp.table(
     // calculada pelo backend: junto com ocorr_efetiva_codigo. origem: _calc_ocorr_efetiva
     ocorrEfetivaLocal: text("ocorr_efetiva_local"),
 
+    // Cancelamento
+    // gravada pela ingestão do XML: instante do evento de cancelamento do CT-e (`dhEvento`). A trava do BI2 lê: CT-e cancelado não conta como em andamento. origem: ctrcs.cancelado_em / _trg_ctrcs_bi2_preserva_ssw
+    canceladoEm: instante("cancelado_em"),
+
     // Universo
     // calculada pelo backend: existe ocorrência 99 cujo dia (SP) = data_emissao. Recalcula quando muda a emissão ou entra/sai ocorrência 99. origem: _trg_ctrcs_calc_cancelado_mesmo_dia / _trg_ocorrencias_recompute_cancelado
     canceladoMesmoDia: boolean("cancelado_mesmo_dia").notNull().default(false),

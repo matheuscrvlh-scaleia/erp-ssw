@@ -39,6 +39,8 @@ export interface CteNucleo extends FontesDaEfetiva, OcorrenciaEfetiva, CteParaPr
   criadoEm: Date;
   duplicadoDe: string | null;
   dataEntregaRealizada: Date | null;
+  /** Instante do cancelamento pelo XML (lido pela trava do BI2). */
+  canceladoEm: Date | null;
   pagadorCnpj: string | null;
   unidadeDestino: string | null;
   unidadeAtual: string | null;

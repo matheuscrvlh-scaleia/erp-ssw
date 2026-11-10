@@ -23,6 +23,7 @@ export function cteEmBranco(empresaId: string, id: string, agora: Date): CteDaIn
     dataEmissao: "", // sempre vem nos campos do CT-e novo (sem emissão não há CT-e)
     dataEmbarque: null,
     dataEntregaRealizada: null,
+    canceladoEm: null,
     dataConclusaoEfetiva: null,
     unidadeId: null,
     parceiroId: null,

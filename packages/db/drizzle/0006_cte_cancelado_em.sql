@@ -1,0 +1,1 @@
+ALTER TABLE "erp"."ctes" ADD COLUMN "cancelado_em" timestamp with time zone;
