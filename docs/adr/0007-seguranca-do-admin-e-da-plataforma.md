@@ -1,4 +1,4 @@
-# ADR 0006 — Segurança do Admin e da Plataforma
+# ADR 0007 — Segurança do Admin e da Plataforma
 
 **Status:** aceita (10/11/2026)
 

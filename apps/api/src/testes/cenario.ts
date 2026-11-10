@@ -4,7 +4,7 @@ import { type ChavesDeSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
 import { type JobEnfileiravel } from "@erp/shared/jobs";
 import { type FastifyInstance } from "fastify";
 
-import { construirApp } from "../app";
+import { construirApp, type Dependencias } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
 import type { Armazenamento } from "../infra/armazenamento";
 import { type Correio, type Mensagem } from "../infra/correio";
@@ -122,6 +122,7 @@ export function criarCenario(): Cenario {
 export async function construirAppDeTeste(
   cenario: Cenario,
   google: ProvedorGoogle | null = null,
+  extras: Partial<Dependencias> = {},
 ): Promise<FastifyInstance> {
   const { deps } = cenario;
   return construirApp({
@@ -139,6 +140,7 @@ export async function construirAppDeTeste(
     armazenamento: cenario.armazenamento,
     chavesDeSegredo: cenario.chavesDeSegredo,
     agora: deps.agora,
+    ...extras,
   });
 }
 

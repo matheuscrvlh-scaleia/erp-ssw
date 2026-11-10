@@ -55,15 +55,16 @@ const esquema = z
     S3_SEGREDO: z.string().optional(),
     S3_CAMINHO_NO_ESTILO: booleano.default(false),
 
-    /**
-     * Chaves mestras dos segredos de integração (AES-256-GCM): `1:<base64 de 32 bytes>,2:<…>`.
-     * Sem elas, a Plataforma não grava senha/token.
-     */
-    SEGREDOS_CHAVES: z.string().optional(),
-    SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
-
     /** Token de leitura de /metrics; sem ele a rota não existe. */
     METRICAS_TOKEN: z.string().min(16).optional(),
+
+    /** Chaves mestras dos segredos de integração: "1:<base64 de 32 bytes>,2:<…>". */
+    SEGREDOS_CHAVES: z.string().optional(),
+    /** Versão da chave usada para cifrar segredos novos. */
+    SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+    /** Transição da FR: credencial do Ahgora no ambiente (só com parametros.usar_env). */
+    AHGORA_API_USUARIO: z.string().optional(),
+    AHGORA_API_SENHA: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     const google = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI];

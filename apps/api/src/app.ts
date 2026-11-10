@@ -13,15 +13,22 @@ import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
 import { type EmissorDeTokens } from "./infra/tokens";
+import { type DependenciasAhgora } from "./modulos/ahgora/casos-de-uso";
+import { rotasAhgora } from "./modulos/ahgora/rotas";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
+import { rotasBonificacaoEntrega } from "./modulos/bonificacao-entrega/rotas";
 import { rotasCadastros } from "./modulos/cadastros/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
 import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
 import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
+import { rotasCtrc } from "./modulos/ctrc/rotas";
+import { rotasFiltros } from "./modulos/filtros/rotas";
+import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasLogs } from "./modulos/logs/rotas";
 import { rotasPlataforma } from "./modulos/plataforma/rotas";
 import { rotasPrazos } from "./modulos/prazos/rotas";
+import { rotasRanking } from "./modulos/ranking/rotas";
 import { type DependenciasUsuarios } from "./modulos/usuarios/casos-de-uso";
 import { rotasUsuarios } from "./modulos/usuarios/rotas";
 import {
@@ -52,6 +59,8 @@ export interface Dependencias {
   /** Chaves dos segredos de integração; nulo = cofre não configurado. */
   chavesDeSegredo: ChavesDeSegredo | null;
   agora: () => Date;
+  /** Ponto (Ahgora): cofre de segredos, credencial de transição e HTTP. Sem ele, sem cofre. */
+  ahgora?: DependenciasAhgora;
 }
 
 function urlDoLogo(ambiente: Ambiente) {
@@ -109,6 +118,13 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+  await app.register(rotasFiltros);
+  await app.register(rotasListagem, { agora: deps.agora });
+  await app.register(rotasCtrc, { agora: deps.agora });
+  const ahgora = deps.ahgora ?? { segredos: null, ambiente: {}, http: fetch };
+  await app.register(rotasRanking, { agora: deps.agora, executar: deps.executar });
+  await app.register(rotasBonificacaoEntrega, { ahgora });
+  await app.register(rotasAhgora, { ahgora });
 
   const usuarios: DependenciasUsuarios = {
     correio: auth.correio,

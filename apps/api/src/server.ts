@@ -30,6 +30,10 @@ const redis = ambiente.REDIS_URL
 
 const fila = redis ? criarFilaBullmq(redis) : null;
 
+const chavesDeSegredo = ambiente.SEGREDOS_CHAVES
+  ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
+  : null;
+
 const app = await construirApp({
   ambiente,
   executar: (contexto, fn) =>
@@ -75,10 +79,13 @@ const app = await construirApp({
           caminhoNoEstilo: ambiente.S3_CAMINHO_NO_ESTILO,
         })
       : null,
-  chavesDeSegredo: ambiente.SEGREDOS_CHAVES
-    ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
-    : null,
+  chavesDeSegredo,
   agora: () => new Date(),
+  ahgora: {
+    segredos: chavesDeSegredo,
+    ambiente: { usuario: ambiente.AHGORA_API_USUARIO, senha: ambiente.AHGORA_API_SENHA },
+    http: fetch,
+  },
 });
 
 app.addHook("onClose", async () => {

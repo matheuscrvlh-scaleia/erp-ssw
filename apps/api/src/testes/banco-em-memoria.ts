@@ -15,6 +15,8 @@ import {
   criarRepositoriosDeAdministracao,
   EstadoDeAdministracao,
 } from "./administracao-em-memoria";
+import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
+import { DadosDoRanking } from "./falsos-ranking";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -59,6 +61,31 @@ interface TokenSenhaFalso {
   usadoEm: Date | null;
 }
 
+/** Dado que o `structuredClone` copia sem perder nada: valor simples, lista, Map, Set, objeto literal. */
+function ehDadoSimples(valor: unknown): boolean {
+  if (typeof valor === "function") return false;
+  if (typeof valor !== "object" || valor === null) return true;
+  if (Array.isArray(valor) || valor instanceof Map || valor instanceof Set) return true;
+  return Object.getPrototypeOf(valor) === Object.prototype;
+}
+
+/**
+ * Foto dos dados simples de um objeto, para desfazer uma "transação" que falhou. Funções e objetos
+ * de classe (os falsos de outros módulos, com contadores de controle do teste) ficam de fora.
+ */
+function fotografar(alvo: object, ignorar: readonly string[] = []): () => void {
+  const copia: unknown = structuredClone(
+    Object.fromEntries(
+      Object.entries(alvo).filter(
+        ([chave, valor]) => !ignorar.includes(chave) && ehDadoSimples(valor),
+      ),
+    ),
+  );
+  return () => {
+    Object.assign(alvo, copia);
+  };
+}
+
 export class BancoEmMemoria {
   usuarios: UsuarioFalso[] = [];
   plataformaAdmins = new Set<string>();
@@ -81,6 +108,12 @@ export class BancoEmMemoria {
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
   contextos: ContextoBanco[] = [];
+  /** Telas de CT-e: repositórios falsos próprios (ver falsos-ctrc.ts). */
+  ctrc = new CtrcFalso();
+  filtros = new FiltrosFalso();
+  listagem = new ListagemFalsa();
+  /** Ranking, bonificação de entrega e Ahgora (`falsos-ranking.ts`). */
+  ranking = new DadosDoRanking();
   /** Estado de Admin, Plataforma e Logs (`administracao-em-memoria.ts`). */
   adm = new EstadoDeAdministracao();
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
@@ -90,21 +123,14 @@ export class BancoEmMemoria {
     this.contextos.push(contexto);
     if (this.falharCom !== null) throw this.falharCom;
     // Transação: se o caso de uso falhar no meio, nada do que ele gravou fica.
-    const foto = this.foto();
+    const desfazer = [fotografar(this, ["contextos"]), fotografar(this.adm)];
     try {
       return await fn(this.repositorios(contexto));
     } catch (erro) {
-      Object.assign(this, foto);
+      for (const d of desfazer) d();
       throw erro;
     }
   };
-
-  private foto(): Record<string, unknown> {
-    const dados = Object.entries(this).filter(
-      ([chave, valor]) => typeof valor !== "function" && chave !== "contextos",
-    );
-    return structuredClone(Object.fromEntries(dados));
-  }
 
   definirCargo(
     empresaId: string,
@@ -172,6 +198,10 @@ export class BancoEmMemoria {
 
   private repositorios(contexto: ContextoBanco): Repositorios {
     return {
+      ctrc: this.ctrc,
+      filtros: this.filtros,
+      listagem: this.listagem,
+      ...this.ranking.repositorios(),
       ...criarRepositoriosDeAdministracao(this, contexto),
       acesso: {
         usuario: (id) => Promise.resolve(this.usuarios.find((u) => u.id === id) ?? null),

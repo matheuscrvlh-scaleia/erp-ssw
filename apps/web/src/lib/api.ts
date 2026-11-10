@@ -49,13 +49,16 @@ type Opcoes<C extends Contrato> = (C["parametros"] extends z.ZodObject
 /** Sem parâmetros nem entrada, o segundo argumento é opcional. */
 type Argumentos<C extends Contrato> = object extends Opcoes<C> ? [Opcoes<C>?] : [Opcoes<C>];
 
+const ehPrimitivo = (valor: unknown): valor is string | number | boolean =>
+  typeof valor === "string" || typeof valor === "number" || typeof valor === "boolean";
+
+/** Lista vira a chave repetida (`?a=1&a=2`); nulo e vazio ficam de fora. */
 function paraQuery(entrada: unknown): string {
   if (typeof entrada !== "object" || entrada === null) return "";
   const busca = new URLSearchParams();
   for (const [chave, valor] of Object.entries(entrada)) {
-    if (typeof valor === "string" || typeof valor === "number" || typeof valor === "boolean") {
-      busca.append(chave, String(valor));
-    }
+    const valores: unknown[] = Array.isArray(valor) ? valor : [valor];
+    for (const item of valores) if (ehPrimitivo(item)) busca.append(chave, String(item));
   }
   const texto = busca.toString();
   return texto ? `?${texto}` : "";
