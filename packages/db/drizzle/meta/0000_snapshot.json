@@ -1,0 +1,2513 @@
+{
+  "id": "bf0375c4-88f1-4549-9588-5de2a2d3aafd",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "erp.cargo_telas": {
+      "name": "cargo_telas",
+      "schema": "erp",
+      "columns": {
+        "cargo_chave": {
+          "name": "cargo_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tela_chave": {
+          "name": "tela_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cargo_telas_cargo_chave_cargos_chave_fk": {
+          "name": "cargo_telas_cargo_chave_cargos_chave_fk",
+          "tableFrom": "cargo_telas",
+          "tableTo": "cargos",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "cargo_chave"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "cargo_telas_tela_chave_telas_chave_fk": {
+          "name": "cargo_telas_tela_chave_telas_chave_fk",
+          "tableFrom": "cargo_telas",
+          "tableTo": "telas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "tela_chave"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "cargo_telas_cargo_chave_tela_chave_pk": {
+          "name": "cargo_telas_cargo_chave_tela_chave_pk",
+          "columns": [
+            "cargo_chave",
+            "tela_chave"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.cargos": {
+      "name": "cargos",
+      "schema": "erp",
+      "columns": {
+        "chave": {
+          "name": "chave",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "rotulo": {
+          "name": "rotulo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "protegido": {
+          "name": "protegido",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.departamento_telas": {
+      "name": "departamento_telas",
+      "schema": "erp",
+      "columns": {
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "departamento_chave": {
+          "name": "departamento_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tela_chave": {
+          "name": "tela_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "departamento_telas_tela_chave_telas_chave_fk": {
+          "name": "departamento_telas_tela_chave_telas_chave_fk",
+          "tableFrom": "departamento_telas",
+          "tableTo": "telas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "tela_chave"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "departamento_telas_departamento_fk": {
+          "name": "departamento_telas_departamento_fk",
+          "tableFrom": "departamento_telas",
+          "tableTo": "departamentos",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id",
+            "departamento_chave"
+          ],
+          "columnsTo": [
+            "empresa_id",
+            "chave"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "departamento_telas_empresa_id_departamento_chave_tela_chave_pk": {
+          "name": "departamento_telas_empresa_id_departamento_chave_tela_chave_pk",
+          "columns": [
+            "empresa_id",
+            "departamento_chave",
+            "tela_chave"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "departamento_telas_select": {
+          "name": "departamento_telas_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"departamento_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "departamento_telas_insert": {
+          "name": "departamento_telas_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "(\"erp\".\"departamento_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "departamento_telas_update": {
+          "name": "departamento_telas_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"departamento_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')",
+          "withCheck": "(\"erp\".\"departamento_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "departamento_telas_delete": {
+          "name": "departamento_telas_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"departamento_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.departamentos": {
+      "name": "departamentos",
+      "schema": "erp",
+      "columns": {
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chave": {
+          "name": "chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rotulo": {
+          "name": "rotulo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "protegido": {
+          "name": "protegido",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "departamentos_empresa_id_empresas_id_fk": {
+          "name": "departamentos_empresa_id_empresas_id_fk",
+          "tableFrom": "departamentos",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "departamentos_empresa_id_chave_pk": {
+          "name": "departamentos_empresa_id_chave_pk",
+          "columns": [
+            "empresa_id",
+            "chave"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "departamentos_select": {
+          "name": "departamentos_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"departamentos\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "departamentos_insert": {
+          "name": "departamentos_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "(\"erp\".\"departamentos\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "departamentos_update": {
+          "name": "departamentos_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"departamentos\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')",
+          "withCheck": "(\"erp\".\"departamentos\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "departamentos_delete": {
+          "name": "departamentos_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"departamentos\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.empresa_usuarios": {
+      "name": "empresa_usuarios",
+      "schema": "erp",
+      "columns": {
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "papel": {
+          "name": "papel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "departamento_chave": {
+          "name": "departamento_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "setor": {
+          "name": "setor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unidade_id": {
+          "name": "unidade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "criado_por": {
+          "name": "criado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "empresa_usuarios_usuario_idx": {
+          "name": "empresa_usuarios_usuario_idx",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "empresa_usuarios_empresa_id_empresas_id_fk": {
+          "name": "empresa_usuarios_empresa_id_empresas_id_fk",
+          "tableFrom": "empresa_usuarios",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "empresa_usuarios_usuario_id_usuarios_id_fk": {
+          "name": "empresa_usuarios_usuario_id_usuarios_id_fk",
+          "tableFrom": "empresa_usuarios",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "empresa_usuarios_papel_cargos_chave_fk": {
+          "name": "empresa_usuarios_papel_cargos_chave_fk",
+          "tableFrom": "empresa_usuarios",
+          "tableTo": "cargos",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "papel"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "cascade"
+        },
+        "empresa_usuarios_criado_por_usuarios_id_fk": {
+          "name": "empresa_usuarios_criado_por_usuarios_id_fk",
+          "tableFrom": "empresa_usuarios",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "criado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "empresa_usuarios_departamento_fk": {
+          "name": "empresa_usuarios_departamento_fk",
+          "tableFrom": "empresa_usuarios",
+          "tableTo": "departamentos",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id",
+            "departamento_chave"
+          ],
+          "columnsTo": [
+            "empresa_id",
+            "chave"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "empresa_usuarios_empresa_id_usuario_id_pk": {
+          "name": "empresa_usuarios_empresa_id_usuario_id_pk",
+          "columns": [
+            "empresa_id",
+            "usuario_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "empresa_usuarios_select": {
+          "name": "empresa_usuarios_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "((\"erp\".\"empresa_usuarios\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on') or \"erp\".\"empresa_usuarios\".\"usuario_id\" = nullif(current_setting('app.usuario_id', true), '')::uuid)"
+        },
+        "empresa_usuarios_insert": {
+          "name": "empresa_usuarios_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "(\"erp\".\"empresa_usuarios\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "empresa_usuarios_update": {
+          "name": "empresa_usuarios_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"empresa_usuarios\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')",
+          "withCheck": "(\"erp\".\"empresa_usuarios\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "empresa_usuarios_delete": {
+          "name": "empresa_usuarios_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"empresa_usuarios\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.usuario_telas": {
+      "name": "usuario_telas",
+      "schema": "erp",
+      "columns": {
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tela_chave": {
+          "name": "tela_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "permitido": {
+          "name": "permitido",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "usuario_telas_empresa_id_empresas_id_fk": {
+          "name": "usuario_telas_empresa_id_empresas_id_fk",
+          "tableFrom": "usuario_telas",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "usuario_telas_usuario_id_usuarios_id_fk": {
+          "name": "usuario_telas_usuario_id_usuarios_id_fk",
+          "tableFrom": "usuario_telas",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "usuario_telas_tela_chave_telas_chave_fk": {
+          "name": "usuario_telas_tela_chave_telas_chave_fk",
+          "tableFrom": "usuario_telas",
+          "tableTo": "telas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "tela_chave"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "usuario_telas_empresa_id_usuario_id_tela_chave_pk": {
+          "name": "usuario_telas_empresa_id_usuario_id_tela_chave_pk",
+          "columns": [
+            "empresa_id",
+            "usuario_id",
+            "tela_chave"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "usuario_telas_select": {
+          "name": "usuario_telas_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"usuario_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "usuario_telas_insert": {
+          "name": "usuario_telas_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "(\"erp\".\"usuario_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "usuario_telas_update": {
+          "name": "usuario_telas_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"usuario_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')",
+          "withCheck": "(\"erp\".\"usuario_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "usuario_telas_delete": {
+          "name": "usuario_telas_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"usuario_telas\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.feriados": {
+      "name": "feriados",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cidade": {
+          "name": "cidade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uf": {
+          "name": "uf",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gerado_automaticamente": {
+          "name": "gerado_automaticamente",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "feriados_data_idx": {
+          "name": "feriados_data_idx",
+          "columns": [
+            {
+              "expression": "data",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "feriados_empresa_id_empresas_id_fk": {
+          "name": "feriados_empresa_id_empresas_id_fk",
+          "tableFrom": "feriados",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "feriados_unico": {
+          "name": "feriados_unico",
+          "nullsNotDistinct": true,
+          "columns": [
+            "data",
+            "tipo",
+            "cidade",
+            "uf",
+            "empresa_id"
+          ]
+        }
+      },
+      "policies": {
+        "feriados_select": {
+          "name": "feriados_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"feriados\".\"empresa_id\" is null or \"erp\".\"feriados\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid)"
+        },
+        "feriados_insert": {
+          "name": "feriados_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "((\"erp\".\"feriados\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on') or (\"erp\".\"feriados\".\"empresa_id\" is null\n        and \"erp\".\"feriados\".\"tipo\" = 'nacional' and \"erp\".\"feriados\".\"gerado_automaticamente\"))"
+        },
+        "feriados_update": {
+          "name": "feriados_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"feriados\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')",
+          "withCheck": "(\"erp\".\"feriados\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "feriados_delete": {
+          "name": "feriados_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"feriados\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        }
+      },
+      "checkConstraints": {
+        "feriados_uf_formato": {
+          "name": "feriados_uf_formato",
+          "value": "\"erp\".\"feriados\".\"uf\" is null or \"erp\".\"feriados\".\"uf\" ~ '^[A-Z]{2}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "erp.unidades": {
+      "name": "unidades",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cidade": {
+          "name": "cidade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "uf": {
+          "name": "uf",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "unidades_empresa_id_empresas_id_fk": {
+          "name": "unidades_empresa_id_empresas_id_fk",
+          "tableFrom": "unidades",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "unidades_select": {
+          "name": "unidades_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "\"erp\".\"unidades\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
+        },
+        "unidades_insert": {
+          "name": "unidades_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "\"erp\".\"unidades\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
+        },
+        "unidades_update": {
+          "name": "unidades_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "\"erp\".\"unidades\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid",
+          "withCheck": "\"erp\".\"unidades\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
+        },
+        "unidades_delete": {
+          "name": "unidades_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "\"erp\".\"unidades\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.identidades_externas": {
+      "name": "identidades_externas",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provedor": {
+          "name": "provedor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sujeito": {
+          "name": "sujeito",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ultimo_uso_em": {
+          "name": "ultimo_uso_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "identidades_externas_usuario_id_usuarios_id_fk": {
+          "name": "identidades_externas_usuario_id_usuarios_id_fk",
+          "tableFrom": "identidades_externas",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "identidades_externas_provedor_sujeito": {
+          "name": "identidades_externas_provedor_sujeito",
+          "nullsNotDistinct": false,
+          "columns": [
+            "provedor",
+            "sujeito"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.plataforma_admins": {
+      "name": "plataforma_admins",
+      "schema": "erp",
+      "columns": {
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "criado_por": {
+          "name": "criado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "plataforma_admins_usuario_id_usuarios_id_fk": {
+          "name": "plataforma_admins_usuario_id_usuarios_id_fk",
+          "tableFrom": "plataforma_admins",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "plataforma_admins_criado_por_usuarios_id_fk": {
+          "name": "plataforma_admins_criado_por_usuarios_id_fk",
+          "tableFrom": "plataforma_admins",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "criado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.sessoes": {
+      "name": "sessoes",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "familia_id": {
+          "name": "familia_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "empresa_ativa_id": {
+          "name": "empresa_ativa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expira_em": {
+          "name": "expira_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "substituida_em": {
+          "name": "substituida_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revogada_em": {
+          "name": "revogada_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "motivo_revogacao": {
+          "name": "motivo_revogacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sessoes_familia_idx": {
+          "name": "sessoes_familia_idx",
+          "columns": [
+            {
+              "expression": "familia_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sessoes_usuario_idx": {
+          "name": "sessoes_usuario_idx",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sessoes_usuario_id_usuarios_id_fk": {
+          "name": "sessoes_usuario_id_usuarios_id_fk",
+          "tableFrom": "sessoes",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sessoes_empresa_ativa_id_empresas_id_fk": {
+          "name": "sessoes_empresa_ativa_id_empresas_id_fk",
+          "tableFrom": "sessoes",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_ativa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sessoes_token_hash_unique": {
+          "name": "sessoes_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.tokens_senha": {
+      "name": "tokens_senha",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expira_em": {
+          "name": "expira_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usado_em": {
+          "name": "usado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "criado_por": {
+          "name": "criado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "tokens_senha_usuario_idx": {
+          "name": "tokens_senha_usuario_idx",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tokens_senha_usuario_id_usuarios_id_fk": {
+          "name": "tokens_senha_usuario_id_usuarios_id_fk",
+          "tableFrom": "tokens_senha",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tokens_senha_criado_por_usuarios_id_fk": {
+          "name": "tokens_senha_criado_por_usuarios_id_fk",
+          "tableFrom": "tokens_senha",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "criado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tokens_senha_token_hash_unique": {
+          "name": "tokens_senha_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.usuarios": {
+      "name": "usuarios",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "senha_hash": {
+          "name": "senha_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "senha_algoritmo": {
+          "name": "senha_algoritmo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "tentativas_falhas": {
+          "name": "tentativas_falhas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "bloqueado_ate": {
+          "name": "bloqueado_ate",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultimo_login_em": {
+          "name": "ultimo_login_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "empresa_preferida_id": {
+          "name": "empresa_preferida_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "usuarios_empresa_preferida_id_empresas_id_fk": {
+          "name": "usuarios_empresa_preferida_id_empresas_id_fk",
+          "tableFrom": "usuarios",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_preferida_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "usuarios_email_unique": {
+          "name": "usuarios_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "usuarios_email_normalizado": {
+          "name": "usuarios_email_normalizado",
+          "value": "\"erp\".\"usuarios\".\"email\" = lower(btrim(\"erp\".\"usuarios\".\"email\"))"
+        },
+        "usuarios_senha_coerente": {
+          "name": "usuarios_senha_coerente",
+          "value": "(\"erp\".\"usuarios\".\"senha_hash\" is null) = (\"erp\".\"usuarios\".\"senha_algoritmo\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "erp.auditoria": {
+      "name": "auditoria",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "auditoria_id_seq",
+            "schema": "erp",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ator_id": {
+          "name": "ator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ator_email": {
+          "name": "ator_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ator_tipo": {
+          "name": "ator_tipo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "acao": {
+          "name": "acao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entidade": {
+          "name": "entidade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entidade_id": {
+          "name": "entidade_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resumo": {
+          "name": "resumo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "antes": {
+          "name": "antes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "depois": {
+          "name": "depois",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auditoria_empresa_criado_idx": {
+          "name": "auditoria_empresa_criado_idx",
+          "columns": [
+            {
+              "expression": "empresa_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "criado_em",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "auditoria_criado_idx": {
+          "name": "auditoria_criado_idx",
+          "columns": [
+            {
+              "expression": "criado_em",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "auditoria_empresa_id_empresas_id_fk": {
+          "name": "auditoria_empresa_id_empresas_id_fk",
+          "tableFrom": "auditoria",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "auditoria_ator_id_usuarios_id_fk": {
+          "name": "auditoria_ator_id_usuarios_id_fk",
+          "tableFrom": "auditoria",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "ator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "auditoria_select": {
+          "name": "auditoria_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"auditoria\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "auditoria_insert": {
+          "name": "auditoria_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "((\"erp\".\"auditoria\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')\n        or (\"erp\".\"auditoria\".\"empresa_id\" is null and \"erp\".\"auditoria\".\"ator_id\" = nullif(current_setting('app.usuario_id', true), '')::uuid))"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.configuracoes": {
+      "name": "configuracoes",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chave": {
+          "name": "chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor": {
+          "name": "valor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grupo": {
+          "name": "grupo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "configuracoes_empresa_id_empresas_id_fk": {
+          "name": "configuracoes_empresa_id_empresas_id_fk",
+          "tableFrom": "configuracoes",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "configuracoes_atualizado_por_usuarios_id_fk": {
+          "name": "configuracoes_atualizado_por_usuarios_id_fk",
+          "tableFrom": "configuracoes",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "configuracoes_empresa_chave": {
+          "name": "configuracoes_empresa_chave",
+          "nullsNotDistinct": true,
+          "columns": [
+            "empresa_id",
+            "chave"
+          ]
+        }
+      },
+      "policies": {
+        "configuracoes_select": {
+          "name": "configuracoes_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "((\"erp\".\"configuracoes\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on') or \"erp\".\"configuracoes\".\"empresa_id\" is null)"
+        },
+        "configuracoes_insert": {
+          "name": "configuracoes_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "(\"erp\".\"configuracoes\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "configuracoes_update": {
+          "name": "configuracoes_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"configuracoes\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')",
+          "withCheck": "(\"erp\".\"configuracoes\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "configuracoes_delete": {
+          "name": "configuracoes_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"configuracoes\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.empresa_integracoes": {
+      "name": "empresa_integracoes",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "parametros": {
+          "name": "parametros",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "segredo_cifrado": {
+          "name": "segredo_cifrado",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "segredo_versao_chave": {
+          "name": "segredo_versao_chave",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "segredo_definido_em": {
+          "name": "segredo_definido_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultimo_teste_em": {
+          "name": "ultimo_teste_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultimo_teste_ok": {
+          "name": "ultimo_teste_ok",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultimo_teste_msg": {
+          "name": "ultimo_teste_msg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "empresa_integracoes_empresa_id_empresas_id_fk": {
+          "name": "empresa_integracoes_empresa_id_empresas_id_fk",
+          "tableFrom": "empresa_integracoes",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "empresa_integracoes_atualizado_por_usuarios_id_fk": {
+          "name": "empresa_integracoes_atualizado_por_usuarios_id_fk",
+          "tableFrom": "empresa_integracoes",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "empresa_integracoes_empresa_tipo": {
+          "name": "empresa_integracoes_empresa_tipo",
+          "nullsNotDistinct": false,
+          "columns": [
+            "empresa_id",
+            "tipo"
+          ]
+        }
+      },
+      "policies": {
+        "empresa_integracoes_select": {
+          "name": "empresa_integracoes_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"empresa_integracoes\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "empresa_integracoes_insert": {
+          "name": "empresa_integracoes_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        },
+        "empresa_integracoes_update": {
+          "name": "empresa_integracoes_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'",
+          "withCheck": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        },
+        "empresa_integracoes_delete": {
+          "name": "empresa_integracoes_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        }
+      },
+      "checkConstraints": {
+        "empresa_integracoes_segredo_coerente": {
+          "name": "empresa_integracoes_segredo_coerente",
+          "value": "(\"erp\".\"empresa_integracoes\".\"segredo_cifrado\" is null) = (\"erp\".\"empresa_integracoes\".\"segredo_versao_chave\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "erp.empresa_modulos": {
+      "name": "empresa_modulos",
+      "schema": "erp",
+      "columns": {
+        "empresa_id": {
+          "name": "empresa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "modulo_chave": {
+          "name": "modulo_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "inicio": {
+          "name": "inicio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fim": {
+          "name": "fim",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacao": {
+          "name": "observacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "empresa_modulos_empresa_id_empresas_id_fk": {
+          "name": "empresa_modulos_empresa_id_empresas_id_fk",
+          "tableFrom": "empresa_modulos",
+          "tableTo": "empresas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "empresa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "empresa_modulos_modulo_chave_modulos_chave_fk": {
+          "name": "empresa_modulos_modulo_chave_modulos_chave_fk",
+          "tableFrom": "empresa_modulos",
+          "tableTo": "modulos",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "modulo_chave"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "empresa_modulos_atualizado_por_usuarios_id_fk": {
+          "name": "empresa_modulos_atualizado_por_usuarios_id_fk",
+          "tableFrom": "empresa_modulos",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "empresa_modulos_empresa_id_modulo_chave_pk": {
+          "name": "empresa_modulos_empresa_id_modulo_chave_pk",
+          "columns": [
+            "empresa_id",
+            "modulo_chave"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "empresa_modulos_select": {
+          "name": "empresa_modulos_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"empresa_modulos\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "empresa_modulos_insert": {
+          "name": "empresa_modulos_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        },
+        "empresa_modulos_update": {
+          "name": "empresa_modulos_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'",
+          "withCheck": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        },
+        "empresa_modulos_delete": {
+          "name": "empresa_modulos_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        }
+      },
+      "checkConstraints": {
+        "empresa_modulos_vigencia": {
+          "name": "empresa_modulos_vigencia",
+          "value": "\"erp\".\"empresa_modulos\".\"inicio\" is null or \"erp\".\"empresa_modulos\".\"fim\" is null or \"erp\".\"empresa_modulos\".\"inicio\" <= \"erp\".\"empresa_modulos\".\"fim\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "erp.empresas": {
+      "name": "empresas",
+      "schema": "erp",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome_curto": {
+          "name": "nome_curto",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "razao_social": {
+          "name": "razao_social",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cnpj": {
+          "name": "cnpj",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dominio_ssw": {
+          "name": "dominio_ssw",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logo_caminho": {
+          "name": "logo_caminho",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cor_primaria": {
+          "name": "cor_primaria",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'#212a63'"
+        },
+        "cor_destaque": {
+          "name": "cor_destaque",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'#c0392b'"
+        },
+        "slogan": {
+          "name": "slogan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fuso": {
+          "name": "fuso",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'America/Sao_Paulo'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'implantacao'"
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "criado_por": {
+          "name": "criado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "empresas_criado_por_usuarios_id_fk": {
+          "name": "empresas_criado_por_usuarios_id_fk",
+          "tableFrom": "empresas",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "criado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "empresas_atualizado_por_usuarios_id_fk": {
+          "name": "empresas_atualizado_por_usuarios_id_fk",
+          "tableFrom": "empresas",
+          "tableTo": "usuarios",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "empresas_slug_unique": {
+          "name": "empresas_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {
+        "empresas_select": {
+          "name": "empresas_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "erp_app"
+          ],
+          "using": "(\"erp\".\"empresas\".\"id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on' or exists (\n        select 1 from erp.empresa_usuarios eu\n        where eu.empresa_id = \"erp\".\"empresas\".\"id\" and eu.usuario_id = nullif(current_setting('app.usuario_id', true), '')::uuid))"
+        },
+        "empresas_insert": {
+          "name": "empresas_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_app"
+          ],
+          "withCheck": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        },
+        "empresas_update": {
+          "name": "empresas_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'",
+          "withCheck": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        },
+        "empresas_delete": {
+          "name": "empresas_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "erp_app"
+          ],
+          "using": "coalesce(current_setting('app.plataforma', true), 'off') = 'on'"
+        }
+      },
+      "checkConstraints": {
+        "empresas_slug_formato": {
+          "name": "empresas_slug_formato",
+          "value": "\"erp\".\"empresas\".\"slug\" ~ '^[a-z0-9][a-z0-9-]*$'"
+        },
+        "empresas_cor_primaria_hex": {
+          "name": "empresas_cor_primaria_hex",
+          "value": "\"erp\".\"empresas\".\"cor_primaria\" ~ '^#[0-9a-fA-F]{6}$'"
+        },
+        "empresas_cor_destaque_hex": {
+          "name": "empresas_cor_destaque_hex",
+          "value": "\"erp\".\"empresas\".\"cor_destaque\" ~ '^#[0-9a-fA-F]{6}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "erp.modulo_telas": {
+      "name": "modulo_telas",
+      "schema": "erp",
+      "columns": {
+        "modulo_chave": {
+          "name": "modulo_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tela_chave": {
+          "name": "tela_chave",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "modulo_telas_modulo_chave_modulos_chave_fk": {
+          "name": "modulo_telas_modulo_chave_modulos_chave_fk",
+          "tableFrom": "modulo_telas",
+          "tableTo": "modulos",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "modulo_chave"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "modulo_telas_tela_chave_telas_chave_fk": {
+          "name": "modulo_telas_tela_chave_telas_chave_fk",
+          "tableFrom": "modulo_telas",
+          "tableTo": "telas",
+          "schemaTo": "erp",
+          "columnsFrom": [
+            "tela_chave"
+          ],
+          "columnsTo": [
+            "chave"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "modulo_telas_modulo_chave_tela_chave_pk": {
+          "name": "modulo_telas_modulo_chave_tela_chave_pk",
+          "columns": [
+            "modulo_chave",
+            "tela_chave"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.modulos": {
+      "name": "modulos",
+      "schema": "erp",
+      "columns": {
+        "chave": {
+          "name": "chave",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "essencial": {
+          "name": "essencial",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "ordem": {
+          "name": "ordem",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "erp.telas": {
+      "name": "telas",
+      "schema": "erp",
+      "columns": {
+        "chave": {
+          "name": "chave",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "rotulo": {
+          "name": "rotulo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "erp": "erp"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
