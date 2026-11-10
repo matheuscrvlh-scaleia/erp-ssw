@@ -2,7 +2,7 @@ import { generateKeyPairSync, randomUUID } from "node:crypto";
 
 import { type FastifyInstance } from "fastify";
 
-import { construirApp } from "../app";
+import { construirApp, type Dependencias } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
 import { type Correio, type Mensagem } from "../infra/correio";
 import { type ProvedorGoogle } from "../infra/google";
@@ -85,6 +85,7 @@ export function criarCenario(): Cenario {
 export async function construirAppDeTeste(
   cenario: Cenario,
   google: ProvedorGoogle | null = null,
+  extras: Partial<Dependencias> = {},
 ): Promise<FastifyInstance> {
   const { deps } = cenario;
   return construirApp({
@@ -99,6 +100,7 @@ export async function construirAppDeTeste(
     correio: cenario.correio,
     google,
     agora: deps.agora,
+    ...extras,
   });
 }
 

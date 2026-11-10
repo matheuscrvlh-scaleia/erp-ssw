@@ -11,6 +11,7 @@ import { type Ator, type EventoDeAuditoria } from "../modulos/auditoria/auditori
 import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-uso";
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
+import { DadosDoRanking } from "./falsos-ranking";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -77,6 +78,8 @@ export class BancoEmMemoria {
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
   contextos: ContextoBanco[] = [];
+  /** Ranking, bonificação de entrega e Ahgora (`falsos-ranking.ts`). */
+  ranking = new DadosDoRanking();
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
   falharCom: Error | null = null;
 
@@ -148,6 +151,7 @@ export class BancoEmMemoria {
 
   private repositorios(): Repositorios {
     return {
+      ...this.ranking.repositorios(),
       acesso: {
         usuario: (id) => Promise.resolve(this.usuarios.find((u) => u.id === id) ?? null),
         ehAdminPlataforma: (id) => Promise.resolve(this.plataformaAdmins.has(id)),
