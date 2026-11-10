@@ -12,6 +12,7 @@ import {
   COLUNAS_455_CSV,
   ehCtrcDo306,
   numCtrc,
+  type Relatorio,
   siglaCtrc,
 } from "../relatorios";
 import { type LinhaNova } from "./portas";
@@ -56,10 +57,66 @@ const CAMPOS_036 =
 /** 455 CSV: todas as colunas do relatório. */
 const CAMPOS_455 = COLUNAS_455_CSV.map((c) => c.coluna);
 
-function chave(ctrc: string | null): { sigla: string | null; numero: string | null } {
+const texto = (v: unknown) => (typeof v === "string" ? v : null);
+const inicioDoDia = (v: unknown) => {
+  const dia = texto(v);
+  return dia ? inicioDoDiaSp(dia) : null;
+};
+
+/** Por relatório: campos do hash, onde está o CT-e e o dia de referência da linha. */
+const IDENTIFICACAO: Record<
+  Relatorio,
+  {
+    campos: readonly string[];
+    ctrc: (d: Readonly<Record<string, unknown>>) => string | null;
+    referencia: (d: Readonly<Record<string, unknown>>) => Date | null;
+  }
+> = {
+  "930": {
+    campos: CAMPOS_930,
+    ctrc: (d) => texto(d.ctrc),
+    referencia: (d) => {
+      const em = texto(d.ocorrencia_em) ?? texto(d.inclusao_em);
+      return em ? instanteSp(em) : null;
+    },
+  },
+  "038": { campos: CAMPOS_038, ctrc: (d) => texto(d.ctrc), referencia: () => null },
+  // Dia de emissão do romaneio às 00:00 de SP (aba Hoje do Romaneio).
+  "036": {
+    campos: CAMPOS_036,
+    ctrc: (d) => texto(d.ctrc),
+    referencia: (d) => inicioDoDia(d.data_emissao),
+  },
+  "306": {
+    campos: CAMPOS_306,
+    // Só CTRC/COLETA no formato de CT-e tem sigla e número (coleta pura fica sem chave).
+    ctrc: (d) => (ehCtrcDo306(texto(d.ctrc_coleta)) ? texto(d.ctrc_coleta) : null),
+    referencia: (d) => inicioDoDia(d.data),
+  },
+  "455csv": {
+    campos: CAMPOS_455,
+    ctrc: (d) => texto(d.serie_numero_ctrc),
+    referencia: (d) => inicioDoDia(d.data_de_emissao),
+  },
+};
+
+/**
+ * Hash de deduplicação, chave do CT-e (sigla e número, os dois ou nenhum) e dia de referência de
+ * uma linha. A mesma conta vale para a linha lida do arquivo e para a migrada do sistema atual.
+ */
+export function identificarLinha(
+  relatorio: Relatorio,
+  dados: Readonly<Record<string, unknown>>,
+): Pick<LinhaNova, "hash" | "sigla" | "numero" | "dataReferencia"> {
+  const regra = IDENTIFICACAO[relatorio];
+  const ctrc = regra.ctrc(dados);
   const numero = numCtrc(ctrc);
   const sigla = siglaCtrc(ctrc);
-  return numero === null || sigla === null ? { sigla: null, numero: null } : { sigla, numero };
+  return {
+    hash: hashDaLinha(regra.campos, dados),
+    ...(numero === null || sigla === null ? { sigla: null, numero: null } : { sigla, numero }),
+    dataReferencia: regra.referencia(dados),
+  };
 }
 
 /**
@@ -69,50 +126,11 @@ function chave(ctrc: string | null): { sigla: string | null; numero: string | nu
 export function linhasParaGravar(lido: AnaliseDoRelatorio): LinhaNova[] {
   const vistas = new Set<string>();
   const saida: LinhaNova[] = [];
-  const empurrar = (
-    numeroLinha: number,
-    campos: readonly string[],
-    dados: Record<string, unknown>,
-    ctrc: string | null,
-    dataReferencia: Date | null,
-  ) => {
-    const hash = hashDaLinha(campos, dados);
-    if (vistas.has(hash)) return;
-    vistas.add(hash);
-    saida.push({ numeroLinha, hash, ...chave(ctrc), dataReferencia, dados });
-  };
-  switch (lido.relatorio) {
-    case "930":
-      for (const { linha, dados } of lido.analise.registros) {
-        const em = dados.ocorrencia_em ?? dados.inclusao_em;
-        empurrar(linha, CAMPOS_930, { ...dados }, dados.ctrc, em ? instanteSp(em) : null);
-      }
-      break;
-    case "038":
-      for (const { linha, dados } of lido.analise.registros) {
-        empurrar(linha, CAMPOS_038, { ...dados }, dados.ctrc, null);
-      }
-      break;
-    case "036":
-      for (const { linha, dados } of lido.analise.registros) {
-        const dia = dados.data_emissao;
-        empurrar(linha, CAMPOS_036, { ...dados }, dados.ctrc, dia ? inicioDoDiaSp(dia) : null);
-      }
-      break;
-    case "306":
-      for (const { linha, dados } of lido.analise.registros) {
-        const ctrc = ehCtrcDo306(dados.ctrc_coleta) ? dados.ctrc_coleta : null;
-        const dia = dados.data;
-        empurrar(linha, CAMPOS_306, { ...dados }, ctrc, dia ? inicioDoDiaSp(dia) : null);
-      }
-      break;
-    case "455csv":
-      for (const { linha, dados } of lido.analise.registros) {
-        const ctrc = typeof dados.serie_numero_ctrc === "string" ? dados.serie_numero_ctrc : null;
-        const dia = typeof dados.data_de_emissao === "string" ? dados.data_de_emissao : null;
-        empurrar(linha, CAMPOS_455, { ...dados }, ctrc, dia ? inicioDoDiaSp(dia) : null);
-      }
-      break;
+  for (const { linha, dados } of lido.analise.registros) {
+    const id = identificarLinha(lido.relatorio, dados);
+    if (vistas.has(id.hash)) continue;
+    vistas.add(id.hash);
+    saida.push({ numeroLinha: linha, ...id, dados: { ...dados } });
   }
   return saida;
 }

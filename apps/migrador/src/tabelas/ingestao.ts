@@ -1,6 +1,6 @@
 /**
  * Ingestão dos relatórios SSW (de-para "Ingestão"): registros técnicos com retenção (só a
- * janela que o worker manteria) e as 6 stagings largas como `ingestao_linhas`.
+ * janela que o worker manteria) e as 5 stagings largas como `ingestao_linhas`.
  */
 import {
   ingestaoAplicacoes,
@@ -9,11 +9,19 @@ import {
   ingestaoLinhas,
   ingestaoRelatoriosEsperados,
 } from "@erp/db/schema";
+import { identificarLinha } from "@erp/ingestao/casos-de-uso";
+import { type Relatorio } from "@erp/ingestao/relatorios";
 
-import { definirTabela, type Filtros, type Fontes, migrar, semApoio } from "../motor/tipos";
-import { numeroSsw, siglaSsw } from "../transformacoes/cte";
-import { daLista, sha256Hex } from "../transformacoes/diversas";
-import { jsonCanonico, lerJson } from "../transformacoes/json";
+import {
+  definirTabela,
+  descartar,
+  type Filtros,
+  type Fontes,
+  migrar,
+  semApoio,
+} from "../motor/tipos";
+import { daLista } from "../transformacoes/diversas";
+import { lerJson } from "../transformacoes/json";
 import {
   daEmpresa,
   ESCOPO_DA_EMPRESA,
@@ -271,27 +279,22 @@ const COLUNAS_DE_CONTROLE = [
 ];
 
 interface ConfiguracaoDaStaging {
-  /** Código do relatório como o worker usa (docs/regras/06 §3: 036, 038, 306, 455, 455csv, 930). */
-  relatorio: string;
+  /** Relatório como o worker grava (o 455 de largura fixa não é portado — Q44). */
+  relatorio: Relatorio;
   staging: string;
-  /** Coluna com o CT-e (sigla + número) daquele relatório. */
-  campoDoCte: string;
-  /** `staging_455_ctrcs_expedidos` não tem `dado_hash` (dedupe era por índice nas colunas). */
-  temHash: boolean;
 }
 
+/**
+ * Stagings levadas para `ingestao_linhas`. O espelho `staging_455_ctrcs_expedidos` não vem: é
+ * cópia do 455 CSV no formato antigo, que o sistema novo não tem (o valor da mercadoria do 455
+ * sai do próprio 455 CSV).
+ */
 export const STAGINGS: readonly ConfiguracaoDaStaging[] = [
-  { relatorio: "038", staging: "staging_038_ctrcs_pendentes", campoDoCte: "ctrc", temHash: true },
-  { relatorio: "455", staging: "staging_455_ctrcs_expedidos", campoDoCte: "ctrc", temHash: false },
-  {
-    relatorio: "455csv",
-    staging: "staging_455_csv",
-    campoDoCte: "serie_numero_ctrc",
-    temHash: true,
-  },
-  { relatorio: "930", staging: "staging_930_ocorrencias", campoDoCte: "ctrc", temHash: true },
-  { relatorio: "306", staging: "staging_306_ssw_mobile", campoDoCte: "ctrc_coleta", temHash: true },
-  { relatorio: "036", staging: "staging_036_romaneios", campoDoCte: "ctrc", temHash: true },
+  { relatorio: "038", staging: "staging_038_ctrcs_pendentes" },
+  { relatorio: "455csv", staging: "staging_455_csv" },
+  { relatorio: "930", staging: "staging_930_ocorrencias" },
+  { relatorio: "306", staging: "staging_306_ssw_mobile" },
+  { relatorio: "036", staging: "staging_036_romaneios" },
 ];
 
 interface OrigemLinhaDeRelatorio {
@@ -300,8 +303,6 @@ interface OrigemLinhaDeRelatorio {
   lote_id: string;
   arquivo_origem: string | null;
   importado_em: string;
-  dado_hash: string | null;
-  campo_do_cte: string | null;
   dados: string;
 }
 
@@ -315,15 +316,6 @@ async function mapaDeArquivos(fontes: Fontes, filtros: Filtros): Promise<Map<str
   return new Map(linhas.map((l) => [l.chave, l.id]));
 }
 
-/**
- * Hash de dedupe da linha. Usa o `dado_hash` da staging; sem ele, o SHA-256 do dado em forma
- * canônica. TODO(ingestao): usar a função de hash do worker quando a ingestão estiver na main
- * (a dedupe só vale dentro da janela de 60 dias, então a divergência some sozinha).
- */
-export function hashDaLinha(dadoHash: string | null, dados: string): string {
-  return dadoHash ?? sha256Hex(jsonCanonico(lerJson(dados)));
-}
-
 function passoDaStaging(cfg: ConfiguracaoDaStaging) {
   return definirTabela({
     nome: `ingestao_linhas:${cfg.relatorio}`,
@@ -331,8 +323,6 @@ function passoDaStaging(cfg: ConfiguracaoDaStaging) {
     tabela: ingestaoLinhas,
     consulta: {
       colunas: `o.id, o.empresa_id, o.lote_id, o.arquivo_origem, o.importado_em,
-        ${cfg.temHash ? "o.dado_hash" : "null::text as dado_hash"},
-        o.${cfg.campoDoCte} as campo_do_cte,
         (to_jsonb(o) - array[${COLUNAS_DE_CONTROLE.map((c) => `'${c}'`).join(", ")}])::text as dados`,
       de: `public.${cfg.staging} o`,
       onde: [
@@ -343,8 +333,15 @@ function passoDaStaging(cfg: ConfiguracaoDaStaging) {
     },
     chaveDaLinha: (o: OrigemLinhaDeRelatorio) => o.id,
     preparar: mapaDeArquivos,
-    transformar: (o, arquivos) =>
-      migrar({
+    transformar: (o, arquivos) => {
+      const dados = lerJson(o.dados);
+      if (dados === null || typeof dados !== "object" || Array.isArray(dados)) {
+        return descartar("dado da linha não é um objeto");
+      }
+      // Hash, CT-e e dia de referência pela mesma conta do worker: a linha que chegar de novo
+      // pelo FTP casa com a migrada.
+      const id = identificarLinha(cfg.relatorio, dados);
+      return migrar({
         empresaId: o.empresa_id,
         relatorio: cfg.relatorio,
         loteId: o.lote_id,
@@ -353,16 +350,16 @@ function passoDaStaging(cfg: ConfiguracaoDaStaging) {
             ? null
             : (arquivos.get(`${o.empresa_id}|${o.arquivo_origem}`) ?? null),
         numeroLinha: null,
-        hash: hashDaLinha(o.dado_hash, o.dados),
-        sigla: siglaSsw(o.campo_do_cte),
-        numero: numeroSsw(o.campo_do_cte),
-        // TODO(ingestao): o parser do worker define a data de referência de cada relatório.
-        dataReferencia: null,
+        hash: id.hash,
+        sigla: id.sigla,
+        numero: id.numero,
+        dataReferencia: id.dataReferencia?.toISOString() ?? null,
         dados: o.dados,
         importadoEm: o.importado_em,
         // Já aplicada no sistema atual: a retenção de 60 dias conta daqui.
         aplicadoEm: o.importado_em,
-      }),
+      });
+    },
     conflito: ["empresaId", "relatorio", "hash"],
     aoConflitar: "atualizar",
     chaveDestino: ["id"],

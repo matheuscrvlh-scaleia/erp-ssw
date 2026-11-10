@@ -1,11 +1,11 @@
 import { decifrarSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
+import { identificarLinha } from "@erp/ingestao/casos-de-uso";
 import { type PgTable } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import { metadadosDe } from "../motor/metadados";
 import { type DefinicaoDeTabela, type Resultado } from "../motor/tipos";
 import { ErroDeConversao } from "../transformacoes/erros";
-import { lerJson } from "../transformacoes/json";
 import {
   passoAnotacoes,
   passoCodigosOcorrencia,
@@ -31,7 +31,7 @@ import {
   passoEmpresaUsuarios,
   passoUsuarios,
 } from "./fundacao";
-import { hashDaLinha, passoIngestaoAplicacoes, passosDasLinhasDeRelatorio } from "./ingestao";
+import { passoIngestaoAplicacoes, passosDasLinhasDeRelatorio } from "./ingestao";
 import {
   type OrigemColeta,
   passoColetas,
@@ -770,9 +770,7 @@ describe("ingestão e logs", () => {
     lote_id: "l1",
     arquivo_origem: "038_CAP_2026-11-09.csv",
     importado_em: "2026-11-09 10:00:00+00",
-    dado_hash: "h1",
-    campo_do_cte: "CAP033214-5",
-    dados: '{"ctrc": "CAP033214-5", "atraso": 2}',
+    dados: '{"ctrc": "CAP033214-5", "atraso": 2, "prazo_entrega": "2026-11-12"}',
   };
 
   it("linha de relatório: código, sigla/número do CT-e, arquivo e aplicada", () => {
@@ -782,7 +780,9 @@ describe("ingestão e logs", () => {
       relatorio: "038",
       sigla: "CAP",
       numero: "33214",
-      hash: "h1",
+      hash: identificarLinha("038", { ctrc: "CAP033214-5", atraso: 2, prazo_entrega: "2026-11-12" })
+        .hash,
+      dataReferencia: null,
       arquivoId: "arq-1",
       aplicadoEm: linha.importado_em,
       dados: linha.dados,
@@ -792,10 +792,9 @@ describe("ingestão e logs", () => {
     ).toBeNull();
   });
 
-  it("os seis relatórios, com o código que o worker usa", () => {
+  it("os cinco relatórios, com o código que o worker usa (sem o espelho do 455)", () => {
     expect(passosDasLinhasDeRelatorio.map((p) => p.nome)).toEqual([
       "ingestao_linhas:038",
-      "ingestao_linhas:455",
       "ingestao_linhas:455csv",
       "ingestao_linhas:930",
       "ingestao_linhas:306",
@@ -803,10 +802,18 @@ describe("ingestão e logs", () => {
     ]);
   });
 
-  it("sem dado_hash: hash do dado canônico (mesmo dado, mesma ordem ou não)", () => {
-    expect(hashDaLinha("h", "{}")).toBe("h");
-    expect(hashDaLinha(null, '{"a": 1, "b": 2}')).toBe(hashDaLinha(null, '{"b":2,"a":1}'));
-    expect(lerJson(linha.dados)).toEqual({ ctrc: "CAP033214-5", atraso: 2 });
+  it("306: coleta pura fica sem sigla e sem número; 036 com o dia de emissão às 00:00 de SP", () => {
+    const p306 = passosDasLinhasDeRelatorio.find((p) => p.nome === "ingestao_linhas:306");
+    const p036 = passosDasLinhasDeRelatorio.find((p) => p.nome === "ingestao_linhas:036");
+    if (!p306 || !p036) throw new Error("sem passo");
+    const coleta = { ...linha, dados: '{"ctrc_coleta": "123456", "data": "2026-11-09"}' };
+    expect(migrada(p306, coleta, new Map())).toMatchObject({ sigla: null, numero: null });
+    const rom = { ...linha, dados: '{"ctrc": "CAP033214-5", "data_emissao": "2026-11-09"}' };
+    expect(migrada(p036, rom, new Map())).toMatchObject({
+      sigla: "CAP",
+      numero: "33214",
+      dataReferencia: "2026-11-09T03:00:00.000Z",
+    });
   });
 
   it("aplicação: dry_run → simulacao; status nulo vira concluido com aviso", () => {
