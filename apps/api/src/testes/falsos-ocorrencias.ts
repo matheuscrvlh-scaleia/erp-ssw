@@ -305,7 +305,12 @@ export class DadosDeOcorrencias {
       listar: (empresaId) =>
         Promise.resolve(daEmpresa(empresaId).sort((a, b) => a.codigo - b.codigo)),
       codigos: (empresaId, codigos) =>
-        Promise.resolve(daEmpresa(empresaId).filter((c) => codigos.includes(c.codigo))),
+        // Cópias, como o banco devolve: gravar depois não pode mudar o "antes" já lido.
+        Promise.resolve(
+          daEmpresa(empresaId)
+            .filter((c) => codigos.includes(c.codigo))
+            .map((c) => ({ ...c })),
+        ),
       ocorrenciasPorCodigo: (empresaId, desde) => {
         const contagem = new Map<number, number>();
         for (const o of this.ocorrencias) {
