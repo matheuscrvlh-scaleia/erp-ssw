@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type ContextoBanco } from "@erp/db";
-import { type RegraDePrazo } from "@erp/dominio/prazos-configurados";
+import { type RegraDePrazo } from "@erp/dominio/nucleo";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
 
@@ -32,8 +32,9 @@ function cte(dados: Partial<CteDoRecalculo>): CteDoRecalculo {
     dataPrevistaEntrega: "2026-11-09",
     prazoFonte: "ssw_038",
     dataBasePrazo: null,
-    previsaoSsw: "2026-11-09",
+    previsaoSswData: "2026-11-09",
     previsaoSswFonte: "ssw_038",
+    previsaoSswDataBase: null,
     ...dados,
   };
 }
@@ -47,16 +48,17 @@ describe("novasPrevisoes", () => {
     expect(novas).toEqual([
       expect.objectContaining({
         cteId: comRegra.id,
-        previsao: "2026-11-09",
-        fonte: "regra_parceiro",
-        anterior: "2026-11-09",
+        dataPrevistaEntrega: "2026-11-09",
+        prazoFonte: "regra_parceiro",
+        previsaoSswData: "2026-11-09",
+        troca: null,
       }),
       expect.objectContaining({
         cteId: orfao.id,
-        previsao: "2026-11-09",
-        fonte: "ssw_038",
-        dataBase: null,
-        anterior: "2026-11-06",
+        dataPrevistaEntrega: "2026-11-09",
+        prazoFonte: "ssw_038",
+        dataBasePrazo: null,
+        troca: { dataAnterior: "2026-11-06", dataNova: "2026-11-09", fonte: "ssw_038" },
       }),
     ]);
   });

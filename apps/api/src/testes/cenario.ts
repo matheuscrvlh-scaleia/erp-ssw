@@ -7,9 +7,9 @@ import { type FastifyInstance } from "fastify";
 
 import { construirApp } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
-import { type Armazenamento } from "../infra/armazenamento";
+import type { Armazenamento } from "../infra/armazenamento";
 import { type Correio, type Mensagem } from "../infra/correio";
-import { type FilaDeJobs } from "../infra/fila";
+import type { FilaDeJobs } from "../infra/fila";
 import { type ProvedorGoogle } from "../infra/google";
 import { criarLimitadorEmMemoria } from "../infra/limitador";
 import { criarServicoDeSenhas } from "../infra/senhas";

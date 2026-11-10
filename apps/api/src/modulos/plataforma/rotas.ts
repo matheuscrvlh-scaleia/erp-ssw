@@ -5,7 +5,7 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { executorDePlataforma } from "../../http/contexto";
 import { exigirAdminPlataforma } from "../../http/guardas";
-import { type Armazenamento } from "../../infra/armazenamento";
+import type { Armazenamento } from "../../infra/armazenamento";
 import { atorDa } from "../../plugins/sessao";
 import { type ExecutorComContexto } from "../../repositorios";
 import { listarCargos, listarDepartamentos } from "../cadastros/casos-de-uso";

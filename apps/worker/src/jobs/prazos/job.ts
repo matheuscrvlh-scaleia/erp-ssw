@@ -1,33 +1,25 @@
 import {
-  filiaisDeChegada,
-  FONTES_DE_REGRA,
-  previsaoPelasRegras,
+  type CteParaPrazo,
+  definirPrevisao,
+  ehFonteDeRegra,
+  FONTES_DE_PRAZO,
+  type OcorrenciaDoCte,
+  type PrevisaoComMemoria,
   type RegraDePrazo,
-} from "@erp/dominio/prazos-configurados";
+  type TrocaDePrevisao,
+  trocaDePrevisao,
+} from "@erp/dominio/nucleo";
 import { JOB_RECALCULAR_PRAZOS } from "@erp/shared/jobs";
 import { z } from "@erp/shared/zod";
 
 import { definirJob } from "../registro";
 
-export interface CteDoRecalculo {
-  id: string;
-  parceiroCnpj: string | null;
-  filial: string | null;
-  dataEmissao: string;
-  dataPrevistaEntrega: string | null;
-  prazoFonte: string | null;
-  dataBasePrazo: Date | null;
-  previsaoSsw: string | null;
-  previsaoSswFonte: string | null;
-}
+export type CteDoRecalculo = CteParaPrazo & { id: string };
 
-export interface NovaPrevisao {
+export interface NovaPrevisao extends PrevisaoComMemoria {
   cteId: string;
-  previsao: string | null;
-  fonte: string | null;
-  dataBase: Date | null;
-  /** Previsão anterior, para o histórico (só quando havia uma e mudou). */
-  anterior: string | null;
+  /** Linha do histórico de previsão, quando a anterior existia e mudou. */
+  troca: TrocaDePrevisao | null;
 }
 
 export interface RepositorioPrazosDoWorker {
@@ -38,54 +30,50 @@ export interface RepositorioPrazosDoWorker {
    */
   candidatos(
     empresaId: string,
-    filtro: { parceiros: string[]; filiais: string[]; fontesDeRegra: readonly string[] },
+    filtro: { parceiros: string[]; filiais: string[] },
     aposId: string | null,
     limite: number,
   ): Promise<CteDoRecalculo[]>;
-  /** Primeira chegada (84) por CT-e e filial, só das filiais pedidas. */
-  chegadas(
-    empresaId: string,
-    cteIds: string[],
-    filiais: string[],
-  ): Promise<Map<string, Map<string, Date>>>;
-  /** Grava a previsão nova e, quando a anterior existia e mudou, o histórico. */
+  /** Chegadas (84) de cada CT-e pedido; a quarentena é tirada pelo núcleo. */
+  chegadas(empresaId: string, cteIds: string[]): Promise<Map<string, OcorrenciaDoCte[]>>;
+  /** Grava a previsão nova (e a memória do SSW) e as linhas de histórico. */
   gravar(empresaId: string, novas: NovaPrevisao[]): Promise<void>;
 }
 
 export const LOTE_DO_RECALCULO = 1000;
+export const FONTES_DE_REGRA = FONTES_DE_PRAZO.filter(ehFonteDeRegra);
 
-function mesmoInstante(a: Date | null, b: Date | null): boolean {
-  return (a?.getTime() ?? null) === (b?.getTime() ?? null);
+const mesmoInstante = (a: Date | null, b: Date | null) =>
+  (a?.getTime() ?? null) === (b?.getTime() ?? null);
+
+function igual(a: PrevisaoComMemoria, b: PrevisaoComMemoria): boolean {
+  return (
+    a.dataPrevistaEntrega === b.dataPrevistaEntrega &&
+    a.prazoFonte === b.prazoFonte &&
+    mesmoInstante(a.dataBasePrazo, b.dataBasePrazo) &&
+    a.previsaoSswData === b.previsaoSswData &&
+    a.previsaoSswFonte === b.previsaoSswFonte &&
+    mesmoInstante(a.previsaoSswDataBase, b.previsaoSswDataBase)
+  );
 }
 
-/** O que muda num lote: só CT-e cuja previsão, fonte ou base saem diferentes. */
+/** O que muda num lote: só CT-e cuja previsão (ou memória do SSW) sai diferente. */
 export function novasPrevisoes(
   ctes: readonly CteDoRecalculo[],
   regras: readonly RegraDePrazo[],
-  chegadas: ReadonlyMap<string, ReadonlyMap<string, Date>>,
+  chegadas: ReadonlyMap<string, readonly OcorrenciaDoCte[]>,
 ): NovaPrevisao[] {
   return ctes.flatMap((c) => {
-    const p = previsaoPelasRegras({ ...c, chegadas: chegadas.get(c.id) ?? new Map() }, regras);
-    const igual =
-      p.previsao === c.dataPrevistaEntrega &&
-      p.fonte === c.prazoFonte &&
-      mesmoInstante(p.dataBase, c.dataBasePrazo);
-    if (igual) return [];
-    return [
-      {
-        cteId: c.id,
-        previsao: p.previsao,
-        fonte: p.fonte,
-        dataBase: p.dataBase,
-        anterior: c.dataPrevistaEntrega,
-      },
-    ];
+    const p = definirPrevisao(c, chegadas.get(c.id) ?? [], regras);
+    if (igual(p, c)) return [];
+    return [{ ...p, cteId: c.id, troca: trocaDePrevisao(c.dataPrevistaEntrega, p) }];
   });
 }
 
 /**
  * Recalcula a previsão dos CT-e da empresa pelas regras de prazo configurado ativas (pedido pelo
- * Admin ao gravar, ligar, desligar ou apagar uma regra). Lotes de 1000, cada um numa transação.
+ * Admin ao gravar, ligar, desligar ou apagar uma regra). CT-e e chegadas novos já saem com a regra
+ * pela gravação do núcleo (Q19). Lotes de 1000, cada um numa transação.
  * origem: recalcular_todos_prazos_configurados + limpar_prazos_regras_orfas (sistema atual)
  */
 export const recalcularPrazos = definirJob({
@@ -104,9 +92,7 @@ export const recalcularPrazos = definirJob({
       filiais: ativas.flatMap((r) =>
         r.tipo !== "parceiro" && r.unidadeCodigo ? [r.unidadeCodigo] : [],
       ),
-      fontesDeRegra: FONTES_DE_REGRA,
     };
-    const filiais = filiaisDeChegada(regras);
     let aposId: string | null = null;
     let alterados = 0;
     for (;;) {
@@ -117,7 +103,6 @@ export const recalcularPrazos = definirJob({
           const chegadas = await prazos.chegadas(
             empresaId,
             ctes.map((c) => c.id),
-            filiais,
           );
           const novas = novasPrevisoes(ctes, regras, chegadas);
           await prazos.gravar(empresaId, novas);

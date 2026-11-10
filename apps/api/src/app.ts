@@ -6,9 +6,9 @@ import { type ChavesDeSegredo } from "@erp/db/segredos";
 
 import { type Ambiente } from "./config/env";
 import { registrarTratadorDeErros } from "./http/tratador-erros";
-import { type Armazenamento } from "./infra/armazenamento";
+import type { Armazenamento } from "./infra/armazenamento";
 import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
-import { type FilaDeJobs } from "./infra/fila";
+import type { FilaDeJobs } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
 import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";

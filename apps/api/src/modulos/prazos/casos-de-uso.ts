@@ -9,7 +9,7 @@ import {
 import { JOB_RECALCULAR_PRAZOS } from "@erp/shared/jobs";
 
 import { conflito, naoEncontrado } from "../../http/erros";
-import { type FilaDeJobs } from "../../infra/fila";
+import type { FilaDeJobs } from "../../infra/fila";
 import { type Executor } from "../../repositorios";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
 
@@ -18,7 +18,7 @@ import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
  * CT-e é recalculada pelo worker (job da empresa), que aplica todas as regras ativas de uma vez:
  * vale para regra nova, alterada, ligada, desligada ou apagada (sem regra, volta a previsão do
  * SSW — decisão Q19). CT-e e chegada novos recebem a regra na ingestão, pela mesma função do
- * domínio (`previsaoPelasRegras`).
+ * núcleo (`definirPrevisao`).
  * origem: prazos.functions.ts (sistema atual)
  */
 

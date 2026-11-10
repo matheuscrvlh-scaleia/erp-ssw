@@ -3,7 +3,7 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirAdminDaEmpresa, exigirTela } from "../../http/guardas";
-import { type FilaDeJobs } from "../../infra/fila";
+import type { FilaDeJobs } from "../../infra/fila";
 import { atorDa } from "../../plugins/sessao";
 import { alterarPrazo, criarPrazo, excluirPrazo, ligarPrazo, listarPrazos } from "./casos-de-uso";
 
