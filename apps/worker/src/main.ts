@@ -2,6 +2,15 @@ import { setTimeout as esperar } from "node:timers/promises";
 
 import { comContexto, conectarBanco, type ContextoBanco, type Transacao } from "@erp/db";
 import { lerChavesDeSegredo } from "@erp/db/segredos";
+import {
+  criarClienteSftp,
+  criarEnfileirador,
+  criarFilaDeAplicacao,
+  criarProgressos,
+  criarRepositorioDeRetencao,
+  criarRepositorioIngestao,
+  criarTravas,
+} from "@erp/ingestao/infra";
 import { filaDoJob, PREFIXO_DAS_FILAS } from "@erp/shared/ingestao";
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
@@ -24,6 +33,7 @@ import { criarCofreDeToken } from "./fontes/ssw-api/cofre-de-token";
 import { criarJobTokenSsw } from "./fontes/ssw-api/job";
 import { jobWebhookSsw } from "./fontes/webhook/job";
 import { criarRepositorioWebhook } from "./fontes/webhook/repositorio";
+import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparIngestaoSsw, limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
 import { recalcularPrazos } from "./jobs/prazos/job";
@@ -42,7 +52,6 @@ import {
   OPCOES_PADRAO_DO_JOB,
   type RepositoriosDoWorker,
 } from "./jobs/registro";
-import { slaPelosArquivos } from "./jobs/sla-arquivos/job";
 import { criarRepositorioSlaArquivos } from "./jobs/sla-arquivos/repositorio";
 import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
@@ -76,6 +85,8 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     cteNucleo: criarRepositorioCteNucleo(tx, empresaId),
     bi2: criarRepositorioBi2(tx, empresaId),
     webhook: criarRepositorioWebhook(tx, empresaId),
+    ingestao: (id) => criarRepositorioIngestao(tx, id, null),
+    retencaoDaIngestao: criarRepositorioDeRetencao(tx),
     slaArquivos: criarRepositorioSlaArquivos(tx),
     prazos: criarRepositorioPrazosDoWorker(tx),
     projecoesRomaneio: criarRepositorioProjecoesRomaneio(tx, empresaId),
@@ -105,6 +116,8 @@ const enfileirador: Enfileirador = {
 };
 
 const cofre = criarCofre(chavesDeSegredo);
+// Jobs de outros domínios que a ingestão pede (projeções do Romaneio, 050 de Coletas).
+const enfileiradorDeDominios = criarEnfileirador(redis);
 /** Todos os jobs do sistema. Job novo entra aqui. */
 const JOBS: readonly DefinicaoDeJob[] = [
   limparSessoes,
@@ -118,7 +131,16 @@ const JOBS: readonly DefinicaoDeJob[] = [
     esperar: (ms) => esperar(ms),
   }),
   jobWebhookSsw,
-  slaPelosArquivos,
+  ...criarJobsDaIngestao({
+    fila: criarFilaDeAplicacao(redis),
+    travas: criarTravas(redis),
+    progressos: criarProgressos(redis),
+    enfileirador: enfileiradorDeDominios,
+    sftp: criarClienteSftp(),
+    cofre,
+    sftpDoAmbiente: ambiente,
+    esperar: (ms) => esperar(ms),
+  }),
   recalcularPrazos,
   recalcularProjecoesRomaneio,
   reconstruirProjecoesRomaneio,
@@ -187,6 +209,7 @@ async function desligar(sinal: string) {
   saude.close();
   await Promise.all(workers.map((w) => w.close()));
   await Promise.all([...filas.values()].map((f) => f.close()));
+  await enfileiradorDeDominios.fechar();
   await conexao.encerrar();
   await redis.quit();
   process.exit(0);

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type ContextoBanco } from "@erp/db";
+import { ehJobDeIngestao, JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
 import { z } from "@erp/shared/zod";
 import { UnrecoverableError } from "bullmq";
 import { pino } from "pino";
@@ -11,11 +12,12 @@ import {
   type FilaAgendavel,
   sincronizarAgendamentos,
 } from "./agendamentos/agendamentos";
+import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparSessoes } from "./jobs/manutencao/job";
 import { propagarClassificacao, TAMANHO_DO_LOTE } from "./jobs/recalculo/job";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
 import { criarProcessador } from "./processador";
-import { BancoFalso } from "./testes/banco-falso";
+import { BancoFalso, EMPRESA as EMPRESA_DO_BANCO } from "./testes/banco-falso";
 
 const log = pino({ level: "silent" });
 const EMPRESA = randomUUID();
@@ -183,5 +185,57 @@ describe("agendamentos", () => {
     const { fila, chaves } = filaFalsa(["limpar-sessoes"]);
     await sincronizarAgendamentos(fila, []);
     expect(chaves.size).toBe(0);
+  });
+});
+
+describe("jobs da ingestão por arquivo", () => {
+  const jobs = criarJobsDaIngestao(
+    // Os jobs testados aqui não usam Redis, SFTP nem cofre.
+    {} as unknown as Parameters<typeof criarJobsDaIngestao>[0],
+  );
+
+  it("têm os nomes e as filas do catálogo, sob demanda (quem agenda é o despachante)", () => {
+    for (const j of jobs) {
+      expect(ehJobDeIngestao(j.nome)).toBe(true);
+      expect(j.fila).toBe(`ingestao.${j.nome}`);
+      expect(j.escopo).toBe("empresa");
+      expect(j.agendamento).toBeNull();
+    }
+    expect(jobs.map((j) => j.nome)).toEqual(
+      JOBS_DE_INGESTAO.filter((j) => j.integracao === "sftp" || j.integracao === "xml_cte").map(
+        (j) => j.job,
+      ),
+    );
+  });
+
+  it("limpar_staging_038 aplica a retenção no contexto da empresa", async () => {
+    const banco = new BancoFalso();
+    const processar = criarProcessador({
+      jobs,
+      executar: banco.executar,
+      log,
+      agora: () => new Date("2026-11-10T06:40:00Z"),
+    });
+    await processar({ name: "limpar_staging_038", data: { empresaId: EMPRESA_DO_BANCO } });
+    expect(banco.contextos).toEqual([
+      { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },
+    ]);
+    expect(banco.retencoes).toContainEqual(new Date("2026-09-11T06:40:00Z"));
+  });
+
+  it("sla_arquivos passa a unidade pelo 455 antes do SLA, tudo no contexto da empresa", async () => {
+    const banco = new BancoFalso();
+    const processar = criarProcessador({
+      jobs,
+      executar: banco.executar,
+      log,
+      agora: () => new Date(),
+    });
+    await processar({ name: "sla_arquivos", data: { empresaId: EMPRESA_DO_BANCO } });
+    // Uma transação da unidade pelo 455 (sem 455 recente) e uma do SLA.
+    expect(banco.contextos).toEqual([
+      { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },
+      { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },
+    ]);
   });
 });

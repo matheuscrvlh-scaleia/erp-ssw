@@ -37,6 +37,37 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
 - **Q54 — código de ocorrência com letra** na coluna do SSW conta como "sem código" na saída para
   entrega, em vez de derrubar a consulta.
 
+## Ingestão SSW — relatórios, FTP, XML CT-e e ciclo (`packages/ingestao`, spec 06)
+
+- **Q02 — CT-e por sigla + número.** A ingestão casa todo relatório pelo par (sigla, número): acabam
+  a "série vigente" e o CT-e "estacionado" (`35123/CAS`); o CT-e antigo de outra série segue com
+  o número dele e não perde dado nem ocorrência. Na aplicação manual some o ignorado
+  `sigla_divergente`.
+- **Q11/D7 — entrega só com a data do 930** (sem ocorrência 1/18/67) vira 00:00 de Brasília do dia,
+  não mais 21:00 do dia anterior.
+- **Q19 — previsão do SSW em CT-e com regra configurada** vai para a previsão guardada do SSW
+  (`previsao_ssw_*`) em vez de ser descartada; volta a valer se a regra sair.
+- **Q37 — horário do FTP** é o de produção para todas as empresas (todo minuto, exceto :00 e :30) e
+  a tela XML CT-e mostra esse horário; o editor de intervalo saiu.
+- **Q38 — romaneio do CT-e pelo 036** é calculado direto da staging na aplicação, sem esperar a
+  atualização das projeções (até 30 min mais atual).
+- **Q39 — 050 aparece no painel de arquivos** do pipeline (registrado como relatório 050).
+- **Q43 — XML de CT-e grava a chave da NF-e** quando o CT-e ainda não tem; o upload manual segue na
+  tela. Cancelamento por XML marca o status "CANCELADO" (as colunas `cancelado_em` e
+  `motivo_cancelamento` não existem mais).
+- **Q44 — 455 de largura fixa saiu**: o importador manual e o leitor não existem mais; arquivo
+  "455" é lido como 455 CSV.
+- **Q46 — rotas que respondiam 410** (`ftp-xml-import`, `ssw-ingest`, `enriquecer-85`,
+  `enriquecer-periodo`) não existem: respondem 404. `xml-recuperar-orfaos` também saiu (§9).
+- **Q49 — retenção da ingestão**: linhas aplicadas 60 dias, erros de leitura 30, arquivos/ciclos/
+  aplicações 180, XML 180, órfãos resolvidos 30 e execuções do FTP 90 (antes, sem limpeza).
+- **Q51 — descartar um ciclo apaga também o 455 CSV** do ciclo (antes ficava na staging).
+- **`ssw-ciclo-aplicar`** passa a pedir a rodada ao worker e responde `status: "enfileirado"` na
+  hora, em vez de esperar a aplicação; `xml-orfaos-retry` exige `x-ftp-ingest-secret` ou
+  `x-cron-token` (antes aceitava a chave publicável).
+- **Aplicação manual** não roda junto com o ciclo automático: se ele estiver aplicando, a tela
+  pede para tentar de novo em instantes.
+
 ## Romaneio e Prazo do parceiro (spec 03)
 
 - **Q02 — CT-e por sigla + número.** Linha do tempo, lista, gaveta da aba Hoje e detalhe do Prazo do

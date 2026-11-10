@@ -12,7 +12,7 @@ const TAMANHO_DO_LOTE = 500;
 /**
  * Recálculo incremental das projeções do Romaneio (viagens, saídas, romaneio atual e dados
  * 038/455) dos CT-e cujas linhas a ingestão acabou de gravar. Sob demanda: a ingestão enfileira
- * com as chaves (TODO(ingestao): enfileirar ao fim de cada lote 036/306/038/455).
+ * com as chaves ao aplicar cada lote 036/306/038/455 (`avisarProjecoes` em `@erp/ingestao`).
  * Substitui o refresh das matviews (Q38).
  */
 export const recalcularProjecoesRomaneio = definirJob({

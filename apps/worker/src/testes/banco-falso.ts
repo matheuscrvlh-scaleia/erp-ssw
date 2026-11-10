@@ -12,6 +12,7 @@ import {
   type TrocaDePrevisao,
 } from "@erp/dominio/nucleo";
 import { CATALOGO_FR } from "@erp/dominio/nucleo/apoio-testes";
+import { estadoFalso, repositorioFalso } from "@erp/ingestao/testes";
 import { type IntegracaoDaIngestao } from "@erp/shared/ingestao";
 
 import { type SincronizacaoNova } from "../fontes/bi2/job";
@@ -56,6 +57,10 @@ export class BancoFalso {
     config: CONFIGURACAO_PADRAO,
     dominioSsw: "FRT",
   };
+  /** Estado da ingestão por arquivo (falso do pacote `@erp/ingestao`). */
+  ingestao = estadoFalso();
+  /** Limites recebidos pela retenção da ingestão. */
+  retencoes: Date[] = [];
   projecoes = new ProjecoesFalsas();
   /** Faz a próxima transação falhar com este erro. */
   falharCom: Error | null = null;
@@ -183,7 +188,22 @@ export class BancoFalso {
           return Promise.resolve(id);
         },
       },
+      ingestao: () => repositorioFalso(this.ingestao),
+      retencaoDaIngestao: {
+        apagarLinhasAplicadasAntesDe: (limite) => this.apagou(limite),
+        apagarErrosAntesDe: (limite) => this.apagou(limite),
+        apagarArquivosCiclosEAplicacoesAntesDe: (limite) => this.apagou(limite),
+        apagarXmlAntesDe: (limite) => this.apagou(limite),
+        apagarOrfaosResolvidosAntesDe: (limite) => this.apagou(limite),
+        apagarSincronizacoesAntesDe: (limite) => this.apagou(limite),
+        apagar038Superadas: (limite) => this.apagou(limite),
+      },
       projecoesRomaneio: this.projecoes,
     };
+  }
+
+  private apagou(limite: Date) {
+    this.retencoes.push(limite);
+    return Promise.resolve(0);
   }
 }

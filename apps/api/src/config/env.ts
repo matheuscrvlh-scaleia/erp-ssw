@@ -57,6 +57,8 @@ const esquema = z
 
     /** Token de leitura de /metrics; sem ele a rota não existe. */
     METRICAS_TOKEN: z.string().min(16).optional(),
+    /** Segredo `x-ftp-ingest-secret` das rotas públicas da ingestão; sem ele, 503. */
+    FTP_INGEST_SECRET: z.string().min(16).optional(),
 
     /** Chaves mestras dos segredos de integração: "1:<base64 de 32 bytes>,2:<…>". */
     SEGREDOS_CHAVES: z.string().optional(),

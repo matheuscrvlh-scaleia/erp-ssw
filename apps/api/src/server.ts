@@ -2,6 +2,13 @@ import { setTimeout as esperar } from "node:timers/promises";
 
 import { comContexto, conectarBanco } from "@erp/db";
 import { lerChavesDeSegredo } from "@erp/db/segredos";
+import {
+  criarEnfileirador,
+  criarFilaDeAplicacao,
+  criarProgressos,
+  criarRepositorioIngestao,
+  criarTravas,
+} from "@erp/ingestao/infra";
 import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
@@ -14,6 +21,8 @@ import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
+import { criarRepositorioDaIngestaoPublica } from "./modulos/ingestao/repositorio";
+import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
 import { criarRepositorios } from "./repositorios";
 
 /** Tempo para terminar as requisições em andamento depois do SIGTERM. */
@@ -39,7 +48,39 @@ const chavesDeSegredo = ambiente.SEGREDOS_CHAVES
   ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
   : null;
 
+const PLATAFORMA = { empresaId: null, usuarioId: null, plataforma: true } as const;
+const enfileirador = redis ? criarEnfileirador(redis) : null;
+const ingestao: ServicosDaIngestao | null =
+  redis && enfileirador
+    ? {
+        executarNaEmpresa: (empresaId, ator) => (fn) =>
+          comContexto(
+            conexao.banco,
+            {
+              empresaId,
+              usuarioId: ator?.usuarioId ?? null,
+              plataforma: ator?.plataforma ?? false,
+            },
+            (tx) => fn(criarRepositorioIngestao(tx, empresaId, ator)),
+          ),
+        empresasParaIngestao: () =>
+          comContexto(conexao.banco, PLATAFORMA, (tx) =>
+            criarRepositorioDaIngestaoPublica(tx).empresasParaIngestao(),
+          ),
+        tokenDoCron: () =>
+          comContexto(conexao.banco, PLATAFORMA, (tx) =>
+            criarRepositorioDaIngestaoPublica(tx).tokenDoCron(),
+          ),
+        fila: criarFilaDeAplicacao(redis),
+        travas: criarTravas(redis),
+        progressos: criarProgressos(redis),
+        enfileirador,
+        segredoDoFtp: ambiente.FTP_INGEST_SECRET ?? null,
+      }
+    : null;
+
 const app = await construirApp({
+  ingestao,
   ambiente,
   executar: (contexto, fn) =>
     comContexto(conexao.banco, contexto, (tx) => fn(criarRepositorios(tx))),
@@ -95,6 +136,7 @@ const app = await construirApp({
 });
 
 app.addHook("onClose", async () => {
+  await enfileirador?.fechar();
   await filasDeIngestao?.fechar();
   await fila?.fechar();
   await conexao.encerrar();

@@ -29,6 +29,11 @@ const esquema = z.object({
   /** Chaves mestras dos segredos de integração (`1:<base64 32 bytes>,2:...`) e a versão atual. */
   SEGREDOS_CHAVES: z.string().min(1).optional(),
   SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+  /** SFTP da ingestão: só vale para integração com `parametros.usar_env` (transição da FR). */
+  SFTP_HOST: z.string().optional(),
+  SFTP_PORTA: z.string().optional(),
+  SFTP_USUARIO: z.string().optional(),
+  SFTP_SENHA: z.string().optional(),
 });
 
 export type AmbienteWorker = z.output<typeof esquema>;

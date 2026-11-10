@@ -1,5 +1,6 @@
 import { type ContextoBanco } from "@erp/db";
 import { type RepositorioProjecoesRomaneio } from "@erp/dominio/romaneio/projecoes";
+import { type RepositorioDeRetencao, type RepositorioIngestao } from "@erp/ingestao/casos-de-uso";
 import { filaDoJob, JOBS_DE_INGESTAO, type NomeDoJobDeIngestao } from "@erp/shared/ingestao";
 import { type z } from "@erp/shared/zod";
 import { type Logger } from "pino";
@@ -22,6 +23,9 @@ export interface RepositoriosDoWorker {
   cteNucleo: RepositorioCteNucleo;
   bi2: RepositorioBi2;
   webhook: RepositorioWebhook;
+  /** Ingestão SSW por arquivo da empresa do contexto (ator: sistema). */
+  ingestao: (empresaId: string) => RepositorioIngestao;
+  retencaoDaIngestao: RepositorioDeRetencao;
   slaArquivos: RepositorioSlaArquivos;
   prazos: RepositorioPrazosDoWorker;
   projecoesRomaneio: RepositorioProjecoesRomaneio;

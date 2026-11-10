@@ -28,6 +28,9 @@ import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
 import { rotasCtrc } from "./modulos/ctrc/rotas";
 import { rotasFiltros } from "./modulos/filtros/rotas";
 import { rotasHistorico } from "./modulos/historico/rotas";
+import { rotasAdminDaIngestao } from "./modulos/ingestao/rotas-admin";
+import { rotasPublicasDaIngestao } from "./modulos/ingestao/rotas-publicas";
+import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
 import { type FilasDeIngestao } from "./modulos/ingestao-ssw/casos-de-uso";
 import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
 import { rotasPublicasSsw } from "./modulos/ingestao-ssw/rotas-publicas";
@@ -63,6 +66,8 @@ export interface Dependencias {
   /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
   correio: Correio | null;
   google: ProvedorGoogle | null;
+  /** Ingestão SSW (precisa de Redis); sem ela as rotas da ingestão não existem. */
+  ingestao?: ServicosDaIngestao | null;
   /** Filas do BullMQ (ingestão). Nulo = sem Redis: execuções manuais e o webhook respondem 503. */
   filasDeIngestao: FilasDeIngestao | null;
   /** Fila do worker (recálculos); desligada sem Redis. */
@@ -131,6 +136,10 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+  if (deps.ingestao) {
+    await app.register(rotasPublicasDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
+    await app.register(rotasAdminDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
+  }
   await app.register(rotasRomaneio, { agora: deps.agora });
   await app.register(rotasPrazoParceiro);
   await app.register(rotasOcorrencias, { agora: deps.agora });

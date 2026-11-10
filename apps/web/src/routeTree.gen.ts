@@ -28,11 +28,13 @@ import { Route as AutenticadoAdminCodigosRouteImport } from './routes/_autentica
 import { Route as AutenticadoAdminConfiguracoesRouteImport } from './routes/_autenticado/admin/configuracoes'
 import { Route as AutenticadoAdminDepartamentosRouteImport } from './routes/_autenticado/admin/departamentos'
 import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autenticado/admin.equipes'
+import { Route as AutenticadoAdminImportacaoSswRouteImport } from './routes/_autenticado/admin.importacao-ssw'
 import { Route as AutenticadoAdminIngestaoRouteImport } from './routes/_autenticado/admin.ingestao'
 import { Route as AutenticadoAdminLogsRouteImport } from './routes/_autenticado/admin/logs'
 import { Route as AutenticadoAdminRolesRouteImport } from './routes/_autenticado/admin/roles'
 import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_autenticado/admin.ssw-diagnostico'
 import { Route as AutenticadoAdminUsuariosRouteImport } from './routes/_autenticado/admin/usuarios'
+import { Route as AutenticadoAdminXmlCteRouteImport } from './routes/_autenticado/admin.xml-cte'
 import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
 import { Route as AutenticadoHistoricoFeriadosRouteImport } from './routes/_autenticado/historico_.feriados'
 import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
@@ -145,6 +147,12 @@ const AutenticadoAdminEquipesRoute = AutenticadoAdminEquipesRouteImport.update({
   path: '/admin/equipes',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoAdminImportacaoSswRoute =
+  AutenticadoAdminImportacaoSswRouteImport.update({
+    id: '/admin/importacao-ssw',
+    path: '/admin/importacao-ssw',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoAdminIngestaoRoute =
   AutenticadoAdminIngestaoRouteImport.update({
     id: '/admin/ingestao',
@@ -173,6 +181,11 @@ const AutenticadoAdminUsuariosRoute =
     path: '/admin/usuarios',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoAdminXmlCteRoute = AutenticadoAdminXmlCteRouteImport.update({
+  id: '/admin/xml-cte',
+  path: '/admin/xml-cte',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
   id: '/ctrc/$numero',
   path: '/ctrc/$numero',
@@ -268,11 +281,13 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
   '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
   '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
   '/admin/logs': typeof AutenticadoAdminLogsRoute
   '/admin/roles': typeof AutenticadoAdminRolesRoute
   '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
   '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
+  '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
@@ -306,11 +321,13 @@ export interface FileRoutesByTo {
   '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
   '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
   '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
   '/admin/logs': typeof AutenticadoAdminLogsRoute
   '/admin/roles': typeof AutenticadoAdminRolesRoute
   '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
   '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
+  '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
@@ -346,11 +363,13 @@ export interface FileRoutesById {
   '/_autenticado/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
   '/_autenticado/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/_autenticado/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/_autenticado/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
   '/_autenticado/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
   '/_autenticado/admin/logs': typeof AutenticadoAdminLogsRoute
   '/_autenticado/admin/roles': typeof AutenticadoAdminRolesRoute
   '/_autenticado/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
   '/_autenticado/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
+  '/_autenticado/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/_autenticado/historico_/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
@@ -386,11 +405,13 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/departamentos'
     | '/admin/equipes'
+    | '/admin/importacao-ssw'
     | '/admin/ingestao'
     | '/admin/logs'
     | '/admin/roles'
     | '/admin/ssw-diagnostico'
     | '/admin/usuarios'
+    | '/admin/xml-cte'
     | '/ctrc/$numero'
     | '/historico/feriados'
     | '/performance/lista'
@@ -424,11 +445,13 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/departamentos'
     | '/admin/equipes'
+    | '/admin/importacao-ssw'
     | '/admin/ingestao'
     | '/admin/logs'
     | '/admin/roles'
     | '/admin/ssw-diagnostico'
     | '/admin/usuarios'
+    | '/admin/xml-cte'
     | '/ctrc/$numero'
     | '/historico/feriados'
     | '/performance/lista'
@@ -463,11 +486,13 @@ export interface FileRouteTypes {
     | '/_autenticado/admin/configuracoes'
     | '/_autenticado/admin/departamentos'
     | '/_autenticado/admin/equipes'
+    | '/_autenticado/admin/importacao-ssw'
     | '/_autenticado/admin/ingestao'
     | '/_autenticado/admin/logs'
     | '/_autenticado/admin/roles'
     | '/_autenticado/admin/ssw-diagnostico'
     | '/_autenticado/admin/usuarios'
+    | '/_autenticado/admin/xml-cte'
     | '/_autenticado/ctrc/$numero'
     | '/_autenticado/historico_/feriados'
     | '/_autenticado/performance/lista'
@@ -626,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoAdminEquipesRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/importacao-ssw': {
+      id: '/_autenticado/admin/importacao-ssw'
+      path: '/admin/importacao-ssw'
+      fullPath: '/admin/importacao-ssw'
+      preLoaderRoute: typeof AutenticadoAdminImportacaoSswRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/admin/ingestao': {
       id: '/_autenticado/admin/ingestao'
       path: '/admin/ingestao'
@@ -659,6 +691,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/usuarios'
       fullPath: '/admin/usuarios'
       preLoaderRoute: typeof AutenticadoAdminUsuariosRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/xml-cte': {
+      id: '/_autenticado/admin/xml-cte'
+      path: '/admin/xml-cte'
+      fullPath: '/admin/xml-cte'
+      preLoaderRoute: typeof AutenticadoAdminXmlCteRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/ctrc/$numero': {
@@ -771,11 +810,13 @@ interface AutenticadoRouteChildren {
   AutenticadoAdminConfiguracoesRoute: typeof AutenticadoAdminConfiguracoesRoute
   AutenticadoAdminDepartamentosRoute: typeof AutenticadoAdminDepartamentosRoute
   AutenticadoAdminEquipesRoute: typeof AutenticadoAdminEquipesRoute
+  AutenticadoAdminImportacaoSswRoute: typeof AutenticadoAdminImportacaoSswRoute
   AutenticadoAdminIngestaoRoute: typeof AutenticadoAdminIngestaoRoute
   AutenticadoAdminLogsRoute: typeof AutenticadoAdminLogsRoute
   AutenticadoAdminRolesRoute: typeof AutenticadoAdminRolesRoute
   AutenticadoAdminSswDiagnosticoRoute: typeof AutenticadoAdminSswDiagnosticoRoute
   AutenticadoAdminUsuariosRoute: typeof AutenticadoAdminUsuariosRoute
+  AutenticadoAdminXmlCteRoute: typeof AutenticadoAdminXmlCteRoute
   AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
   AutenticadoHistoricoFeriadosRoute: typeof AutenticadoHistoricoFeriadosRoute
   AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
@@ -807,11 +848,13 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoAdminConfiguracoesRoute: AutenticadoAdminConfiguracoesRoute,
   AutenticadoAdminDepartamentosRoute: AutenticadoAdminDepartamentosRoute,
   AutenticadoAdminEquipesRoute: AutenticadoAdminEquipesRoute,
+  AutenticadoAdminImportacaoSswRoute: AutenticadoAdminImportacaoSswRoute,
   AutenticadoAdminIngestaoRoute: AutenticadoAdminIngestaoRoute,
   AutenticadoAdminLogsRoute: AutenticadoAdminLogsRoute,
   AutenticadoAdminRolesRoute: AutenticadoAdminRolesRoute,
   AutenticadoAdminSswDiagnosticoRoute: AutenticadoAdminSswDiagnosticoRoute,
   AutenticadoAdminUsuariosRoute: AutenticadoAdminUsuariosRoute,
+  AutenticadoAdminXmlCteRoute: AutenticadoAdminXmlCteRoute,
   AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
   AutenticadoHistoricoFeriadosRoute: AutenticadoHistoricoFeriadosRoute,
   AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
