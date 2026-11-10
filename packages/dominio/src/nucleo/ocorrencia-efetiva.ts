@@ -3,18 +3,13 @@
  * (0174, 0013, 036). Entrega/baixa vence o que vier depois; depois, a mais recente; empate, a
  * fonte de maior prioridade.
  */
-import {
-  type CatalogoDeCodigos,
-  CODIGOS_ENTREGA,
-  normCodigoOcorr,
-  type Responsavel,
-} from "./codigos";
+import { type CatalogoDeCodigos, CODIGOS_ENTREGA, normCodigoOcorr } from "./codigos";
 import { foraDeQuarentena, maisRecentePrimeiro, type OcorrenciaDoCte } from "./ocorrencia";
 import { type DataIso, diaSp } from "./tempo";
 import { nuloSeVazio } from "./texto";
 
 export const FONTES_DA_EFETIVA = ["ssw_036", "bi2_0174", "bi2_0013", "webhook"] as const;
-export type FonteDaEfetiva = (typeof FONTES_DA_EFETIVA)[number];
+type FonteDaEfetiva = (typeof FONTES_DA_EFETIVA)[number];
 
 /** Prioridade no empate: 036 › 0174 › 0013 › ocorrências gravadas ("webhook"). */
 const PRIORIDADE: Record<FonteDaEfetiva, number> = {
@@ -221,35 +216,4 @@ export function statusAtual(
   const [ultima] = foraDeQuarentena(ocorrencias).sort(maisRecentePrimeiro);
   if (ultima === undefined) return null;
   return ultima.descricao ?? catalogo.get(ultima.codigo)?.descricao ?? null;
-}
-
-/** Efetiva gravada, como a leitura em lote devolve (Romaneio, exportação, Performance). */
-export interface EfetivaParaLeitura {
-  codigo: number;
-  descricao: string | null;
-  dataHora: Date | null;
-  responsavel: Responsavel | null;
-  fonte: FonteDaEfetiva | null;
-  local: string | null;
-}
-
-/**
- * Lê a efetiva **gravada** (não recalcula). CT-e sem efetiva não volta linha (`null`).
- * origem: ultima_ocorrencia_efetiva_batch (sistema atual)
- */
-export function efetivaParaLeitura(
-  cte: OcorrenciaEfetiva,
-  catalogo: CatalogoDeCodigos,
-): EfetivaParaLeitura | null {
-  const codigo = normCodigoOcorr(cte.ocorrEfetivaCodigo);
-  if (codigo === null) return null;
-  const cadastro = catalogo.get(codigo);
-  return {
-    codigo,
-    descricao: nuloSeVazio(cte.ocorrEfetivaDescricao) ?? cadastro?.descricao ?? null,
-    dataHora: cte.ocorrEfetivaData,
-    responsavel: cadastro?.responsavel ?? null,
-    fonte: cte.ocorrEfetivaFonte,
-    local: cte.ocorrEfetivaLocal,
-  };
 }

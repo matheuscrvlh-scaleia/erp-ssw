@@ -1,6 +1,6 @@
 import { type z } from "./zod";
 
-export type Metodo = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+type Metodo = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 /**
  * Contrato de um endpoint: a API valida com ele e o web chama por ele, então os dois lados não

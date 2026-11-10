@@ -12,9 +12,6 @@ export interface CodigoDoCatalogo {
   tipoSsw: string | null;
 }
 
-/** Configuração da empresa com os códigos de pendência que a tela Ocorrências não mostra. */
-export const CONFIG_CODIGOS_FORA_DA_TELA = "ocorrencias_codigos_fora_da_tela";
-
 /**
  * Lista "3, 40,55" de uma configuração: só os itens que são número inteiro; o resto é ignorado.
  * origem: parseListaInteiros (src/lib/config.server.ts, sistema atual)

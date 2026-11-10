@@ -30,10 +30,47 @@ export const campoFiltro = {
   /** Uma das opções; fora delas, o padrão. */
   opcao: <const T extends readonly [string, ...string[]]>(opcoes: T, padrao: T[number]) =>
     z.enum(opcoes).catch(padrao),
+  /** Uma das opções ou `null` (sem escolha). */
+  opcaoOuNada: <const T extends readonly [string, ...string[]]>(opcoes: T) =>
+    z.enum(opcoes).nullable().catch(null),
   /** Página a partir de 1. */
   pagina: () => z.coerce.number().int().min(1).catch(1),
-  booleano: (padrao = false) => z.boolean().catch(padrao),
+  /** Ligado: `true`, `1`, `"true"` ou `"1"` (links antigos trazem o texto). */
+  booleano: (padrao = false) =>
+    z
+      .unknown()
+      .transform((v) =>
+        v === undefined ? padrao : v === true || v === 1 || v === "true" || v === "1",
+      )
+      .catch(padrao),
+  /** Número ou `null` (vazio, ausente ou não numérico). */
+  numero: () => z.unknown().transform(paraNumero).catch(null),
+  /** Inteiro (a parte inteira do número) ou `null`. */
+  inteiro: () =>
+    z
+      .unknown()
+      .transform((v) => {
+        const n = paraNumero(v);
+        return n === null ? null : Math.trunc(n);
+      })
+      .catch(null),
+  /** Lista de inteiros; o que não for inteiro sai da lista. */
+  inteiros: () =>
+    z
+      .unknown()
+      .transform((v) =>
+        (Array.isArray(v) ? (v as unknown[]) : v == null || v === "" ? [] : [v])
+          .map(Number)
+          .filter((n) => Number.isInteger(n)),
+      )
+      .catch([]),
 };
+
+function paraNumero(v: unknown): number | null {
+  if (v === null || v === undefined || v === "" || typeof v === "boolean") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 export type EsquemaFiltros = z.ZodObject;
 
@@ -61,6 +98,20 @@ export function semPadroes(
     Object.entries(busca).filter(
       ([chave, valor]) => valor !== undefined && !(chave in padrao && igual(valor, padrao[chave])),
     ),
+  );
+}
+
+/**
+ * Algum filtro ligado, para "Limpar filtros" e a faixa "Filtrando por": o período só conta quando é
+ * um intervalo escolhido, e os campos de `naoSaoFiltro` (ordenação, página...) nunca contam.
+ */
+export function temFiltro(
+  ativos: readonly string[],
+  periodo: string,
+  naoSaoFiltro: readonly string[] = [],
+): boolean {
+  return ativos.some(
+    (campo) => !naoSaoFiltro.includes(campo) && (campo !== "periodo" || periodo === "custom"),
   );
 }
 

@@ -6,7 +6,7 @@ import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { z } from "@erp/shared/zod";
 
-import { type EtiquetaFiltro, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
+import { type EtiquetaDaBusca, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { type Intervalo } from "@/componentes/comum/periodo";
 import { campoFiltro } from "@/hooks/use-filtros-na-url";
 
@@ -27,7 +27,7 @@ export const esquemaDaBusca = z.object({
   page: campoFiltro.pagina(),
   size: z.coerce.number().int().min(1).max(500).catch(50),
 });
-export type BuscaComprovantes = z.output<typeof esquemaDaBusca>;
+type BuscaComprovantes = z.output<typeof esquemaDaBusca>;
 
 export function filtrosDaBusca(b: BuscaComprovantes, periodo: Intervalo): FiltrosDeComprovantes {
   return {
@@ -45,15 +45,7 @@ export function filtrosDaBusca(b: BuscaComprovantes, periodo: Intervalo): Filtro
 }
 
 /** O status do card só abre a lista lateral, não recorta a tela: não é filtro. */
-const NAO_SAO_FILTRO = new Set(["status", "page", "size"]);
-
-export function temFiltro(ativos: readonly string[], b: BuscaComprovantes): boolean {
-  return ativos.some((c) => !NAO_SAO_FILTRO.has(c) && (c !== "periodo" || b.periodo === "custom"));
-}
-
-export type EtiquetaDaBusca = Omit<EtiquetaFiltro, "limpar"> & {
-  limpar: Partial<BuscaComprovantes>;
-};
+export const NAO_SAO_FILTRO = ["status", "page", "size"] as const;
 
 /**
  * Faixa "Filtrando por" (o período fica de fora: já está nos botões). Pagador pelo nome, quando
@@ -62,7 +54,7 @@ export type EtiquetaDaBusca = Omit<EtiquetaFiltro, "limpar"> & {
 export function etiquetasDaBusca(
   b: BuscaComprovantes,
   nomesDosPagadores: readonly string[] = b.pagadores,
-): EtiquetaDaBusca[] {
+): EtiquetaDaBusca<BuscaComprovantes>[] {
   const lista = (rotulo: string, valores: readonly string[], limpar: Partial<BuscaComprovantes>) =>
     valores.length > 0 ? [{ rotulo, ...resumirNomes(valores), limpar }] : [];
   const texto = (rotulo: string, valor: string, limpar: Partial<BuscaComprovantes>) =>

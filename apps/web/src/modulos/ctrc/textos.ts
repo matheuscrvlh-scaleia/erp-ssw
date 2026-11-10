@@ -3,11 +3,6 @@
  * origem: src/routes/_authenticated/ctrc.$numero.tsx e src/lib/ctrc.ts (sistema atual)
  */
 
-const decimal3 = new Intl.NumberFormat("pt-BR", {
-  minimumFractionDigits: 3,
-  maximumFractionDigits: 3,
-});
-
 const dias = (n: number) => `${n} ${Math.abs(n) === 1 ? "dia" : "dias"}`;
 
 /** Título: a NF quando houver (com o CTRC ao lado); senão o CTRC. */
@@ -17,12 +12,6 @@ export function identificacao(
 ): { rotulo: "NF" | "CTRC"; principal: string; secundario: string | null } {
   if (numeroNf !== null) return { rotulo: "NF", principal: String(numeroNf), secundario: numero };
   return { rotulo: "CTRC", principal: numero, secundario: null };
-}
-
-/** Acima de 1 tonelada mostra em t. */
-export function formatarPeso(kg: number | null): string {
-  if (kg === null) return "—";
-  return kg >= 1000 ? `${decimal3.format(kg / 1000)} t` : `${decimal3.format(kg)} kg`;
 }
 
 export function formatarCep(cep: string | null): string {

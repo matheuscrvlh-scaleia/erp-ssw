@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CATALOGO_FR, cte, ocorrencia } from "../testes/nucleo";
-import { calcularOcorrenciaEfetiva, efetivaParaLeitura, statusAtual } from "./ocorrencia-efetiva";
+import { calcularOcorrenciaEfetiva, statusAtual } from "./ocorrencia-efetiva";
 
 const efetiva = (...args: Parameters<typeof calcularOcorrenciaEfetiva>) => {
   const e = calcularOcorrenciaEfetiva(...args);
@@ -135,23 +135,5 @@ describe("status atual (§4.3)", () => {
     ];
     expect(statusAtual(oc, CATALOGO_FR)).toBe("Saiu");
     expect(statusAtual([], CATALOGO_FR)).toBeNull();
-  });
-});
-
-describe("leitura em lote da efetiva gravada (§4.2)", () => {
-  it("sem efetiva não volta linha; descrição vazia cai no cadastro; responsável do cadastro", () => {
-    const gravada = calcularOcorrenciaEfetiva(cte(), [], CATALOGO_FR);
-    expect(efetivaParaLeitura(gravada, CATALOGO_FR)).toBeNull();
-    expect(
-      efetivaParaLeitura(
-        {
-          ...gravada,
-          ocorrEfetivaCodigo: "85",
-          ocorrEfetivaDescricao: "",
-          ocorrEfetivaFonte: "webhook",
-        },
-        CATALOGO_FR,
-      ),
-    ).toMatchObject({ codigo: 85, descricao: "SAIDA PARA ENTREGA", responsavel: "sistema" });
   });
 });

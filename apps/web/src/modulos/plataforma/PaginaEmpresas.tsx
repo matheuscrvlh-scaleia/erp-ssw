@@ -99,7 +99,7 @@ export function PaginaEmpresas() {
 const VAZIA = { nome: "", nomeCurto: "", slug: "", cnpj: "" };
 
 /** Nova empresa: nasce em implantação, com os roles padrão e os cadastros da empresa modelo. */
-export function ModalNovaEmpresa({ aoCriar }: { aoCriar: (id: string) => void }) {
+function ModalNovaEmpresa({ aoCriar }: { aoCriar: (id: string) => void }) {
   const [aberto, setAberto] = useState(false);
   const [campos, setCampos] = useState(VAZIA);
   const [slugEditado, setSlugEditado] = useState(false);

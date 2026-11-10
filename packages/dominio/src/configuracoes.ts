@@ -29,7 +29,7 @@ export const CHAVES_PUBLICAS: readonly string[] = [
 ];
 
 /** A empresa nova copia da modelo estes grupos, menos as chaves de infraestrutura. */
-export const GRUPOS_COPIADOS_NA_CRIACAO: readonly string[] = [
+const GRUPOS_COPIADOS_NA_CRIACAO: readonly string[] = [
   "performance",
   "operacional",
   "ranking",

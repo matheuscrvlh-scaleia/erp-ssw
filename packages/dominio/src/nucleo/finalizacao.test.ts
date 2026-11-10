@@ -4,7 +4,6 @@ import { BAIXA_FR } from "../testes/nucleo";
 import {
   codigoSituacao,
   dataConclusaoEfetiva,
-  estaEmAberto,
   estaEntregue,
   estaFinalizadoSemEntrega,
 } from "./finalizacao";
@@ -33,12 +32,6 @@ describe("estaFinalizadoSemEntrega (§3.2)", () => {
     [null, null, false],
   ])("(%j, %j) → %j", (data, codigo, esperado) => {
     expect(estaFinalizadoSemEntrega(data, codigo, BAIXA_FR)).toBe(esperado);
-  });
-
-  it("aberto = nem entregue nem baixado", () => {
-    expect(estaEmAberto(null, "85", BAIXA_FR)).toBe(true);
-    expect(estaEmAberto(null, "12", BAIXA_FR)).toBe(false);
-    expect(estaEmAberto(entrega, null, BAIXA_FR)).toBe(false);
   });
 });
 

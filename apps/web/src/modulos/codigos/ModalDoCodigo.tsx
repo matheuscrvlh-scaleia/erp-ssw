@@ -3,6 +3,7 @@ import {
   type LetraDeResponsavel,
   LETRAS_DE_RESPONSAVEL,
 } from "@erp/shared/contratos/codigos-ocorrencia";
+import { formatarDataHora } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
@@ -11,7 +12,6 @@ import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
-import { dataHora } from "@/modulos/compartilhado/formatos";
 
 import { consultaHistoricoDoCodigo } from "./api";
 import { ehLetra, rotulosDaLetra } from "./regras";
@@ -47,7 +47,7 @@ function HistoricoDoCodigo({ codigo, fuso }: { codigo: number; fuso: string }) {
       {alteracoes.map((a) => (
         <li key={a.id} className="border-l-2 border-border pl-2">
           <span className="text-muted-foreground">
-            {dataHora(a.criadoEm, fuso)} · {a.autorNome ?? "sistema"} ·{" "}
+            {formatarDataHora(a.criadoEm, fuso)} · {a.autorNome ?? "sistema"} ·{" "}
           </span>
           <span className="text-foreground">{ROTULO_DA_ACAO[a.acao]}</span>
           {a.campo && (

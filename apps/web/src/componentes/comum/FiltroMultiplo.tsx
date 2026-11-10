@@ -19,7 +19,7 @@ export interface OpcaoFiltro {
 }
 
 /** Busca sem diferenciar maiúscula nem acento ("sao" acha "São Paulo"). */
-export function normalizarBusca(texto: string): string {
+function normalizarBusca(texto: string): string {
   return texto
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
@@ -41,7 +41,7 @@ export function opcoesVisiveis(
   return [...marcadas, ...resto.filter((o) => !o.apagada), ...resto.filter((o) => o.apagada)];
 }
 
-export interface FiltroMultiploProps {
+interface FiltroMultiploProps {
   rotulo: string;
   /** `undefined` enquanto carrega. */
   opcoes: readonly OpcaoFiltro[] | undefined;

@@ -23,8 +23,7 @@ export class ErroDaApi extends Error {
   }
 }
 
-export const MENSAGEM_SEM_CONEXAO =
-  "Sem conexão com o servidor. Verifique a internet e tente de novo.";
+const MENSAGEM_SEM_CONEXAO = "Sem conexão com o servidor. Verifique a internet e tente de novo.";
 
 /**
  * Token de acesso só na memória da aba (nunca em storage: um XSS não o leva embora). Some no F5

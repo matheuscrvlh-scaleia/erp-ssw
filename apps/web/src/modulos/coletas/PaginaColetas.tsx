@@ -7,6 +7,13 @@ import {
   type TotaisDeColetas,
 } from "@erp/shared/contratos/coletas";
 import { hojeNoFuso } from "@erp/shared/datas";
+import {
+  formatarData,
+  formatarDataHora,
+  formatarDiaMes,
+  formatarInteiro,
+  formatarParticipacao,
+} from "@erp/shared/formatacao";
 import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { FileUp, RefreshCw } from "lucide-react";
 import { useState } from "react";
@@ -14,7 +21,11 @@ import { useState } from "react";
 import { consultaAcesso } from "@/acesso/sessao";
 import { CampoDetalhe, DrawerDetalhe, GradeDetalhe } from "@/componentes/comum/Detalhe";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
-import { FiltrandoPor, FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import {
+  etiquetasQueLimpam,
+  FiltrandoPor,
+  FiltrosAvancados,
+} from "@/componentes/comum/FiltrosAvancados";
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard, type StatusKpi } from "@/componentes/comum/KpiCard";
@@ -24,8 +35,9 @@ import { SeloAtualizacao } from "@/componentes/comum/SeloAtualizacao";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
+import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
-import { data, dataHora, diaMes, inteiro, participacao } from "@/modulos/compartilhado/formatos";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
 import { BuscaDocumento } from "@/modulos/filtros/componentes";
 
@@ -40,7 +52,6 @@ import {
   ROTULO_DO_PRAZO,
   ROTULO_DO_STATUS,
   SEM_SOLICITANTE,
-  temFiltro,
 } from "./busca";
 import { Importador050 } from "./Importador050";
 
@@ -60,7 +71,7 @@ const CARTOES: Cartao[] = [
     status: "todas",
     rotulo: "Coletas",
     valor: (t) => t.total,
-    detalhe: (t) => `${inteiro(t.reversas)} reversa(s)`,
+    detalhe: (t) => `${formatarInteiro(t.reversas)} reversa(s)`,
     dica: "Coletas cadastradas no período (data de cadastro no SSW), em qualquer situação.",
     tom: "bom",
   },
@@ -68,7 +79,8 @@ const CARTOES: Cartao[] = [
     status: "no_prazo",
     rotulo: "Coletadas no prazo",
     valor: (t) => t.noPrazo,
-    detalhe: (t) => `${participacao(t.noPrazo, t.coletadas)} das ${inteiro(t.coletadas)} coletadas`,
+    detalhe: (t) =>
+      `${formatarParticipacao(t.noPrazo, t.coletadas)} das ${formatarInteiro(t.coletadas)} coletadas`,
     dica: "Coletadas até a data/hora limite atual da coleta. É a mesma conta do quadro RESUMO do relatório 050 do SSW.",
     tom: "bom",
   },
@@ -76,7 +88,7 @@ const CARTOES: Cartao[] = [
     status: "atrasadas",
     rotulo: "Coletadas atrasadas",
     valor: (t) => t.atrasadas,
-    detalhe: (t) => `${participacao(t.atrasadas, t.coletadas)} das coletadas`,
+    detalhe: (t) => `${formatarParticipacao(t.atrasadas, t.coletadas)} das coletadas`,
     dica: "Coletadas depois da data/hora limite atual. Coleta com prazo alterado no SSW conta pelo prazo novo, como no próprio SSW.",
     tom: "ruim",
   },
@@ -84,7 +96,8 @@ const CARTOES: Cartao[] = [
     status: "abertas",
     rotulo: "Em aberto",
     valor: (t) => t.abertas,
-    detalhe: (t) => `${inteiro(t.cadastradas)} cadastradas · ${inteiro(t.comandadas)} comandadas`,
+    detalhe: (t) =>
+      `${formatarInteiro(t.cadastradas)} cadastradas · ${formatarInteiro(t.comandadas)} comandadas`,
     dica: "Ainda não coletadas nem canceladas, na última posição recebida do SSW.",
     tom: "alerta",
   },
@@ -100,7 +113,7 @@ const CARTOES: Cartao[] = [
     status: "vence_hoje",
     rotulo: "Vencem hoje",
     valor: (t) => t.venceHoje,
-    detalhe: (t) => `${inteiro(t.aVencer)} a vencer depois de hoje`,
+    detalhe: (t) => `${formatarInteiro(t.aVencer)} a vencer depois de hoje`,
     dica: "Coletas em aberto com data limite hoje, ainda dentro do horário.",
     tom: "alerta",
   },
@@ -108,7 +121,7 @@ const CARTOES: Cartao[] = [
     status: "com_ctrc",
     rotulo: "Com CT-e gerado",
     valor: (t) => t.comCtrc,
-    detalhe: (t) => `${participacao(t.comCtrc, t.coletadas)} das coletadas`,
+    detalhe: (t) => `${formatarParticipacao(t.comCtrc, t.coletadas)} das coletadas`,
     dica: "Coletas em que o SSW registrou 'CTRC GERADO' no histórico: o subcontrato que nasceu da coleta.",
     tom: "bom",
   },
@@ -116,7 +129,7 @@ const CARTOES: Cartao[] = [
     status: "canceladas",
     rotulo: "Canceladas",
     valor: (t) => t.canceladas,
-    detalhe: (t) => `${inteiro(t.prejudicadas)} prejudicada(s) pelo horário`,
+    detalhe: (t) => `${formatarInteiro(t.prejudicadas)} prejudicada(s) pelo horário`,
     dica: "Coletas canceladas no SSW, mesmo que tenham sido coletadas antes. Não entram na conta de prazo.",
     tom: "ruim",
   },
@@ -130,7 +143,7 @@ const ETAPA: Record<LinhaDeColeta["etapa"], string> = {
 };
 
 function colunasDaLista(fuso: string): ColunaTabela<LinhaDeColeta>[] {
-  const dh = (v: string | null) => dataHora(v, fuso);
+  const dh = (v: string | null) => formatarDataHora(v, fuso);
   return [
     { chave: "unidade", titulo: "Unidade", classe: "font-mono", fixa: true },
     { chave: "numero", titulo: "Coleta", classe: "font-mono whitespace-nowrap" },
@@ -207,12 +220,18 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
       <GradeDetalhe>
         <CampoDetalhe rotulo="Situação" valor={ETAPA[coleta.etapa]} />
         <CampoDetalhe rotulo="Prazo" valor={ROTULO_DO_PRAZO[coleta.statusPrazo].texto} />
-        <CampoDetalhe rotulo="Cadastro" valor={dataHora(coleta.cadastradaEm, fuso)} />
+        <CampoDetalhe rotulo="Cadastro" valor={formatarDataHora(coleta.cadastradaEm, fuso)} />
         <CampoDetalhe rotulo="Cadastrada por" valor={d?.cadastradaPor ?? null} />
-        <CampoDetalhe rotulo="Comandada em" valor={d ? dataHora(d.comandadaEm, fuso) : null} />
-        <CampoDetalhe rotulo="Limite" valor={dataHora(coleta.limiteEm, fuso)} />
-        <CampoDetalhe rotulo="Limite inicial" valor={d ? dataHora(d.limiteInicial, fuso) : null} />
-        <CampoDetalhe rotulo="Coletada em" valor={dataHora(coleta.coletadaEm, fuso)} />
+        <CampoDetalhe
+          rotulo="Comandada em"
+          valor={d ? formatarDataHora(d.comandadaEm, fuso) : null}
+        />
+        <CampoDetalhe rotulo="Limite" valor={formatarDataHora(coleta.limiteEm, fuso)} />
+        <CampoDetalhe
+          rotulo="Limite inicial"
+          valor={d ? formatarDataHora(d.limiteInicial, fuso) : null}
+        />
+        <CampoDetalhe rotulo="Coletada em" valor={formatarDataHora(coleta.coletadaEm, fuso)} />
         <CampoDetalhe rotulo="Solicitante" valor={coleta.solicitante} />
         <CampoDetalhe rotulo="Remetente" valor={coleta.remetenteNome} />
         <CampoDetalhe rotulo="Cidade coleta" valor={coleta.remetenteCidade} />
@@ -238,7 +257,7 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
           {d?.historico.map((e, i) => (
             <li key={i} className="border-l-2 border-border pl-2">
               <span className="text-muted-foreground">
-                {dataHora(e.em, fuso)} · {e.unidade} · {e.usuario}
+                {formatarDataHora(e.em, fuso)} · {e.unidade} · {e.usuario}
               </span>
               <p>{e.texto}</p>
             </li>
@@ -246,7 +265,7 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
         </ol>
         {d && (
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Posição do relatório 050 de {dataHora(d.relatorioEmitidoEm, fuso)}
+            Posição do relatório 050 de {formatarDataHora(d.relatorioEmitidoEm, fuso)}
           </p>
         )}
       </section>
@@ -256,12 +275,12 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
 
 export function PaginaColetas() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const podeImportar = ehAdminDaEmpresa(acesso.papel);
   const { filtros: busca, definir, limpar, ativos } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = resolverPeriodo(busca.periodo, busca.de, busca.ate, hojeNoFuso(fuso), "30d");
   const filtros = filtrosDaBusca(busca, periodo);
-  const subtitulo = `Cadastro de ${data(periodo.inicio)} a ${data(periodo.fim)}`;
+  const subtitulo = `Cadastro de ${formatarData(periodo.inicio)} a ${formatarData(periodo.fim)}`;
 
   const [importando, setImportando] = useState(false);
   const [aberta, setAberta] = useState<LinhaDeColeta | null>(null);
@@ -294,7 +313,8 @@ export function PaginaColetas() {
             {d?.cobertura.inicio && d.cobertura.fim && (
               <>
                 {" "}
-                · coletas importadas de {data(d.cobertura.inicio)} a {data(d.cobertura.fim)}
+                · coletas importadas de {formatarData(d.cobertura.inicio)} a{" "}
+                {formatarData(d.cobertura.fim)}
               </>
             )}
           </p>
@@ -327,7 +347,7 @@ export function PaginaColetas() {
       </header>
 
       <FiltrosAvancados
-        ativos={temFiltro(ativos, busca)}
+        ativos={temFiltro(ativos, busca.periodo)}
         aoLimpar={() => {
           setPagina(1);
           limpar(busca.periodo === "custom" ? [] : ["periodo"]);
@@ -381,14 +401,7 @@ export function PaginaColetas() {
           <option value="REVERSA">Só reversa</option>
         </select>
       </FiltrosAvancados>
-      <FiltrandoPor
-        etiquetas={etiquetasDaBusca(busca).map((e) => ({
-          ...e,
-          limpar: () => {
-            mudar(e.limpar);
-          },
-        }))}
-      />
+      <FiltrandoPor etiquetas={etiquetasQueLimpam(etiquetasDaBusca(busca), mudar)} />
 
       {painel.isError && (
         <MensagemErro
@@ -415,7 +428,7 @@ export function PaginaColetas() {
               <KpiCard
                 key={c.status}
                 rotulo={c.rotulo}
-                valor={d ? inteiro(c.valor(d.totais)) : "—"}
+                valor={d ? formatarInteiro(c.valor(d.totais)) : "—"}
                 detalhe={d ? c.detalhe(d.totais) : c.dica}
                 status={c.tom}
                 ativo={busca.status === c.status && c.status !== "todas"}
@@ -432,7 +445,7 @@ export function PaginaColetas() {
                 descricao="Coletas por dia de cadastro"
                 dados={(d?.porDia ?? []).map((p) => ({
                   ...p,
-                  rotulo: diaMes(p.dia),
+                  rotulo: formatarDiaMes(p.dia),
                   demais: p.total - p.noPrazo - p.atrasadas,
                 }))}
                 eixoX="rotulo"
@@ -553,7 +566,7 @@ export function PaginaColetas() {
           total: lista.data?.total ?? 0,
           aoMudarPagina: setPagina,
         }}
-        rotuloTotal={(n) => `${inteiro(n)} coleta(s)`}
+        rotuloTotal={(n) => `${formatarInteiro(n)} coleta(s)`}
         exportacao={{
           arquivo: `coletas-${busca.status}`,
           titulo: `Coletas — ${ROTULO_DO_STATUS[busca.status]}`,
@@ -597,7 +610,9 @@ export function PaginaColetas() {
         }}
         titulo={aberta ? `Coleta ${aberta.unidade} ${String(aberta.numero)}` : ""}
         descricao={
-          aberta?.cadastradaEm ? `Cadastro ${dataHora(aberta.cadastradaEm, fuso)}` : undefined
+          aberta?.cadastradaEm
+            ? `Cadastro ${formatarDataHora(aberta.cadastradaEm, fuso)}`
+            : undefined
         }
       >
         {aberta && <DetalheDaColeta coleta={aberta} fuso={fuso} />}

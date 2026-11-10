@@ -1,10 +1,11 @@
 import { type ParametrosDeBonificacao } from "@erp/shared/contratos/bonificacao-entrega";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarMoeda } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 
 import { ComoFunciona, ComoFuncionaSecao, Formula } from "@/componentes/comum/ComoFunciona";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 
-import { isoLocal } from "../ranking/periodo";
 import { consultaParametros } from "./api";
 
 type Taxas = Omit<ParametrosDeBonificacao, "id" | "vigenciaInicio" | "vigenciaFim">;
@@ -23,8 +24,7 @@ const PADRAO: Taxas = {
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
-function vigenteHoje(linhas: readonly ParametrosDeBonificacao[]): Taxas | null {
-  const hoje = isoLocal(new Date());
+function vigenteHoje(linhas: readonly ParametrosDeBonificacao[], hoje: string): Taxas | null {
   return (
     linhas.find(
       (l) => l.vigenciaInicio <= hoje && (l.vigenciaFim === null || l.vigenciaFim >= hoje),
@@ -40,7 +40,8 @@ function vigenteHoje(linhas: readonly ParametrosDeBonificacao[]): Taxas | null {
  */
 export function ComoFuncionaBonificacao() {
   const parametros = useQuery(consultaParametros);
-  const p = vigenteHoje(parametros.data ?? []) ?? PADRAO;
+  const hoje = hojeNoFuso(useFusoDaEmpresa());
+  const p = vigenteHoje(parametros.data ?? [], hoje) ?? PADRAO;
 
   const niveis = [
     {

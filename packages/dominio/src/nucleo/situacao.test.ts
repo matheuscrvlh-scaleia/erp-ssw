@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BAIXA_FR, CATALOGO_FR, ocorrencia } from "../testes/nucleo";
+import { BAIXA_FR, ocorrencia } from "../testes/nucleo";
 import {
   atrasoDias,
   type CteParaSituacao,
@@ -9,7 +9,6 @@ import {
   faixaPrevisao,
   saiuParaEntrega,
   statusPrevisto,
-  travadoEmOcorrencia,
 } from "./situacao";
 
 const HOJE_10_11 = new Date("2026-11-10T15:00:00Z");
@@ -143,7 +142,7 @@ describe("saiuParaEntrega (§5.6)", () => {
   });
 });
 
-describe("emRota e travado (§5.7)", () => {
+describe("emRota (§5.7)", () => {
   const em85 = cte({ ocorrEfetivaCodigo: "85" });
 
   it("efetiva 85 sem nenhuma 85 gravada (veio de foto) → em rota", () => {
@@ -163,44 +162,5 @@ describe("emRota e travado (§5.7)", () => {
   it("85 em quarentena não conta (Q21)", () => {
     const quarentena = ocorrencia(85, "2026-10-30T12:00Z", { quarentena: true });
     expect(emRota(em85, [quarentena])).toBe(true);
-  });
-
-  it("pendência depois da última 85 → travado; 85 depois → não; mesmo instante → travado", () => {
-    const aberto = cte({ ocorrEfetivaCodigo: "9" });
-    expect(
-      travadoEmOcorrencia(
-        aberto,
-        [ocorrencia(9, "2026-11-05T12:00Z"), ocorrencia(85, "2026-11-04T12:00Z")],
-        CATALOGO_FR,
-      ),
-    ).toBe(true);
-    expect(
-      travadoEmOcorrencia(
-        aberto,
-        [ocorrencia(9, "2026-11-05T12:00Z"), ocorrencia(85, "2026-11-06T12:00Z")],
-        CATALOGO_FR,
-      ),
-    ).toBe(false);
-    expect(
-      travadoEmOcorrencia(
-        aberto,
-        [ocorrencia(9, "2026-11-05T12:00Z"), ocorrencia(85, "2026-11-05T12:00Z")],
-        CATALOGO_FR,
-      ),
-    ).toBe(true);
-    expect(travadoEmOcorrencia(aberto, [], CATALOGO_FR)).toBe(false);
-  });
-
-  it("em rota não fica travado; pendência em quarentena não trava (Q21)", () => {
-    const pend = ocorrencia(9, "2026-11-05T12:00Z");
-    const saida = ocorrencia(85, "2026-11-04T12:00Z", { criadoEm: d("2026-11-04T12:00Z") });
-    expect(travadoEmOcorrencia(em85, [pend, saida], CATALOGO_FR)).toBe(false);
-    expect(
-      travadoEmOcorrencia(
-        cte({ ocorrEfetivaCodigo: "9" }),
-        [ocorrencia(9, "2026-11-05T12:00Z", { quarentena: true })],
-        CATALOGO_FR,
-      ),
-    ).toBe(false);
   });
 });

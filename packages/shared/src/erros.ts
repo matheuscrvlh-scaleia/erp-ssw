@@ -1,7 +1,7 @@
 import { z } from "./zod";
 
 /** Códigos estáveis do erro padrão. A mensagem é para o operador; o código é para o código. */
-export const CODIGOS_ERRO = [
+const CODIGOS_ERRO = [
   "NAO_AUTENTICADO",
   "SESSAO_EXPIRADA",
   "SEM_EMPRESA",

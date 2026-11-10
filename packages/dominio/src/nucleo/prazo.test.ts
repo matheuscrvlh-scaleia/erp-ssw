@@ -8,7 +8,6 @@ import {
   definirPrevisao,
   diasUteisEntre,
   feriadosQueContamNosDiasUteis,
-  nascidoEmAtraso,
   prazoPadraoData,
   prazoPadraoDias,
   type RegraDePrazo,
@@ -58,22 +57,21 @@ describe("dias úteis (§6.1)", () => {
   });
 });
 
-describe("prazo padrão e nascido em atraso (§6.3)", () => {
+describe("prazo padrão (§6.3)", () => {
   const PAGADOR = "11.222.333/0001-81";
-  it.each<[string | null, string, number | null, string | null, boolean]>([
-    ["2026-11-07", PAGADOR, 2, "2026-11-08", true],
-    ["2026-11-08", PAGADOR, 2, "2026-11-08", false],
-    ["2026-11-09", PAGADOR, 2, "2026-11-08", false],
-    ["2026-11-06", PAGADOR, 2, "2026-11-08", true],
-    ["2026-11-05", PAGADOR, 2, null, false],
-    [null, PAGADOR, 2, "2026-11-08", false],
-    ["2026-11-07", "00.193.687/0001-00", null, null, false],
-  ])("emissão 06/11, previsão %j, pagador %s", (previsao, pagador, dias, data, nascido) => {
+  it.each<[string | null, string, number | null, string | null]>([
+    ["2026-11-07", PAGADOR, 2, "2026-11-08"],
+    ["2026-11-08", PAGADOR, 2, "2026-11-08"],
+    ["2026-11-09", PAGADOR, 2, "2026-11-08"],
+    ["2026-11-06", PAGADOR, 2, "2026-11-08"],
+    ["2026-11-05", PAGADOR, 2, null],
+    [null, PAGADOR, 2, "2026-11-08"],
+    ["2026-11-07", "00.193.687/0001-00", null, null],
+  ])("emissão 06/11, previsão %j, pagador %s", (previsao, pagador, dias, data) => {
     const diasPadrao = prazoPadraoDias(pagador, null, CONFIGURACAO_PADRAO);
     expect(diasPadrao).toBe(dias);
     const padraoData = prazoPadraoData("2026-11-06", previsao, diasPadrao);
     expect(padraoData).toBe(data);
-    expect(nascidoEmAtraso(previsao, padraoData)).toBe(nascido);
   });
 
   it("TROCA pelo parceiro também; raiz e dias vêm da configuração (Q48)", () => {

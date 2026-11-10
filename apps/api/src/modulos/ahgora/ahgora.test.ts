@@ -229,7 +229,7 @@ describe("rotas do Ahgora", () => {
 
   it("422 com período de batidas acima de 30 dias", async () => {
     const r = await app.inject({
-      url: "/api/v1/ahgora/batidas?employeeId=1&start=2026-09-01&end=2026-10-31",
+      url: "/api/v1/ahgora/batidas?funcionarioId=1&inicio=2026-09-01&fim=2026-10-31",
       headers: await entrar(true),
     });
     expect(r.statusCode).toBe(422);

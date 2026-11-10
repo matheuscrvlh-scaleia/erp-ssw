@@ -70,18 +70,18 @@ export const contratosAhgora = {
     caminho: "/api/v1/ahgora/batidas",
     entrada: z
       .object({
-        employeeId: z.string().max(64).optional(),
-        employeeRegister: z.string().max(64).optional(),
-        employeePis: z.string().max(64).optional(),
-        start: dataIso,
-        end: dataIso,
+        funcionarioId: z.string().max(64).optional(),
+        matricula: z.string().max(64).optional(),
+        pis: z.string().max(64).optional(),
+        inicio: dataIso,
+        fim: dataIso,
       })
       .refine(
-        (v) => v.employeeId || v.employeeRegister || v.employeePis,
-        "Informe o funcionário (employeeId, employeeRegister ou employeePis)",
+        (v) => v.funcionarioId || v.matricula || v.pis,
+        "Informe o funcionário (id, matrícula ou PIS)",
       )
-      .refine((v) => v.end >= v.start, DATA_FINAL_ANTES)
-      .refine((v) => ateDias(30)(v.start, v.end), "O período máximo por consulta é de 30 dias"),
+      .refine((v) => v.fim >= v.inicio, DATA_FINAL_ANTES)
+      .refine((v) => ateDias(30)(v.inicio, v.fim), "O período máximo por consulta é de 30 dias"),
     saida: z.object({ data: z.array(batidaAhgora), total: z.number().int() }),
   }),
   apuracao: contrato({

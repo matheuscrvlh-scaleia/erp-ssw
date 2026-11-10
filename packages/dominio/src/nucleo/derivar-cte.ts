@@ -128,7 +128,7 @@ export function recalcularDerivadosDoCte(cte: CteNucleo, contexto: ContextoDoCte
 export type MotivoDoDescarte =
   "abaixo_da_data_minima" | "bi2_nao_cria_cte" | "bi2_nao_altera_cte_em_andamento";
 
-export type GravacaoDoCte<T> =
+type GravacaoDoCte<T> =
   | { tipo: "descartar"; motivo: MotivoDoDescarte }
   | {
       tipo: "gravar";

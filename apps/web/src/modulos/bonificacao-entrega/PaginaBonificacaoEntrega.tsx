@@ -8,7 +8,8 @@ import {
   type contratosBonificacaoEntrega as c,
   NIVEIS_DE_BONIFICACAO,
 } from "@erp/shared/contratos/bonificacao-entrega";
-import { formatarMoeda } from "@erp/shared/formatacao";
+import { hojeNoFuso } from "@erp/shared/datas";
+import { formatarDiaMes, formatarMoeda } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -27,8 +28,10 @@ import {
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
+import { mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracao, consultaUnidades } from "./api";
 import { ComoFuncionaBonificacao } from "./ComoFuncionaBonificacao";
 import { QuadroDeFaltas } from "./QuadroDeFaltas";
@@ -145,7 +148,7 @@ function LinhaPessoa({ p }: { p: ResumoPessoa }) {
                     key={`${l.dataRomaneio}-${l.romaneio}-${l.funcao}`}
                     className="border-t border-border/30"
                   >
-                    <td className="py-1 font-mono">{diaCurto(l.dataRomaneio)}</td>
+                    <td className="py-1 font-mono">{formatarDiaMes(l.dataRomaneio)}</td>
                     <td className="py-1 font-mono text-muted-foreground">{l.romaneio}</td>
                     <td className="py-1 text-muted-foreground">{l.funcao}</td>
                     <td className="py-1 text-right tabular-nums">{l.nfsCarregadas}</td>
@@ -199,7 +202,8 @@ type Filtros = EntradaDe<typeof c.apurar>;
 
 /** origem: features/bonificacao/components/BonificacaoScreen.tsx (sistema atual) */
 export function PaginaBonificacaoEntrega() {
-  const [mes, setMes] = useState(() => mesDe(new Date()));
+  const hoje = hojeNoFuso(useFusoDaEmpresa());
+  const [mes, setMes] = useState(() => mesDe(hoje));
   const [unidade, setUnidade] = useState<string>(TODAS);
   const [funcao, setFuncao] = useState<string>(TODAS);
   const [horaExtra, setHoraExtra] = useState<string>(TODAS);
@@ -357,7 +361,7 @@ export function PaginaBonificacaoEntrega() {
 
       {q.error && (
         <div className="rounded-[10px] border border-destructive/40 bg-destructive/5 p-3 text-[12px] text-destructive">
-          {q.error.message}
+          {mensagemAmigavel(q.error)}
         </div>
       )}
 
@@ -462,7 +466,7 @@ export function PaginaBonificacaoEntrega() {
                   <tbody className="divide-y divide-border/40">
                     {porDia.map(([dia, ls]) => (
                       <tr key={dia}>
-                        <td className="px-3 py-1.5 font-mono">{diaCurto(dia)}</td>
+                        <td className="px-3 py-1.5 font-mono">{formatarDiaMes(dia)}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums">
                           {new Set(ls.map((l) => l.romaneio)).size}
                         </td>

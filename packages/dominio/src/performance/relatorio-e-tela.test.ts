@@ -276,12 +276,12 @@ describe("relatório de período", () => {
   });
 
   it("T18: deltas", () => {
-    expect(deltaPP(95.0, 95.04)).toEqual({ texto: "0,0 pp", tom: "neutral" });
-    expect(deltaPP(90, 95, true)).toEqual({ texto: "▼ 5,0 pp", tom: "bad" });
+    expect(deltaPP(95.0, 95.04)).toEqual({ texto: "0,0 pp", tom: "neutro" });
+    expect(deltaPP(90, 95, true)).toEqual({ texto: "▼ 5,0 pp", tom: "ruim" });
     expect(deltaPP(null, 95)).toBeNull();
-    expect(deltaPctAbs(5, 0)).toEqual({ texto: "▲ n/a", tom: "neutral" });
-    expect(deltaPctAbs(110, 100)).toEqual({ texto: "▲ 10,0%", tom: "good" });
-    expect(deltaPctAbs(110, 100, false).tom).toBe("bad");
+    expect(deltaPctAbs(5, 0)).toEqual({ texto: "▲ n/a", tom: "neutro" });
+    expect(deltaPctAbs(110, 100)).toEqual({ texto: "▲ 10,0%", tom: "bom" });
+    expect(deltaPctAbs(110, 100, false).tom).toBe("ruim");
   });
 
   it("derivados, prejuízo e status da unidade", () => {
@@ -435,12 +435,12 @@ describe("regras da tela", () => {
   });
 
   it("status de SLA e de retorno", () => {
-    expect(statusDoSla(0.95, 0.95, 0.9)).toBe("good");
-    expect(statusDoSla(0.92, 0.95, 0.9)).toBe("warn");
-    expect(statusDoSla(0.8, 0.95, 0.9)).toBe("bad");
-    expect(statusDoRetorno(0.05, null)).toBe("good");
-    expect(statusDoRetorno(0.035, 0.03)).toBe("warn");
-    expect(statusDoRetorno(0.05, 0.03)).toBe("bad");
+    expect(statusDoSla(0.95, 0.95, 0.9)).toBe("bom");
+    expect(statusDoSla(0.92, 0.95, 0.9)).toBe("alerta");
+    expect(statusDoSla(0.8, 0.95, 0.9)).toBe("ruim");
+    expect(statusDoRetorno(0.05, null)).toBe("bom");
+    expect(statusDoRetorno(0.035, 0.03)).toBe("alerta");
+    expect(statusDoRetorno(0.05, 0.03)).toBe("ruim");
   });
 
   it("períodos", () => {

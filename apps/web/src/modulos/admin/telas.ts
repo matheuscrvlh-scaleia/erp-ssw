@@ -21,7 +21,7 @@ export function listaDasExcecoes(mapa: MapaDeExcecoes): ExcecaoDeTela[] {
   });
 }
 
-export const rotuloDaExcecao = (v: boolean | undefined) =>
+const rotuloDaExcecao = (v: boolean | undefined) =>
   v === undefined ? "Padrão" : v ? "Liberar" : "Bloquear";
 
 export interface Troca {
@@ -30,7 +30,7 @@ export interface Troca {
   depois: string;
 }
 
-export interface TrocasDaCategoria extends CategoriaDeTela {
+interface TrocasDaCategoria extends CategoriaDeTela {
   trocas: (Troca & { tela: Tela })[];
 }
 

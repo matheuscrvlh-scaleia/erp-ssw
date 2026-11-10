@@ -36,7 +36,7 @@ export interface OcorrenciaDoPainel {
   descricao: string | null;
 }
 
-export type RecortesDeCte = Pick<Recortes, "pagador" | "unidadeResp" | "prazo" | "faixaAtraso">;
+type RecortesDeCte = Pick<Recortes, "pagador" | "unidadeResp" | "prazo" | "faixaAtraso">;
 
 /**
  * Recortes que olham só o CT-e (cards de prazo e faixa, blocos de pagador e unidade).
@@ -97,7 +97,7 @@ export function casaCodigoEResponsavel(
   );
 }
 
-export interface EntradaDoPainel {
+interface EntradaDoPainel {
   /** CT-e dos dois períodos, já com os filtros de CT-e. */
   ctes: readonly CteDoPainel[];
   /** Ocorrências dos códigos da tela desses CT-e. */

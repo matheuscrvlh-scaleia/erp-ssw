@@ -1,47 +1,29 @@
 /** Peças comuns da visão geral e do detalhe do Prazo do parceiro. Visual da tela de hoje. */
 import { ROTULO_ATALHO } from "@/componentes/comum/periodo";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 import { type Periodo, PERIODOS } from "./busca";
 
-export const nfInt = new Intl.NumberFormat("pt-BR");
-export const nfPct = new Intl.NumberFormat("pt-BR", {
-  style: "percent",
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
-export const nfPct0 = new Intl.NumberFormat("pt-BR", {
-  style: "percent",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
-
-/** Diferença em pontos percentuais, com sinal ("+2,3 pp"). Entrada em fração. */
-export function fmtPP(n: number | null | undefined): string {
-  if (n === null || n === undefined || Number.isNaN(n)) return "—";
-  const v = n * 100;
-  return `${v > 0 ? "+" : ""}${v.toFixed(1).replace(".", ",")} pp`;
-}
-
-export type Tom = "good" | "warn" | "bad" | "neutral";
+export type Tom = "bom" | "alerta" | "ruim" | "neutro";
 
 const COR: Record<Tom, string> = {
-  good: "var(--status-good)",
-  warn: "var(--status-warn)",
-  bad: "var(--status-bad)",
-  neutral: "var(--kpi-positive)",
+  bom: "var(--status-good)",
+  alerta: "var(--status-warn)",
+  ruim: "var(--status-bad)",
+  neutro: "var(--kpi-positive)",
 };
 
 /** Meta e alerta do SLA da empresa (frações). */
-export interface Sla {
+interface Sla {
   meta: number;
   alerta: number;
 }
 
 export function tomDoSla(p: number, sla: Sla): Tom {
-  if (p >= sla.meta) return "good";
-  if (p >= sla.alerta) return "warn";
-  return "bad";
+  if (p >= sla.meta) return "bom";
+  if (p >= sla.alerta) return "alerta";
+  return "ruim";
 }
 
 export function classeDoSla(p: number, sla: Sla): string {
@@ -57,7 +39,7 @@ export function CartaoMetrica({
   dica,
   selo,
   seloDaMarca,
-  tom = "neutral",
+  tom = "neutro",
   carregando,
   destaque,
   tamanho = "grande",
@@ -98,7 +80,7 @@ export function CartaoMetrica({
         )}
       </div>
       {carregando ? (
-        <div className="mt-2 h-8 w-24 animate-pulse rounded bg-muted/60" />
+        <Skeleton className="mt-2 h-8 w-24 rounded bg-muted/60" />
       ) : (
         <div
           className={cn(
@@ -112,23 +94,6 @@ export function CartaoMetrica({
       )}
       {dica && <div className="mt-1 text-[11px] text-muted-foreground">{dica}</div>}
     </div>
-  );
-}
-
-/** Linhas cinza enquanto a tabela carrega. */
-export function LinhasCarregando({ linhas, colunas }: { linhas: number; colunas: number }) {
-  return (
-    <>
-      {Array.from({ length: linhas }, (_, i) => (
-        <tr key={i} className="border-b border-border/40">
-          {Array.from({ length: colunas }, (__, j) => (
-            <td key={j} className="px-3 py-2">
-              <div className="h-3 w-full animate-pulse rounded bg-muted/60" />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
   );
 }
 

@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 import { Button } from "@/componentes/ui/button";
 import { cn } from "@/lib/utils";
 
-export interface FiltrosAvancadosProps {
+interface FiltrosAvancadosProps {
   /** FiltroPeriodo, FiltroMultiplo, FiltroTexto... na ordem da tela. */
   children: ReactNode;
   /** Com algum filtro ligado, aparece "Limpar filtros". */
@@ -42,6 +42,25 @@ export interface EtiquetaFiltro {
   completo?: string | undefined;
   /** Tira esse filtro; sem ele, a etiqueta não tem o "x". */
   limpar?: (() => void) | undefined;
+}
+
+/**
+ * Etiqueta montada pela regra pura da tela: `limpar` diz quais campos da busca voltam ao padrão.
+ * A tela liga ao `definir` da URL com `etiquetasQueLimpam`.
+ */
+export type EtiquetaDaBusca<B> = Omit<EtiquetaFiltro, "limpar"> & { limpar: Partial<B> };
+
+/** Liga cada etiqueta ao `definir` da tela: o "x" tira aquele filtro da URL. */
+export function etiquetasQueLimpam<B>(
+  etiquetas: readonly EtiquetaDaBusca<B>[],
+  definir: (mudanca: Partial<B>) => void,
+): EtiquetaFiltro[] {
+  return etiquetas.map((e) => ({
+    ...e,
+    limpar: () => {
+      definir(e.limpar);
+    },
+  }));
 }
 
 /** `false`/`null`/`""` são ignorados: monte a lista com `cond && {...}`. */

@@ -8,7 +8,12 @@ import {
   TAMANHOS_DA_LISTA,
 } from "@erp/shared/contratos/prazo-parceiro";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData } from "@erp/shared/formatacao";
+import {
+  formatarData,
+  formatarInteiro,
+  formatarPercentual,
+  formatarPontos,
+} from "@erp/shared/formatacao";
 import { useIsFetching, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -33,11 +38,14 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
@@ -57,17 +65,7 @@ import {
   ROTULO_PERIODO,
   tamanhoDaLista,
 } from "./busca";
-import {
-  BotoesDePeriodo,
-  CartaoMetrica,
-  classeDoSla,
-  fmtPP,
-  LinhasCarregando,
-  nfInt,
-  nfPct,
-  nfPct0,
-  tomDoSla,
-} from "./componentes";
+import { BotoesDePeriodo, CartaoMetrica, classeDoSla, tomDoSla } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
 
 const COLUNAS_DA_EXPORTACAO: readonly ColunaExportacao[] = [
@@ -94,6 +92,7 @@ const paraExportar = (l: LinhaPrazo) => ({
 
 export function PaginaPrazoParceiro() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const fuso = useFusoDaEmpresa();
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
   const { filtros: b, definir } = useFiltrosNaUrl(esquemaPrazo);
   const navigate = useNavigate();
@@ -101,12 +100,7 @@ export function PaginaPrazoParceiro() {
   const queryClient = useQueryClient();
   const atualizando = useIsFetching({ queryKey: CHAVE_DO_PRAZO }) > 0;
 
-  const intervalo = resolverPeriodo(
-    b.periodo,
-    "",
-    "",
-    hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo"),
-  );
+  const intervalo = resolverPeriodo(b.periodo, "", "", hojeNoFuso(fuso));
   const filtros = filtrosDaBusca(b, intervalo);
   const visao = useQuery(consultaVisaoGeral(filtros));
   const opcoes = useQuery(consultaOpcoes(intervalo)).data;
@@ -263,9 +257,9 @@ export function PaginaPrazoParceiro() {
         <div className="flex items-start gap-2 rounded-[10px] border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-900">
           <TrendingUp className="mt-0.5 h-3.5 w-3.5" />
           <span>
-            Sua performance real é <strong>{fmtPP(t.diferencaPp)}</strong> melhor do que aparece.{" "}
-            <strong>{nfInt.format(t.nascidosAtrasados)}</strong> CTRC(s) foram emitidos a menos de
-            48 horas da previsão de entrega neste período.
+            Sua performance real é <strong>{formatarPontos(t.diferencaPp)}</strong> melhor do que
+            aparece. <strong>{formatarInteiro(t.nascidosAtrasados)}</strong> CTRC(s) foram emitidos
+            a menos de 48 horas da previsão de entrega neste período.
           </span>
         </div>
       )}
@@ -275,8 +269,8 @@ export function PaginaPrazoParceiro() {
           <span>
             Atenção: o parceiro <strong>{parceiroProblema.nome}</strong> está enviando muitas cargas
             com menos de 48 horas de prazo (
-            <strong>{nfPct0.format(parceiroProblema.pctNascidos)}</strong> neste período). Vale uma
-            conversa comercial.
+            <strong>{formatarPercentual(parceiroProblema.pctNascidos, { casas: 0 })}</strong> neste
+            período). Vale uma conversa comercial.
           </span>
         </div>
       )}
@@ -289,7 +283,8 @@ export function PaginaPrazoParceiro() {
           )}
           <span>
             O impacto de prazos herdados {a.deltaGapPp > 0 ? "aumentou" : "diminuiu"}{" "}
-            <strong>{fmtPP(Math.abs(a.deltaGapPp))}</strong> em relação ao período anterior.
+            <strong>{formatarPontos(Math.abs(a.deltaGapPp))}</strong> em relação ao período
+            anterior.
           </span>
         </div>
       )}
@@ -298,7 +293,7 @@ export function PaginaPrazoParceiro() {
         <CartaoMetrica
           rotulo="Performance total"
           selo="como o SSW mostra"
-          valor={t ? nfPct.format(t.performanceTotal) : "—"}
+          valor={t ? formatarPercentual(t.performanceTotal) : "—"}
           tom={t && tomDoSla(t.performanceTotal, sla)}
           dica="considerando todos os CTRCs"
           carregando={visao.isLoading}
@@ -307,7 +302,7 @@ export function PaginaPrazoParceiro() {
           rotulo="Performance própria"
           selo="responsabilidade real"
           seloDaMarca
-          valor={t ? nfPct.format(t.performancePropria) : "—"}
+          valor={t ? formatarPercentual(t.performancePropria) : "—"}
           tom={t && tomDoSla(t.performancePropria, sla)}
           dica="apenas CTRCs com prazo próprio"
           carregando={visao.isLoading}
@@ -316,8 +311,8 @@ export function PaginaPrazoParceiro() {
         <CartaoMetrica
           rotulo="Diferença"
           selo="atribuído a parceiros"
-          valor={t ? fmtPP(t.diferencaPp) : "—"}
-          tom={t && t.diferencaPp > 0 ? "good" : "neutral"}
+          valor={t ? formatarPontos(t.diferencaPp) : "—"}
+          tom={t && t.diferencaPp > 0 ? "bom" : "neutro"}
           dica="o quanto sua performance está sendo puxada para baixo por prazos herdados"
           carregando={visao.isLoading}
         />
@@ -328,7 +323,7 @@ export function PaginaPrazoParceiro() {
           <h2 className="text-[14px] font-medium">Origem do prazo</h2>
           <p className="text-[11px] text-muted-foreground">Distribuição dos CTRCs no período</p>
           {visao.isLoading ? (
-            <div className="mt-4 h-16 animate-pulse rounded bg-muted/60" />
+            <Skeleton className="mt-4 h-16 rounded bg-muted/60" />
           ) : t && t.totalCtes > 0 ? (
             <>
               <div className="mt-4 flex h-4 w-full overflow-hidden rounded-full bg-muted">
@@ -347,9 +342,9 @@ export function PaginaPrazoParceiro() {
                     <span className="h-2 w-2 rounded-full bg-[var(--brand)]" /> Prazo próprio
                   </div>
                   <div className="mt-0.5 text-[18px] font-medium tabular-nums">
-                    {nfInt.format(t.totalProprio)}{" "}
+                    {formatarInteiro(t.totalProprio)}{" "}
                     <span className="text-[11px] text-muted-foreground">
-                      ({nfPct0.format(t.pctPrazoProprio)})
+                      ({formatarPercentual(t.pctPrazoProprio, { casas: 0 })})
                     </span>
                   </div>
                 </div>
@@ -358,16 +353,16 @@ export function PaginaPrazoParceiro() {
                     <span className="h-2 w-2 rounded-full bg-amber-400" /> Prazo do parceiro
                   </div>
                   <div className="mt-0.5 text-[18px] font-medium tabular-nums">
-                    {nfInt.format(t.totalParceiro)}{" "}
+                    {formatarInteiro(t.totalParceiro)}{" "}
                     <span className="text-[11px] text-muted-foreground">
-                      ({nfPct0.format(t.pctPrazoParceiro)})
+                      ({formatarPercentual(t.pctPrazoParceiro, { casas: 0 })})
                     </span>
                   </div>
                 </div>
               </div>
               <p className="mt-3 text-[11px] text-muted-foreground">
-                {nfInt.format(t.totalParceiro)} CTRC(s) usaram o prazo importado do parceiro neste
-                período.
+                {formatarInteiro(t.totalParceiro)} CTRC(s) usaram o prazo importado do parceiro
+                neste período.
               </p>
             </>
           ) : (
@@ -402,16 +397,16 @@ export function PaginaPrazoParceiro() {
             Emitido a menos de 48 horas da previsão de entrega
           </p>
           {visao.isLoading ? (
-            <div className="mt-4 h-16 animate-pulse rounded bg-muted/60" />
+            <Skeleton className="mt-4 h-16 rounded bg-muted/60" />
           ) : (
             <>
               <div className="mt-3 text-[36px] font-medium tabular-nums">
-                {nfInt.format(t?.nascidosAtrasados ?? 0)}
+                {formatarInteiro(t?.nascidosAtrasados ?? 0)}
               </div>
               <div className="text-[11px] text-muted-foreground">
                 CTRC(s) no período
                 {t?.pctNascidos != null && (
-                  <> · {nfPct0.format(t.pctNascidos)} dos CTRCs avaliados</>
+                  <> · {formatarPercentual(t.pctNascidos, { casas: 0 })} dos CTRCs avaliados</>
                 )}
                 {a && a.deltaNascidos !== 0 && (
                   <span
@@ -484,10 +479,14 @@ export function PaginaPrazoParceiro() {
                     <div className="font-medium">{p.nome}</div>
                     {p.usaSsw && <span className="text-[10px] text-muted-foreground">usa SSW</span>}
                   </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{nfInt.format(p.total)}</td>
                   <td className="px-3 py-1.5 text-right tabular-nums">
-                    {nfInt.format(p.qtdParceiro)}{" "}
-                    <span className="text-muted-foreground">({nfPct0.format(p.pctParceiro)})</span>
+                    {formatarInteiro(p.total)}
+                  </td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">
+                    {formatarInteiro(p.qtdParceiro)}{" "}
+                    <span className="text-muted-foreground">
+                      ({formatarPercentual(p.pctParceiro, { casas: 0 })})
+                    </span>
                   </td>
                   <td
                     className={cn(
@@ -495,8 +494,10 @@ export function PaginaPrazoParceiro() {
                       p.pctNascidos > 0.1 && "font-medium text-[var(--status-bad)]",
                     )}
                   >
-                    {nfInt.format(p.nascidosAtrasados)}{" "}
-                    <span className="opacity-75">({nfPct0.format(p.pctNascidos)})</span>
+                    {formatarInteiro(p.nascidosAtrasados)}{" "}
+                    <span className="opacity-75">
+                      ({formatarPercentual(p.pctNascidos, { casas: 0 })})
+                    </span>
                   </td>
                   <td
                     className={cn(
@@ -504,7 +505,7 @@ export function PaginaPrazoParceiro() {
                       classeDoSla(p.performanceComParceiro, sla),
                     )}
                   >
-                    {nfPct.format(p.performanceComParceiro)}
+                    {formatarPercentual(p.performanceComParceiro)}
                   </td>
                   <td className="px-3 py-1.5 text-right">
                     <ChevronRight className="inline h-3.5 w-3.5 text-muted-foreground" />
@@ -645,7 +646,7 @@ export function PaginaPrazoParceiro() {
                 </option>
               ))}
             </select>
-            <span className="ml-2">{nfInt.format(lista.data?.total ?? 0)} CTRC(s)</span>
+            <span className="ml-2">{formatarInteiro(lista.data?.total ?? 0)} CTRC(s)</span>
           </label>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">

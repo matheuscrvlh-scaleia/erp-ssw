@@ -20,6 +20,7 @@ import { useState } from "react";
 import { Abas } from "@/componentes/comum/Abas";
 import { ModalDetalhe } from "@/componentes/comum/Detalhe";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 
 import { Selo } from "../comum";
@@ -49,16 +50,15 @@ export function LogsComAbas({ empresaId }: { empresaId?: string }) {
   );
 }
 
-const FUSO = "America/Sao_Paulo";
-const ultimosDias = (dias: number) => {
-  const hoje = hojeNoFuso(FUSO);
+const ultimosDias = (dias: number, fuso: string) => {
+  const hoje = hojeNoFuso(fuso);
   return { de: somarDias(hoje, -dias), ate: hoje };
 };
 const ouNada = (v: string) => (v.trim() ? v.trim() : undefined);
 
 const FILTRO = "h-8 rounded-md border border-input bg-background px-2 text-[12px] shadow-sm";
 
-export type EscopoDasAlteracoes =
+type EscopoDasAlteracoes =
   "empresa" | { empresaFixa: string } | { empresas: readonly { id: string; nome: string }[] };
 
 function colunasDaAuditoria(comEmpresa: boolean): ColunaTabela<LinhaAuditoria>[] {
@@ -112,8 +112,9 @@ function colunasDaAuditoria(comEmpresa: boolean): ColunaTabela<LinhaAuditoria>[]
 }
 
 export function PainelAlteracoes({ escopo }: { escopo: EscopoDasAlteracoes }) {
+  const fuso = useFusoDaEmpresa();
   const [filtros, setFiltros] = useState(() => ({
-    ...ultimosDias(30),
+    ...ultimosDias(30, fuso),
     ator: "",
     entidade: "",
     acao: "",
@@ -262,9 +263,10 @@ const COLUNAS_DA_INTEGRACAO: ColunaTabela<LinhaIntegracao>[] = [
   { chave: "erro", titulo: "Mensagem", classe: "max-w-[320px] truncate text-muted-foreground" },
 ];
 
-export function PainelIntegracoes({ empresaId }: { empresaId?: string | undefined }) {
+function PainelIntegracoes({ empresaId }: { empresaId?: string | undefined }) {
   // Dezenas de execuções por dia: começa nos últimos 7 dias.
-  const [filtros, setFiltros] = useState(() => ({ ...ultimosDias(7), origem: "" }));
+  const fuso = useFusoDaEmpresa();
+  const [filtros, setFiltros] = useState(() => ({ ...ultimosDias(7, fuso), origem: "" }));
   const mudar = (parte: Partial<typeof filtros>) => {
     setFiltros((f) => ({ ...f, ...parte }));
   };

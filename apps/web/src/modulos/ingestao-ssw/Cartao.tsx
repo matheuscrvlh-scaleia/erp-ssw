@@ -27,7 +27,7 @@ export function Cartao({
   );
 }
 
-export type SituacaoDoEvento = "processado" | "sem_vinculo" | "rejeitado" | "erro";
+type SituacaoDoEvento = "processado" | "sem_vinculo" | "rejeitado" | "erro";
 
 /** Mesma classificação dos contadores do diagnóstico (rejeitado = auth/4xx; erro = 5xx). */
 export function situacaoDoEvento(e: {

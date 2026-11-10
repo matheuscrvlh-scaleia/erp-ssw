@@ -24,7 +24,7 @@ export const TIPOS_INTEGRACAO = [
 ] as const;
 export type TipoIntegracao = (typeof TIPOS_INTEGRACAO)[number];
 
-export interface InfoDaIntegracao {
+interface InfoDaIntegracao {
   nome: string;
   descricao: string;
   campos: readonly { chave: string; rotulo: string; lista?: boolean; dica?: string }[];

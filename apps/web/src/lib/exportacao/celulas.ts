@@ -1,7 +1,10 @@
+import { FUSO_DO_NEGOCIO, relogioNoFuso } from "@erp/dominio/nucleo/tempo";
 import { hojeNoFuso } from "@erp/shared/datas";
 import {
   formatarData,
   formatarDataHora,
+  formatarDecimal,
+  formatarInteiro,
   formatarMoeda,
   formatarPercentual,
 } from "@erp/shared/formatacao";
@@ -14,7 +17,7 @@ import { type FormatoColuna } from "./tipos";
  * Vazio (null, undefined, "") sai sempre como célula vazia, nunca "—".
  */
 
-export const FUSO_PADRAO = "America/Sao_Paulo";
+export const FUSO_PADRAO = FUSO_DO_NEGOCIO;
 
 export function valorDaLinha(linha: object, chave: string): unknown {
   if (!(chave in linha)) return undefined;
@@ -48,9 +51,6 @@ export function paraDiaIso(valor: unknown, fuso: string): string | null {
   return instante ? hojeNoFuso(fuso, instante) : null;
 }
 
-const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
-const inteiro = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
-
 function textoLivre(valor: unknown): string {
   if (typeof valor === "boolean") return valor ? "Sim" : "Não";
   if (Array.isArray(valor)) return valor.map(textoLivre).join(", ");
@@ -71,9 +71,9 @@ export function textoDaCelula(
   const numero = paraNumero(valor);
   switch (formato) {
     case "inteiro":
-      return numero == null ? textoLivre(valor) : inteiro.format(numero);
+      return numero == null ? textoLivre(valor) : formatarInteiro(numero);
     case "decimal":
-      return numero == null ? textoLivre(valor) : decimal.format(numero);
+      return numero == null ? textoLivre(valor) : formatarDecimal(numero);
     case "percentual":
       return numero == null ? textoLivre(valor) : formatarPercentual(numero);
     case "moeda":
@@ -100,13 +100,13 @@ export function textoCsv(valor: unknown, formato: FormatoColuna = "texto", fuso 
   const numero = paraNumero(valor);
   if (numero != null) {
     if (formato === "moeda") return numero.toFixed(2).replace(".", ",");
-    if (formato === "percentual") return `${(numero * 100).toFixed(1).replace(".", ",")}%`;
+    if (formato === "percentual") return formatarPercentual(numero);
     if (formato === "inteiro" || formato === "decimal") return String(numero).replace(".", ",");
   }
   return textoDaCelula(valor, formato, fuso);
 }
 
-export interface CelulaExcel {
+interface CelulaExcel {
   valor: string | number | Date;
   formatoNumero?: string;
 }
@@ -119,32 +119,6 @@ const FORMATO_EXCEL: Partial<Record<FormatoColuna, string>> = {
   data: "dd/mm/yyyy",
   datahora: "dd/mm/yyyy hh:mm",
 };
-
-/** Relógio de parede no fuso, gravado como UTC: é assim que o Excel guarda data sem fuso. */
-function relogioNoFuso(instante: Date, fuso: string): Date {
-  const partes = new Intl.DateTimeFormat("en-US", {
-    timeZone: fuso,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(instante);
-  const parte = (tipo: Intl.DateTimeFormatPartTypes) =>
-    Number(partes.find((p) => p.type === tipo)?.value ?? 0);
-  return new Date(
-    Date.UTC(
-      parte("year"),
-      parte("month") - 1,
-      parte("day"),
-      parte("hour"),
-      parte("minute"),
-      parte("second"),
-    ),
-  );
-}
 
 /** Valor nativo do Excel: número e data de verdade (filtro e soma funcionam na planilha). */
 export function celulaExcel(

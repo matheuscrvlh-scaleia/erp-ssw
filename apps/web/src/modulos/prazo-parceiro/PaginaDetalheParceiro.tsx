@@ -4,12 +4,16 @@
  */
 import { type NascidoAtrasado } from "@erp/shared/contratos/prazo-parceiro";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData } from "@erp/shared/formatacao";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  formatarData,
+  formatarInteiro,
+  formatarPercentual,
+  formatarPontos,
+} from "@erp/shared/formatacao";
+import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-import { consultaAcesso } from "@/acesso/sessao";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import {
@@ -17,10 +21,13 @@ import {
   FiltrandoPor,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
@@ -28,15 +35,7 @@ import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaDetalhe, consultaOpcoes } from "./api";
 import { esquemaDetalhe, filtrosDaBusca, ROTULO_PERIODO } from "./busca";
-import {
-  BotoesDePeriodo,
-  CartaoMetrica,
-  fmtPP,
-  LinhasCarregando,
-  nfInt,
-  nfPct,
-  tomDoSla,
-} from "./componentes";
+import { BotoesDePeriodo, CartaoMetrica, tomDoSla } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
 
 const rota = getRouteApi("/_autenticado/prazo-parceiro_/$id");
@@ -68,15 +67,10 @@ const slug = (nome: string) =>
 
 export function PaginaDetalheParceiro() {
   const { id } = rota.useParams();
-  const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const fuso = useFusoDaEmpresa();
   const { filtros: b, definir } = useFiltrosNaUrl(esquemaDetalhe);
   const abrirCte = useAbrirCte();
-  const intervalo = resolverPeriodo(
-    b.periodo,
-    "",
-    "",
-    hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo"),
-  );
+  const intervalo = resolverPeriodo(b.periodo, "", "", hojeNoFuso(fuso));
   const q = useQuery(consultaDetalhe(id, filtrosDaBusca(b, intervalo)));
   const opcoes = useQuery(consultaOpcoes(intervalo)).data;
   const d = q.data;
@@ -171,26 +165,26 @@ export function PaginaDetalheParceiro() {
         <CartaoMetrica
           tamanho="medio"
           rotulo="Performance total"
-          valor={r ? nfPct.format(r.performanceTotal) : "—"}
+          valor={r ? formatarPercentual(r.performanceTotal) : "—"}
           tom={r && tomDoSla(r.performanceTotal, sla)}
-          dica={`${nfInt.format(r?.totalCtes ?? 0)} CTRC(s) no período`}
+          dica={`${formatarInteiro(r?.totalCtes ?? 0)} CTRC(s) no período`}
           carregando={q.isLoading}
         />
         <CartaoMetrica
           tamanho="medio"
           rotulo="Performance própria"
-          valor={r ? nfPct.format(r.performancePropria) : "—"}
+          valor={r ? formatarPercentual(r.performancePropria) : "—"}
           tom={r && tomDoSla(r.performancePropria, sla)}
-          dica={`apenas ${nfInt.format(r?.totalProprio ?? 0)} CTRC(s) com prazo próprio`}
+          dica={`apenas ${formatarInteiro(r?.totalProprio ?? 0)} CTRC(s) com prazo próprio`}
           carregando={q.isLoading}
           destaque
         />
         <CartaoMetrica
           tamanho="medio"
           rotulo="Diferença"
-          valor={fmtPP(diferenca)}
-          tom={diferenca > 0 ? "good" : "neutral"}
-          dica={`${nfInt.format(r?.nascidosAtrasados ?? 0)} CTRC(s) nasceram em atraso`}
+          valor={formatarPontos(diferenca)}
+          tom={diferenca > 0 ? "bom" : "neutro"}
+          dica={`${formatarInteiro(r?.nascidosAtrasados ?? 0)} CTRC(s) nasceram em atraso`}
           carregando={q.isLoading}
         />
       </div>
@@ -201,7 +195,7 @@ export function PaginaDetalheParceiro() {
           Quantos dias o prazo do CT-e veio abaixo das 48 horas, por faixa
         </p>
         {q.isLoading ? (
-          <div className="mt-4 h-24 animate-pulse rounded bg-muted/60" />
+          <Skeleton className="mt-4 h-24 rounded bg-muted/60" />
         ) : (d?.histograma.length ?? 0) === 0 ? (
           <p className="mt-4 text-[12px] text-muted-foreground">
             Nenhum CTRC nasceu atrasado neste período.
@@ -217,7 +211,7 @@ export function PaginaDetalheParceiro() {
                     style={{ width: `${(h.qtd / maiorFaixa) * 100}%` }}
                   />
                 </div>
-                <span className="w-10 text-right tabular-nums">{nfInt.format(h.qtd)}</span>
+                <span className="w-10 text-right tabular-nums">{formatarInteiro(h.qtd)}</span>
               </li>
             ))}
           </ul>

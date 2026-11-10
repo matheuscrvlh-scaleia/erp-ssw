@@ -37,7 +37,7 @@ export const nasceuAtrasado = (c: Pick<FatoPrazo, "dataPrevista" | "prazoPadraoD
 
 const avaliado = (c: FatoPrazo) => c.prazoPadraoData !== null && c.dataPrevista !== null;
 
-export interface TotaisPrazo {
+interface TotaisPrazo {
   totalCtes: number;
   totalProprio: number;
   totalParceiro: number;
@@ -105,7 +105,7 @@ export function totaisDoPrazo(base: readonly FatoPrazo[]): TotaisPrazo {
   };
 }
 
-export interface ComparacaoAnterior {
+interface ComparacaoAnterior {
   deltaNascidos: number;
   deltaGapPp: number | null;
 }
@@ -255,7 +255,7 @@ export function diasAbaixoDoPadrao(
     : null;
 }
 
-export const FAIXAS_DO_HISTOGRAMA = [
+const FAIXAS_DO_HISTOGRAMA = [
   "1 dia",
   "2 dias",
   "3 dias",
@@ -263,7 +263,7 @@ export const FAIXAS_DO_HISTOGRAMA = [
   "6-10 dias",
   "11+ dias",
 ] as const;
-export type FaixaDoHistograma = (typeof FAIXAS_DO_HISTOGRAMA)[number];
+type FaixaDoHistograma = (typeof FAIXAS_DO_HISTOGRAMA)[number];
 
 function faixaDe(dias: number): FaixaDoHistograma {
   if (dias <= 1) return "1 dia";

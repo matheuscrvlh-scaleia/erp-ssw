@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   filtrarPorCard,
-  formatarPct,
   kpisDoRanking,
   limiaresDoSla,
   nivelDoSla,
@@ -68,11 +67,6 @@ describe("ranking operacional — regras da tela", () => {
       "B",
       "C",
     ]);
-  });
-
-  it("percentual com vírgula e uma casa", () => {
-    expect(formatarPct(0.9567)).toBe("95,7%");
-    expect(formatarPct(null)).toBe("—");
   });
 
   it("meta e alerta vêm das configurações da empresa; sem elas, 95% e 90%", () => {

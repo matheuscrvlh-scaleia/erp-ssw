@@ -44,6 +44,7 @@ const batidas = z.object({
 
 export type FuncionarioAhgora = z.infer<typeof funcionarioAhgora>;
 
+/** Filtro de /punches/between com os nomes da API do Ahgora (por isso em inglês). */
 export interface FiltroDeBatidas {
   employeeId?: string | undefined;
   employeeRegister?: string | undefined;

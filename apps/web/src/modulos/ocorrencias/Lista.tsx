@@ -4,12 +4,12 @@ import {
   ORDENS_DA_LISTA,
   TAMANHOS_DE_PAGINA,
 } from "@erp/shared/contratos/ocorrencias";
+import { formatarInteiro } from "@erp/shared/formatacao";
 import { AlertTriangle, Clock } from "lucide-react";
 
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
-import { inteiro } from "@/modulos/compartilhado/formatos";
 
 import { type BuscaOcorrencias } from "./busca";
 import { classeDoResponsavel, identificacaoDoCte, rotulosDoResponsavel } from "./rotulos";
@@ -200,7 +200,7 @@ export function ListaDeOcorrencias({
       }}
       paginacaoServidor={{ pagina: busca.page, porPagina: busca.size, total, aoMudarPagina }}
       configurarColunas
-      rotuloTotal={(n) => `${inteiro(n)} ocorrência(s)`}
+      rotuloTotal={(n) => `${formatarInteiro(n)} ocorrência(s)`}
       exportacao={{
         arquivo: "ocorrencias",
         titulo: "Ocorrências",

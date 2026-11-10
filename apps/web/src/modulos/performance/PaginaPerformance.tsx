@@ -30,7 +30,9 @@ import {
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
@@ -56,6 +58,7 @@ import {
   consultaTiposNoPeriodo,
   entradaDoFiltro,
 } from "./api";
+import { BannerDeAlertas } from "./BannerDeAlertas";
 import {
   BASE_CURTA,
   type BuscaPerformance,
@@ -69,19 +72,14 @@ import {
   temFiltroLimpavel,
   type TipoDaLista,
 } from "./busca";
-import { BannerDeAlertas } from "./componentes/Alertas";
-import { GraficoSerie } from "./componentes/GraficoSerie";
-import { EsqueletoDeCards, LinhaDeKpis } from "./componentes/Kpis";
-import { type CliqueNosPrevistos, SecaoPrevistos } from "./componentes/Previstos";
-import {
-  type CardDeProducao,
-  LinhaDeProducao,
-  VerificacaoDaParticao,
-} from "./componentes/Producao";
-import { DialogoRelatorio } from "./componentes/RelatorioPeriodo";
-import { TabelaDeUnidades } from "./componentes/TabelaUnidades";
+import { textoDoStatus } from "./cores";
 import { COLUNAS_DA_EXPORTACAO } from "./exportacao";
-import { textoDoStatus } from "./formato";
+import { GraficoSerie } from "./GraficoSerie";
+import { EsqueletoDeCards, LinhaDeKpis } from "./Kpis";
+import { type CliqueNosPrevistos, SecaoPrevistos } from "./Previstos";
+import { type CardDeProducao, LinhaDeProducao, VerificacaoDaParticao } from "./Producao";
+import { DialogoRelatorio } from "./RelatorioPeriodo";
+import { TabelaDeUnidades } from "./TabelaUnidades";
 
 const rota = getRouteApi("/_autenticado/performance/");
 
@@ -123,7 +121,7 @@ function useVisivel<E extends Element>(): [React.RefObject<E | null>, boolean] {
 export function PaginaPerformance() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "";
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const busca = rota.useSearch();
   const navegarNaTela = rota.useNavigate();
   const navegar = useNavigate();
@@ -497,10 +495,12 @@ export function PaginaPerformance() {
       {erro && (
         <div
           className="flex items-start gap-2 rounded-[10px] border border-amber-200 bg-[var(--status-warn-bg)] px-4 py-3 text-[12px]"
-          style={{ color: textoDoStatus.warn }}
+          style={{ color: textoDoStatus.alerta }}
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{erro.message || "Não foi possível carregar os dados de performance."}</span>
+          <span>
+            {mensagemAmigavel(erro, "Não foi possível carregar os dados de performance.")}
+          </span>
         </div>
       )}
 
@@ -511,7 +511,7 @@ export function PaginaPerformance() {
           <div className="flex items-start gap-2 rounded-[10px] border border-border/70 bg-muted/40 px-4 py-2.5 text-[12px] text-muted-foreground">
             <AlertTriangle
               className="mt-0.5 h-3.5 w-3.5 shrink-0"
-              style={{ color: textoDoStatus.warn }}
+              style={{ color: textoDoStatus.alerta }}
             />
             <span>
               {r.totais.totalCtrcs === 0 ? (
@@ -650,14 +650,14 @@ export function PaginaPerformance() {
           href="/admin/codigos"
           className="flex items-center justify-between gap-3 rounded-[10px] border border-amber-200 bg-[var(--status-warn-bg)] px-4 py-3 text-[12px] transition-colors hover:bg-amber-100"
         >
-          <span className="flex items-center gap-2" style={{ color: textoDoStatus.warn }}>
+          <span className="flex items-center gap-2" style={{ color: textoDoStatus.alerta }}>
             <AlertTriangle className="h-4 w-4" />
             <strong className="font-medium">{r.totais.ocorrenciasPendentes}</strong> ocorrências
             precisam de classificação para os números ficarem 100% exatos.
           </span>
           <span
             className="flex items-center gap-1 font-medium"
-            style={{ color: textoDoStatus.warn }}
+            style={{ color: textoDoStatus.alerta }}
           >
             Classificar agora <ArrowRight className="h-3 w-3" />
           </span>

@@ -97,11 +97,6 @@ export function prazoPadraoData(
   return dias === null ? null : somarDiasCorridos(emissao, dias);
 }
 
-/** Previsão antes do prazo mínimo. Avaliado = as duas datas preenchidas. */
-export function nascidoEmAtraso(previsao: DataIso | null, padraoData: DataIso | null): boolean {
-  return previsao !== null && padraoData !== null && previsao < padraoData;
-}
-
 // --- Prazos configurados (Admin) -------------------------------------------------------------
 
 /** Linha de `prazos_configurados`. */
@@ -172,7 +167,7 @@ export function definirPrevisao(
 }
 
 /** Previsão dada pelas regras ativas, ou `null` se nenhuma vale para o CT-e. */
-export function previsaoPorRegra(
+function previsaoPorRegra(
   cte: Pick<CteParaPrazo, "dataEmissao" | "filial" | "parceiroCnpj">,
   ocorrencias: readonly OcorrenciaDoCte[],
   regras: readonly RegraDePrazo[],

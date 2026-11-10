@@ -4,7 +4,7 @@ import { etapaDaSituacao } from "./coletas";
 import { type Coleta050, lerRelatorio050, type Relatorio050 } from "./leitor-050";
 
 /** O que já está gravado de uma coleta e pesa na nova gravação. */
-export interface ColetaJaGravada {
+interface ColetaJaGravada {
   unidade: string;
   numero: number;
   relatorioEmitidoEm: Date;

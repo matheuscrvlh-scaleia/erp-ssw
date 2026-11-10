@@ -41,23 +41,6 @@ const RAIZ_CNPJ: Formato<string> = {
   descricao: "os 8 primeiros dígitos do CNPJ",
 };
 
-/** Chaves de `configuracoes` que o núcleo lê, com o formato de cada uma. */
-const FORMATOS = new Map<string, Formato<unknown>>([
-  ["alerta_dias_sem_movimento", DIAS],
-  ["ctrc_data_minima_emissao", DATA],
-  ["prazo_padrao_dias", DIAS],
-  ["raiz_cnpj_troca", RAIZ_CNPJ],
-]);
-
-/**
- * Valida o valor ao gravar a configuração (hoje um texto inválido derruba a consulta que o lê).
- * Chave que não é do núcleo e valor vazio passam.
- */
-export function validarConfiguracaoDoNucleo(chave: string, valor: string): void {
-  const formato = FORMATOS.get(chave);
-  if (formato !== undefined) lerValor(chave, valor, formato);
-}
-
 /** Lê as configurações da empresa; ausente ou vazia vale o padrão. */
 export function lerConfiguracaoDoNucleo(
   valores: ReadonlyMap<string, string>,

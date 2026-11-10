@@ -20,7 +20,7 @@ export const ehLetra = (v: string | null): v is LetraDeResponsavel =>
   LETRAS_DE_RESPONSAVEL.some((l) => l === v);
 
 export const ORDENS = ["codigo", "freq", "atualizado"] as const;
-export type OrdemDosCodigos = (typeof ORDENS)[number];
+type OrdemDosCodigos = (typeof ORDENS)[number];
 
 export interface FiltrosDosCodigos {
   busca: string;

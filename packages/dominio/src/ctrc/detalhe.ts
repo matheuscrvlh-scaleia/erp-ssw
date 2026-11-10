@@ -3,8 +3,10 @@
  * exibidas, localização, finalização e o selo do status do prazo.
  * origem: ctrc.functions.ts, ctrc.$numero.tsx, (sistema atual)
  */
+import { hojeNoFuso } from "@erp/shared/datas";
+
 import { lerCtrcProcurado } from "../listagem/texto";
-import { CODIGOS_ENTREGA, diaSp, estaEntregue } from "../nucleo";
+import { CODIGOS_ENTREGA, diaSp, difDias, estaEntregue, instanteNoFuso } from "../nucleo";
 
 /**
  * Número do endereço (`33214`, `033214`, `CAP033214`) + série opcional da query. A série da
@@ -73,32 +75,7 @@ export function finalizacaoDoCtrc(
 
 const MS_POR_DIA = 86_400_000;
 
-/** Instante do horário de parede `dia hora` no fuso dado. */
-function instanteNoFuso(dia: string, hora: string, fuso: string): Date {
-  const comoUtc = new Date(`${dia}T${hora}Z`);
-  const partes = new Intl.DateTimeFormat("en-US", {
-    timeZone: fuso,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).formatToParts(comoUtc);
-  const valor = (tipo: string) => Number(partes.find((p) => p.type === tipo)?.value);
-  const vistoNoFuso = Date.UTC(
-    valor("year"),
-    valor("month") - 1,
-    valor("day"),
-    valor("hour"),
-    valor("minute"),
-    valor("second"),
-  );
-  return new Date(comoUtc.getTime() - (vistoNoFuso - comoUtc.getTime()));
-}
-
-export type StatusDoPrazo =
+type StatusDoPrazo =
   | { tipo: "sem_previsao" }
   | { tipo: "baixado" }
   | { tipo: "entregue_no_prazo" }
@@ -144,11 +121,7 @@ export function statusDoPrazo(
       dias: Math.max(1, Math.ceil((instante - limite) / MS_POR_DIA)),
     };
   }
-  const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: fuso }).format(agora);
+  const hoje = hojeNoFuso(fuso, agora);
   if (previsao >= hoje) return { tipo: "no_prazo" };
-  const dias = Math.round(
-    (new Date(`${hoje}T00:00:00Z`).getTime() - new Date(`${previsao}T00:00:00Z`).getTime()) /
-      MS_POR_DIA,
-  );
-  return { tipo: "atrasado", dias };
+  return { tipo: "atrasado", dias: difDias(hoje, previsao) };
 }

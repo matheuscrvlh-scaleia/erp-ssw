@@ -3,7 +3,7 @@ import { type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-export interface EstadoVazioProps {
+interface EstadoVazioProps {
   /** Ex.: "Nenhuma coleta encontrada." */
   mensagem: string;
   /** Dica do que fazer (ex.: "Amplie o período ou tire filtros."). */

@@ -2,8 +2,9 @@ import { type ResultadoDaImportacao050 } from "@erp/shared/contratos/coletas";
 import { describe, expect, it } from "vitest";
 
 import { lerFiltros } from "@/hooks/filtros-na-url";
+import { temFiltro } from "@/hooks/filtros-na-url";
 
-import { alternar, esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, temFiltro } from "./busca";
+import { alternar, esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca } from "./busca";
 import { conferenciaDoResumo, lerArquivo050 } from "./Importador050";
 
 const ler = (b: Record<string, unknown>) => lerFiltros(esquemaDaBusca, b);
@@ -36,7 +37,7 @@ describe("busca de /coletas", () => {
     const b = ler({ tipo: "", status: "xyz", unidades: "ARA" });
     expect(b).toMatchObject({ periodo: "30d", status: "todas", unidades: ["ARA"] });
     expect(filtrosDaBusca(b, { inicio: "2026-10-01", fim: "2026-10-31" }).tipo).toBeNull();
-    expect(temFiltro(["periodo"], ler({ periodo: "7d" }))).toBe(false);
+    expect(temFiltro(["periodo"], ler({ periodo: "7d" }).periodo)).toBe(false);
   });
 
   it("etiquetas e alternância de solicitante (vazio = sem solicitante)", () => {

@@ -9,6 +9,7 @@ import {
   formatarDataHora,
   formatarInteiro,
   formatarMoeda,
+  formatarPeso,
 } from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi, Link, useRouter } from "@tanstack/react-router";
@@ -38,6 +39,7 @@ import {
 } from "@/componentes/ui/dialog";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
@@ -48,7 +50,6 @@ import {
   formatarCep,
   formatarChave,
   formatarCnpjOuTraco,
-  formatarPeso,
   identificacao,
   nasceuEmAtraso,
   origemDaPrevisao,
@@ -72,7 +73,7 @@ export function PaginaCtrc() {
   const router = useRouter();
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const { data, isLoading, isError, refetch, isFetching } = useQuery(consultaCtrc(numero, sigla));
   const ctrc = data?.tipo === "encontrado" ? data.ctrc : null;
   const ssw = ctrc ? urlCtrcNoSsw(ctrc.sigla, ctrc.numero, ctrc.dataEmissao) : null;
@@ -342,7 +343,10 @@ function Detalhe({
           </Cartao>
 
           <Cartao titulo="Carga & Frete">
-            <Campo rotulo="Peso" valor={formatarPeso(ctrc.peso)} />
+            <Campo
+              rotulo="Peso"
+              valor={formatarPeso(ctrc.peso, { tonelada: 3, quilo: 3, fixas: true })}
+            />
             <Campo rotulo="Volumes" valor={formatarInteiro(ctrc.volumes)} />
             <Campo rotulo="Valor do frete" valor={formatarMoeda(ctrc.valorFrete)} />
           </Cartao>

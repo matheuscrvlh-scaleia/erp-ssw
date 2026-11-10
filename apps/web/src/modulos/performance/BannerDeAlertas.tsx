@@ -14,7 +14,7 @@ import {
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 
-import { type CartaoDeAlerta, type IconeDoAlerta } from "../alertas";
+import { type CartaoDeAlerta, type IconeDoAlerta } from "./alertas";
 
 const ICONE: Record<IconeDoAlerta, LucideIcon> = {
   abaixo: AlertCircle,

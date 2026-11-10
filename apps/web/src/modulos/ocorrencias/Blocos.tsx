@@ -5,24 +5,25 @@ import {
   type FiltroPrazo,
   type PainelDeOcorrencias,
 } from "@erp/shared/contratos/ocorrencias";
+import {
+  formatarDecimal,
+  formatarDiaMes,
+  formatarInteiro,
+  formatarParticipacao,
+  formatarPercentual,
+} from "@erp/shared/formatacao";
 import { AlertTriangle, TrendingDown } from "lucide-react";
 import { type ReactNode } from "react";
 
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
-import {
-  decimal,
-  diaMes,
-  inteiro,
-  participacao,
-  percentual,
-} from "@/modulos/compartilhado/formatos";
+import { Skeleton } from "@/componentes/ui/skeleton";
 
 import { type RecorteFinalizacao, ROTULO_DA_FAIXA } from "./busca";
 import { classeDoResponsavel, rotulosDoResponsavel } from "./rotulos";
 
 /** Recortes que os blocos aplicam na tela (clicar de novo desfaz). */
-export interface RecortesDosBlocos {
+interface RecortesDosBlocos {
   prazo: FiltroPrazo | null;
   faixa: FaixaAtraso | null;
   pagador: string | null;
@@ -114,10 +115,10 @@ function LinhaDeBarra({
       >
         <div className="flex items-center gap-2 text-[14px] font-semibold">
           <span className="flex-1 truncate">{rotulo}</span>
-          <span className="font-bold tabular-nums">{inteiro(valor)}</span>
+          <span className="font-bold tabular-nums">{formatarInteiro(valor)}</span>
           {total !== undefined && (
             <span className="text-[12px] font-semibold text-muted-foreground tabular-nums">
-              {participacao(valor, total)}
+              {formatarParticipacao(valor, total)}
             </span>
           )}
         </div>
@@ -142,7 +143,9 @@ function SemDados() {
 
 function Esqueletos({ n = 5 }: { n?: number }) {
   return Array.from({ length: n }, (_, i) => (
-    <li key={i} className="h-8 animate-pulse rounded bg-muted/60" />
+    <li key={i}>
+      <Skeleton className="h-8 rounded bg-muted/60" />
+    </li>
   ));
 }
 
@@ -156,7 +159,7 @@ function SeloDeVariacao({ delta }: { delta: number }) {
         : "bg-muted text-muted-foreground";
   return (
     <span className={`rounded px-1.5 py-px text-[12px] font-bold tabular-nums ${cor}`}>
-      {delta > 0 ? `+${inteiro(delta)}` : inteiro(delta)} vs anterior
+      {delta > 0 ? `+${formatarInteiro(delta)}` : formatarInteiro(delta)} vs anterior
     </span>
   );
 }
@@ -227,7 +230,7 @@ export function BlocosDestaque({
         {!carregando && fin && fin.ctrcs > 0 && (
           <>
             <li className="px-2 pb-1 text-[13px] font-semibold text-muted-foreground">
-              {inteiro(fin.ctrcs)} CT-e com ocorrência
+              {formatarInteiro(fin.ctrcs)} CT-e com ocorrência
             </li>
             <LinhaDeBarra
               rotulo="Finalizados — entregues"
@@ -275,7 +278,7 @@ export function BlocosDestaque({
                   }}
                   className="rounded px-1 text-[12px] font-bold text-[var(--status-bad)] tabular-nums underline-offset-2 hover:underline"
                 >
-                  {inteiro(fin.emAtraso)} em atraso
+                  {formatarInteiro(fin.emAtraso)} em atraso
                 </span>
               }
             />
@@ -301,7 +304,7 @@ export function BlocosDestaque({
               ativo={r.unidadeResp === u.unidade}
               apoio={
                 <span className="text-[12px] font-semibold text-muted-foreground tabular-nums">
-                  {inteiro(u.penalizantes)} penal. · {inteiro(u.ctrcs)} CT-e
+                  {formatarInteiro(u.penalizantes)} penal. · {formatarInteiro(u.ctrcs)} CT-e
                 </span>
               }
               aoClicar={() => {
@@ -343,7 +346,7 @@ export function BlocosApoio({
       ativo={r.prazo === chave}
       apoio={
         <span className="text-[12px] font-semibold text-muted-foreground">
-          {participacao(valor, totalPrazo)}
+          {formatarParticipacao(valor, totalPrazo)}
         </span>
       }
       aoClicar={() => {
@@ -460,13 +463,13 @@ export function ComparativoDoMes({
         series={[
           {
             chave: "atual",
-            nome: `Atual (${diaMes(periodo.inicio)}–${diaMes(periodo.fim)})`,
+            nome: `Atual (${formatarDiaMes(periodo.inicio)}–${formatarDiaMes(periodo.fim)})`,
             cor: "var(--brand)",
           },
           {
             chave: "anterior",
             nome: anterior
-              ? `Mês anterior (${diaMes(anterior.inicio)}–${diaMes(anterior.fim)})`
+              ? `Mês anterior (${formatarDiaMes(anterior.inicio)}–${formatarDiaMes(anterior.fim)})`
               : "Mês anterior",
             cor: "color-mix(in srgb, var(--muted-foreground) 45%, transparent)",
           },
@@ -477,7 +480,7 @@ export function ComparativoDoMes({
               {d.rotulo} {d.descricao}
             </p>
             <p>
-              Atual {inteiro(d.atual)} · anterior {inteiro(d.anterior)}
+              Atual {formatarInteiro(d.atual)} · anterior {formatarInteiro(d.anterior)}
             </p>
           </div>
         )}
@@ -509,7 +512,7 @@ export function ImpactoPorCodigo({
   const ctesAnterior = impacto?.ctrcsAnterior ?? 0;
   const base = campoData === "emissao" ? "emitidos" : "com previsão";
   const grade = "grid-cols-[70px_minmax(0,1fr)_90px_80px_90px_80px_90px]";
-  const pct = (v: number | null) => (v === null ? "—" : percentual(v));
+  const pct = (v: number | null) => (v === null ? "—" : formatarPercentual(v));
   return (
     <section className="rounded-[10px] border border-border/70 bg-card">
       <header className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
@@ -524,7 +527,7 @@ export function ImpactoPorCodigo({
           <p className="text-[13px] font-semibold text-muted-foreground">
             {carregando
               ? "carregando…"
-              : `${inteiro(ctes)} CT-e ${base} no período · ${inteiro(ctesAnterior)} no mês anterior`}
+              : `${formatarInteiro(ctes)} CT-e ${base} no período · ${formatarInteiro(ctesAnterior)} no mês anterior`}
           </p>
         </div>
       </header>
@@ -576,11 +579,11 @@ export function ImpactoPorCodigo({
                       </span>
                       <span className="truncate">{l.descricao}</span>
                       <span className="text-right font-bold tabular-nums">
-                        {inteiro(l.ocorrencias)}
+                        {formatarInteiro(l.ocorrencias)}
                       </span>
                       <span className="text-right font-bold tabular-nums">{pct(atual)}</span>
                       <span className="text-right text-muted-foreground tabular-nums">
-                        {inteiro(l.ocorrenciasAnterior)}
+                        {formatarInteiro(l.ocorrenciasAnterior)}
                       </span>
                       <span className="text-right text-muted-foreground tabular-nums">
                         {pct(antes)}
@@ -588,7 +591,7 @@ export function ImpactoPorCodigo({
                       <span className={`text-right font-bold tabular-nums ${corDelta}`}>
                         {delta === null
                           ? "—"
-                          : `${delta > 0 ? "+" : ""}${decimal(Math.round(delta * 1000) / 10)} p.p.`}
+                          : `${delta > 0 ? "+" : ""}${formatarDecimal(Math.round(delta * 1000) / 10)} p.p.`}
                       </span>
                     </button>
                   </li>

@@ -1,12 +1,13 @@
 import { statusDoSla } from "@erp/dominio/performance/tela";
 import { type UnidadeResumo } from "@erp/shared/contratos/performance";
+import { formatarPercentual } from "@erp/shared/formatacao";
 
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 
-import { corDoStatus, fmtPct, fundoDoStatus, textoDoStatus } from "../formato";
+import { corDoStatus, fundoDoStatus, textoDoStatus } from "./cores";
 import { clicavel } from "./Kpis";
 
-export type LinhaDaUnidade = UnidadeResumo & {
+type LinhaDaUnidade = UnidadeResumo & {
   slaOp: number | null;
   nascidosPct: number | null;
 };
@@ -119,14 +120,14 @@ function LinhaDeUnidade({
   onPenalizados: () => void;
 }) {
   const sla = linha.slaOp;
-  const status = sla != null ? statusDoSla(sla, meta, alerta) : "good";
-  const ruim = sla != null && status === "bad";
+  const status = sla != null ? statusDoSla(sla, meta, alerta) : "bom";
+  const ruim = sla != null && status === "ruim";
   const abertos = linha.penalizadosAbertos;
   const rotulo = `${abertos} penalizado${abertos === 1 ? "" : "s"} em aberto`;
   return (
     <li
       className="flex cursor-pointer items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/40"
-      style={ruim ? { background: fundoDoStatus.bad } : undefined}
+      style={ruim ? { background: fundoDoStatus.ruim } : undefined}
       title="Ver CTRCs com atraso, ocorrências e NFs desta unidade"
       {...clicavel(onClick)}
     >
@@ -138,7 +139,7 @@ function LinhaDeUnidade({
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span
             className="text-[13px] font-medium tabular-nums"
-            style={ruim ? { color: textoDoStatus.bad } : undefined}
+            style={ruim ? { color: textoDoStatus.ruim } : undefined}
           >
             {linha.sigla}
           </span>
@@ -168,7 +169,7 @@ function LinhaDeUnidade({
                 onPenalizados();
               }}
               className="text-[11px] font-medium underline decoration-dotted underline-offset-2 hover:opacity-80 focus:outline-none"
-              style={{ color: textoDoStatus.bad }}
+              style={{ color: textoDoStatus.ruim }}
               title="Ver os CTRCs penalizados desta unidade que ainda estão em aberto"
             >
               · agir agora
@@ -189,10 +190,12 @@ function LinhaDeUnidade({
         className="w-20 shrink-0 text-right text-[13px] font-medium tabular-nums"
         style={{ color: sla != null ? textoDoStatus[status] : "var(--muted-foreground)" }}
       >
-        {sla != null ? fmtPct(sla) : "—"}
+        {sla != null ? formatarPercentual(sla, { separador: "." }) : "—"}
       </div>
       <div className="hidden w-20 shrink-0 text-right text-[13px] text-muted-foreground tabular-nums md:block">
-        {linha.nascidosPct != null ? fmtPct(linha.nascidosPct) : "—"}
+        {linha.nascidosPct != null
+          ? formatarPercentual(linha.nascidosPct, { separador: "." })
+          : "—"}
       </div>
     </li>
   );

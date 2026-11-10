@@ -1,4 +1,5 @@
 import { type Card, type FiltrosDeCte } from "@erp/shared/contratos/ocorrencias";
+import { formatarInteiro, formatarParticipacao } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { ListTree, Loader2, Search } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
@@ -7,7 +8,6 @@ import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { inteiro, participacao } from "@/modulos/compartilhado/formatos";
 
 import { consultaCodigosDoCard } from "./api";
 
@@ -130,7 +130,7 @@ export function CodigosDoCard({
             <div className="text-[10px] text-muted-foreground">
               {consulta.isLoading
                 ? "Carregando…"
-                : `${inteiro(codigos.length)} código(s) no período · ordenado por volume`}
+                : `${formatarInteiro(codigos.length)} código(s) no período · ordenado por volume`}
             </div>
           </div>
           <ExportMenu
@@ -193,7 +193,7 @@ export function CodigosDoCard({
                 </span>
                 <span className="flex-1 truncate">{c.descricao}</span>
                 <span className="text-[11px] text-muted-foreground tabular-nums">
-                  {inteiro(c.total)} · {participacao(c.total, total)}
+                  {formatarInteiro(c.total)} · {formatarParticipacao(c.total, total)}
                 </span>
               </button>
             </li>

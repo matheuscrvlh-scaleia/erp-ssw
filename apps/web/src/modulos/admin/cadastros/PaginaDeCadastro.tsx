@@ -23,9 +23,9 @@ import { CabecalhoDaPagina, CAMPO, Campo, Selo, useGravacao } from "../comum";
 import { EditorDeMarcacao } from "../EditorDeTelas";
 
 /** Cargo (Roles) e departamento: mesma tela, com descrição e ativo só no departamento. */
-export type TipoDeCadastro = "cargo" | "departamento";
+type TipoDeCadastro = "cargo" | "departamento";
 
-export interface ItemDoCadastro {
+interface ItemDoCadastro {
   chave: string;
   rotulo: string;
   descricao: string | null;
@@ -35,7 +35,7 @@ export interface ItemDoCadastro {
   usuarios: number;
 }
 
-export type DadosDoCadastro = Omit<ItemDoCadastro, "protegido" | "usuarios">;
+type DadosDoCadastro = Omit<ItemDoCadastro, "protegido" | "usuarios">;
 
 const TEXTOS = {
   cargo: {
@@ -210,7 +210,7 @@ export function PaginaDeCadastro({ tipo }: { tipo: TipoDeCadastro }) {
 
 const VAZIO: DadosDoCadastro = { chave: "", rotulo: "", descricao: null, ativo: true, telas: [] };
 
-export function ModalDeCadastro({
+function ModalDeCadastro({
   tipo,
   item,
   aoGravar,

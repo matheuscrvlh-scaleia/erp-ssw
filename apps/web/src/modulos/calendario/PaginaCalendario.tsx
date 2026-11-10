@@ -8,7 +8,9 @@ import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DO_CALENDARIO, consultaCalendario } from "./api";
 import { formatarDiaCurto, porData } from "./calendario";
@@ -23,14 +25,11 @@ const ROTULO_DA_VISAO: Record<Visao, string> = {
   lista: "Lista",
 };
 
-function mensagemDe(e: unknown): string {
-  return e instanceof Error ? e.message : "Não foi possível concluir. Tente de novo.";
-}
-
 /** Tela molde: consulta por contrato, permissões vindas do acesso, escrita com aviso e invalidação. */
 export function PaginaCalendario() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const fuso = useFusoDaEmpresa();
+  const hoje = hojeNoFuso(fuso);
   // Escrita: admin da empresa (a Plataforma conta como admin). Nacionais: só a Plataforma (Q28).
   const podeEditar = ehAdminDaEmpresa(acesso.papel);
   const podeGerarNacionais = acesso.adminPlataforma;
@@ -59,7 +58,7 @@ export function PaginaCalendario() {
       toast.success(`${r.inseridos} feriado(s) gerado(s) · ${r.existiam} já existiam`);
       await atualizar();
     } catch (e) {
-      toast.error(mensagemDe(e));
+      toast.error(mensagemAmigavel(e));
     }
   };
 
@@ -70,7 +69,7 @@ export function PaginaCalendario() {
       toast.success("Feriado excluído");
       await atualizar();
     } catch (e) {
-      toast.error(mensagemDe(e));
+      toast.error(mensagemAmigavel(e));
     }
   };
 
@@ -88,7 +87,7 @@ export function PaginaCalendario() {
       await atualizar();
       return true;
     } catch (e) {
-      toast.error(mensagemDe(e));
+      toast.error(mensagemAmigavel(e));
       return false;
     }
   };

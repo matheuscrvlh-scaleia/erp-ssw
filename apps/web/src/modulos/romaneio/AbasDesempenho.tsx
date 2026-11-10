@@ -3,7 +3,14 @@
  * Visual da tela de hoje (features/romaneio/Fase2Views.tsx).
  */
 import { type FiltrosRomaneio, type LinhaPerformancePessoa } from "@erp/shared/contratos/romaneio";
-import { formatarData } from "@erp/shared/formatacao";
+import {
+  formatarData,
+  formatarDiaMes,
+  formatarInteiro,
+  formatarMoeda,
+  formatarPercentual,
+  formatarPeso,
+} from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, EyeOff, Lock, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -33,7 +40,6 @@ import {
   textoDoPrejuizo,
 } from "./componentes";
 import { Distribuicao } from "./Distribuicao";
-import { fmtDiaCurto, fmtMoedaInteira, fmtPeso, nfInt, nfPct, nfPct2 } from "./formatos";
 
 interface PropsDaAba {
   filtros: FiltrosRomaneio;
@@ -64,7 +70,7 @@ export function AbaRomaneioEntrega({ filtros, aoAbrir }: PropsDaAba) {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <CardAba
           rotulo="CTRC no período"
-          valor={kpis.data ? nfInt.format(kpis.data.total) : "—"}
+          valor={kpis.data ? formatarInteiro(kpis.data.total) : "—"}
           dica="Base do período filtrado"
           explicacao="Todas as cargas do período e dos filtros escolhidos, sem as canceladas no mesmo dia. É a base dos percentuais desta aba."
           aoClicar={() => {
@@ -81,7 +87,7 @@ export function AbaRomaneioEntrega({ filtros, aoAbrir }: PropsDaAba) {
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-muted-foreground">
               {linhas.length > 0
-                ? `${nfInt.format(linhas.filter((c) => c.placa).length)} placas · `
+                ? `${formatarInteiro(linhas.filter((c) => c.placa).length)} placas · `
                 : ""}
               CTRC · peso · vol. · frete
             </span>
@@ -149,25 +155,25 @@ export function AbaRomaneioEntrega({ filtros, aoAbrir }: PropsDaAba) {
                   />
                 </div>
                 <span className="w-14 shrink-0 text-right tabular-nums" title="CTRC">
-                  {nfInt.format(c.ctes)}
+                  {formatarInteiro(c.ctes)}
                 </span>
                 <span
                   className="hidden w-20 shrink-0 text-right tabular-nums text-muted-foreground sm:inline"
                   title="Peso"
                 >
-                  {c.peso ? fmtPeso(c.peso) : "—"}
+                  {c.peso ? formatarPeso(c.peso, { fixas: true }) : "—"}
                 </span>
                 <span
                   className="hidden w-14 shrink-0 text-right tabular-nums text-muted-foreground sm:inline"
                   title="Volumes"
                 >
-                  {nfInt.format(c.volumes)}
+                  {formatarInteiro(c.volumes)}
                 </span>
                 <span
                   className="w-24 shrink-0 text-right tabular-nums text-muted-foreground"
                   title="Frete"
                 >
-                  {fmtMoedaInteira(c.frete)}
+                  {formatarMoeda(c.frete, { centavos: false })}
                 </span>
               </div>
             );
@@ -207,7 +213,7 @@ function FretePerdidoPorHora({
       }))
     : porDia.map((d) => ({
         chave: d.dia,
-        rotulo: fmtDiaCurto(d.dia),
+        rotulo: formatarDiaMes(d.dia),
         titulo: formatarData(d.dia),
         ...d,
       }));
@@ -235,7 +241,7 @@ function FretePerdidoPorHora({
             <div
               key={p.chave}
               className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-              title={`${p.titulo} · ${fmtMoedaInteira(p.frete)} · ${nfInt.format(p.ctes)} carga(s)`}
+              title={`${p.titulo} · ${formatarMoeda(p.frete, { centavos: false })} · ${formatarInteiro(p.ctes)} carga(s)`}
             >
               <div
                 className="w-full rounded-t bg-destructive/70 transition-colors group-hover:bg-destructive"
@@ -265,7 +271,7 @@ export function AbaPerformanceRomaneio({
   const k = q.data;
   const base = k?.romaneado ?? 0;
   const pctBase = (n: number) =>
-    base > 0 ? `${nfPct.format((n / base) * 100)}% da base desta aba` : "—";
+    base > 0 ? `${formatarPercentual((n / base) * 100, { escala: "cem" })} da base desta aba` : "—";
   const positiva = k ? pctDe(k.entregue, base) : null;
   const pPrejuizo = k ? pctDe(k.prejudicada, base) : null;
   const codigos = filtros.codigos;
@@ -273,20 +279,20 @@ export function AbaPerformanceRomaneio({
     <div className="space-y-3">
       <p className="text-[11px] text-muted-foreground">
         {k
-          ? `Base desta aba: ${nfInt.format(base)} cargas que já saíram para entrega (de ${nfInt.format(k.total)} do período).`
+          ? `Base desta aba: ${formatarInteiro(base)} cargas que já saíram para entrega (de ${formatarInteiro(k.total)} do período).`
           : "Base desta aba: cargas que já saíram para entrega."}
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <CardAba
           rotulo="CTRC romaneados"
-          valor={k ? nfInt.format(base) : "—"}
+          valor={k ? formatarInteiro(base) : "—"}
           dica="Cargas que já saíram para entrega no período"
           explicacao="Base desta aba: cargas com saída para entrega registrada, dentro do período e filtros escolhidos."
         />
         <CardAba
           rotulo="Entregues"
-          valor={k ? nfInt.format(k.entregue) : "—"}
-          dica={k ? `de ${nfInt.format(base)} romaneados` : undefined}
+          valor={k ? formatarInteiro(k.entregue) : "—"}
+          dica={k ? `de ${formatarInteiro(base)} romaneados` : undefined}
           tom="ok"
           explicacao="Das cargas que já saíram para entrega, quantas foram entregues ao destinatário. Esta aba conta só quem já saiu para entrega — por isso o número é menor que o da tela de Performance, que conta todos os CTRCs do período."
           aoClicar={() => {
@@ -298,9 +304,9 @@ export function AbaPerformanceRomaneio({
         <CardAba
           rotulo="Entregas prejudicadas"
           sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={k ? nfInt.format(k.prejudicada) : "—"}
+          valor={k ? formatarInteiro(k.prejudicada) : "—"}
           dica={k ? pctBase(k.prejudicada) : undefined}
-          tom="warn"
+          tom="alerta"
           explicacao="Cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo número da aba Prejuízo, dos cards do topo e da tela de Performance."
           aoClicar={() => {
             aoAbrir({ recorte: "prejuizo" });
@@ -309,13 +315,13 @@ export function AbaPerformanceRomaneio({
         <CardAba
           rotulo="Frete perdido"
           sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={k ? fmtMoedaInteira(k.fretePerdido) : "—"}
+          valor={k ? formatarMoeda(k.fretePerdido, { centavos: false }) : "—"}
           dica={
             k && k.freteRomaneado > 0
-              ? `${nfPct.format((k.fretePerdido / k.freteRomaneado) * 100)}% do frete da base desta aba`
+              ? `${formatarPercentual((k.fretePerdido / k.freteRomaneado) * 100, { escala: "cem" })} do frete da base desta aba`
               : undefined
           }
-          tom={k && k.fretePerdido > 0 ? "bad" : undefined}
+          tom={k && k.fretePerdido > 0 ? "ruim" : undefined}
           explicacao="Frete das cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo valor da aba Prejuízo e da tela de Performance."
           aoClicar={() => {
             aoAbrir({ recorte: "prejuizo" });
@@ -324,13 +330,13 @@ export function AbaPerformanceRomaneio({
         <CardAba
           rotulo="Prejuízo (%)"
           sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={pPrejuizo !== null ? `${nfPct.format(pPrejuizo)}%` : "—"}
+          valor={pPrejuizo !== null ? formatarPercentual(pPrejuizo, { escala: "cem" }) : "—"}
           dica={
             k && pPrejuizo !== null
-              ? `${nfInt.format(k.prejudicada)} de ${nfInt.format(base)} CTRC prejudicados`
+              ? `${formatarInteiro(k.prejudicada)} de ${formatarInteiro(base)} CTRC prejudicados`
               : undefined
           }
-          tom={pPrejuizo !== null && pPrejuizo > 0 ? "warn" : undefined}
+          tom={pPrejuizo !== null && pPrejuizo > 0 ? "alerta" : undefined}
           explicacao="Mesmo cálculo de Entregas prejudicadas, em percentual: cargas com prejuízo atribuído ao(s) código(s) indicado(s) ÷ CTRC total da aba."
           aoClicar={() => {
             aoAbrir({ recorte: "prejuizo" });
@@ -339,10 +345,10 @@ export function AbaPerformanceRomaneio({
         <CardAba
           rotulo="Entregas no horário (%)"
           sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={pPrejuizo !== null ? `${nfPct.format(100 - pPrejuizo)}%` : "—"}
+          valor={pPrejuizo !== null ? formatarPercentual(100 - pPrejuizo, { escala: "cem" }) : "—"}
           dica={
             k && pPrejuizo !== null
-              ? `${nfInt.format(base - k.prejudicada)} de ${nfInt.format(base)} CTRC no horário`
+              ? `${formatarInteiro(base - k.prejudicada)} de ${formatarInteiro(base)} CTRC no horário`
               : undefined
           }
           tom={pPrejuizo !== null && 100 - pPrejuizo >= 95 ? "ok" : undefined}
@@ -353,8 +359,8 @@ export function AbaPerformanceRomaneio({
         <CardAba
           destaque
           rotulo="Não entregues"
-          tom="bad"
-          valor={k ? nfInt.format(k.naoEntregue) : "—"}
+          tom="ruim"
+          valor={k ? formatarInteiro(k.naoEntregue) : "—"}
           dica={k ? pctBase(k.naoEntregue) : undefined}
           explicacao="Cargas que saíram para entrega e até agora não foram entregues. Esta aba conta só quem já saiu para entrega — por isso o número é menor que o da tela de Performance, que conta todos os CTRCs do período."
           aoClicar={() => {
@@ -365,10 +371,10 @@ export function AbaPerformanceRomaneio({
           destaque
           rotulo="Performance positiva"
           tom="ok"
-          valor={positiva !== null ? `${nfPct.format(positiva)}%` : "—"}
+          valor={positiva !== null ? formatarPercentual(positiva, { escala: "cem" }) : "—"}
           dica={
             k && positiva !== null
-              ? `${nfInt.format(k.entregue)} de ${nfInt.format(base)} entregues`
+              ? `${formatarInteiro(k.entregue)} de ${formatarInteiro(base)} entregues`
               : undefined
           }
           explicacao="Entregues ÷ CTRC total da aba — a mesma Produtividade calculada mais abaixo."
@@ -376,11 +382,11 @@ export function AbaPerformanceRomaneio({
         <CardAba
           destaque
           rotulo="Performance negativa"
-          tom="bad"
-          valor={positiva !== null ? `${nfPct.format(100 - positiva)}%` : "—"}
+          tom="ruim"
+          valor={positiva !== null ? formatarPercentual(100 - positiva, { escala: "cem" }) : "—"}
           dica={
             k && positiva !== null
-              ? `${nfInt.format(base - k.entregue)} de ${nfInt.format(base)} não entregues`
+              ? `${formatarInteiro(base - k.entregue)} de ${formatarInteiro(base)} não entregues`
               : undefined
           }
           explicacao="Contraponto da Performance positiva: 100% − Performance positiva."
@@ -567,20 +573,26 @@ function TabelaPorViagem({ filtros, aoAbrir }: PropsDaAba) {
                   <td className="px-3 py-1 text-[11px] text-muted-foreground">
                     {r.ajudantes || "—"}
                   </td>
-                  <td className="px-3 py-1 text-right tabular-nums">{nfInt.format(r.ctes)}</td>
+                  <td className="px-3 py-1 text-right tabular-nums">{formatarInteiro(r.ctes)}</td>
                   <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
-                    {r.transferidas > 0 ? nfInt.format(r.transferidas) : "—"}
+                    {r.transferidas > 0 ? formatarInteiro(r.transferidas) : "—"}
                   </td>
-                  <td className="px-3 py-1 text-right tabular-nums">{fmtMoedaInteira(r.frete)}</td>
-                  <td className="px-3 py-1 text-right tabular-nums">{nfInt.format(r.entregues)}</td>
                   <td className="px-3 py-1 text-right tabular-nums">
-                    {nfInt.format(r.naoEntregues)}
+                    {formatarMoeda(r.frete, { centavos: false })}
+                  </td>
+                  <td className="px-3 py-1 text-right tabular-nums">
+                    {formatarInteiro(r.entregues)}
+                  </td>
+                  <td className="px-3 py-1 text-right tabular-nums">
+                    {formatarInteiro(r.naoEntregues)}
                   </td>
                   <td className="px-3 py-1 text-right font-medium tabular-nums">
-                    {r.performance !== null ? `${nfPct.format(r.performance)}%` : "—"}
+                    {r.performance !== null
+                      ? formatarPercentual(r.performance, { escala: "cem" })
+                      : "—"}
                   </td>
                   <td className="px-3 py-1 text-right tabular-nums">
-                    {r.fretePerdido > 0 ? fmtMoedaInteira(r.fretePerdido) : "—"}
+                    {r.fretePerdido > 0 ? formatarMoeda(r.fretePerdido, { centavos: false }) : "—"}
                   </td>
                 </tr>
               );
@@ -590,7 +602,7 @@ function TabelaPorViagem({ filtros, aoAbrir }: PropsDaAba) {
       </div>
       <p className="text-[11px] text-muted-foreground">
         {busca
-          ? `${nfInt.format(linhas.length)} romaneio(s) encontrado(s) para "${busca}".`
+          ? `${formatarInteiro(linhas.length)} romaneio(s) encontrado(s) para "${busca}".`
           : "Mostra até 300 romaneios, dos maiores para os menores."}{" "}
         Clique em uma linha para abrir as cargas daquela placa.
       </p>
@@ -611,16 +623,16 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
   return (
     <div className="space-y-1">
       <p className="text-[11px] text-muted-foreground">
-        Base desta aba: {nfInt.format(total)} CTRC no total — {nfInt.format(entregues)} entregues.
-        Cargas ainda em rota contam contra a produtividade até terem desfecho.
+        Base desta aba: {formatarInteiro(total)} CTRC no total — {formatarInteiro(entregues)}{" "}
+        entregues. Cargas ainda em rota contam contra a produtividade até terem desfecho.
       </p>
       <div className="grid grid-cols-2 gap-2">
         <CardAba
           rotulo="Produtividade"
-          valor={pct !== null ? `${nfPct.format(pct)}%` : "—"}
+          valor={pct !== null ? formatarPercentual(pct, { escala: "cem" }) : "—"}
           dica={
             pct !== null
-              ? `${nfInt.format(entregues)} de ${nfInt.format(total)} CTRC entregues`
+              ? `${formatarInteiro(entregues)} de ${formatarInteiro(total)} CTRC entregues`
               : undefined
           }
           tom={pct !== null && pct >= 95 ? "ok" : undefined}
@@ -628,13 +640,13 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
         />
         <CardAba
           rotulo="Taxa de retorno"
-          valor={pctRetorno !== null ? `${nfPct.format(pctRetorno)}%` : "—"}
+          valor={pctRetorno !== null ? formatarPercentual(pctRetorno, { escala: "cem" }) : "—"}
           dica={
             pctRetorno !== null
-              ? `${nfInt.format(retornos)} CTRC sem entrega · de ${nfInt.format(total)} da aba`
+              ? `${formatarInteiro(retornos)} CTRC sem entrega · de ${formatarInteiro(total)} da aba`
               : undefined
           }
-          tom={retornos > 0 ? "bad" : undefined}
+          tom={retornos > 0 ? "ruim" : undefined}
           explicacao={TIP_RETORNO}
         />
       </div>
@@ -806,17 +818,23 @@ function TabelaDePessoas({
                   )}
                 </td>
                 {ehMotorista && <td className="px-3 py-1">{r.equipe ?? "—"}</td>}
-                <td className="px-3 py-1 text-right tabular-nums">{nfInt.format(r.viagens)}</td>
-                <td className="px-3 py-1 text-right tabular-nums">{nfInt.format(r.romaneados)}</td>
-                <td className="px-3 py-1 text-right tabular-nums">{nfInt.format(r.entregues)}</td>
+                <td className="px-3 py-1 text-right tabular-nums">{formatarInteiro(r.viagens)}</td>
                 <td className="px-3 py-1 text-right tabular-nums">
-                  {nfInt.format(r.prejudicadas)}
+                  {formatarInteiro(r.romaneados)}
+                </td>
+                <td className="px-3 py-1 text-right tabular-nums">
+                  {formatarInteiro(r.entregues)}
+                </td>
+                <td className="px-3 py-1 text-right tabular-nums">
+                  {formatarInteiro(r.prejudicadas)}
                 </td>
                 <td
                   className="px-3 py-1 text-right font-medium tabular-nums"
-                  title={`${nfInt.format(r.romaneados)} levados − ${nfInt.format(r.prejudicadas13)} prejudicados (cód. 13)`}
+                  title={`${formatarInteiro(r.romaneados)} levados − ${formatarInteiro(r.prejudicadas13)} prejudicados (cód. 13)`}
                 >
-                  {r.romaneados > 0 ? `${nfPct2.format(r.performance)}%` : "—"}
+                  {r.romaneados > 0
+                    ? formatarPercentual(r.performance, { escala: "cem", casas: 2 })
+                    : "—"}
                 </td>
               </tr>
             ))}
@@ -904,7 +922,7 @@ function MotivosNaoEntrega({ filtros, aoAbrir }: PropsDaAba) {
                 />
               </div>
               <span className="w-[52px] shrink-0 text-right tabular-nums">
-                {nfInt.format(r.qtd)}
+                {formatarInteiro(r.qtd)}
               </span>
             </div>
           );
@@ -986,10 +1004,10 @@ function RankingDoPrejuizo({
                 )}
               </span>
               <span className="shrink-0 tabular-nums text-destructive">
-                {fmtMoedaInteira(l.frete)}
+                {formatarMoeda(l.frete, { centavos: false })}
               </span>
               <span className="w-[44px] shrink-0 text-right tabular-nums text-muted-foreground">
-                {nfInt.format(l.ctes)}
+                {formatarInteiro(l.ctes)}
               </span>
             </div>
             <div className="mt-0.5 h-1.5 w-full rounded bg-muted">
@@ -1059,14 +1077,14 @@ export function AbaPrejuizo({ filtros, aoAbrir }: PropsDaAba) {
               <div
                 key={x.dia}
                 className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-                title={`${formatarData(x.dia)} · ${fmtMoedaInteira(x.frete)} · ${nfInt.format(x.ctes)} carga(s)`}
+                title={`${formatarData(x.dia)} · ${formatarMoeda(x.frete, { centavos: false })} · ${formatarInteiro(x.ctes)} carga(s)`}
               >
                 <div
                   className="w-full rounded-t bg-destructive/70 transition-colors group-hover:bg-destructive"
                   style={{ height: `${Math.max(2, (x.frete / maior) * 100)}%` }}
                 />
                 <span className="w-full truncate text-center text-[9px] text-muted-foreground">
-                  {fmtDiaCurto(x.dia)}
+                  {formatarDiaMes(x.dia)}
                 </span>
               </div>
             ))}

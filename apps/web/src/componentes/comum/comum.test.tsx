@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ErroDaApi } from "@/lib/api";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { ErroDoOperador, mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { Abas, ConteudoDaAba } from "./Abas";
 import { ComoFunciona } from "./ComoFunciona";
@@ -45,6 +45,16 @@ describe("mensagens de erro", () => {
   it("mostra só a mensagem da API; erro técnico vira a genérica", () => {
     expect(mensagemAmigavel(new ErroDaApi("CONFLITO", "Já existe.", 409))).toBe("Já existe.");
     expect(mensagemAmigavel(new TypeError("x is undefined"))).toBe(MENSAGEM_ERRO_INTERNO);
+  });
+
+  it("erro do próprio front escrito para o operador aparece; o técnico usa a genérica dada", () => {
+    expect(mensagemAmigavel(new ErroDoOperador("Informe o nome da regra."))).toBe(
+      "Informe o nome da regra.",
+    );
+    // Antes as telas mostravam `e.message` cru ("Failed to fetch").
+    expect(mensagemAmigavel(new TypeError("Failed to fetch"), "Não foi possível entrar.")).toBe(
+      "Não foi possível entrar.",
+    );
   });
 
   it("MensagemErro com título e tentar de novo", () => {

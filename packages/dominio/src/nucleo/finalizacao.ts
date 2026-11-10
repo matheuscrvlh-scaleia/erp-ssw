@@ -27,17 +27,6 @@ export function estaFinalizadoSemEntrega(
   return codigo !== null && codigo !== 1 && codigosBaixa.has(codigo);
 }
 
-export function estaEmAberto(
-  dataEntrega: Date | null,
-  codigoEfetivo: string | null,
-  codigosBaixa: ReadonlySet<number>,
-): boolean {
-  return (
-    !estaEntregue(dataEntrega, codigoEfetivo) &&
-    !estaFinalizadoSemEntrega(dataEntrega, codigoEfetivo, codigosBaixa)
-  );
-}
-
 /**
  * Código do seletor "Ocorrência" / gráfico por código: com data de entrega e efetiva que não é
  * ENTREGA/BAIXA (entrega que veio só pelo BI2) conta como 1.

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { CartaoDeEntrada } from "@/acesso/componentes/CartaoDeEntrada";
 import { FormularioNovaSenha, type NovaSenha } from "@/acesso/componentes/FormularioNovaSenha";
 import { chamar } from "@/lib/api";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 export const Route = createFileRoute("/aceitar-convite")({
   validateSearch: z.object({ token: z.string().catch("") }),
@@ -23,7 +24,7 @@ function PaginaAceitarConvite() {
       toast.success("Conta pronta. Entre com seu e-mail e a senha que você criou.");
       await navigate({ to: "/login" });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível aceitar o convite.");
+      toast.error(mensagemAmigavel(e, "Não foi possível aceitar o convite."));
     }
   };
 

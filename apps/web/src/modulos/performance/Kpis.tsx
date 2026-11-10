@@ -10,11 +10,14 @@ import {
   type Pontualidade,
   type ResumoPerformance,
 } from "@erp/shared/contratos/performance";
+import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
 import { type KeyboardEvent, type ReactNode } from "react";
 
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { cn } from "@/lib/utils";
 
-import { corDoStatus, fmtInt, fmtPct, fundoDoStatus, textoDoStatus } from "../formato";
+import { corDoStatus, fundoDoStatus, textoDoStatus } from "./cores";
 
 /** Props de um bloco clicável por mouse e teclado (Enter/Espaço). */
 export function clicavel(acao: (() => void) | undefined, pararPropagacao = false) {
@@ -35,7 +38,7 @@ export function clicavel(acao: (() => void) | undefined, pararPropagacao = false
   };
 }
 
-export function KpiBox({
+function KpiBox({
   rotulo,
   valor,
   status,
@@ -61,9 +64,9 @@ export function KpiBox({
   const s = statusDoSelo ?? status;
   const destaque = neutro
     ? "border-l-kpi-volume text-kpi-volume"
-    : status === "good"
+    : status === "bom"
       ? "border-l-kpi-positive text-kpi-positive"
-      : status === "warn"
+      : status === "alerta"
         ? "border-l-kpi-alert text-kpi-alert"
         : "border-l-kpi-volume text-kpi-volume";
   return (
@@ -106,7 +109,7 @@ export function KpiBox({
   );
 }
 
-const pct1 = (v: number) => `${v.toFixed(1).replace(".", ",")}%`;
+const pct1 = (v: number) => formatarPercentual(v, { escala: "cem" });
 
 /** Distribuição da pontualidade (barra empilhada + linhas). origem: PontualidadeBreakdown.tsx */
 export function DistribuicaoPontualidade({
@@ -129,21 +132,21 @@ export function DistribuicaoPontualidade({
       chave: "no_prazo",
       rotulo: "No prazo",
       valor: noPrazo,
-      cor: corDoStatus.good,
+      cor: corDoStatus.bom,
       dica: "Entregas que chegaram até a data combinada.",
     },
     {
       chave: "fora_prazo",
       rotulo: "Fora do prazo",
       valor: foraPrazo,
-      cor: corDoStatus.bad,
+      cor: corDoStatus.ruim,
       dica: "Entregas que chegaram depois da data combinada.",
     },
     {
       chave: "excluido",
       rotulo: "Excluído (resp. cliente/parceiro)",
       valor: excluidoCliente,
-      cor: corDoStatus.warn,
+      cor: corDoStatus.alerta,
       dica: `Atraso que não é culpa da ${nomeCurto} — o cliente ou parceiro causou o atraso, então não conta contra nós.`,
     },
     {
@@ -158,7 +161,7 @@ export function DistribuicaoPontualidade({
     <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
       <div className="font-medium">{s.rotulo}</div>
       <div className="mt-0.5 font-medium tabular-nums">
-        {fmtInt(s.valor)} CTRCs{total > 0 ? ` · ${pct1(pct(s.valor))}` : ""}
+        {formatarInteiro(s.valor)} CTRCs{total > 0 ? ` · ${pct1(pct(s.valor))}` : ""}
       </div>
       <div className="mt-1 font-normal">{s.dica}</div>
     </TooltipContent>
@@ -179,7 +182,7 @@ export function DistribuicaoPontualidade({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${s.rotulo}: ${fmtInt(s.valor)} (${pct1(pct(s.valor))})`}
+                      aria-label={`${s.rotulo}: ${formatarInteiro(s.valor)} (${pct1(pct(s.valor))})`}
                       className="h-full transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--brand)]"
                       style={{ width: `${Math.max(1.5, pct(s.valor))}%`, backgroundColor: s.cor }}
                     />
@@ -206,7 +209,7 @@ export function DistribuicaoPontualidade({
                     {s.rotulo}
                   </span>
                   <span className="shrink-0 text-[11px] font-medium tabular-nums text-foreground">
-                    {fmtInt(s.valor)}
+                    {formatarInteiro(s.valor)}
                   </span>
                   {total > 0 && (
                     <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
@@ -224,7 +227,7 @@ export function DistribuicaoPontualidade({
   );
 }
 
-export interface AcoesDosKpis {
+interface AcoesDosKpis {
   emAtraso: () => void;
   emAtrasoFr: () => void;
   emAtrasoCliente: () => void;
@@ -271,7 +274,7 @@ export function LinhaDeKpis({
   const foraDaConta = Math.max(0, (t?.total ?? 0) - nascAvaliados);
   const nascSub =
     nascPct != null
-      ? `${fmtInt(nascQtd)} de ${fmtInt(nascAvaliados)} CTRCs chegaram com prazo menor que o padrão${foraDaConta > 0 ? ` · ${fmtInt(foraDaConta)} fora da conta (TROCA ou sem previsão)` : ""}`
+      ? `${formatarInteiro(nascQtd)} de ${formatarInteiro(nascAvaliados)} CTRCs chegaram com prazo menor que o padrão${foraDaConta > 0 ? ` · ${formatarInteiro(foraDaConta)} fora da conta (TROCA ou sem previsão)` : ""}`
       : (t?.total ?? 0) === 0
         ? "Sem CTRCs no período"
         : "Nenhum CTRC do período pode ser avaliado";
@@ -289,8 +292,8 @@ export function LinhaDeKpis({
       <KpiBox
         rotulo="SLA Operacional"
         titulo="CT-e emitidos menos os entregues fora do prazo, sobre os CT-e emitidos. Fora do prazo exclui responsabilidade do cliente."
-        valor={slaOp != null ? fmtPct(slaOp) : "—"}
-        status={slaOp != null ? statusDoSla(slaOp, meta, alerta) : "good"}
+        valor={slaOp != null ? formatarPercentual(slaOp, { separador: "." }) : "—"}
+        status={slaOp != null ? statusDoSla(slaOp, meta, alerta) : "bom"}
         neutro={slaOp == null}
         progresso={slaOp}
         sub={
@@ -310,8 +313,8 @@ export function LinhaDeKpis({
       <KpiBox
         rotulo="Nascidos em atraso"
         titulo={`CTRCs emitidos a menos de 48 horas da previsão de entrega (horas corridas: fim de semana e feriado contam). Ex.: emitido na terça com previsão para quarta. Nesses casos a ${nomeCurto} não tinha como cumprir: o atraso é do parceiro. CTRCs da TROCA ficam fora da conta. Só compara prazos — ocorrências, inclusive as de responsabilidade do cliente, não entram.`}
-        valor={nascPct != null ? fmtPct(nascPct) : "—"}
-        status="good"
+        valor={nascPct != null ? formatarPercentual(nascPct, { separador: "." }) : "—"}
+        status="bom"
         neutro
         progresso={nascPct}
         sub={nascSub}
@@ -321,7 +324,7 @@ export function LinhaDeKpis({
         <KpiBox
           rotulo="OTIF"
           titulo="De cada 100 CTRCs do período, quantos tiveram algum problema no percurso — pendência do cliente ou da operação — mesmo que tenham sido entregues no fim. Quanto menor, melhor. Mesma leitura do OTIF do Romaneio, que usa só as cargas que já saíram para entrega."
-          valor={otifPct == null ? "—" : fmtPct(otifPct)}
+          valor={otifPct == null ? "—" : formatarPercentual(otifPct, { separador: "." })}
           status={otifStatus}
           neutro={otifPct == null}
           progresso={otifPct}
@@ -330,18 +333,18 @@ export function LinhaDeKpis({
           sub={
             otifPct == null
               ? "Sem CTRCs no período"
-              : `${fmtInt(otif?.problemas ?? 0)} de ${fmtInt(otif?.total ?? 0)} CTRCs tiveram algum problema no percurso — quanto menor, melhor`
+              : `${formatarInteiro(otif?.problemas ?? 0)} de ${formatarInteiro(otif?.total ?? 0)} CTRCs tiveram algum problema no percurso — quanto menor, melhor`
           }
           onClick={otifPct != null && (otif?.problemas ?? 0) > 0 ? acoes.otif : undefined}
         />
       )}
       <KpiBox
         rotulo="Taxa de retorno"
-        valor={fmtPct(taxa)}
+        valor={formatarPercentual(taxa, { separador: "." })}
         status={statusDoRetorno(taxa, metaTaxa)}
         selo={acimaDaMeta ? "acima" : metaTaxa != null ? "ok" : undefined}
-        statusDoSelo={acimaDaMeta ? "bad" : "good"}
-        sub={`${metaTaxa != null ? `meta ≤ ${fmtPct(metaTaxa)}` : "sem meta definida"} · base: ${fmtInt(resumo.totais.ctrcsConcluidos)} CT-e concluídos`}
+        statusDoSelo={acimaDaMeta ? "ruim" : "bom"}
+        sub={`${metaTaxa != null ? `meta ≤ ${formatarPercentual(metaTaxa, { separador: "." })}` : "sem meta definida"} · base: ${formatarInteiro(resumo.totais.ctrcsConcluidos)} CT-e concluídos`}
         titulo="CTRCs com ocorrência 13 (Entrega prejudicada pelo horário) sobre os CT-e concluídos no período (entregues + finalizados sem entrega). CT-e em aberto não entram na conta."
       />
       <CaixaEmAtraso resumo={resumo} nomeCurto={nomeCurto} acoes={acoes} />
@@ -384,14 +387,14 @@ function CaixaEmAtraso({
               e.stopPropagation();
             }}
             className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-            style={{ background: fundoDoStatus.warn, color: textoDoStatus.warn }}
+            style={{ background: fundoDoStatus.alerta, color: textoDoStatus.alerta }}
           >
             +{t.ocorrenciasPendentes} pendentes
           </a>
         )}
       </div>
       <div className="num-hero mt-3 font-bold tracking-normal text-kpi-alert">
-        {fmtInt(t.ctrcsEmAtraso)}
+        {formatarInteiro(t.ctrcsEmAtraso)}
       </div>
       {temAtraso && (
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -411,8 +414,8 @@ function CaixaEmAtraso({
         </div>
       )}
       <div className="mt-2 text-[11px] text-muted-foreground">
-        CT-e em aberto com prazo vencido · de {fmtInt(t.ctrcsEmAberto)} em aberto
-        {t.ctrcsSemPrazo > 0 ? ` · ${fmtInt(t.ctrcsSemPrazo)} sem prazo definido` : ""}
+        CT-e em aberto com prazo vencido · de {formatarInteiro(t.ctrcsEmAberto)} em aberto
+        {t.ctrcsSemPrazo > 0 ? ` · ${formatarInteiro(t.ctrcsSemPrazo)} sem prazo definido` : ""}
       </div>
     </div>
   );
@@ -449,7 +452,7 @@ function SubAtraso({
           (destaque ? "text-kpi-alert" : "text-foreground")
         }
       >
-        {fmtInt(valor)}
+        {formatarInteiro(valor)}
       </div>
     </div>
   );
@@ -464,9 +467,9 @@ export function EsqueletoDeCards({ quantos, altura }: { quantos: number; altura:
       }
     >
       {Array.from({ length: quantos }, (_, i) => (
-        <div
+        <Skeleton
           key={i}
-          className={`${altura} animate-pulse rounded-[10px] border border-border/70 bg-muted/40`}
+          className={cn(altura, "rounded-[10px] border border-border/70 bg-muted/40")}
         />
       ))}
     </div>

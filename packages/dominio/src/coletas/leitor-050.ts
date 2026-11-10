@@ -10,7 +10,7 @@
  */
 import { ErroDeNegocio } from "../erros";
 
-export interface EventoDaColeta {
+interface EventoDaColeta {
   /** ISO com o fuso de São Paulo (-03:00). */
   em: string | null;
   unidade: string;
@@ -57,7 +57,7 @@ export interface Coleta050 {
 }
 
 /** Linha TOTAL do quadro "R E S U M O" no fim do impresso (conferência). */
-export interface Resumo050 {
+interface Resumo050 {
   quantidade: number;
   cadastradas: number;
   comandadas: number;
@@ -67,12 +67,12 @@ export interface Resumo050 {
   atrasadas: number;
 }
 
-export interface PeriodoDoRelatorio {
+interface PeriodoDoRelatorio {
   inicio: string;
   fim: string;
 }
 
-export interface AvisoDeLeitura {
+interface AvisoDeLeitura {
   linha: number;
   motivo: string;
 }

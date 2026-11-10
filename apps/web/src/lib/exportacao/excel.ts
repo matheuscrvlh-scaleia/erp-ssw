@@ -2,6 +2,8 @@
 import type * as ExcelJsTipos from "exceljs";
 import type { Workbook, Worksheet } from "exceljs";
 
+import { ErroDoOperador } from "@/lib/mensagem-de-erro";
+
 import { baixarArquivo, dataHoraGeracao, nomeDoArquivo } from "./arquivo";
 import { celulaExcel, textoDaCelula, valorDaLinha } from "./celulas";
 import {
@@ -48,7 +50,9 @@ export async function carregarExcelJs(): Promise<ModuloExcel> {
       ? modulo.default
       : undefined;
   if (ehModuloExcel(padrao)) return padrao;
-  throw new Error("Não foi possível carregar o gerador de planilha. Recarregue a página (F5).");
+  throw new ErroDoOperador(
+    "Não foi possível carregar o gerador de planilha. Recarregue a página (F5).",
+  );
 }
 
 function nomeDaAba(titulo: string): string {

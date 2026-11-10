@@ -11,13 +11,14 @@ import { GatilhoFiltro } from "@/componentes/comum/GatilhoFiltro";
 import { Badge } from "@/componentes/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { useSelecaoAdiada } from "@/hooks/use-selecao-adiada";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 import { AvisoDaLista, ItemMarcavel } from "@/modulos/filtros/componentes";
 
 import { consultaCodigosDoRecorte } from "./api";
 
-export const GRUPOS_DE_OCORRENCIA = ["aberto", "cliente", "empresa", "penaliza"] as const;
-export type GrupoDeOcorrencia = (typeof GRUPOS_DE_OCORRENCIA)[number];
+const GRUPOS_DE_OCORRENCIA = ["aberto", "cliente", "empresa", "penaliza"] as const;
+type GrupoDeOcorrencia = (typeof GRUPOS_DE_OCORRENCIA)[number];
 
 const ROTULO_DO_GRUPO: Record<GrupoDeOcorrencia, string> = {
   aberto: "Em aberto",
@@ -205,7 +206,10 @@ export function SeletorDeOcorrencia({
           {opcoes.isLoading && <AvisoDaLista>Carregando ocorrências do recorte…</AvisoDaLista>}
           {opcoes.isError && (
             <AvisoDaLista erro>
-              {opcoes.error.message || "Não foi possível carregar as ocorrências. Tente de novo."}
+              {mensagemAmigavel(
+                opcoes.error,
+                "Não foi possível carregar as ocorrências. Tente de novo.",
+              )}
             </AvisoDaLista>
           )}
           {visiveis.map((o) => {

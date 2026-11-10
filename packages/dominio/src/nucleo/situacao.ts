@@ -1,9 +1,8 @@
 /**
  * Atraso e recortes de situação do CT-e: sem movimento, faixa e status do previsto, saiu para
- * entrega, em rota e travado em ocorrência.
+ * entrega e em rota.
  */
 import {
-  type CatalogoDeCodigos,
   CODIGO_SAIDA_PARA_ENTREGA,
   codigoNumericoOuNulo,
   CODIGOS_ENTREGA,
@@ -76,8 +75,7 @@ export function estaSemMovimento(
   return difDias(hojeSp(agora), ultimoMovimento) > limite;
 }
 
-export const FAIXAS_PREVISAO = ["sem_prev", "vencido", "hoje", "d1", "d2", "d3_mais"] as const;
-export type FaixaPrevisao = (typeof FAIXAS_PREVISAO)[number];
+type FaixaPrevisao = "sem_prev" | "vencido" | "hoje" | "d1" | "d2" | "d3_mais";
 
 /**
  * Faixa de vencimento do bloco "Previstos". "Hoje" é o dia de Brasília (Q11 do dono; hoje o SQL
@@ -108,7 +106,7 @@ export function statusPrevisto(codigo: number | null, tipoSsw: TipoSsw | null): 
   return "outros";
 }
 
-export type SaiuParaEntrega = "sim" | "quarentena" | "nao_rastreado";
+type SaiuParaEntrega = "sim" | "quarentena" | "nao_rastreado";
 
 /**
  * Saiu para entrega: entregue, ou efetiva/0013/0174 de saída, ou ocorrência de saída fora de
@@ -150,32 +148,4 @@ export function emRota(
   if (saidas.length === 0) return true;
   const corte = inicioDoDiaSp(cte.dataEmissao);
   return saidas.some((o) => o.dataHora >= corte && o.criadoEm >= cte.criadoEm);
-}
-
-/**
- * Pendência só deixa de travar com uma NOVA saída para entrega (85); empate de horário = travado.
- * Cadastro da empresa do CT-e; quarentena fora (Q21).
- * origem: _ctrc_travado (sistema atual); decisão 26/10/2026
- */
-export function travadoEmOcorrencia(
-  cte: Pick<CteParaSituacao, "ocorrEfetivaCodigo" | "dataEmissao" | "criadoEm">,
-  ocorrencias: readonly OcorrenciaDoCte[],
-  catalogo: CatalogoDeCodigos,
-): boolean {
-  if (emRota(cte, ocorrencias)) return false;
-  const validas = foraDeQuarentena(ocorrencias);
-  const ehPendencia = (o: OcorrenciaDoCte) => {
-    const tipo = catalogo.get(o.codigo)?.tipoSsw ?? null;
-    return o.codigo !== CODIGO_SAIDA_PARA_ENTREGA && tipo !== null && TIPOS_PENDENCIA.has(tipo);
-  };
-  const ultimaPendencia = maiorInstante(validas.filter(ehPendencia));
-  if (ultimaPendencia === null) return false;
-  const ultimaSaida = maiorInstante(validas.filter((o) => o.codigo === CODIGO_SAIDA_PARA_ENTREGA));
-  return ultimaSaida === null || ultimaPendencia >= ultimaSaida;
-}
-
-function maiorInstante(ocorrencias: readonly OcorrenciaDoCte[]): number | null {
-  return ocorrencias.length === 0
-    ? null
-    : Math.max(...ocorrencias.map((o) => o.dataHora.getTime()));
 }

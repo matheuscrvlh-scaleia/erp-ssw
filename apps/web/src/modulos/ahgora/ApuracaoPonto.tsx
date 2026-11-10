@@ -4,6 +4,8 @@ import {
   type FuncionarioApurado,
   type MOTIVOS_DE_REVISAO,
 } from "@erp/shared/contratos/ahgora";
+import { hojeNoFuso } from "@erp/shared/datas";
+import { formatarDiaMes } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useState } from "react";
@@ -21,8 +23,10 @@ import {
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
+import { mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracaoDoPonto, consultaDepartamentos } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 
@@ -101,7 +105,7 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
                 <tbody>
                   {f.dias.map((d) => (
                     <tr key={d.data} className="border-t border-border/30">
-                      <td className="py-1 align-top font-mono">{diaCurto(d.data)}</td>
+                      <td className="py-1 align-top font-mono">{formatarDiaMes(d.data)}</td>
                       <td className="py-1">
                         <div className="flex flex-wrap gap-1">
                           {d.batidas.map((b, i) => (
@@ -146,7 +150,8 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
 
 /** origem: features/ahgora/components/ApuracaoPontoScreen.tsx (sistema atual) */
 export function ApuracaoPonto() {
-  const [mes, setMes] = useState(() => mesDe(new Date()));
+  const hoje = hojeNoFuso(useFusoDaEmpresa());
+  const [mes, setMes] = useState(() => mesDe(hoje));
   const [departamento, setDepartamento] = useState<string>(TODOS);
   const [incluirDemitidos, setIncluirDemitidos] = useState(false);
   const [filtros, setFiltros] = useState<EntradaDe<typeof c.apuracao> | null>(null);
@@ -242,7 +247,7 @@ export function ApuracaoPonto() {
 
       {apuracao.error && (
         <div className="rounded-[10px] border border-destructive/40 bg-destructive/5 p-3 text-[12px] text-destructive">
-          {apuracao.error.message}
+          {mensagemAmigavel(apuracao.error)}
         </div>
       )}
 

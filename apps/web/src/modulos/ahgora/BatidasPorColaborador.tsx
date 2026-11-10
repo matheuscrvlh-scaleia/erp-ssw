@@ -1,4 +1,5 @@
-import { diferencaEmDias, ehDataIso } from "@erp/shared/datas";
+import { diferencaEmDias, ehDataIso, hojeNoFuso, somarDias } from "@erp/shared/datas";
+import { formatarDataHora } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -15,8 +16,9 @@ import {
   SelectValue,
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { isoLocal } from "../ranking/periodo";
 import { consultaBatidas, consultaFuncionarios } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 
@@ -27,28 +29,17 @@ const TIPO_LABEL: Record<string, string> = {
   DELETADA: "Deletada",
 };
 
-function formatarDataHora(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-}
-
-function diasAtras(dias: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - dias);
-  return isoLocal(d);
-}
-
-function periodoDeBatidasValido(start: string, end: string): boolean {
-  return ehDataIso(start) && ehDataIso(end) && end >= start && diferencaEmDias(start, end) <= 30;
+function periodoDeBatidasValido(inicio: string, fim: string): boolean {
+  return ehDataIso(inicio) && ehDataIso(fim) && fim >= inicio && diferencaEmDias(inicio, fim) <= 30;
 }
 
 /** origem: features/ahgora/components/AhgoraPontoScreen.tsx (sistema atual) */
 export function BatidasPorColaborador() {
   const [busca, setBusca] = useState("");
   const [funcionarioId, setFuncionarioId] = useState<string | null>(null);
-  const [start, setStart] = useState(() => diasAtras(7));
-  const [end, setEnd] = useState(() => isoLocal(new Date()));
+  const fuso = useFusoDaEmpresa();
+  const [inicio, setInicio] = useState(() => somarDias(hojeNoFuso(fuso), -7));
+  const [fim, setFim] = useState(() => hojeNoFuso(fuso));
 
   const funcionariosQ = useQuery(consultaFuncionarios);
   const funcionarios = useMemo(() => funcionariosQ.data ?? [], [funcionariosQ.data]);
@@ -65,8 +56,8 @@ export function BatidasPorColaborador() {
   }, [funcionarios, busca]);
 
   const selecionado = funcionarios.find((f) => f.id === funcionarioId) ?? null;
-  const periodoValido = periodoDeBatidasValido(start, end);
-  const batidasQ = useQuery(consultaBatidas(funcionarioId, start, end, periodoValido));
+  const periodoValido = periodoDeBatidasValido(inicio, fim);
+  const batidasQ = useQuery(consultaBatidas(funcionarioId, inicio, fim, periodoValido));
 
   return (
     <div className="space-y-4">
@@ -123,9 +114,9 @@ export function BatidasPorColaborador() {
               id="ponto-de"
               type="date"
               className="h-8 text-[12px]"
-              value={start}
+              value={inicio}
               onChange={(e) => {
-                setStart(e.target.value);
+                setInicio(e.target.value);
               }}
             />
           </div>
@@ -137,9 +128,9 @@ export function BatidasPorColaborador() {
               id="ponto-ate"
               type="date"
               className="h-8 text-[12px]"
-              value={end}
+              value={fim}
               onChange={(e) => {
-                setEnd(e.target.value);
+                setFim(e.target.value);
               }}
             />
           </div>
@@ -164,7 +155,9 @@ export function BatidasPorColaborador() {
           </p>
         )}
         {funcionariosQ.error && (
-          <p className="mt-2 text-[11px] text-destructive">{funcionariosQ.error.message}</p>
+          <p className="mt-2 text-[11px] text-destructive">
+            {mensagemAmigavel(funcionariosQ.error)}
+          </p>
         )}
       </section>
 
@@ -202,7 +195,7 @@ export function BatidasPorColaborador() {
           </div>
         ) : batidasQ.error ? (
           <div className="p-6 text-center text-[12px] text-destructive">
-            {batidasQ.error.message}
+            {mensagemAmigavel(batidasQ.error)}
           </div>
         ) : batidasQ.data && batidasQ.data.data.length > 0 ? (
           <div className="overflow-x-auto">
@@ -220,7 +213,7 @@ export function BatidasPorColaborador() {
                 {batidasQ.data.data.map((b, i) => (
                   <tr key={`${b.punchTime}-${i}`}>
                     <td className="px-3 py-1.5 font-mono text-[11px]">
-                      {formatarDataHora(b.punchTime)}
+                      {formatarDataHora(b.punchTime, fuso, { virgula: true })}
                     </td>
                     <td className="px-3 py-1.5">
                       <Badge

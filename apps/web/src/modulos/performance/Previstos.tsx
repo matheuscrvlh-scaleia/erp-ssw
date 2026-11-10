@@ -4,9 +4,8 @@ import {
   type SomasPrevisto,
   type StatusPrevisto,
 } from "@erp/shared/contratos/performance";
+import { formatarInteiro, formatarMoeda, formatarPeso } from "@erp/shared/formatacao";
 import { ArrowRight } from "lucide-react";
-
-import { fmtBRL, fmtInt, fmtPeso } from "../formato";
 
 export type CliqueNosPrevistos =
   | { eixo: "status"; chave: StatusPrevisto }
@@ -75,7 +74,7 @@ export function SecaoPrevistos({
           </div>
           <div className="text-[11px] text-muted-foreground">
             CTRCs ainda não entregues ·{" "}
-            {carregando || !dados ? "atualizando…" : `${fmtInt(d.total.qtd)} no total`}
+            {carregando || !dados ? "atualizando…" : `${formatarInteiro(d.total.qtd)} no total`}
           </div>
           <div className="text-[11px] text-muted-foreground">
             Sempre por data de emissão; o alternador Emitidos/Data Prevista/Concluídos não afeta
@@ -126,10 +125,11 @@ export function SecaoPrevistos({
             <ArrowRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--brand)]" />
           </div>
           <div className="num-hero mt-2 font-bold tracking-normal text-kpi-positive">
-            {fmtInt(d.total.qtd)}
+            {formatarInteiro(d.total.qtd)}
           </div>
           <div className="mt-2 text-[11px] text-muted-foreground">
-            {fmtPeso(d.total.peso)} · {fmtInt(d.total.volumes)} vol · {fmtBRL(d.total.frete)}
+            {formatarPeso(d.total.peso)} · {formatarInteiro(d.total.volumes)} vol ·{" "}
+            {formatarMoeda(d.total.frete, { centavos: false })}
           </div>
         </button>
         <div className="text-[11px] leading-relaxed text-muted-foreground">
@@ -194,10 +194,10 @@ function Celula({
     >
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums" style={{ color: cor }}>
-        {fmtInt(somas?.qtd ?? 0)}
+        {formatarInteiro(somas?.qtd ?? 0)}
       </div>
       <div className="mt-1 text-[10px] text-muted-foreground">
-        {fmtPeso(somas?.peso ?? 0)} · {fmtInt(somas?.volumes ?? 0)} vol
+        {formatarPeso(somas?.peso ?? 0)} · {formatarInteiro(somas?.volumes ?? 0)} vol
       </div>
     </button>
   );

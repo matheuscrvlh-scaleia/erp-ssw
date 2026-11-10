@@ -3,7 +3,7 @@ import { diferencaEmDias } from "@erp/shared/datas";
 
 import { estaEntregue, estaFinalizadoSemEntrega } from "../nucleo";
 
-export interface DadosDaSituacao {
+interface DadosDaSituacao {
   dataEntregaRealizada: Date | null;
   /** Código da ocorrência efetiva já normalizado (`ctes.ocorr_efetiva_codigo_num`). */
   codigoEfetivo: number | null;

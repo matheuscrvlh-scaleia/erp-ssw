@@ -13,7 +13,7 @@ export function ehChunkObsoleto(erro: unknown): boolean {
 }
 
 /** Avisa uma vez, sem recarregar sozinho (recarregar em laço apagaria o que a pessoa digitou). */
-export function avisarVersaoNova(): void {
+function avisarVersaoNova(): void {
   toast.error(MENSAGEM_RECARREGAR, {
     id: "versao-nova",
     duration: Infinity,

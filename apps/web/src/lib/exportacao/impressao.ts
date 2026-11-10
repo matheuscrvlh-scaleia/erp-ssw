@@ -1,3 +1,5 @@
+import { ErroDoOperador } from "@/lib/mensagem-de-erro";
+
 import { dataHoraGeracao } from "./arquivo";
 import { textoDaCelula, valorDaLinha } from "./celulas";
 import { carregarLogo, CORES, resolverMarca, SISTEMA } from "./marca";
@@ -105,7 +107,7 @@ export async function imprimir(o: OpcoesImpressao): Promise<void> {
   const doc = iframe.contentDocument;
   if (!janela || !doc) {
     iframe.remove();
-    throw new Error("O navegador bloqueou a impressão. Tente de novo.");
+    throw new ErroDoOperador("O navegador bloqueou a impressão. Tente de novo.");
   }
   // Espera o logo decodificar e o layout assentar antes de abrir a janela de impressão.
   await Promise.all(Array.from(doc.images).map((img) => img.decode().catch(() => undefined)));

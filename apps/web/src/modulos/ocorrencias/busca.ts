@@ -17,7 +17,7 @@ import {
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { z } from "@erp/shared/zod";
 
-import { type EtiquetaFiltro, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
+import { type EtiquetaDaBusca, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { type Intervalo } from "@/componentes/comum/periodo";
 import { campoFiltro } from "@/hooks/use-filtros-na-url";
 
@@ -109,14 +109,7 @@ export function recortesDaBusca(b: BuscaOcorrencias): Recortes {
 }
 
 /** Ordenação, paginação e a base de data não contam como filtro ("Limpar filtros"). */
-const NAO_SAO_FILTRO = new Set(["campoData", "ordem", "dir", "page", "size"]);
-
-/** Algum filtro ligado (o período só conta quando é um intervalo escolhido). */
-export function temFiltro(ativos: readonly string[], b: BuscaOcorrencias): boolean {
-  return ativos.some(
-    (campo) => !NAO_SAO_FILTRO.has(campo) && (campo !== "periodo" || b.periodo === "custom"),
-  );
-}
+export const NAO_SAO_FILTRO = ["campoData", "ordem", "dir", "page", "size"] as const;
 
 /** "Limpar filtros" mantém a base de data, a ordenação e o atalho de período (não o intervalo). */
 export function camposMantidosAoLimpar(b: BuscaOcorrencias): (keyof BuscaOcorrencias)[] {
@@ -152,7 +145,7 @@ export function linkDaListagem(
   return `/performance/lista?${busca.toString()}`;
 }
 
-export const ROTULO_DA_RESPONSABILIDADE: Record<Responsabilidade, string> = {
+const ROTULO_DA_RESPONSABILIDADE: Record<Responsabilidade, string> = {
   todas: "Todas",
   penalizantes: "Penalizantes",
   externas: "Não penalizantes",
@@ -182,10 +175,6 @@ export const ROTULO_DA_ORDEM: Record<OrdemDaLista, string> = {
   atraso_dias: "Atraso",
 };
 
-export type EtiquetaDaBusca = Omit<EtiquetaFiltro, "limpar"> & {
-  limpar: Partial<BuscaOcorrencias>;
-};
-
 /**
  * Faixa "Filtrando por": tudo o que recorta a tela, inclusive os recortes dos blocos. Período,
  * base de data e paginação ficam de fora (já aparecem nos próprios botões).
@@ -198,7 +187,7 @@ export function etiquetasDaBusca(
     codigo: (codigo: number) => string | undefined;
     responsavel: (r: (typeof RESPONSAVEIS_DO_FILTRO)[number]) => string;
   },
-): EtiquetaDaBusca[] {
+): EtiquetaDaBusca<BuscaOcorrencias>[] {
   const lista = (rotulo: string, valores: readonly string[], limpar: Partial<BuscaOcorrencias>) =>
     valores.length > 0 ? [{ rotulo, ...resumirNomes(valores), limpar }] : [];
   const texto = (rotulo: string, valor: string | null, limpar: Partial<BuscaOcorrencias>) =>

@@ -33,6 +33,42 @@ export function somarDiasCorridos(dia: DataIso, dias: number): DataIso {
   return somarDias(dia, dias);
 }
 
+/**
+ * Relógio de parede do instante no fuso, gravado como se fosse UTC (`getUTCHours()` = hora no
+ * fuso). É assim que o Excel guarda data e hora sem fuso.
+ */
+export function relogioNoFuso(instante: Date, fuso: string): Date {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: fuso,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instante);
+  const parte = (tipo: Intl.DateTimeFormatPartTypes) =>
+    Number(partes.find((p) => p.type === tipo)?.value ?? 0);
+  return new Date(
+    Date.UTC(
+      parte("year"),
+      parte("month") - 1,
+      parte("day"),
+      parte("hour"),
+      parte("minute"),
+      parte("second"),
+    ),
+  );
+}
+
+/** Instante em que o relógio do fuso marca `dia hora` (`hora` = "HH:MM:SS"). */
+export function instanteNoFuso(dia: DataIso, hora: string, fuso: string): Date {
+  const comoUtc = new Date(`${dia}T${hora}Z`);
+  const deslocamento = relogioNoFuso(comoUtc, fuso).getTime() - comoUtc.getTime();
+  return new Date(comoUtc.getTime() - deslocamento);
+}
+
 /** Hora (0–23) do instante em Brasília. */
 export function horaSp(instante: Date): number {
   return new Date(instante.getTime() - 3 * MS_POR_HORA).getUTCHours();

@@ -7,11 +7,11 @@ import { ErroDeNegocio } from "./erros";
 
 export type EfeitoBonificacao = "penaliza" | "sac" | "verificar";
 
-export type NivelBonificacao = "turbo" | "acelerado" | "em_rota" | "sem_bonus";
+type NivelBonificacao = "turbo" | "acelerado" | "em_rota" | "sem_bonus";
 
-export type Funcao = "Motorista" | "Ajudante";
+type Funcao = "Motorista" | "Ajudante";
 
-export interface ParametrosBonificacao {
+interface ParametrosBonificacao {
   taxaTurbo: number;
   taxaAcelerado: number;
   taxaEmRotaGrande: number;
@@ -22,7 +22,7 @@ export interface ParametrosBonificacao {
   limiteNfsRotaPequena: number;
 }
 
-export interface ParametrosComVigencia extends ParametrosBonificacao {
+interface ParametrosComVigencia extends ParametrosBonificacao {
   vigenciaInicio: string;
   vigenciaFim: string | null;
 }
@@ -75,8 +75,6 @@ export interface LinhaBonificacao {
   bonus: number;
   zeradoPorFalta: boolean;
 }
-
-export const PERIODO_MAXIMO_APURACAO_DIAS = 45;
 
 /** Unidade do romaneio: as 3 primeiras letras, em maiúsculas. */
 export function unidadeDoRomaneio(romaneio: string): string {

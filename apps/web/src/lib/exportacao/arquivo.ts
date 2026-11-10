@@ -1,6 +1,8 @@
 /** Download, nome do arquivo e carimbo de geração, comuns a todos os formatos. */
 import { formatarDataHora } from "@erp/shared/formatacao";
 
+import { isoDoCalendario } from "@/lib/dia-do-calendario";
+
 export function baixarArquivo(conteudo: Blob, nome: string): void {
   const url = URL.createObjectURL(conteudo);
   const link = document.createElement("a");
@@ -16,9 +18,8 @@ export function baixarArquivo(conteudo: Blob, nome: string): void {
 
 /** Sufixo de data do nome do arquivo: dd-mm-aaaa (dia local de quem exporta). */
 export function sufixoHoje(agora: Date = new Date()): string {
-  const dia = String(agora.getDate()).padStart(2, "0");
-  const mes = String(agora.getMonth() + 1).padStart(2, "0");
-  return `${dia}-${mes}-${agora.getFullYear()}`;
+  const [ano, mes, dia] = isoDoCalendario(agora).split("-");
+  return `${dia ?? ""}-${mes ?? ""}-${ano ?? ""}`;
 }
 
 const TERMINA_COM_DATA = /-\d{2}-\d{2}-\d{4}$/;

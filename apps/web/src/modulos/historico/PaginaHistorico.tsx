@@ -8,6 +8,7 @@ import {
   TIPOS_ANOTACAO,
 } from "@erp/shared/contratos/historico";
 import { diaDaSemana, hojeNoFuso, somarDias } from "@erp/shared/datas";
+import { formatarData, formatarInteiro } from "@erp/shared/formatacao";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Bookmark, CalendarDays, Plus, Search } from "lucide-react";
@@ -16,13 +17,14 @@ import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
-import { FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
+import { etiquetasQueLimpam, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { data as formatarData, inteiro } from "@/modulos/compartilhado/formatos";
 
 import { CHAVE_DO_HISTORICO, consultaHistorico } from "./api";
 import {
@@ -89,7 +91,7 @@ function CartaoTotal({ rotulo, valor }: { rotulo: string; valor: number }) {
     <div className="rounded-lg border border-l-[5px] border-border/60 border-l-kpi-positive bg-card p-4">
       <p className="text-[11px] tracking-wide text-muted-foreground uppercase">{rotulo}</p>
       <p className="mt-1 text-[24px] font-semibold text-kpi-positive tabular-nums">
-        {inteiro(valor)}
+        {formatarInteiro(valor)}
       </p>
     </div>
   );
@@ -261,7 +263,8 @@ function Calendario({
 
 export function PaginaHistorico() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const fuso = useFusoDaEmpresa();
+  const hoje = hojeNoFuso(fuso);
   const admin = ehAdminDaEmpresa(acesso.papel);
   const { filtros: busca, definir } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = intervaloDoPeriodo(busca.periodo, hoje);
@@ -502,21 +505,19 @@ export function PaginaHistorico() {
         </label>
       </div>
       <FiltrandoPor
-        etiquetas={etiquetasDaBusca(busca, {
-          unidade: (id) => d?.unidades.find((u) => u.id === id)?.nome,
-          autor: (id) => d?.autores.find((a) => a.id === id)?.nome,
-        }).map((e) => ({
-          ...e,
-          limpar: () => {
-            definir(e.limpar);
-          },
-        }))}
+        etiquetas={etiquetasQueLimpam(
+          etiquetasDaBusca(busca, {
+            unidade: (id) => d?.unidades.find((u) => u.id === id)?.nome,
+            autor: (id) => d?.autores.find((a) => a.id === id)?.nome,
+          }),
+          definir,
+        )}
       />
 
       {consulta.isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-lg bg-muted/40" />
+            <Skeleton key={i} className="h-16 rounded-lg bg-muted/40" />
           ))}
         </div>
       ) : consulta.error ? (

@@ -53,8 +53,8 @@ export const CODIGO_ANCORA_EMISSAO = 80;
 export const CODIGO_CANCELAMENTO = 99;
 /** Chegada na unidade (prazos configurados). origem: aplicar_prazo_configurado */
 export const CODIGO_CHEGADA_NA_UNIDADE = 84;
-export const CODIGO_MINIMO = 0;
-export const CODIGO_MAXIMO = 99;
+const CODIGO_MINIMO = 0;
+const CODIGO_MAXIMO = 99;
 
 export const TIPOS_PENDENCIA: ReadonlySet<TipoSsw> = new Set([
   "PENDENCIA_CLIENTE",
@@ -94,10 +94,6 @@ export function codigosDeBaixa(catalogo: CatalogoDeCodigos): ReadonlySet<number>
   const baixa = new Set<number>();
   for (const c of catalogo.values()) if (c.tipoSsw === "BAIXA") baixa.add(c.codigo);
   return baixa;
-}
-
-export function tipoSswDe(catalogo: CatalogoDeCodigos, codigo: number | null): TipoSsw | null {
-  return codigo === null ? null : (catalogo.get(codigo)?.tipoSsw ?? null);
 }
 
 /**

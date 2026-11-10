@@ -1,5 +1,6 @@
 import { compararTexto } from "@erp/dominio/performance/primitivas";
 import { type Alertas, type UnidadePontualidade } from "@erp/shared/contratos/performance";
+import { formatarPercentual } from "@erp/shared/formatacao";
 
 import { type TipoDaLista } from "./busca";
 
@@ -26,7 +27,7 @@ export interface CartaoDeAlerta {
 
 const RUIM = "var(--status-bad)";
 const ATENCAO = "var(--status-warn)";
-const pct1 = (fracao: number) => `${(100 * fracao).toFixed(1).replace(".", ",")}%`;
+const pct1 = (fracao: number) => formatarPercentual(fracao);
 const plural = (n: number, um: string, varios: string) => (n === 1 ? um : varios);
 const top = (itens: { unidade: string; qtd: number }[]) =>
   itens

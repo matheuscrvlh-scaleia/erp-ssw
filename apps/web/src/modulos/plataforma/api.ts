@@ -21,7 +21,7 @@ export const consultaEmpresa = (id: string) =>
   });
 
 /** Tudo de uma empresa fica sob a chave dela: invalidar a empresa recarrega as abas. */
-export const consultaDaEmpresa = <S>(id: string, aba: string, buscar: () => Promise<S>) =>
+const consultaDaEmpresa = <S>(id: string, aba: string, buscar: () => Promise<S>) =>
   queryOptions({ queryKey: [...CHAVES_DA_PLATAFORMA.empresa(id), aba], queryFn: buscar });
 
 export const consultaModulos = (id: string) =>

@@ -4,6 +4,7 @@ import {
   type CriterioDeRegra,
   CRITERIOS_DE_REGRA,
 } from "@erp/shared/contratos/ranking";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarMoeda } from "@erp/shared/formatacao";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -12,7 +13,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
+import { ErroDoOperador, mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DAS_REGRAS, consultaRegras } from "./api";
 import { mesAnterior } from "./periodo";
@@ -27,19 +30,17 @@ import {
 
 type Simulacao = SaidaDe<typeof c.simularRegra>;
 
-const mensagemDe = (e: unknown) =>
-  e instanceof Error ? e.message : "Não foi possível concluir. Tente de novo.";
-
 /** origem: routes/_authenticated/ranking.regras.tsx (sistema atual) */
 export function PaginaRegras() {
   const qc = useQueryClient();
+  const hoje = hojeNoFuso(useFusoDaEmpresa());
   const [editando, setEditando] = useState<Rascunho | null>(null);
   const { data: regras } = useQuery(consultaRegras);
 
   const salvar = useMutation({
     mutationFn: (d: Rascunho) => {
       const r = regraParaSalvar(d);
-      if (!r.ok) throw new Error(r.erro);
+      if (!r.ok) throw new ErroDoOperador(r.erro);
       return chamar(c.salvarRegra, { entrada: r.valor });
     },
     onSuccess: () => {
@@ -47,7 +48,7 @@ export function PaginaRegras() {
       void qc.invalidateQueries({ queryKey: CHAVE_DAS_REGRAS });
       setEditando(null);
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
   const excluir = useMutation({
     mutationFn: (id: string) => chamar(c.excluirRegra, { parametros: { id } }),
@@ -55,7 +56,7 @@ export function PaginaRegras() {
       toast.success("Regra removida");
       void qc.invalidateQueries({ queryKey: CHAVE_DAS_REGRAS });
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
 
   const [simulando, setSimulando] = useState<string | null>(null);
@@ -66,10 +67,10 @@ export function PaginaRegras() {
     setSimulacao(null);
     try {
       setSimulacao(
-        await chamar(c.simularRegra, { parametros: { id }, entrada: mesAnterior(new Date()) }),
+        await chamar(c.simularRegra, { parametros: { id }, entrada: mesAnterior(hoje) }),
       );
     } catch (e) {
-      toast.error(mensagemDe(e));
+      toast.error(mensagemAmigavel(e));
     } finally {
       setSimulando(null);
     }
@@ -93,7 +94,7 @@ export function PaginaRegras() {
         </div>
         <Button
           onClick={() => {
-            setEditando(rascunhoVazio(new Date()));
+            setEditando(rascunhoVazio(hoje));
           }}
         >
           <Plus className="mr-1.5 h-4 w-4" /> Nova regra

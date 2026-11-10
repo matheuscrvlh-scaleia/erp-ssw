@@ -10,6 +10,7 @@ import {
   escolherEmpresaAtiva,
   moduloLiberado,
   modulosVigentes,
+  moduloVigente,
   papelNaEmpresa,
 } from "./acesso";
 
@@ -123,6 +124,14 @@ describe("módulos", () => {
       "historico",
       "romaneio",
     ]);
+  });
+
+  it("moduloVigente (tela de módulos da Plataforma): mesma regra da lista", () => {
+    const m = { essencial: false, ativo: true, inicio: null, fim: null };
+    expect(moduloVigente({ ...m, fim: "2026-11-10" }, "2026-11-10")).toBe(true);
+    expect(moduloVigente({ ...m, fim: "2026-11-09" }, "2026-11-10")).toBe(false);
+    expect(moduloVigente({ ...m, inicio: "2026-11-11" }, "2026-11-10")).toBe(false);
+    expect(moduloVigente({ ...m, ativo: false, essencial: true }, "2026-11-10")).toBe(true);
   });
 
   it("moduloLiberado: admin da plataforma sempre; senão algum dos pedidos", () => {

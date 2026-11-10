@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { ErroDeNegocio } from "../erros";
 import {
   cidadeDaFilial,
   cnpjsPropriosDaEmpresa,
   filiaisProprias,
   unidadeResponsavel,
 } from "./cadastros";
-import {
-  CONFIGURACAO_PADRAO,
-  lerConfiguracaoDoNucleo,
-  validarConfiguracaoDoNucleo,
-} from "./configuracao";
+import { CONFIGURACAO_PADRAO, lerConfiguracaoDoNucleo } from "./configuracao";
 import { type EscopoDoUsuario, podeVerCte, podeVerTudo } from "./escopo";
 
 const FILIAIS = [
@@ -102,17 +97,6 @@ describe("configuração do núcleo (§5.3, §7.1, Q48)", () => {
       prazoPadraoDias: 3,
       raizCnpjTroca: "12345678",
     });
-  });
-  it("valor inválido é recusado ao gravar, com mensagem para o operador", () => {
-    expect(() => {
-      validarConfiguracaoDoNucleo("alerta_dias_sem_movimento", "três");
-    }).toThrow(ErroDeNegocio);
-    expect(() => {
-      validarConfiguracaoDoNucleo("ctrc_data_minima_emissao", "2026-02-30");
-    }).toThrow('Valor inválido para "ctrc_data_minima_emissao": informe uma data AAAA-MM-DD.');
-    expect(() => {
-      validarConfiguracaoDoNucleo("outra_chave", "qualquer");
-    }).not.toThrow();
   });
 });
 

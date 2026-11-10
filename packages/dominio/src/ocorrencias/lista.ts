@@ -28,11 +28,11 @@ export interface OcorrenciaDaLista {
   };
 }
 
-export interface LinhaClassificada extends OcorrenciaDaLista {
+interface LinhaClassificada extends OcorrenciaDaLista {
   classificacao: Classificacao;
 }
 
-export interface PedidoDaLista {
+interface PedidoDaLista {
   recortes: Recortes;
   ordem: OrdemDaLista;
   direcao: "asc" | "desc";
@@ -69,7 +69,7 @@ const COMPARADORES: Record<OrdemDaLista, Comparador> = {
     compararComNulosNoFim(a.cte.situacao.atrasoDias, b.cte.situacao.atrasoDias, compararNumero, d),
 };
 
-export function ordenarLista(
+function ordenarLista(
   linhas: readonly LinhaClassificada[],
   ordem: OrdemDaLista,
   direcao: Direcao,

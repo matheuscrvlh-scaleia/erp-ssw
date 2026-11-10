@@ -12,13 +12,13 @@ import { GatilhoFiltro } from "./GatilhoFiltro";
 
 const ESPERA_DIGITACAO_MS = 250;
 
-export interface SugestoesFiltroTexto {
+interface SugestoesFiltroTexto {
   /** Prefixo da chave do React Query (inclua os filtros que mudam as sugestões). */
   chave: readonly unknown[];
   buscar: (termo: string) => Promise<readonly string[]>;
 }
 
-export interface FiltroTextoProps {
+interface FiltroTextoProps {
   rotulo: string;
   /** Valores separados por "|" (ex.: "Natura|Avon"): é o formato da URL e da API. */
   valor: string;

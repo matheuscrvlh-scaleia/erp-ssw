@@ -14,6 +14,7 @@ import { Abas } from "@/componentes/comum/Abas";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { cn } from "@/lib/utils";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
@@ -56,7 +57,7 @@ const CHAVE_DA_BASE = "romaneio:ver";
 
 export function PaginaRomaneio() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
   const podeVerPlaca = acesso.telas.includes("romaneio_placa");
   const { filtros: b, definir } = useFiltrosNaUrl(esquemaRomaneio);

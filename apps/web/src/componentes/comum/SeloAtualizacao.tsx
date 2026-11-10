@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const inteiro = new Intl.NumberFormat("pt-BR");
 
-export interface SeloAtualizacaoProps {
+interface SeloAtualizacaoProps {
   /** Instante ISO da última importação aplicada; `null` = ainda não importado. */
   atualizadoEm: string | null | undefined;
   /** XMLs de CT-e aguardando casamento (chip de alerta quando há pendentes). */

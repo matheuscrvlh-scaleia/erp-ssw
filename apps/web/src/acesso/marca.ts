@@ -4,7 +4,7 @@ import { useEffect } from "react";
 /** Cor do tema em styles.css (e padrão de `empresas.cor_primaria`). */
 const COR_DO_TEMA = "#212a63";
 
-export const TITULO_PADRAO = "Painel Logístico";
+const TITULO_PADRAO = "Painel Logístico";
 
 /**
  * Variáveis CSS da marca da empresa ativa. Com a cor do tema (caso da FR) nada é sobrescrito: o

@@ -10,7 +10,7 @@ export interface Batida {
   type: string;
 }
 
-export interface Funcionario {
+interface Funcionario {
   register: string;
   name: string;
   department?: string | undefined;
@@ -26,9 +26,9 @@ export interface Turno {
   lateExitTolerance?: string | undefined;
 }
 
-export type MotivoRevisao = "impar" | "excluida";
+type MotivoRevisao = "impar" | "excluida";
 
-export interface DiaApurado {
+interface DiaApurado {
   data: string;
   batidas: { hora: string; tipo: string }[];
   /** Nulo quando o dia não fecha com segurança. */
@@ -50,7 +50,7 @@ export interface FuncionarioApurado {
 /** Acima disso a apuração passa de ~12 s e arrisca estourar o gateway. */
 export const MAXIMO_FUNCIONARIOS_POR_APURACAO = 150;
 
-export const BATIDA_EXCLUIDA = "DELETADA";
+const BATIDA_EXCLUIDA = "DELETADA";
 
 function minutosDoDia(hora: string): number {
   const [h = 0, m = 0] = hora.split(":").map(Number);

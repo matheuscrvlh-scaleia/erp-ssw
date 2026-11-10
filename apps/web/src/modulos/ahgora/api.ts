@@ -27,15 +27,15 @@ export const consultaApuracaoDoPonto = (filtros: EntradaDe<typeof c.apuracao> | 
 
 export const consultaBatidas = (
   funcionarioId: string | null,
-  start: string,
-  end: string,
+  inicio: string,
+  fim: string,
   valido: boolean,
 ) =>
   queryOptions({
-    queryKey: ["ahgora-batidas", funcionarioId, start, end],
+    queryKey: ["ahgora-batidas", funcionarioId, inicio, fim],
     queryFn: () =>
       funcionarioId
-        ? chamar(c.batidas, { entrada: { employeeId: funcionarioId, start, end } })
+        ? chamar(c.batidas, { entrada: { funcionarioId, inicio, fim } })
         : Promise.reject(new Error("Selecione um colaborador")),
     enabled: funcionarioId !== null && valido,
   });

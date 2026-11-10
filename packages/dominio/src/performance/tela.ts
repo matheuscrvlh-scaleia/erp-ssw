@@ -13,7 +13,7 @@ import { compararTexto } from "./primitivas";
  * Regras de exibição da tela Performance (cores, ordem, período). Puras: a tela só desenha.
  */
 
-export type Status = "good" | "warn" | "bad";
+export type Status = "bom" | "alerta" | "ruim";
 
 function numero(config: ReadonlyMap<string, string>, chave: string, padrao: number): number {
   const n = Number((config.get(chave) ?? "").replace(",", "."));
@@ -32,20 +32,20 @@ export function configuracaoDaTela(config: ReadonlyMap<string, string>): Configu
 
 /** `p >= meta` bom, `>= alerta` atenção, senão ruim (frações). origem: statusFor */
 export function statusDoSla(p: number, meta: number, alerta: number): Status {
-  if (p >= meta) return "good";
-  return p >= alerta ? "warn" : "bad";
+  if (p >= meta) return "bom";
+  return p >= alerta ? "alerta" : "ruim";
 }
 
 /** Menor é melhor: até a meta bom, até meta + 1 p.p. atenção. origem: statusForRetorno */
 export function statusDoRetorno(taxa: number, meta: number | null): Status {
-  if (meta == null || taxa <= meta) return "good";
-  return taxa <= meta + 0.01 ? "warn" : "bad";
+  if (meta == null || taxa <= meta) return "bom";
+  return taxa <= meta + 0.01 ? "alerta" : "ruim";
 }
 
 /** OTIF (% com problema): até 5% bom, até 10% atenção. */
 export function statusDoOtif(pct: number | null): Status {
-  if (pct == null || pct <= 0.05) return "good";
-  return pct <= 0.1 ? "warn" : "bad";
+  if (pct == null || pct <= 0.05) return "bom";
+  return pct <= 0.1 ? "alerta" : "ruim";
 }
 
 export const PERIODOS = ["hoje", "7d", "30d", "mes", "custom"] as const;

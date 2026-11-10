@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { lerFiltros } from "@/hooks/filtros-na-url";
+import { temFiltro } from "@/hooks/filtros-na-url";
 
 import {
   camposMantidosAoLimpar,
@@ -8,7 +9,7 @@ import {
   etiquetasDaBusca,
   linkDaListagem,
   migrarBuscaAntiga,
-  temFiltro,
+  NAO_SAO_FILTRO,
 } from "./busca";
 
 const ler = (bruta: Record<string, unknown>) =>
@@ -44,10 +45,10 @@ describe("busca de /ocorrencias", () => {
 
   it("ordenação e paginação não contam como filtro; o período só quando é intervalo", () => {
     const b = ler({ ordem: "codigo", page: 2, periodo: "7d" });
-    expect(temFiltro(["ordem", "page", "periodo"], b)).toBe(false);
+    expect(temFiltro(["ordem", "page", "periodo"], b.periodo, NAO_SAO_FILTRO)).toBe(false);
     expect(camposMantidosAoLimpar(b)).toContain("periodo");
     const custom = ler({ periodo: "custom", de: "2026-11-01", ate: "2026-11-05" });
-    expect(temFiltro(["periodo", "de", "ate"], custom)).toBe(true);
+    expect(temFiltro(["periodo", "de", "ate"], custom.periodo, NAO_SAO_FILTRO)).toBe(true);
     expect(camposMantidosAoLimpar(custom)).not.toContain("periodo");
   });
 

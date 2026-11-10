@@ -4,7 +4,14 @@ import { type PontoSerie as PontoDaSerie } from "@erp/shared/contratos/performan
 import { type FiltroDoRanking, type LinhaDoRanking } from "@erp/shared/contratos/ranking";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
-import { formatarCnpj } from "@erp/shared/formatacao";
+import {
+  formatarCnpj,
+  formatarDecimal,
+  formatarDiaMes,
+  formatarInteiro,
+  formatarMoeda,
+  formatarPercentual,
+} from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, ChevronRight, Eye, EyeOff } from "lucide-react";
@@ -21,6 +28,7 @@ import {
 import { GraficoLinha } from "@/componentes/comum/Graficos";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { type Periodo, resolverPeriodo, ROTULO_ATALHO } from "@/componentes/comum/periodo";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { type ColunaExportacao } from "@/lib/exportacao";
 import { consultaConfiguracoesPublicas } from "@/modulos/admin/api";
 import { consultaPagadores } from "@/modulos/filtros/api";
@@ -35,13 +43,11 @@ import { nomesDosPagadores } from "@/modulos/filtros/regras";
 import { caminhoDaLista } from "@/modulos/listagem/busca";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";
-import { diaCurto } from "./periodo";
 import {
   type ChaveDeOrdem,
   COR_DO_NIVEL,
   filtrarPorCard,
   type FiltroDoCard,
-  formatarPct,
   kpisDoRanking,
   limiaresDoSla,
   nivelDoSla,
@@ -53,14 +59,6 @@ const ROTULO_DA_BASE: Record<Base, string> = {
   emissao: "data de emissão",
   prevista: "data prevista de entrega",
 };
-
-const nfInt = new Intl.NumberFormat("pt-BR");
-const nfPeso = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
-const nfBRL = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 0,
-});
 
 // Preferência do olho do Frete: só conveniência do navegador, vale para as duas abas.
 const FRETE_VISIVEL = "ranking:frete-visivel";
@@ -81,9 +79,10 @@ const classeDoAlternador = (ativo: boolean) =>
 
 export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const fuso = useFusoDaEmpresa();
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
   // Q11: "hoje" é o dia da empresa (Brasília), não o do navegador.
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const hoje = hojeNoFuso(fuso);
   const navigate = useNavigate();
   const { data: configuracoes } = useQuery(consultaConfiguracoesPublicas);
   const { meta, alerta } = limiaresDoSla(configuracoes?.valores);
@@ -109,7 +108,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
     ...intervalo,
     rotulo:
       rapido === "custom"
-        ? `${diaCurto(intervalo.inicio)} → ${diaCurto(intervalo.fim)}`
+        ? `${formatarDiaMes(intervalo.inicio)} → ${formatarDiaMes(intervalo.fim)}`
         : ROTULO_ATALHO[rapido],
   };
   const filtro: FiltroDoRanking = {
@@ -261,7 +260,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         }}
         className="rounded px-1 underline-offset-2 hover:bg-muted hover:underline"
       >
-        {nfInt.format(valor)}
+        {formatarInteiro(valor)}
       </button>
     </td>
   );
@@ -372,7 +371,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground">
-            meta {formatarPct(meta)} · {periodo.rotulo}
+            meta {formatarPercentual(meta)} · {periodo.rotulo}
           </span>
           <ExportMenu
             arquivo={`ranking-${grupo === "pagador" ? "parceiro" : "cidade"}`}
@@ -391,7 +390,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
           rotulo={grupo === "pagador" ? "Parceiros" : "Cidades"}
-          valor={nfInt.format(kpis.grupos)}
+          valor={formatarInteiro(kpis.grupos)}
           status="bom"
           neutro
           detalhe="no período · ver todos"
@@ -402,7 +401,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
         <KpiCard
           rotulo="CT-e no período"
-          valor={nfInt.format(kpis.totalCtes)}
+          valor={formatarInteiro(kpis.totalCtes)}
           status="bom"
           neutro
           detalhe={periodo.rotulo}
@@ -413,11 +412,11 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
         <KpiCard
           rotulo="SLA médio"
-          valor={formatarPct(kpis.slaMedio)}
+          valor={formatarPercentual(kpis.slaMedio)}
           status={statusDoSlaMedio ?? "bom"}
           neutro={statusDoSlaMedio === null}
           progresso={kpis.slaMedio ?? undefined}
-          detalhe={`meta ${formatarPct(meta)} · ver os que atingem`}
+          detalhe={`meta ${formatarPercentual(meta)} · ver os que atingem`}
           aoClicar={() => {
             alternarCard("na_meta");
           }}
@@ -425,9 +424,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
         <KpiCard
           rotulo="Abaixo da meta"
-          valor={nfInt.format(kpis.abaixoMeta)}
+          valor={formatarInteiro(kpis.abaixoMeta)}
           status={kpis.abaixoMeta > 0 ? "ruim" : "bom"}
-          detalhe={`de ${nfInt.format(kpis.grupos)} ${plural}`}
+          detalhe={`de ${formatarInteiro(kpis.grupos)} ${plural}`}
           aoClicar={() => {
             alternarCard("abaixo_meta");
           }}
@@ -464,8 +463,10 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           eixoX="mes"
           series={[{ chave: "sla", nome: "SLA" }]}
           formato="percentual"
-          meta={{ valor: meta, rotulo: `meta ${formatarPct(meta)}` }}
-          dica={(p) => `${p.mes}: SLA ${formatarPct(p.sla)} · ${nfInt.format(p.totalCtes)} CT-e`}
+          meta={{ valor: meta, rotulo: `meta ${formatarPercentual(meta)}` }}
+          dica={(p) =>
+            `${p.mes}: SLA ${formatarPercentual(p.sla)} · ${formatarInteiro(p.totalCtes)} CT-e`
+          }
           carregando={serie.isLoading}
           erro={serie.error}
         />
@@ -474,8 +475,8 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
       {filtroCard !== "todos" && (
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
           <span>
-            Mostrando {nfInt.format(filtradas.length)} de {nfInt.format(linhas.length)} {plural}{" "}
-            {rotuloDoFiltro}.
+            Mostrando {formatarInteiro(filtradas.length)} de {formatarInteiro(linhas.length)}{" "}
+            {plural} {rotuloDoFiltro}.
           </span>
           <button
             type="button"
@@ -603,27 +604,29 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
                   {celula(r, r.entregue, "entregues", "CT-e entregues")}
                   {celula(r, r.noPrazo, "no_prazo", "CT-e entregues no prazo")}
                   <td className="px-2 py-1.5 text-right tabular-nums">
-                    {nfInt.format(r.foraPrazo)}
+                    {formatarInteiro(r.foraPrazo)}
                   </td>
                   <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                    {nfInt.format(r.foraCliente)}
+                    {formatarInteiro(r.foraCliente)}
                   </td>
                   {celula(r, r.foraTransp, "fora_prazo", `Fora do prazo por culpa da ${nomeCurto}`)}
                   <td
                     className="px-2 py-1.5 text-right font-bold tabular-nums"
                     style={nivel ? { color: COR_DO_NIVEL[nivel].texto } : undefined}
                   >
-                    {formatarPct(r.slaPct)}
+                    {formatarPercentual(r.slaPct)}
                   </td>
                   {celula(r, r.aEntregar, "previstos_por_status", "CT-e a entregar (em aberto)")}
                   {celula(r, r.atrasadas, "em_atraso", "CT-e em aberto com prazo vencido")}
-                  <td className="px-2 py-1.5 text-right tabular-nums">{nfPeso.format(r.peso)}</td>
                   <td className="px-2 py-1.5 text-right tabular-nums">
-                    {nfInt.format(Math.round(r.volumes))}
+                    {formatarDecimal(r.peso, 0)}
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">
+                    {formatarInteiro(Math.round(r.volumes))}
                   </td>
                   <td className="px-2 py-1.5 text-right tabular-nums">
                     {freteVisivel ? (
-                      nfBRL.format(r.frete)
+                      formatarMoeda(r.frete, { centavos: false })
                     ) : (
                       <span className="text-muted-foreground" aria-label="valor oculto">
                         R$ •••••

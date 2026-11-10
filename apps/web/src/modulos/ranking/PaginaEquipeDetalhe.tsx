@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/componentes/ui/button";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { consultaCalculoDaEquipe } from "./api";
 import { EquipeMobileView } from "./EquipeMobileView";
@@ -17,7 +18,9 @@ export function PaginaEquipeDetalhe({
 }) {
   const { data, error } = useQuery(consultaCalculoDaEquipe(id, busca));
   if (error) {
-    return <div className="p-8 text-center text-sm text-destructive">{error.message}</div>;
+    return (
+      <div className="p-8 text-center text-sm text-destructive">{mensagemAmigavel(error)}</div>
+    );
   }
   if (!data) {
     return <div className="p-8 text-center text-sm text-muted-foreground">Carregando…</div>;

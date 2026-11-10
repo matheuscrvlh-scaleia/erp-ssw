@@ -48,7 +48,7 @@ function estadoInicial(u: UsuarioDaEmpresa) {
 }
 
 /** Dados gerais alterados, para a revisão antes de salvar. */
-export function trocasGerais(
+function trocasGerais(
   u: UsuarioDaEmpresa,
   e: ReturnType<typeof estadoInicial>,
   rotulos: { cargo: (c: string) => string; departamento: (d: string) => string },

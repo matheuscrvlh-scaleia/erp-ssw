@@ -17,11 +17,11 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import { type CtrcProcurado, lerCtrcProcurado, lerNotaProcurada, padroesDeTexto } from "./texto";
 
 /** Horas à frente do recorte "Vencendo em 24-48h". origem: p_vencendo_horas DEFAULT 48 */
-export const HORAS_DE_VENCIMENTO = 48;
+const HORAS_DE_VENCIMENTO = 48;
 /** Dias sem movimento do recorte "Sem atualização recente". origem: p_dias_sem_atualizacao DEFAULT 5 */
-export const DIAS_SEM_ATUALIZACAO = 5;
+const DIAS_SEM_ATUALIZACAO = 5;
 /** Limite padrão de "sem movimento" quando a empresa não configurou. origem: _alerta_dias_sem_movimento */
-export const LIMITE_SEM_MOVIMENTO_PADRAO = 3;
+const LIMITE_SEM_MOVIMENTO_PADRAO = 3;
 
 const TIPOS_PENDENCIA = ["PENDENCIA_CLIENTE", "PENDENCIA_TRANSPORTADORA"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -45,7 +45,7 @@ export interface ContextoDoFiltro {
 }
 
 /** Códigos do catálogo da empresa que os recortes usam. */
-export interface CodigosDoFiltro {
+interface CodigosDoFiltro {
   /** `tipo_ssw = BAIXA` (Q22: cadastro da empresa). */
   baixas: number[];
   /** Pendência acompanhada (penalizados). */

@@ -4,12 +4,6 @@ import { somarDias } from "@erp/shared/datas";
 import { arredondar } from "./numeros";
 import { compararTexto } from "./primitivas";
 
-/**
- * Códigos que tiram o CT-e do alerta "saiu para entrega com prazo vencido" (lista fixa da tela:
- * entrega 01 e as baixas, mais o 59). origem: performance_alertas / codigoEmAbertoNoRecorte
- */
-export const CODIGOS_FECHADOS_NASCIDO_ATRASADO = [1, 12, 36, 59, 61, 77, 92, 93, 94, 99] as const;
-
 /** Configuração (texto) → número; vazio ou inválido fica com o padrão. */
 function numero(config: ReadonlyMap<string, string>, chave: string, padrao: number): number {
   const valor = config.get(chave);

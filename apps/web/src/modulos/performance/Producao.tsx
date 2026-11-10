@@ -1,10 +1,9 @@
 import { verificarParticao } from "@erp/dominio/performance/tela";
 import { type BlocoProducao, type TdeAguardando } from "@erp/shared/contratos/performance";
+import { formatarInteiro, formatarMoeda, formatarPercentual } from "@erp/shared/formatacao";
 import { ArrowRight } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
-
-import { fmtBRL, fmtInt, fmtPct100 } from "../formato";
 
 export type CardDeProducao =
   | "emitidos"
@@ -15,14 +14,14 @@ export type CardDeProducao =
   | "producao_pct"
   | "tde";
 
-type Tom = "good" | "bad" | "neutral" | "info";
+type Tom = "bom" | "ruim" | "neutro" | "info";
 
 function CartaoDeProducao({
   rotulo,
   valor,
   sub,
   legenda,
-  tom = "neutral",
+  tom = "neutro",
   dica,
   onClick,
 }: {
@@ -35,9 +34,9 @@ function CartaoDeProducao({
   onClick: () => void;
 }) {
   const destaque =
-    tom === "good" || tom === "info"
+    tom === "bom" || tom === "info"
       ? "border-l-kpi-positive text-kpi-positive"
-      : tom === "bad"
+      : tom === "ruim"
         ? "border-l-kpi-alert text-kpi-alert"
         : "border-l-kpi-volume text-kpi-volume";
   const botao = (
@@ -95,7 +94,7 @@ export function LinhaDeProducao({
     <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
       <CartaoDeProducao
         rotulo="CT-e Emitidos"
-        valor={fmtInt(bloco.totalCtrcs)}
+        valor={formatarInteiro(bloco.totalCtrcs)}
         sub="total no período"
         onClick={() => {
           onCard("emitidos");
@@ -103,18 +102,26 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="Entregues"
-        valor={fmtInt(bloco.entregues)}
-        sub={bloco.totalCtrcs > 0 ? `${fmtPct100(producaoPct)} dos emitidos` : "sem emissões"}
+        valor={formatarInteiro(bloco.entregues)}
+        sub={
+          bloco.totalCtrcs > 0
+            ? `${formatarPercentual(producaoPct, { escala: "cem" })} dos emitidos`
+            : "sem emissões"
+        }
         onClick={() => {
           onCard("entregues");
         }}
       />
       <CartaoDeProducao
         rotulo="No Prazo"
-        valor={fmtInt(bloco.noPrazo)}
+        valor={formatarInteiro(bloco.noPrazo)}
         legenda="Entregues até a data combinada"
-        sub={noPrazoPct != null ? `${fmtPct100(noPrazoPct)} dos entregues` : "aguardando entregas"}
-        tom={noPrazoPct != null && noPrazoPct >= slaMetaPct ? "good" : "neutral"}
+        sub={
+          noPrazoPct != null
+            ? `${formatarPercentual(noPrazoPct, { escala: "cem" })} dos entregues`
+            : "aguardando entregas"
+        }
+        tom={noPrazoPct != null && noPrazoPct >= slaMetaPct ? "bom" : "neutro"}
         dica="Entregas que chegaram até a data combinada."
         onClick={() => {
           onCard("no_prazo");
@@ -122,10 +129,10 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="Fora do Prazo"
-        valor={fmtInt(bloco.foraPrazo)}
+        valor={formatarInteiro(bloco.foraPrazo)}
         legenda="Entregues depois da data combinada"
         sub="exclui resp. cliente"
-        tom={bloco.foraPrazo > 0 ? "bad" : "neutral"}
+        tom={bloco.foraPrazo > 0 ? "ruim" : "neutro"}
         dica="Entregas que chegaram depois da data combinada. Já exclui os atrasos de responsabilidade do cliente/parceiro."
         onClick={() => {
           onCard("fora_prazo");
@@ -133,10 +140,10 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="Finalizado em Sistema"
-        valor={fmtInt(bloco.finalizadoSistema)}
+        valor={formatarInteiro(bloco.finalizadoSistema)}
         sub={
           bloco.totalCtrcs > 0
-            ? `${fmtPct100((bloco.finalizadoSistema / bloco.totalCtrcs) * 100)} dos emitidos`
+            ? `${formatarPercentual((bloco.finalizadoSistema / bloco.totalCtrcs) * 100, { escala: "cem" })} dos emitidos`
             : "sem emissões"
         }
         tom="info"
@@ -147,23 +154,23 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="% Produção"
-        valor={fmtPct100(producaoPct)}
-        sub={`entregues / emitidos · meta ${fmtPct100(slaMetaPct)}`}
-        tom={producaoPct != null && producaoPct >= slaMetaPct ? "good" : "neutral"}
+        valor={formatarPercentual(producaoPct, { escala: "cem" })}
+        sub={`entregues / emitidos · meta ${formatarPercentual(slaMetaPct, { escala: "cem" })}`}
+        tom={producaoPct != null && producaoPct >= slaMetaPct ? "bom" : "neutro"}
         onClick={() => {
           onCard("producao_pct");
         }}
       />
       <CartaoDeProducao
         rotulo="TDE aguardando programação"
-        valor={tde ? fmtInt(tde.aguardando) : "…"}
+        valor={tde ? formatarInteiro(tde.aguardando) : "…"}
         legenda="Com TDE e ainda sem saída para entrega"
         sub={
           tde
-            ? `${fmtBRL(tde.valor)} de TDE · ${fmtInt(tde.total)} CT-e com TDE no período`
+            ? `${formatarMoeda(tde.valor, { centavos: false })} de TDE · ${formatarInteiro(tde.total)} CT-e com TDE no período`
             : "carregando"
         }
-        tom={tde && tde.aguardando > 0 ? "bad" : "neutral"}
+        tom={tde && tde.aguardando > 0 ? "ruim" : "neutro"}
         dica="Cargas com TDE (taxa de dificuldade de entrega, do relatório 455) que ainda não saíram para entrega: travadas em ocorrência ou paradas na unidade. A lista mostra cliente, destino, prazo e última ocorrência para montar a programação. As que já saíram estão no card “TDE romaneado” da tela Romaneio."
         onClick={() => {
           onCard("tde");
@@ -191,13 +198,15 @@ export function VerificacaoDaParticao({
           : "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400")
       }
     >
-      <strong className="font-medium">Verificação:</strong> Entregues ({fmtInt(bloco.entregues)}) +
-      Finalizado em Sistema ({fmtInt(bloco.finalizadoSistema)}) + Previstos no período (
-      {fmtInt(bloco.previstos)}) = <strong className="font-medium">{fmtInt(soma)}</strong> de{" "}
-      {fmtInt(bloco.totalCtrcs)} CT-e emitidos{" "}
+      <strong className="font-medium">Verificação:</strong> Entregues (
+      {formatarInteiro(bloco.entregues)}) + Finalizado em Sistema (
+      {formatarInteiro(bloco.finalizadoSistema)}) + Previstos no período (
+      {formatarInteiro(bloco.previstos)}) ={" "}
+      <strong className="font-medium">{formatarInteiro(soma)}</strong> de{" "}
+      {formatarInteiro(bloco.totalCtrcs)} CT-e emitidos{" "}
       {diferenca === 0
         ? "— partição fecha 100%."
-        : `— diferença de ${fmtInt(Math.abs(diferenca))} CTRC.`}
+        : `— diferença de ${formatarInteiro(Math.abs(diferenca))} CTRC.`}
       {ignorarPeriodo && (
         <>
           {" "}

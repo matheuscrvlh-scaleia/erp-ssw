@@ -13,7 +13,7 @@ export function ehFonteBi2(fonte: FonteDaEscrita): boolean {
 }
 
 /** Colunas que a mescla do BI2 lê. */
-export interface CteParaBi2 {
+interface CteParaBi2 {
   dataEntregaRealizada: Date | null;
   /** Instante do cancelamento (XML); CT-e cancelado não conta como em andamento. */
   canceladoEm: Date | null;

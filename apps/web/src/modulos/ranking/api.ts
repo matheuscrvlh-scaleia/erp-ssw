@@ -51,7 +51,7 @@ export const consultaCalculoDaEquipe = (
 
 export const consultaRankingPublico = (token: string, inicio: string, fim: string) =>
   queryOptions({
-    queryKey: ["ranking-publico", token, inicio],
+    queryKey: ["ranking-publico", token, inicio, fim],
     queryFn: () => chamar(c.publico, { parametros: { token }, entrada: { inicio, fim } }),
     retry: false,
   });

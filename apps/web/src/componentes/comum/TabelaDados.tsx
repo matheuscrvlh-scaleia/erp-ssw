@@ -35,7 +35,7 @@ const ALINHAR = { esquerda: "text-left", direita: "text-right", centro: "text-ce
 
 type LinhaExportada = Record<string, unknown>;
 
-export interface PaginacaoServidor {
+interface PaginacaoServidor {
   /** Página atual, a partir de 1. */
   pagina: number;
   porPagina: number;
@@ -43,7 +43,7 @@ export interface PaginacaoServidor {
   aoMudarPagina: (pagina: number) => void;
 }
 
-export interface TabelaDadosProps<T extends object> {
+interface TabelaDadosProps<T extends object> {
   colunas: readonly ColunaTabela<T>[];
   /** Todas as linhas (paginação no cliente) ou a página atual (`paginacaoServidor`). */
   linhas: readonly T[];
