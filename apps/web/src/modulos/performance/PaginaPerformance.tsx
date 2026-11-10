@@ -58,6 +58,7 @@ import {
   consultaTiposNoPeriodo,
   entradaDoFiltro,
 } from "./api";
+import { BannerDeAlertas } from "./BannerDeAlertas";
 import {
   BASE_CURTA,
   type BuscaPerformance,
@@ -71,19 +72,14 @@ import {
   temFiltroLimpavel,
   type TipoDaLista,
 } from "./busca";
-import { BannerDeAlertas } from "./componentes/Alertas";
-import { GraficoSerie } from "./componentes/GraficoSerie";
-import { EsqueletoDeCards, LinhaDeKpis } from "./componentes/Kpis";
-import { type CliqueNosPrevistos, SecaoPrevistos } from "./componentes/Previstos";
-import {
-  type CardDeProducao,
-  LinhaDeProducao,
-  VerificacaoDaParticao,
-} from "./componentes/Producao";
-import { DialogoRelatorio } from "./componentes/RelatorioPeriodo";
-import { TabelaDeUnidades } from "./componentes/TabelaUnidades";
 import { textoDoStatus } from "./cores";
 import { COLUNAS_DA_EXPORTACAO } from "./exportacao";
+import { GraficoSerie } from "./GraficoSerie";
+import { EsqueletoDeCards, LinhaDeKpis } from "./Kpis";
+import { type CliqueNosPrevistos, SecaoPrevistos } from "./Previstos";
+import { type CardDeProducao, LinhaDeProducao, VerificacaoDaParticao } from "./Producao";
+import { DialogoRelatorio } from "./RelatorioPeriodo";
+import { TabelaDeUnidades } from "./TabelaUnidades";
 
 const rota = getRouteApi("/_autenticado/performance/");
 

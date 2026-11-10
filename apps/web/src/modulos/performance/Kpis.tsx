@@ -17,7 +17,7 @@ import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-import { corDoStatus, fundoDoStatus, textoDoStatus } from "../cores";
+import { corDoStatus, fundoDoStatus, textoDoStatus } from "./cores";
 
 /** Props de um bloco clicável por mouse e teclado (Enter/Espaço). */
 export function clicavel(acao: (() => void) | undefined, pararPropagacao = false) {

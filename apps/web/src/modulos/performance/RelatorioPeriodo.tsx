@@ -33,9 +33,9 @@ import { exportarCsv, exportarExcel, imprimir } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
-import { consultaRelatorio } from "../api";
-import { type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "../relatorio";
+import { consultaRelatorio } from "./api";
 import { DistribuicaoPontualidade } from "./Kpis";
+import { type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "./relatorio";
 
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
