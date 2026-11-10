@@ -18,7 +18,18 @@ import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado
 import { Route as AutenticadoPrazoParceiroRouteImport } from './routes/_autenticado/prazo-parceiro'
 import { Route as AutenticadoRomaneioRouteImport } from './routes/_autenticado/romaneio'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoAdminAhgoraRouteImport } from './routes/_autenticado/admin.ahgora'
+import { Route as AutenticadoAdminBonificacaoEntregaRouteImport } from './routes/_autenticado/admin.bonificacao-entrega'
+import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autenticado/admin.equipes'
+import { Route as AutenticadoAdminIngestaoRouteImport } from './routes/_autenticado/admin.ingestao'
+import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_autenticado/admin.ssw-diagnostico'
+import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
+import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
 import { Route as AutenticadoPrazoParceiroIdRouteImport } from './routes/_autenticado/prazo-parceiro_.$id'
+import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
+import { Route as AutenticadoRankingRegrasRouteImport } from './routes/_autenticado/ranking.regras'
+import { Route as RankingPublicoTokenRouteImport } from './routes/ranking.publico.$token'
+import { Route as AutenticadoRankingEquipeIdRouteImport } from './routes/_autenticado/ranking.equipe.$id'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -65,10 +76,71 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoAdminAhgoraRoute = AutenticadoAdminAhgoraRouteImport.update({
+  id: '/admin/ahgora',
+  path: '/admin/ahgora',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoAdminBonificacaoEntregaRoute =
+  AutenticadoAdminBonificacaoEntregaRouteImport.update({
+    id: '/admin/bonificacao-entrega',
+    path: '/admin/bonificacao-entrega',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminEquipesRoute = AutenticadoAdminEquipesRouteImport.update({
+  id: '/admin/equipes',
+  path: '/admin/equipes',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoAdminIngestaoRoute =
+  AutenticadoAdminIngestaoRouteImport.update({
+    id: '/admin/ingestao',
+    path: '/admin/ingestao',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminSswDiagnosticoRoute =
+  AutenticadoAdminSswDiagnosticoRouteImport.update({
+    id: '/admin/ssw-diagnostico',
+    path: '/admin/ssw-diagnostico',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
+  id: '/ctrc/$numero',
+  path: '/ctrc/$numero',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoPerformanceListaRoute =
+  AutenticadoPerformanceListaRouteImport.update({
+    id: '/performance/lista',
+    path: '/performance/lista',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoPrazoParceiroIdRoute =
   AutenticadoPrazoParceiroIdRouteImport.update({
     id: '/prazo-parceiro_/$id',
     path: '/prazo-parceiro/$id',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoRankingIndexRoute = AutenticadoRankingIndexRouteImport.update({
+  id: '/ranking/',
+  path: '/ranking/',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoRankingRegrasRoute =
+  AutenticadoRankingRegrasRouteImport.update({
+    id: '/ranking/regras',
+    path: '/ranking/regras',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const RankingPublicoTokenRoute = RankingPublicoTokenRouteImport.update({
+  id: '/ranking/publico/$token',
+  path: '/ranking/publico/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutenticadoRankingEquipeIdRoute =
+  AutenticadoRankingEquipeIdRouteImport.update({
+    id: '/ranking/equipe/$id',
+    path: '/ranking/equipe/$id',
     getParentRoute: () => AutenticadoRoute,
   } as any)
 
@@ -81,7 +153,18 @@ export interface FileRoutesByFullPath {
   '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
   '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
+  '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
+  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
+  '/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/ranking/': typeof AutenticadoRankingIndexRoute
+  '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -92,7 +175,18 @@ export interface FileRoutesByTo {
   '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
+  '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
+  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
+  '/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/ranking': typeof AutenticadoRankingIndexRoute
+  '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,7 +199,18 @@ export interface FileRoutesById {
   '/_autenticado/romaneio': typeof AutenticadoRomaneioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
+  '/_autenticado/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/_autenticado/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/_autenticado/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/_autenticado/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
+  '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/_autenticado/prazo-parceiro_/$id': typeof AutenticadoPrazoParceiroIdRoute
+  '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/_autenticado/ranking/': typeof AutenticadoRankingIndexRoute
+  '/_autenticado/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,7 +223,18 @@ export interface FileRouteTypes {
     | '/prazo-parceiro'
     | '/romaneio'
     | '/sem-acesso'
+    | '/admin/ahgora'
+    | '/admin/bonificacao-entrega'
+    | '/admin/equipes'
+    | '/admin/ingestao'
+    | '/admin/ssw-diagnostico'
+    | '/ctrc/$numero'
+    | '/performance/lista'
     | '/prazo-parceiro/$id'
+    | '/ranking/regras'
+    | '/ranking/publico/$token'
+    | '/ranking/'
+    | '/ranking/equipe/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -129,7 +245,18 @@ export interface FileRouteTypes {
     | '/romaneio'
     | '/sem-acesso'
     | '/'
+    | '/admin/ahgora'
+    | '/admin/bonificacao-entrega'
+    | '/admin/equipes'
+    | '/admin/ingestao'
+    | '/admin/ssw-diagnostico'
+    | '/ctrc/$numero'
+    | '/performance/lista'
     | '/prazo-parceiro/$id'
+    | '/ranking/regras'
+    | '/ranking/publico/$token'
+    | '/ranking'
+    | '/ranking/equipe/$id'
   id:
     | '__root__'
     | '/_autenticado'
@@ -141,7 +268,18 @@ export interface FileRouteTypes {
     | '/_autenticado/romaneio'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/admin/ahgora'
+    | '/_autenticado/admin/bonificacao-entrega'
+    | '/_autenticado/admin/equipes'
+    | '/_autenticado/admin/ingestao'
+    | '/_autenticado/admin/ssw-diagnostico'
+    | '/_autenticado/ctrc/$numero'
+    | '/_autenticado/performance/lista'
     | '/_autenticado/prazo-parceiro_/$id'
+    | '/_autenticado/ranking/regras'
+    | '/ranking/publico/$token'
+    | '/_autenticado/ranking/'
+    | '/_autenticado/ranking/equipe/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -149,6 +287,7 @@ export interface RootRouteChildren {
   AceitarConviteRoute: typeof AceitarConviteRoute
   LoginRoute: typeof LoginRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  RankingPublicoTokenRoute: typeof RankingPublicoTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -216,11 +355,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/ahgora': {
+      id: '/_autenticado/admin/ahgora'
+      path: '/admin/ahgora'
+      fullPath: '/admin/ahgora'
+      preLoaderRoute: typeof AutenticadoAdminAhgoraRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/bonificacao-entrega': {
+      id: '/_autenticado/admin/bonificacao-entrega'
+      path: '/admin/bonificacao-entrega'
+      fullPath: '/admin/bonificacao-entrega'
+      preLoaderRoute: typeof AutenticadoAdminBonificacaoEntregaRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/equipes': {
+      id: '/_autenticado/admin/equipes'
+      path: '/admin/equipes'
+      fullPath: '/admin/equipes'
+      preLoaderRoute: typeof AutenticadoAdminEquipesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/ingestao': {
+      id: '/_autenticado/admin/ingestao'
+      path: '/admin/ingestao'
+      fullPath: '/admin/ingestao'
+      preLoaderRoute: typeof AutenticadoAdminIngestaoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/ssw-diagnostico': {
+      id: '/_autenticado/admin/ssw-diagnostico'
+      path: '/admin/ssw-diagnostico'
+      fullPath: '/admin/ssw-diagnostico'
+      preLoaderRoute: typeof AutenticadoAdminSswDiagnosticoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/ctrc/$numero': {
+      id: '/_autenticado/ctrc/$numero'
+      path: '/ctrc/$numero'
+      fullPath: '/ctrc/$numero'
+      preLoaderRoute: typeof AutenticadoCtrcNumeroRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/performance/lista': {
+      id: '/_autenticado/performance/lista'
+      path: '/performance/lista'
+      fullPath: '/performance/lista'
+      preLoaderRoute: typeof AutenticadoPerformanceListaRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/prazo-parceiro_/$id': {
       id: '/_autenticado/prazo-parceiro_/$id'
       path: '/prazo-parceiro/$id'
       fullPath: '/prazo-parceiro/$id'
       preLoaderRoute: typeof AutenticadoPrazoParceiroIdRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/ranking/': {
+      id: '/_autenticado/ranking/'
+      path: '/ranking'
+      fullPath: '/ranking/'
+      preLoaderRoute: typeof AutenticadoRankingIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/ranking/regras': {
+      id: '/_autenticado/ranking/regras'
+      path: '/ranking/regras'
+      fullPath: '/ranking/regras'
+      preLoaderRoute: typeof AutenticadoRankingRegrasRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/ranking/publico/$token': {
+      id: '/ranking/publico/$token'
+      path: '/ranking/publico/$token'
+      fullPath: '/ranking/publico/$token'
+      preLoaderRoute: typeof RankingPublicoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_autenticado/ranking/equipe/$id': {
+      id: '/_autenticado/ranking/equipe/$id'
+      path: '/ranking/equipe/$id'
+      fullPath: '/ranking/equipe/$id'
+      preLoaderRoute: typeof AutenticadoRankingEquipeIdRouteImport
       parentRoute: typeof AutenticadoRoute
     }
   }
@@ -232,7 +448,17 @@ interface AutenticadoRouteChildren {
   AutenticadoRomaneioRoute: typeof AutenticadoRomaneioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoAdminAhgoraRoute: typeof AutenticadoAdminAhgoraRoute
+  AutenticadoAdminBonificacaoEntregaRoute: typeof AutenticadoAdminBonificacaoEntregaRoute
+  AutenticadoAdminEquipesRoute: typeof AutenticadoAdminEquipesRoute
+  AutenticadoAdminIngestaoRoute: typeof AutenticadoAdminIngestaoRoute
+  AutenticadoAdminSswDiagnosticoRoute: typeof AutenticadoAdminSswDiagnosticoRoute
+  AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
+  AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
   AutenticadoPrazoParceiroIdRoute: typeof AutenticadoPrazoParceiroIdRoute
+  AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
+  AutenticadoRankingIndexRoute: typeof AutenticadoRankingIndexRoute
+  AutenticadoRankingEquipeIdRoute: typeof AutenticadoRankingEquipeIdRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
@@ -241,7 +467,18 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoRomaneioRoute: AutenticadoRomaneioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoAdminAhgoraRoute: AutenticadoAdminAhgoraRoute,
+  AutenticadoAdminBonificacaoEntregaRoute:
+    AutenticadoAdminBonificacaoEntregaRoute,
+  AutenticadoAdminEquipesRoute: AutenticadoAdminEquipesRoute,
+  AutenticadoAdminIngestaoRoute: AutenticadoAdminIngestaoRoute,
+  AutenticadoAdminSswDiagnosticoRoute: AutenticadoAdminSswDiagnosticoRoute,
+  AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
+  AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
   AutenticadoPrazoParceiroIdRoute: AutenticadoPrazoParceiroIdRoute,
+  AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,
+  AutenticadoRankingIndexRoute: AutenticadoRankingIndexRoute,
+  AutenticadoRankingEquipeIdRoute: AutenticadoRankingEquipeIdRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
@@ -253,6 +490,7 @@ const rootRouteChildren: RootRouteChildren = {
   AceitarConviteRoute: AceitarConviteRoute,
   LoginRoute: LoginRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  RankingPublicoTokenRoute: RankingPublicoTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

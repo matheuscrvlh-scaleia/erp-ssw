@@ -1,11 +1,12 @@
 import { type DefinicaoDeJob } from "../jobs/registro";
+import { type RepositorioDoDespachante } from "./ingestao";
 
 export interface EmpresaAgendavel {
   id: string;
   fuso: string;
 }
 
-export interface RepositorioAgendamentos {
+export interface RepositorioAgendamentos extends RepositorioDoDespachante {
   /** Empresas que recebem agendamento por empresa (ativas ou em implantação). */
   empresasAtivas(): Promise<EmpresaAgendavel[]>;
 }

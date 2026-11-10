@@ -14,7 +14,7 @@ import {
 import { limparSessoes } from "./jobs/manutencao/job";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
 import { criarProcessador } from "./processador";
-import { ProjecoesFalsas } from "./testes/projecoes-falsas";
+import { BancoFalso } from "./testes/banco-falso";
 
 const log = pino({ level: "silent" });
 const EMPRESA = randomUUID();
@@ -22,20 +22,22 @@ const EMPRESA = randomUUID();
 function bancoFalso() {
   const contextos: ContextoBanco[] = [];
   const limites: Date[] = [];
-  const repositorios: RepositoriosDoWorker = {
-    agendamentos: { empresasAtivas: () => Promise.resolve([]) },
-    manutencao: {
-      apagarSessoesEncerradas: (limite) => {
-        limites.push(limite);
-        return Promise.resolve(3);
-      },
-      apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
-    },
-    projecoesRomaneio: new ProjecoesFalsas(),
-  };
+  const banco = new BancoFalso();
   const executar: ExecutorDoWorker = (contexto, fn) => {
     contextos.push(contexto);
-    return fn(repositorios);
+    return banco.executar(contexto, (repositorios: RepositoriosDoWorker) =>
+      fn({
+        ...repositorios,
+        manutencao: {
+          ...repositorios.manutencao,
+          apagarSessoesEncerradas: (limite) => {
+            limites.push(limite);
+            return Promise.resolve(3);
+          },
+          apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
+        },
+      }),
+    );
   };
   return { executar, contextos, limites };
 }

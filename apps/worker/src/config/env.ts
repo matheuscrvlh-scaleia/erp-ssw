@@ -13,6 +13,22 @@ const esquema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  /**
+   * Jobs de ingestão que o agendador dispara (separados por vírgula, ex.: `bi2_0017,ssw_token_check`).
+   * Vazio = nenhum: cada job é ligado de propósito, no ambiente que deve rodar.
+   */
+  INGESTAO_JOBS_LIGADOS: z
+    .string()
+    .default("")
+    .transform((v) =>
+      v
+        .split(",")
+        .map((j) => j.trim())
+        .filter(Boolean),
+    ),
+  /** Chaves mestras dos segredos de integração (`1:<base64 32 bytes>,2:...`) e a versão atual. */
+  SEGREDOS_CHAVES: z.string().min(1).optional(),
+  SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
 });
 
 export type AmbienteWorker = z.output<typeof esquema>;

@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { type ContextoBanco } from "@erp/db";
 import { chaveDoCte } from "@erp/dominio/romaneio/projecoes";
 import { linha036 } from "@erp/dominio/romaneio/testes";
 import { pino } from "pino";
@@ -8,29 +7,19 @@ import { describe, expect, it } from "vitest";
 
 import { agendamentosDesejados } from "../../agendamentos/agendamentos";
 import { criarProcessador } from "../../processador";
-import { ProjecoesFalsas } from "../../testes/projecoes-falsas";
-import { type ExecutorDoWorker } from "../registro";
+import { BancoFalso } from "../../testes/banco-falso";
 import { recalcularProjecoesRomaneio, reconstruirProjecoesRomaneio } from "./job";
 
 const EMPRESA = randomUUID();
 const CHAVE = { sigla: "CAP", numero: "38984" };
 
 function montar() {
-  const projecoes = new ProjecoesFalsas();
+  const banco = new BancoFalso();
+  const projecoes = banco.projecoes;
   projecoes.linhas.set(chaveDoCte(CHAVE), { l036: [linha036()], l306: [], l038: [], l455: [] });
   projecoes.chaves = [CHAVE, { sigla: "CAP", numero: "1" }];
-  const contextos: ContextoBanco[] = [];
-  const executar: ExecutorDoWorker = (contexto, fn) => {
-    contextos.push(contexto);
-    return fn({
-      agendamentos: { empresasAtivas: () => Promise.resolve([]) },
-      manutencao: {
-        apagarSessoesEncerradas: () => Promise.resolve(0),
-        apagarTokensDeSenhaVencidos: () => Promise.resolve(0),
-      },
-      projecoesRomaneio: projecoes,
-    });
-  };
+  const contextos = banco.contextos;
+  const executar = banco.executar;
   const avisos: string[] = [];
   const log = pino({ level: "info" }, { write: (linha: string) => avisos.push(linha) });
   const processar = criarProcessador({

@@ -1,0 +1,45 @@
+# Servidor estático do apps/web DENTRO da imagem erp-web (porta 8080, sem TLS, sem admin).
+# Quem fala com a internet é a borda (infra/Caddyfile): TLS, cabeçalhos de segurança, compressão
+# e log de acesso ficam lá. Aqui só arquivo e cache.
+{
+	admin off
+	auto_https off
+	persist_config off
+	# HTTP/2 e 3 exigem TLS; a borda fala HTTP/1.1 com este contêiner pela rede interna.
+	servers {
+		protocols h1
+	}
+	log {
+		output stdout
+		format json
+		level WARN
+	}
+}
+
+:8080 {
+	root * /srv
+
+	# Saúde do contêiner (HEALTHCHECK da imagem). Não colide com rota do app.
+	handle /__saude {
+		respond "ok" 200
+	}
+
+	# Assets com hash no nome: 1 ano, imutável. Asset inexistente é 404 de verdade (nunca o
+	# index.html): aba aberta numa versão antiga recebe erro de import e o app pede recarga.
+	# `match status 200`: o 404 não leva o cache longo.
+	handle /assets/* {
+		header {
+			Cache-Control "public, max-age=31536000, immutable"
+			match status 200
+		}
+		file_server
+	}
+
+	# Resto: arquivo da raiz (favicon) ou o index.html (fallback da SPA). `no-cache`: o navegador
+	# sempre revalida (ETag), então versão nova aparece no próximo carregamento.
+	handle {
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

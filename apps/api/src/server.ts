@@ -1,9 +1,13 @@
+import { setTimeout as esperar } from "node:timers/promises";
+
 import { comContexto, conectarBanco } from "@erp/db";
+import { lerChavesDeSegredo } from "@erp/db/segredos";
 import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
 import { carregarAmbiente } from "./config/env";
 import { criarCorreioSmtp } from "./infra/correio";
+import { criarFilasDeIngestao } from "./infra/filas-ingestao";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
@@ -23,6 +27,12 @@ const conexao = conectarBanco({
 });
 const redis = ambiente.REDIS_URL
   ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
+  : null;
+// Só produz e consulta (não consome): pode dividir a conexão com o limite de taxa.
+const filasDeIngestao = redis ? criarFilasDeIngestao(redis, (ms) => esperar(ms)) : null;
+
+const chaves = ambiente.SEGREDOS_CHAVES
+  ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
   : null;
 
 const app = await construirApp({
@@ -58,10 +68,18 @@ const app = await construirApp({
           redirectUri: ambiente.GOOGLE_REDIRECT_URI,
         })
       : null,
+  filasDeIngestao,
+  chavesDeSegredo: chaves,
   agora: () => new Date(),
+  ahgora: {
+    segredos: chaves,
+    ambiente: { usuario: ambiente.AHGORA_API_USUARIO, senha: ambiente.AHGORA_API_SENHA },
+    http: fetch,
+  },
 });
 
 app.addHook("onClose", async () => {
+  await filasDeIngestao?.fechar();
   await conexao.encerrar();
   await redis?.quit();
 });

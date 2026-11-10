@@ -1,3 +1,4 @@
+import { type ChavesDeSegredo, cifrarSegredo } from "@erp/db/segredos";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -10,10 +11,20 @@ import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
 import { type EmissorDeTokens } from "./infra/tokens";
+import { type DependenciasAhgora } from "./modulos/ahgora/casos-de-uso";
+import { rotasAhgora } from "./modulos/ahgora/rotas";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
+import { rotasBonificacaoEntrega } from "./modulos/bonificacao-entrega/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { rotasCtrc } from "./modulos/ctrc/rotas";
+import { rotasFiltros } from "./modulos/filtros/rotas";
+import { type FilasDeIngestao } from "./modulos/ingestao-ssw/casos-de-uso";
+import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
+import { rotasPublicasSsw } from "./modulos/ingestao-ssw/rotas-publicas";
+import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasPrazoParceiro } from "./modulos/prazo-parceiro/rotas";
+import { rotasRanking } from "./modulos/ranking/rotas";
 import { rotasRomaneio } from "./modulos/romaneio/rotas";
 import {
   registrarDocumentacao,
@@ -36,7 +47,13 @@ export interface Dependencias {
   /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
   correio: Correio | null;
   google: ProvedorGoogle | null;
+  /** Filas do BullMQ (ingestão). Nulo = sem Redis: execuções manuais e o webhook respondem 503. */
+  filasDeIngestao: FilasDeIngestao | null;
+  /** Chaves dos segredos de integração. Nulo = não salva senha nem confere o webhook. */
+  chavesDeSegredo: ChavesDeSegredo | null;
   agora: () => Date;
+  /** Ponto (Ahgora): cofre de segredos, credencial de transição e HTTP. Sem ele, sem cofre. */
+  ahgora?: DependenciasAhgora;
 }
 
 function urlDoLogo(ambiente: Ambiente) {
@@ -96,6 +113,30 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   await app.register(rotasCalendario, { agora: deps.agora });
   await app.register(rotasRomaneio, { agora: deps.agora });
   await app.register(rotasPrazoParceiro);
+  await app.register(rotasFiltros);
+  await app.register(rotasListagem, { agora: deps.agora });
+  await app.register(rotasCtrc, { agora: deps.agora });
+  const ahgora = deps.ahgora ?? { segredos: null, ambiente: {}, http: fetch };
+  await app.register(rotasRanking, { agora: deps.agora, executar: deps.executar });
+  await app.register(rotasBonificacaoEntrega, { ahgora });
+  await app.register(rotasAhgora, { ahgora });
+
+  const chaves = deps.chavesDeSegredo;
+  await app.register(rotasIngestaoSsw, {
+    deps: {
+      filas: deps.filasDeIngestao,
+      cifrador: chaves
+        ? { cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto) }
+        : null,
+      agora: deps.agora,
+    },
+  });
+  await app.register(rotasPublicasSsw, {
+    executar: deps.executar,
+    filas: deps.filasDeIngestao,
+    chaves,
+    agora: deps.agora,
+  });
 
   return app;
 }

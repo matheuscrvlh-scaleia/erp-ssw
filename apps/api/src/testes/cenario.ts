@@ -2,7 +2,7 @@ import { generateKeyPairSync, randomUUID } from "node:crypto";
 
 import { type FastifyInstance } from "fastify";
 
-import { construirApp } from "../app";
+import { construirApp, type Dependencias } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
 import { type Correio, type Mensagem } from "../infra/correio";
 import { type ProvedorGoogle } from "../infra/google";
@@ -60,6 +60,7 @@ export function criarCenario(): Cenario {
   const banco = new BancoEmMemoria();
   const ambiente = ambienteDeTeste();
   const relogio = new Relogio();
+  banco.ingestao.agora = relogio.agora;
   const correio = new CorreioFalso();
   const tokens = criarEmissorDeTokens({
     chavePrivadaPem: ambiente.JWT_CHAVE_PRIVADA,
@@ -85,6 +86,7 @@ export function criarCenario(): Cenario {
 export async function construirAppDeTeste(
   cenario: Cenario,
   google: ProvedorGoogle | null = null,
+  extras: Partial<Dependencias> = {},
 ): Promise<FastifyInstance> {
   const { deps } = cenario;
   return construirApp({
@@ -98,7 +100,10 @@ export async function construirAppDeTeste(
     limitador: deps.limitador,
     correio: cenario.correio,
     google,
+    filasDeIngestao: null,
+    chavesDeSegredo: null,
     agora: deps.agora,
+    ...extras,
   });
 }
 

@@ -67,3 +67,81 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   recalculadas quando o 036/930/306/038/455 chega, em vez de nos minutos :15 e :45.
 - **Q48 — valores fixos viram configuração** (peso e volume de "carga pesada"/"alto volume", prazo
   padrão do parceiro, meta e alerta de SLA). Para a FR nada muda na tela.
+## Listagem detalhada e detalhe do CT-e (spec 02)
+
+- **Q02 — CT-e pela série + número.** O link da NF na Listagem abre o CT-e certo (`/ctrc/33214?sigla=CAP`).
+  Número que existe em mais de uma série, aberto sem a série, mostra a lista para escolher (antes
+  abria um ao acaso). A busca "CAP033214" na Listagem procura série e número juntos.
+- **Q10 — filtros sem surpresa.** Unidade responsável que não é filial da empresa devolve lista vazia
+  (antes ignorava o filtro e mostrava tudo); o total da última página é o real; `%` e `_` digitados
+  em Remetente/Destino/Cidade são letras, não curingas.
+- **"a||b" não casa mais tudo.** Valor vazio entre barras é ignorado (mesma leitura
+  `lerFiltroTexto` da tela e do servidor); antes virava "contém nada" e trazia todos os CT-e.
+- **Q11 — dia de Brasília.** "Hoje", "Mês" e os demais atalhos de período, a coluna "Entrega
+  Realizada", as faixas de previsão e o "em rota" usam o dia de Brasília, não o do navegador.
+- **Q12 — conclusão sem "−1 dia".** O seletor Parceiros com base "Concluídos" usa a data de
+  conclusão como está.
+- **Q13 — a lista segue o card.** Unidade aberta a partir de um card filtra pelo cadastro da unidade;
+  o filtro e o gráfico "Ocorrências" usam o código efetivo do CT-e.
+- **Q21 — quarentena fora dos recortes.** Ocorrência em quarentena não conta em nenhum recorte da
+  Listagem (código 13, OTIF, TDE, sem atualização...).
+- **Q04 — exportação sem teto de 20 mil.** Exporta todas as páginas do filtro; acima de 100 mil
+  linhas sai com as primeiras 100 mil e um aviso dizendo quantas ficaram de fora (antes cortava em
+  20 mil sem avisar). O PDF da Listagem passa a ser o PDF da empresa (paisagem, todas as colunas),
+  não a impressão A4 que escondia seis colunas.
+- **Q07 — ordem estável.** Mesma data na ordenação: desempata pelo número do CT-e e pela série; a
+  mesma página não muda de uma consulta para outra.
+- **Q40 — sem `/dashboard`.** O endereço antigo do Dashboard cai na página "não encontrada", com o
+  botão "Ir para o início".
+- **Detalhe do CT-e.** O "Status do prazo" usa o dia de Brasília (Q11); "não encontrado" oferece
+  só "Voltar" (antes, "Voltar ao romaneio").
+## Ranking, equipes, bonificação e ponto (spec 05 §5–7)
+
+- **Q47 — atribuir CT-e à equipe grava de verdade** (Admin › Equipes, "Atribuir (n)"); antes o aviso
+  aparecia e nada mudava. Com regra ativa, membros e CT-e atribuídos, o valor da equipe deixa de ser
+  sempre zero. Ver ADR 0006 (diverge da recomendação c) de Q47; confirmar com o dono).
+- **Q47 — piso de performance na escala certa.** "85" no piso passa a significar 85%; antes 95% de
+  performance (0,95) era comparado com 85 e o valor sempre zerava.
+- **P12 — faltas têm tela.** Quadro "Faltas do mês" em Bonificação de entrega (registrar, listar,
+  excluir); a falta zera o bônus do último dia bonificado antes dela, como a regra já previa.
+- **Link público do ranking só aparece ao ser gerado.** O banco guarda só o hash: "Copiar link"
+  funciona na hora; depois aparece "Gerar novo link" (troca o anterior). Links antigos param de
+  valer na virada e precisam ser gerados de novo. Limite de 30 consultas por minuto por IP.
+- **P11 — saída do membro no dia de Brasília** (antes, depois das 21h gravava o dia seguinte).
+- **Q11 — dia de Brasília nas contas das equipes e da bonificação:** "entregue no prazo" compara o
+  dia da entrega em Brasília com o prazo, e a "ocorrência do dia do romaneio" usa o dia de Brasília.
+- **Q21 — quarentena fora:** ocorrência em quarentena não conta como penalizante no ranking de
+  equipes nem como desfecho da NF na bonificação de entrega.
+- **Bonificação de entrega lê os romaneios já processados:** romaneio cancelado no SSW não entra
+  mais no bônus; meses antigos continuam apuráveis (antes dependiam das linhas cruas do 036).
+- **Empate no ranking público** (mesmo valor) é desfeito pelo nome da equipe, sempre na mesma ordem
+  (antes, ao acaso).
+- **Q26 — equipes:** quem tem a tela vê todas as equipes da empresa (sem recorte por unidade).
+- **Q02 — CT-e como sigla + número** na lista de atribuição (ex.: `CAP123456`).
+- **Ranking operacional:** "hoje" dos atalhos de período é o dia de Brasília (Q11), não o do
+  navegador; filtros de filial e tipo de CT-e ainda não aparecem na tela (falta a consulta de
+  opções da Performance).
+
+## Ingestão SSW: BI2, webhook e SSW API (`apps/worker/src/fontes`, spec 06)
+
+- **Q41 — BI2 só com o 0017.** 0174, 0013/0016, 0220, cadastros, reprocessos e o backfill do 0017
+  não existem mais; a tela Ingestão SSW perde os cards de backfill, a "ordem recomendada" e o
+  "Rodar D-1" (fica "Rodar data específica" do 0017).
+- **Q45 — tela Ingestão sem o cabeçalho explicativo.** Mostra só a última atividade do webhook (o
+  mesmo dado de hoje, lido dos eventos recebidos).
+- **Q02 — webhook casa o CT-e por sigla + número.** Ocorrência que chega só com o número da NF, ou
+  sem sigla, vai para o CT-e mais recente com aquele número; CT-e desconhecido sem sigla não é
+  criado e o evento fica "sem vínculo" (antes podia cair no CT-e da outra série e às vezes criava
+  CT-e sem sigla).
+- **Webhook responde antes de aplicar.** O SSW recebe "OCORRENCIA PROCESSADA COM SUCESSO" assim que
+  o evento é autenticado e gravado; a ocorrência entra no CT-e segundos depois (fila). Se a fila
+  estiver fora, a resposta é 503 e o SSW reenvia. Na tela, o evento aparece primeiro como
+  processado e muda para "sem vínculo" ou "erro" quando o processamento termina.
+- **Reprocessar evento** reenvia à fila em vez de responder o resultado na hora ("Evento reenviado
+  para processamento").
+- **Credenciais da SSW API:** "Última verificação" não diz mais se foi manual ou automática.
+- **Diagnóstico SSW** passa a mostrar a situação dos jobs (fila, falhas, próxima execução), as
+  sincronizações do BI2, os contadores do webhook (24 h e 7 dias) e os órfãos; saem o teste por
+  CNPJ e o teste do trackingdanfe (o enriquecimento pela SSW API está desligado).
+- **Guarda do conteúdo bruto do BI2 (`bi2_bruto`) por 400 dias**, como as sincronizações; eventos do
+  webhook e sincronizações do SSW, 90 dias.
