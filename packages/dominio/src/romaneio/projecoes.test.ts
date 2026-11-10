@@ -155,8 +155,13 @@ class RepositorioFalso implements RepositorioProjecoesRomaneio {
     private readonly chaves: ChaveCte[],
   ) {}
   linhasDosCtes = () => Promise.resolve(this.linhas);
-  gravadas = (): Promise<ProjecoesGravadas> =>
-    Promise.resolve({ viagens: new Map(), saidas: new Map(), atuais: new Map(), dados: new Map() });
+  estado: ProjecoesGravadas = {
+    viagens: new Map(),
+    saidas: new Map(),
+    atuais: new Map(),
+    dados: new Map(),
+  };
+  gravadas = () => Promise.resolve(this.estado);
   gravar = (p: readonly ProjecaoDoCte[]) => {
     this.gravacoes.push([...p]);
     return Promise.resolve();
@@ -182,6 +187,31 @@ describe("caso de uso de recálculo", () => {
     ]);
     expect(r).toEqual({ ctes: 2, alterados: 1 });
     expect(repo.gravacoes[0]?.[0]).toMatchObject({ chave, saidas: ["2026-11-10"] });
+  });
+
+  it("o que já está gravado (lido do banco em outra ordem de campos) não regrava", async () => {
+    const repo = new RepositorioFalso(linhas, []);
+    await recalcularProjecoesDoRomaneio(repo, [chave]);
+    const p = repo.gravacoes[0]?.[0];
+    if (!p?.atual) throw new Error("sem projeção");
+    const k = chaveDoCte(chave);
+    repo.estado = {
+      viagens: new Map([[k, p.viagens]]),
+      saidas: new Map([[k, p.saidas]]),
+      atuais: new Map([
+        [
+          k,
+          {
+            r306: p.atual.r306,
+            r036: p.atual.r036,
+            motorista: p.atual.motorista,
+            placa: p.atual.placa,
+          },
+        ],
+      ]),
+      dados: new Map(),
+    };
+    expect(await recalcularProjecoesDoRomaneio(repo, [chave])).toEqual({ ctes: 1, alterados: 0 });
   });
 
   it("completo: percorre todas as chaves em lotes", async () => {

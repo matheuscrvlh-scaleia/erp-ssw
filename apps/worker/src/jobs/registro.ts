@@ -1,4 +1,5 @@
 import { type ContextoBanco } from "@erp/db";
+import { type RepositorioProjecoesRomaneio } from "@erp/dominio/romaneio/projecoes";
 import { type z } from "@erp/shared/zod";
 import { type Logger } from "pino";
 
@@ -9,6 +10,7 @@ import { type RepositorioManutencao } from "./manutencao/job";
 export interface RepositoriosDoWorker {
   agendamentos: RepositorioAgendamentos;
   manutencao: RepositorioManutencao;
+  projecoesRomaneio: RepositorioProjecoesRomaneio;
 }
 
 export type ExecutorDoWorker = <T>(
@@ -20,7 +22,10 @@ export type ExecutorDoWorker = <T>(
  * Filas e a concorrência de cada uma. Fila separada por natureza de trabalho: ingestão pesada não
  * pode atrasar manutenção, e vice-versa.
  */
-export const FILAS = [{ nome: "manutencao", concorrencia: 1 }] as const;
+export const FILAS = [
+  { nome: "manutencao", concorrencia: 1 },
+  { nome: "projecoes", concorrencia: 2 },
+] as const;
 export type NomeDaFila = (typeof FILAS)[number]["nome"];
 
 /** `plataforma`: um job para o sistema todo. `empresa`: um por empresa ativa, no contexto dela. */

@@ -12,6 +12,7 @@ import {
   sincronizarAgendamentos,
 } from "./agendamentos/agendamentos";
 import { limparSessoes } from "./jobs/manutencao/job";
+import { ProjecoesFalsas } from "./testes/projecoes-falsas";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
 import { criarProcessador } from "./processador";
 
@@ -30,6 +31,7 @@ function bancoFalso() {
       },
       apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
     },
+    projecoesRomaneio: new ProjecoesFalsas(),
   };
   const executar: ExecutorDoWorker = (contexto, fn) => {
     contextos.push(contexto);

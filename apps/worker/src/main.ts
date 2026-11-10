@@ -1,4 +1,4 @@
-import { comContexto, conectarBanco, type Transacao } from "@erp/db";
+import { comContexto, conectarBanco, type ContextoBanco, type Transacao } from "@erp/db";
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { pino } from "pino";
@@ -8,6 +8,11 @@ import { criarRepositorioAgendamentos } from "./agendamentos/repositorio";
 import { carregarAmbiente } from "./config/env";
 import { limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
+import {
+  recalcularProjecoesRomaneio,
+  reconstruirProjecoesRomaneio,
+} from "./jobs/projecoes-romaneio/job";
+import { criarRepositorioProjecoesRomaneio } from "./jobs/projecoes-romaneio/repositorio";
 import {
   type DefinicaoDeJob,
   type ExecutorDoWorker,
@@ -19,7 +24,11 @@ import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
 
 /** Todos os jobs do sistema. Job novo entra aqui. */
-const JOBS: readonly DefinicaoDeJob[] = [limparSessoes];
+const JOBS: readonly DefinicaoDeJob[] = [
+  limparSessoes,
+  recalcularProjecoesRomaneio,
+  reconstruirProjecoesRomaneio,
+];
 
 const PRAZO_DE_DESLIGAMENTO_MS = 30_000;
 
@@ -39,14 +48,15 @@ const conexao = conectarBanco({
 // O BullMQ exige maxRetriesPerRequest nulo nas conexões de worker.
 const redis = new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: null });
 
-function repositorios(tx: Transacao): RepositoriosDoWorker {
+function repositorios(tx: Transacao, contexto: ContextoBanco): RepositoriosDoWorker {
   return {
     agendamentos: criarRepositorioAgendamentos(tx),
     manutencao: criarRepositorioManutencao(tx),
+    projecoesRomaneio: criarRepositorioProjecoesRomaneio(tx, contexto.empresaId),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
-  comContexto(conexao.banco, contexto, (tx) => fn(repositorios(tx)));
+  comContexto(conexao.banco, contexto, (tx) => fn(repositorios(tx, contexto)));
 
 const filas = FILAS.map(
   ({ nome }) =>

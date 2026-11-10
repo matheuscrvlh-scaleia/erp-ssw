@@ -369,7 +369,22 @@ export interface ResumoDoRecalculo {
   alterados: number;
 }
 
-const igual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+/** Forma canônica para comparar (ordem das chaves não importa; datas pelo instante). */
+function canonico(v: unknown): unknown {
+  if (v instanceof Date) return v.toISOString();
+  if (Array.isArray(v)) return v.map(canonico);
+  if (v !== null && typeof v === "object") {
+    return Object.fromEntries(
+      Object.entries(v)
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(([k, x]) => [k, canonico(x)]),
+    );
+  }
+  return v;
+}
+
+const igual = (a: unknown, b: unknown) =>
+  JSON.stringify(canonico(a)) === JSON.stringify(canonico(b));
 
 /**
  * Recalcula as projeções dos CT-e (incremental: chamado pela ingestão com as chaves das linhas

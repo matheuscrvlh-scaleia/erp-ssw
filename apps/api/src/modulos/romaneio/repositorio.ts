@@ -21,10 +21,10 @@ import {
   romaneioViagensCte,
 } from "@erp/db/schema";
 import { ErroDeNegocio } from "@erp/dominio/erros";
+import { linha036De, linha930De } from "@erp/dominio/romaneio/linhas-de-relatorio";
 import { type OcorrenciaDoCte } from "@erp/dominio/romaneio/situacao";
 import { COLLATOR } from "@erp/dominio/romaneio/normalizacao";
 import { MENSAGEM_TEMPO_ESGOTADO } from "@erp/shared/erros";
-import { dados036, dados930 } from "@erp/shared/relatorios-ssw";
 import { somarDias } from "@erp/shared/datas";
 import { and, asc, eq, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm";
 import { type AnyPgColumn } from "drizzle-orm/pg-core";
@@ -39,12 +39,6 @@ const lista = (valores: readonly (string | number)[]) => sql.param(valores);
 
 const numeroOuNulo = (v: string | null) => (v === null ? null : Number(v));
 const numeroOuZero = (v: string | null) => (v === null ? 0 : Number(v));
-
-/**
- * Atalho do 036/930 sem fuso: horário de SP → instante.
- * atalho: −3 h fixo (sem horário de verão desde 2019).
- */
-const instanteSp = (semFuso: string) => new Date(`${semFuso.slice(0, 19)}-03:00`);
 
 /** Mesma chave natural (empresa, sigla, número) entre `ctes` e uma projeção. */
 function mesmoCte(t: { empresaId: AnyPgColumn; sigla: AnyPgColumn; numero: AnyPgColumn }) {
@@ -434,28 +428,7 @@ export function criarRepositorioRomaneio(tx: Transacao): RepositorioRomaneio {
             sql`${ingestaoLinhas.dados}->>'data_emissao' = ${dia}`,
           ),
         );
-      return linhas.map(({ dados, importadoEm }) => {
-        const l = dados036.parse(dados);
-        return {
-          romaneio: l.romaneio,
-          ctrc: l.ctrc,
-          situacao: l.situacao,
-          placa: l.placa,
-          motorista: l.motorista,
-          ajudante: l.ajudante,
-          ajudante2: l.ajudante_2,
-          ajudante3: l.ajudante_3,
-          dataEmissao: l.data_emissao,
-          horaEmissao: l.hora_emissao,
-          cidadeEntrega: l.cidade_entrega,
-          bairro: l.bairro,
-          codOcorrCtrc: l.cod_ocorr_ctrc,
-          descOcorrCtrc: l.desc_ocorr_ctrc,
-          dataOcorrCtrc: l.data_ocorr_ctrc,
-          horaOcorrCtrc: l.hora_ocorr_ctrc,
-          importadoEm,
-        };
-      });
+      return linhas.map(({ dados, importadoEm }) => linha036De(dados, importadoEm));
     },
 
     ctesDoDia: async (numeros, codigos) => {
@@ -521,18 +494,7 @@ export function criarRepositorioRomaneio(tx: Transacao): RepositorioRomaneio {
         );
       return {
         ocorrencias: gravadas,
-        linhas930: linhas.map(({ dados }) => {
-          const l = dados930.parse(dados);
-          return {
-            ocorrenciaEm: l.ocorrencia_em ? instanteSp(l.ocorrencia_em) : null,
-            codigo: l.cod_ocor,
-            descricao: l.descricao_ocor,
-            complemento: l.complemento_ocor,
-            usuario: l.usuario_ocor,
-            unidade: l.unid_ocor,
-            empresa: l.empr_ocor,
-          };
-        }),
+        linhas930: linhas.map(({ dados }) => linha930De(dados)),
       };
     },
   };
