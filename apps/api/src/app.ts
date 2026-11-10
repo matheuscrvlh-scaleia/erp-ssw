@@ -5,20 +5,27 @@ import { type Redis } from "ioredis";
 import { type Ambiente } from "./config/env";
 import { registrarTratadorDeErros } from "./http/tratador-erros";
 import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
+import { type FilaDeRecalculo } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
 import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
-import { type FilaDeRecalculo } from "./infra/fila";
 import { type EmissorDeTokens } from "./infra/tokens";
+import { type DependenciasAhgora } from "./modulos/ahgora/casos-de-uso";
+import { rotasAhgora } from "./modulos/ahgora/rotas";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
+import { rotasBonificacaoEntrega } from "./modulos/bonificacao-entrega/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
 import { rotasCodigosOcorrencia } from "./modulos/codigos-ocorrencia/rotas";
 import { rotasColetas } from "./modulos/coletas/rotas";
 import { rotasComprovantes } from "./modulos/comprovantes/rotas";
+import { rotasCtrc } from "./modulos/ctrc/rotas";
+import { rotasFiltros } from "./modulos/filtros/rotas";
 import { rotasHistorico } from "./modulos/historico/rotas";
+import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasOcorrencias } from "./modulos/ocorrencias/rotas";
+import { rotasRanking } from "./modulos/ranking/rotas";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -43,6 +50,8 @@ export interface Dependencias {
   /** Recálculos em lote no worker; sem Redis (desenvolvimento/teste), tudo vai na transação. */
   filaDeRecalculo?: FilaDeRecalculo;
   agora: () => Date;
+  /** Ponto (Ahgora): cofre de segredos, credencial de transição e HTTP. Sem ele, sem cofre. */
+  ahgora?: DependenciasAhgora;
 }
 
 function urlDoLogo(ambiente: Ambiente) {
@@ -108,6 +117,13 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     agora: deps.agora,
     fila: deps.filaDeRecalculo ?? null,
   });
+  await app.register(rotasFiltros);
+  await app.register(rotasListagem, { agora: deps.agora });
+  await app.register(rotasCtrc, { agora: deps.agora });
+  const ahgora = deps.ahgora ?? { segredos: null, ambiente: {}, http: fetch };
+  await app.register(rotasRanking, { agora: deps.agora, executar: deps.executar });
+  await app.register(rotasBonificacaoEntrega, { ahgora });
+  await app.register(rotasAhgora, { ahgora });
 
   return app;
 }

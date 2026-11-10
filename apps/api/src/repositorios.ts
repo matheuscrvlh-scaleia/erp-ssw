@@ -2,10 +2,14 @@ import { type ContextoBanco, type Transacao } from "@erp/db";
 
 import { type RepositorioAcesso } from "./modulos/acesso/casos-de-uso";
 import { criarRepositorioAcesso } from "./modulos/acesso/repositorio";
+import { type RepositorioAhgora } from "./modulos/ahgora/casos-de-uso";
+import { criarRepositorioAhgora } from "./modulos/ahgora/repositorio";
 import { type RepositorioAuditoria } from "./modulos/auditoria/auditoria";
 import { criarRepositorioAuditoria } from "./modulos/auditoria/repositorio";
 import { type RepositorioAuth } from "./modulos/auth/casos-de-uso";
 import { criarRepositorioAuth } from "./modulos/auth/repositorio";
+import { type RepositorioBonificacaoEntrega } from "./modulos/bonificacao-entrega/casos-de-uso";
+import { criarRepositorioBonificacaoEntrega } from "./modulos/bonificacao-entrega/repositorio";
 import { type RepositorioCalendario } from "./modulos/calendario/casos-de-uso";
 import { criarRepositorioCalendario } from "./modulos/calendario/repositorio";
 import { type RepositorioCodigosOcorrencia } from "./modulos/codigos-ocorrencia/casos-de-uso";
@@ -14,10 +18,18 @@ import { type RepositorioColetas } from "./modulos/coletas/casos-de-uso";
 import { criarRepositorioColetas } from "./modulos/coletas/repositorio";
 import { type RepositorioComprovantes } from "./modulos/comprovantes/casos-de-uso";
 import { criarRepositorioComprovantes } from "./modulos/comprovantes/repositorio";
+import { type RepositorioCtrc } from "./modulos/ctrc/casos-de-uso";
+import { criarRepositorioCtrc } from "./modulos/ctrc/repositorio";
+import { type RepositorioFiltros } from "./modulos/filtros/casos-de-uso";
+import { criarRepositorioFiltros } from "./modulos/filtros/repositorio";
 import { type RepositorioHistorico } from "./modulos/historico/casos-de-uso";
 import { criarRepositorioHistorico } from "./modulos/historico/repositorio";
+import { type RepositorioListagem } from "./modulos/listagem/casos-de-uso";
+import { criarRepositorioListagem } from "./modulos/listagem/repositorio";
 import { type RepositorioOcorrencias } from "./modulos/ocorrencias/casos-de-uso";
 import { criarRepositorioOcorrencias } from "./modulos/ocorrencias/repositorio";
+import { type RepositorioRanking } from "./modulos/ranking/casos-de-uso";
+import { criarRepositorioRanking } from "./modulos/ranking/repositorio";
 
 /**
  * Repositórios de todos os módulos, presos a uma transação com contexto. Módulo novo entra aqui
@@ -25,27 +37,39 @@ import { criarRepositorioOcorrencias } from "./modulos/ocorrencias/repositorio";
  */
 export interface Repositorios {
   acesso: RepositorioAcesso;
+  ahgora: RepositorioAhgora;
   auditoria: RepositorioAuditoria;
   auth: RepositorioAuth;
+  bonificacaoEntrega: RepositorioBonificacaoEntrega;
   calendario: RepositorioCalendario;
   codigosOcorrencia: RepositorioCodigosOcorrencia;
   coletas: RepositorioColetas;
   comprovantes: RepositorioComprovantes;
   historico: RepositorioHistorico;
   ocorrencias: RepositorioOcorrencias;
+  ctrc: RepositorioCtrc;
+  filtros: RepositorioFiltros;
+  listagem: RepositorioListagem;
+  ranking: RepositorioRanking;
 }
 
 export function criarRepositorios(tx: Transacao): Repositorios {
   return {
     acesso: criarRepositorioAcesso(tx),
+    ahgora: criarRepositorioAhgora(tx),
     auditoria: criarRepositorioAuditoria(tx),
     auth: criarRepositorioAuth(tx),
+    bonificacaoEntrega: criarRepositorioBonificacaoEntrega(tx),
     calendario: criarRepositorioCalendario(tx),
     codigosOcorrencia: criarRepositorioCodigosOcorrencia(tx),
     coletas: criarRepositorioColetas(tx),
     comprovantes: criarRepositorioComprovantes(tx),
     historico: criarRepositorioHistorico(tx),
     ocorrencias: criarRepositorioOcorrencias(tx),
+    ctrc: criarRepositorioCtrc(tx),
+    filtros: criarRepositorioFiltros(tx),
+    listagem: criarRepositorioListagem(tx),
+    ranking: criarRepositorioRanking(tx),
   };
 }
 

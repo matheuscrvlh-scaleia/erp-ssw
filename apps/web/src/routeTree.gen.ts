@@ -20,8 +20,17 @@ import { Route as AutenticadoComprovantesRouteImport } from './routes/_autentica
 import { Route as AutenticadoHistoricoRouteImport } from './routes/_autenticado/historico'
 import { Route as AutenticadoOcorrenciasRouteImport } from './routes/_autenticado/ocorrencias'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoAdminAhgoraRouteImport } from './routes/_autenticado/admin.ahgora'
+import { Route as AutenticadoAdminBonificacaoEntregaRouteImport } from './routes/_autenticado/admin.bonificacao-entrega'
 import { Route as AutenticadoAdminCodigosRouteImport } from './routes/_autenticado/admin.codigos'
+import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autenticado/admin.equipes'
+import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
 import { Route as AutenticadoHistoricoFeriadosRouteImport } from './routes/_autenticado/historico_.feriados'
+import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
+import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
+import { Route as AutenticadoRankingRegrasRouteImport } from './routes/_autenticado/ranking.regras'
+import { Route as RankingPublicoTokenRouteImport } from './routes/ranking.publico.$token'
+import { Route as AutenticadoRankingEquipeIdRouteImport } from './routes/_autenticado/ranking.equipe.$id'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -77,15 +86,64 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoAdminAhgoraRoute = AutenticadoAdminAhgoraRouteImport.update({
+  id: '/admin/ahgora',
+  path: '/admin/ahgora',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoAdminBonificacaoEntregaRoute =
+  AutenticadoAdminBonificacaoEntregaRouteImport.update({
+    id: '/admin/bonificacao-entrega',
+    path: '/admin/bonificacao-entrega',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoAdminCodigosRoute = AutenticadoAdminCodigosRouteImport.update({
   id: '/admin/codigos',
   path: '/admin/codigos',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoAdminEquipesRoute = AutenticadoAdminEquipesRouteImport.update({
+  id: '/admin/equipes',
+  path: '/admin/equipes',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
+  id: '/ctrc/$numero',
+  path: '/ctrc/$numero',
   getParentRoute: () => AutenticadoRoute,
 } as any)
 const AutenticadoHistoricoFeriadosRoute =
   AutenticadoHistoricoFeriadosRouteImport.update({
     id: '/historico_/feriados',
     path: '/historico/feriados',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoPerformanceListaRoute =
+  AutenticadoPerformanceListaRouteImport.update({
+    id: '/performance/lista',
+    path: '/performance/lista',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoRankingIndexRoute = AutenticadoRankingIndexRouteImport.update({
+  id: '/ranking/',
+  path: '/ranking/',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoRankingRegrasRoute =
+  AutenticadoRankingRegrasRouteImport.update({
+    id: '/ranking/regras',
+    path: '/ranking/regras',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const RankingPublicoTokenRoute = RankingPublicoTokenRouteImport.update({
+  id: '/ranking/publico/$token',
+  path: '/ranking/publico/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutenticadoRankingEquipeIdRoute =
+  AutenticadoRankingEquipeIdRouteImport.update({
+    id: '/ranking/equipe/$id',
+    path: '/ranking/equipe/$id',
     getParentRoute: () => AutenticadoRoute,
   } as any)
 
@@ -100,8 +158,17 @@ export interface FileRoutesByFullPath {
   '/historico': typeof AutenticadoHistoricoRoute
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
+  '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
   '/admin/codigos': typeof AutenticadoAdminCodigosRoute
+  '/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
+  '/performance/lista': typeof AutenticadoPerformanceListaRoute
+  '/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/ranking/': typeof AutenticadoRankingIndexRoute
+  '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -114,8 +181,17 @@ export interface FileRoutesByTo {
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
+  '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
   '/admin/codigos': typeof AutenticadoAdminCodigosRoute
+  '/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
+  '/performance/lista': typeof AutenticadoPerformanceListaRoute
+  '/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/ranking': typeof AutenticadoRankingIndexRoute
+  '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,8 +206,17 @@ export interface FileRoutesById {
   '/_autenticado/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
+  '/_autenticado/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
   '/_autenticado/admin/codigos': typeof AutenticadoAdminCodigosRoute
+  '/_autenticado/admin/equipes': typeof AutenticadoAdminEquipesRoute
+  '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
   '/_autenticado/historico_/feriados': typeof AutenticadoHistoricoFeriadosRoute
+  '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
+  '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/_autenticado/ranking/': typeof AutenticadoRankingIndexRoute
+  '/_autenticado/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -146,8 +231,17 @@ export interface FileRouteTypes {
     | '/historico'
     | '/ocorrencias'
     | '/sem-acesso'
+    | '/admin/ahgora'
+    | '/admin/bonificacao-entrega'
     | '/admin/codigos'
+    | '/admin/equipes'
+    | '/ctrc/$numero'
     | '/historico/feriados'
+    | '/performance/lista'
+    | '/ranking/regras'
+    | '/ranking/publico/$token'
+    | '/ranking/'
+    | '/ranking/equipe/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -160,8 +254,17 @@ export interface FileRouteTypes {
     | '/ocorrencias'
     | '/sem-acesso'
     | '/'
+    | '/admin/ahgora'
+    | '/admin/bonificacao-entrega'
     | '/admin/codigos'
+    | '/admin/equipes'
+    | '/ctrc/$numero'
     | '/historico/feriados'
+    | '/performance/lista'
+    | '/ranking/regras'
+    | '/ranking/publico/$token'
+    | '/ranking'
+    | '/ranking/equipe/$id'
   id:
     | '__root__'
     | '/_autenticado'
@@ -175,8 +278,17 @@ export interface FileRouteTypes {
     | '/_autenticado/ocorrencias'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/admin/ahgora'
+    | '/_autenticado/admin/bonificacao-entrega'
     | '/_autenticado/admin/codigos'
+    | '/_autenticado/admin/equipes'
+    | '/_autenticado/ctrc/$numero'
     | '/_autenticado/historico_/feriados'
+    | '/_autenticado/performance/lista'
+    | '/_autenticado/ranking/regras'
+    | '/ranking/publico/$token'
+    | '/_autenticado/ranking/'
+    | '/_autenticado/ranking/equipe/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +296,7 @@ export interface RootRouteChildren {
   AceitarConviteRoute: typeof AceitarConviteRoute
   LoginRoute: typeof LoginRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  RankingPublicoTokenRoute: typeof RankingPublicoTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -265,6 +378,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/ahgora': {
+      id: '/_autenticado/admin/ahgora'
+      path: '/admin/ahgora'
+      fullPath: '/admin/ahgora'
+      preLoaderRoute: typeof AutenticadoAdminAhgoraRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/bonificacao-entrega': {
+      id: '/_autenticado/admin/bonificacao-entrega'
+      path: '/admin/bonificacao-entrega'
+      fullPath: '/admin/bonificacao-entrega'
+      preLoaderRoute: typeof AutenticadoAdminBonificacaoEntregaRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/admin/codigos': {
       id: '/_autenticado/admin/codigos'
       path: '/admin/codigos'
@@ -272,11 +399,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoAdminCodigosRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/equipes': {
+      id: '/_autenticado/admin/equipes'
+      path: '/admin/equipes'
+      fullPath: '/admin/equipes'
+      preLoaderRoute: typeof AutenticadoAdminEquipesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/ctrc/$numero': {
+      id: '/_autenticado/ctrc/$numero'
+      path: '/ctrc/$numero'
+      fullPath: '/ctrc/$numero'
+      preLoaderRoute: typeof AutenticadoCtrcNumeroRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/historico_/feriados': {
       id: '/_autenticado/historico_/feriados'
       path: '/historico/feriados'
       fullPath: '/historico/feriados'
       preLoaderRoute: typeof AutenticadoHistoricoFeriadosRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/performance/lista': {
+      id: '/_autenticado/performance/lista'
+      path: '/performance/lista'
+      fullPath: '/performance/lista'
+      preLoaderRoute: typeof AutenticadoPerformanceListaRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/ranking/': {
+      id: '/_autenticado/ranking/'
+      path: '/ranking'
+      fullPath: '/ranking/'
+      preLoaderRoute: typeof AutenticadoRankingIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/ranking/regras': {
+      id: '/_autenticado/ranking/regras'
+      path: '/ranking/regras'
+      fullPath: '/ranking/regras'
+      preLoaderRoute: typeof AutenticadoRankingRegrasRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/ranking/publico/$token': {
+      id: '/ranking/publico/$token'
+      path: '/ranking/publico/$token'
+      fullPath: '/ranking/publico/$token'
+      preLoaderRoute: typeof RankingPublicoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_autenticado/ranking/equipe/$id': {
+      id: '/_autenticado/ranking/equipe/$id'
+      path: '/ranking/equipe/$id'
+      fullPath: '/ranking/equipe/$id'
+      preLoaderRoute: typeof AutenticadoRankingEquipeIdRouteImport
       parentRoute: typeof AutenticadoRoute
     }
   }
@@ -290,8 +466,16 @@ interface AutenticadoRouteChildren {
   AutenticadoOcorrenciasRoute: typeof AutenticadoOcorrenciasRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoAdminAhgoraRoute: typeof AutenticadoAdminAhgoraRoute
+  AutenticadoAdminBonificacaoEntregaRoute: typeof AutenticadoAdminBonificacaoEntregaRoute
   AutenticadoAdminCodigosRoute: typeof AutenticadoAdminCodigosRoute
+  AutenticadoAdminEquipesRoute: typeof AutenticadoAdminEquipesRoute
+  AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
   AutenticadoHistoricoFeriadosRoute: typeof AutenticadoHistoricoFeriadosRoute
+  AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
+  AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
+  AutenticadoRankingIndexRoute: typeof AutenticadoRankingIndexRoute
+  AutenticadoRankingEquipeIdRoute: typeof AutenticadoRankingEquipeIdRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
@@ -302,8 +486,17 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoOcorrenciasRoute: AutenticadoOcorrenciasRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoAdminAhgoraRoute: AutenticadoAdminAhgoraRoute,
+  AutenticadoAdminBonificacaoEntregaRoute:
+    AutenticadoAdminBonificacaoEntregaRoute,
   AutenticadoAdminCodigosRoute: AutenticadoAdminCodigosRoute,
+  AutenticadoAdminEquipesRoute: AutenticadoAdminEquipesRoute,
+  AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
   AutenticadoHistoricoFeriadosRoute: AutenticadoHistoricoFeriadosRoute,
+  AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
+  AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,
+  AutenticadoRankingIndexRoute: AutenticadoRankingIndexRoute,
+  AutenticadoRankingEquipeIdRoute: AutenticadoRankingEquipeIdRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
@@ -315,6 +508,7 @@ const rootRouteChildren: RootRouteChildren = {
   AceitarConviteRoute: AceitarConviteRoute,
   LoginRoute: LoginRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  RankingPublicoTokenRoute: RankingPublicoTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

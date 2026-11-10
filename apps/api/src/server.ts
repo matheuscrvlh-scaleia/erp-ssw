@@ -1,4 +1,5 @@
 import { comContexto, conectarBanco } from "@erp/db";
+import { lerChavesDeSegredo } from "@erp/db/segredos";
 import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
@@ -63,6 +64,13 @@ const app = await construirApp({
       : null,
   ...(filaDeRecalculo ? { filaDeRecalculo } : {}),
   agora: () => new Date(),
+  ahgora: {
+    segredos: ambiente.SEGREDOS_CHAVES
+      ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
+      : null,
+    ambiente: { usuario: ambiente.AHGORA_API_USUARIO, senha: ambiente.AHGORA_API_SENHA },
+    http: fetch,
+  },
 });
 
 app.addHook("onClose", async () => {
