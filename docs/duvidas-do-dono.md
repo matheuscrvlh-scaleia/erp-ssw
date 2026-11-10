@@ -561,7 +561,10 @@ Os exemplos marcados "ilustrativo" mostram o tipo de efeito; os números não fo
   "falta zera o último dia bonificado" nunca age); o ambiente de teste tem 0 regras e 0 membros.
 - **Opções:** a) portar igual (sempre zero); b) corrigir e portar; c) não portar agora.
 - **Recomendação:** c), e refazer quando houver uso definido.
-- **Até a resposta:** igual a hoje (telas portadas, resultado zero).
+- **Decisão final (10/11, coordenador com delegação do dono):** **b) corrigido e portado** — o porte
+  já saiu funcionando (atribuição grava, piso na mesma escala, tela de faltas), o que dá mais valor
+  que deixar de fora. Ver `docs/adr/0006-ranking-equipes-corrigido.md`. Links públicos antigos
+  precisam ser gerados de novo na virada.
 - **Ref.:** 05 §9 P8 e P12; modelo.md "Descartado" (`bonificacao_calculo`).
 
 ### Q48 — Valores fixos da FR viram configuração da empresa
