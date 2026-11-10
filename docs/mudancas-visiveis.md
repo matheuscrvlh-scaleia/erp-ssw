@@ -115,3 +115,26 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   CNPJ e o teste do trackingdanfe (o enriquecimento pela SSW API está desligado).
 - **Guarda do conteúdo bruto do BI2 (`bi2_bruto`) por 400 dias**, como as sincronizações; eventos do
   webhook e sincronizações do SSW, 90 dias.
+
+## Performance e relatório de período (`/performance`, spec 02)
+
+- **Q01 — relatório com a escala certa.** No Relatório de período, SLA de Pontualidade, SLA
+  Operacional e SLA Cliente aparecem em 0–100% (antes "1,0%" no lugar de "95,0%" em parte dos
+  cartões); os nomes dos indicadores ficam como estão.
+- **Q10 — unidade responsável que não é da empresa não mostra nada.** Filtro por filial que não é
+  própria (ex.: link antigo) devolve a tela vazia em vez de ignorar o filtro. Em Remetente/Destino,
+  `%` e `_` digitados são letras e "a||b" ignora o vazio (mesma regra da Listagem, para o card e a
+  lista baterem).
+- **Q11 — dia de Brasília.** A faixa de vencimento dos Previstos, o atraso, o "vencendo em 48 h" e o
+  TDE "em rota" usam o dia de Brasília (antes o dia UTC, que virava às 21h).
+- **Q13 — TDE e exportação seguem o filtro de Ocorrência.** O card "TDE aguardando programação" e o
+  "Exportar" da tela respeitam o filtro de códigos, como os demais cards.
+- **Q15 — frete romaneado contado uma vez.** O "Prejuízo" soma o frete de cada CT-e com saída para
+  entrega (85) uma vez só, mesmo com várias 85; só CT-e com 85 entram no prejuízo.
+- **Q16 — taxa de retorno pelos concluídos.** Numerador e denominador usam só CT-e concluídos
+  (entregues ou baixados); antes o numerador contava também os em aberto.
+- **Q18 — exportação sem cancelados e cópias.** O "Exportar" da tela deixa de fora CT-e cancelados
+  no dia e cópias (duplicados), como os cards.
+- **Q22 — baixa pelo cadastro da empresa.** "Finalizado em Sistema" usa os códigos de baixa do
+  cadastro de códigos da empresa, não uma lista fixa.
+- **Q26 — sem recorte por usuário.** A tela mostra a empresa inteira para quem tem acesso (como hoje).

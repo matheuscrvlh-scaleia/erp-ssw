@@ -1,5 +1,5 @@
+import { type PontoSerie as PontoDaSerie } from "@erp/shared/contratos/performance";
 import { type FiltroDoRanking, type LinhaDoRanking } from "@erp/shared/contratos/ranking";
-import { type PontoDaSerie } from "@erp/shared/contratos/sla-serie";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarCnpj } from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
@@ -133,7 +133,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
       granularidade: "mes",
       inicio: `${ano}-01-01`,
       fim: fimSerie,
-      base_data: base,
+      baseData: base,
       parceiros: parceiros.length ? parceiros : undefined,
       destino: destino.trim() || undefined,
       remetente: remetente.trim() || undefined,

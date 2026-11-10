@@ -22,6 +22,7 @@ import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autentica
 import { Route as AutenticadoAdminIngestaoRouteImport } from './routes/_autenticado/admin.ingestao'
 import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_autenticado/admin.ssw-diagnostico'
 import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
+import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
 import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
 import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
 import { Route as AutenticadoRankingRegrasRouteImport } from './routes/_autenticado/ranking.regras'
@@ -95,6 +96,12 @@ const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
   path: '/ctrc/$numero',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoPerformanceIndexRoute =
+  AutenticadoPerformanceIndexRouteImport.update({
+    id: '/performance/',
+    path: '/performance/',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoPerformanceListaRoute =
   AutenticadoPerformanceListaRouteImport.update({
     id: '/performance/lista',
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/performance/': typeof AutenticadoPerformanceIndexRoute
   '/ranking/': typeof AutenticadoRankingIndexRoute
   '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesByTo {
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/performance': typeof AutenticadoPerformanceIndexRoute
   '/ranking': typeof AutenticadoRankingIndexRoute
   '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
+  '/_autenticado/performance/': typeof AutenticadoPerformanceIndexRoute
   '/_autenticado/ranking/': typeof AutenticadoRankingIndexRoute
   '/_autenticado/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
 }
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/performance/lista'
     | '/ranking/regras'
     | '/ranking/publico/$token'
+    | '/performance/'
     | '/ranking/'
     | '/ranking/equipe/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/performance/lista'
     | '/ranking/regras'
     | '/ranking/publico/$token'
+    | '/performance'
     | '/ranking'
     | '/ranking/equipe/$id'
   id:
@@ -240,6 +252,7 @@ export interface FileRouteTypes {
     | '/_autenticado/performance/lista'
     | '/_autenticado/ranking/regras'
     | '/ranking/publico/$token'
+    | '/_autenticado/performance/'
     | '/_autenticado/ranking/'
     | '/_autenticado/ranking/equipe/$id'
   fileRoutesById: FileRoutesById
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoCtrcNumeroRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/performance/': {
+      id: '/_autenticado/performance/'
+      path: '/performance'
+      fullPath: '/performance/'
+      preLoaderRoute: typeof AutenticadoPerformanceIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/performance/lista': {
       id: '/_autenticado/performance/lista'
       path: '/performance/lista'
@@ -395,6 +415,7 @@ interface AutenticadoRouteChildren {
   AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
   AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
   AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
+  AutenticadoPerformanceIndexRoute: typeof AutenticadoPerformanceIndexRoute
   AutenticadoRankingIndexRoute: typeof AutenticadoRankingIndexRoute
   AutenticadoRankingEquipeIdRoute: typeof AutenticadoRankingEquipeIdRoute
 }
@@ -412,6 +433,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
   AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
   AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,
+  AutenticadoPerformanceIndexRoute: AutenticadoPerformanceIndexRoute,
   AutenticadoRankingIndexRoute: AutenticadoRankingIndexRoute,
   AutenticadoRankingEquipeIdRoute: AutenticadoRankingEquipeIdRoute,
 }

@@ -33,6 +33,8 @@ import {
   OPCOES_PADRAO_DO_JOB,
   type RepositoriosDoWorker,
 } from "./jobs/registro";
+import { slaPelosArquivos } from "./jobs/sla-arquivos/job";
+import { criarRepositorioSlaArquivos } from "./jobs/sla-arquivos/repositorio";
 import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
 
@@ -65,6 +67,7 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     cteNucleo: criarRepositorioCteNucleo(tx, empresaId),
     bi2: criarRepositorioBi2(tx, empresaId),
     webhook: criarRepositorioWebhook(tx, empresaId),
+    slaArquivos: criarRepositorioSlaArquivos(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
@@ -103,6 +106,7 @@ const JOBS: readonly DefinicaoDeJob[] = [
     esperar: (ms) => esperar(ms),
   }),
   jobWebhookSsw,
+  slaPelosArquivos,
 ];
 
 const processar = criarProcessador({ jobs: JOBS, executar, log, agora: () => new Date() });

@@ -20,6 +20,8 @@ import { type RepositorioIngestaoSsw } from "./modulos/ingestao-ssw/casos-de-uso
 import { criarRepositorioIngestaoSsw } from "./modulos/ingestao-ssw/repositorio";
 import { type RepositorioListagem } from "./modulos/listagem/casos-de-uso";
 import { criarRepositorioListagem } from "./modulos/listagem/repositorio";
+import { type RepositorioPerformance } from "./modulos/performance/casos-de-uso";
+import { criarRepositorioPerformance } from "./modulos/performance/repositorio";
 import { type RepositorioRanking } from "./modulos/ranking/casos-de-uso";
 import { criarRepositorioRanking } from "./modulos/ranking/repositorio";
 
@@ -38,6 +40,7 @@ export interface Repositorios {
   ctrc: RepositorioCtrc;
   filtros: RepositorioFiltros;
   listagem: RepositorioListagem;
+  performance: RepositorioPerformance;
   ranking: RepositorioRanking;
 }
 
@@ -53,6 +56,7 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     ctrc: criarRepositorioCtrc(tx),
     filtros: criarRepositorioFiltros(tx),
     listagem: criarRepositorioListagem(tx),
+    performance: criarRepositorioPerformance(tx),
     ranking: criarRepositorioRanking(tx),
   };
 }

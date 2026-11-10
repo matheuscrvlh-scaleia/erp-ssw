@@ -9,6 +9,7 @@ import { type RepositorioCteNucleo } from "../fontes/comum/cte-nucleo";
 import { type RepositorioIntegracoes } from "../fontes/comum/integracao";
 import { type RepositorioWebhook } from "../fontes/webhook/job";
 import { type RepositorioManutencao } from "./manutencao/job";
+import { type RepositorioSlaArquivos } from "./sla-arquivos/job";
 
 /** Repositórios dos jobs presos a uma transação com contexto (mesmo padrão da API). */
 export interface RepositoriosDoWorker {
@@ -18,6 +19,7 @@ export interface RepositoriosDoWorker {
   cteNucleo: RepositorioCteNucleo;
   bi2: RepositorioBi2;
   webhook: RepositorioWebhook;
+  slaArquivos: RepositorioSlaArquivos;
 }
 
 export type ExecutorDoWorker = <T>(
@@ -25,7 +27,7 @@ export type ExecutorDoWorker = <T>(
   fn: (repositorios: RepositoriosDoWorker) => Promise<T>,
 ) => Promise<T>;
 
-export type NomeDaFila = "manutencao" | "agendador" | ReturnType<typeof filaDoJob>;
+export type NomeDaFila = "manutencao" | "agendador" | "projecoes" | ReturnType<typeof filaDoJob>;
 
 export interface DefinicaoDeFila {
   nome: NomeDaFila;
@@ -53,6 +55,7 @@ export const FILAS: readonly DefinicaoDeFila[] = [
     concorrencia: 1,
     ...(UMA_POR_VEZ.has(job) ? { concorrenciaGlobal: 1 } : {}),
   })),
+  { nome: "projecoes", concorrencia: 2 },
 ];
 
 /** `plataforma`: um job para o sistema todo. `empresa`: um por empresa ativa, no contexto dela. */

@@ -14,6 +14,7 @@ import { type ExecutorComContexto, type Repositorios } from "../repositorios";
 import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
 import { DadosDoRanking } from "./falsos-ranking";
 import { IngestaoEmMemoria } from "./ingestao-em-memoria";
+import { criarPerformanceFalsa } from "./leituras-falsas";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -85,6 +86,8 @@ export class BancoEmMemoria {
   ctrc = new CtrcFalso();
   filtros = new FiltrosFalso();
   listagem = new ListagemFalsa();
+  /** Leituras da Performance: os testes trocam o método que interessa. */
+  performance = criarPerformanceFalsa();
   /** Ranking, bonificação de entrega e Ahgora (`falsos-ranking.ts`). */
   ranking = new DadosDoRanking();
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
@@ -161,6 +164,7 @@ export class BancoEmMemoria {
       ctrc: this.ctrc,
       filtros: this.filtros,
       listagem: this.listagem,
+      performance: this.performance,
       ...this.ranking.repositorios(),
       acesso: {
         usuario: (id) => Promise.resolve(this.usuarios.find((u) => u.id === id) ?? null),

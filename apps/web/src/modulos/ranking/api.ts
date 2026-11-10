@@ -1,6 +1,6 @@
 import { type EntradaDe } from "@erp/shared/contrato";
+import { contratosPerformance } from "@erp/shared/contratos/performance";
 import { contratosRanking as c, type FiltroDoRanking } from "@erp/shared/contratos/ranking";
-import { contratoSlaSerie } from "@erp/shared/contratos/sla-serie";
 import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
@@ -11,10 +11,11 @@ export const consultaRankingOperacional = (filtro: FiltroDoRanking) =>
     queryFn: () => chamar(c.operacional, { entrada: filtro }),
   });
 
-export const consultaSerieMensal = (entrada: EntradaDe<typeof contratoSlaSerie>) =>
+/** Série do gráfico (mesmo endpoint da Performance: `sla_serie`). */
+export const consultaSerieMensal = (entrada: EntradaDe<typeof contratosPerformance.serie>) =>
   queryOptions({
     queryKey: ["ranking-serie-mensal", entrada],
-    queryFn: () => chamar(contratoSlaSerie, { entrada }),
+    queryFn: () => chamar(contratosPerformance.serie, { entrada }),
   });
 
 /** Equipes, membros e unidades: toda escrita em Admin › Equipes invalida esta chave. */
