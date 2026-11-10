@@ -1,3 +1,4 @@
+import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
 import { type FiltroCtrc } from "@erp/dominio/performance/filtro";
 import { type BaseDeData, SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/performance";
 import { type SQL, sql } from "drizzle-orm";
@@ -33,7 +34,7 @@ export const colunaDaBase = (base: BaseDeData): SQL => COLUNA_DA_BASE[base];
 const codigo = sql`coalesce(c.ocorr_efetiva_codigo_num, -1)`;
 
 /** Entregue: data de entrega ou efetiva de entrega (1/18/67). origem: _is_entregue */
-export const ENTREGUE = sql`(c.data_entrega_realizada is not null or ${codigo} in (1, 18, 67))`;
+export const ENTREGUE = sql`(c.data_entrega_realizada is not null or ${codigo} = any(${lista([...CODIGOS_ENTREGA])}::int[]))`;
 
 /** Baixado sem entrega pelo cadastro da empresa. origem: _is_finalizado_sem_entrega */
 export const finalizado = (baixas: readonly number[]): SQL =>
@@ -58,7 +59,7 @@ export const atraso = (ctx: ContextoDaConsulta, baixas: readonly number[]): SQL 
   when c.data_prevista_entrega is null then null
   when c.data_entrega_realizada is not null
     then ${diaNoFuso(sql`c.data_entrega_realizada`, ctx.fuso)} - c.data_prevista_entrega
-  when ${codigo} in (1, 18, 67) then c.performance_dias
+  when ${codigo} = any(${lista([...CODIGOS_ENTREGA])}::int[]) then c.performance_dias
   when ${codigo} = any(${lista(baixas)}::int[]) then null
   else ${ctx.hoje}::date - c.data_prevista_entrega
 end)`;

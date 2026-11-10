@@ -1,6 +1,6 @@
 import { type BaseDeData, type FiltroPerformanceValidado } from "@erp/shared/contratos/performance";
 
-import { btrim, digitos, padroesTextoFiltro } from "./primitivas";
+import { btrim, padroesTextoFiltro, somenteDigitos } from "../nucleo/texto";
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -50,7 +50,7 @@ export function codigosDoFiltro(codigos: readonly string[] | null | undefined): 
   return [
     ...new Set(
       (codigos ?? [])
-        .map((c) => digitos(c))
+        .map((c) => somenteDigitos(c))
         .filter((d) => d !== "")
         .map((d) => Number(d)),
     ),
@@ -82,7 +82,7 @@ export function normalizarFiltro(
     ...siglasDeUnidades,
   ]).filter(Boolean);
   const proprias = new Set(filiaisProprias.map((f) => f.trim().toUpperCase()));
-  const parceiros = semDuplicados((entrada.parceiros ?? []).map(digitos).filter(Boolean));
+  const parceiros = semDuplicados((entrada.parceiros ?? []).map(somenteDigitos).filter(Boolean));
   return {
     periodo: { inicio: entrada.inicio, fim: entrada.fim },
     baseData: entrada.baseData,

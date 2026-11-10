@@ -5,8 +5,9 @@ import {
   type StatusPrevisto,
 } from "@erp/shared/contratos/performance";
 
+import { faixaPrevisao, statusPrevisto } from "../nucleo/situacao";
+import { type CodigoDoCatalogo } from "./catalogo";
 import { centavos } from "./numeros";
-import { faixaPrevisao, statusPrevisto } from "./primitivas";
 
 /**
  * CT-e previstos agrupados por (código efetivo × previsão), como o repositório devolve: a
@@ -57,20 +58,24 @@ const somas = (a: Acumulado): SomasPrevisto => ({
 
 /**
  * Soma os grupos nos dois eixos (status da última ocorrência e faixa de vencimento, com `hoje` no
- * fuso da empresa) e no total. Só aparecem as chaves com CT-e; a tela ordena.
+ * Brasília, decisão Q11) e no total. Só aparecem as chaves com CT-e; a tela ordena.
  * origem: performance_previstos_breakdown (sistema atual)
  */
 export function montarPrevistos(
   grupos: readonly GrupoPrevisto[],
-  pendencias: readonly number[],
-  hoje: string,
+  catalogo: readonly CodigoDoCatalogo[],
+  agora: Date,
 ): Previstos {
+  const tipos = new Map(catalogo.map((c) => [c.codigo, c.tipoSsw]));
   const porStatus = new Map<StatusPrevisto, Acumulado>();
   const porFaixa = new Map<FaixaPrevisto, Acumulado>();
   let total = vazio();
   for (const g of grupos) {
-    const status = statusPrevisto(g.codigo, g.codigo !== null && pendencias.includes(g.codigo));
-    const faixa = faixaPrevisao(g.prevista, hoje);
+    const status = statusPrevisto(
+      g.codigo,
+      g.codigo === null ? null : (tipos.get(g.codigo) ?? null),
+    );
+    const faixa = faixaPrevisao(g.prevista, agora);
     porStatus.set(status, acumular(porStatus.get(status) ?? vazio(), g));
     porFaixa.set(faixa, acumular(porFaixa.get(faixa) ?? vazio(), g));
     total = acumular(total, g);

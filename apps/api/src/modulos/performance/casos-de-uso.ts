@@ -317,10 +317,10 @@ export async function obterPrevistos(
 ): Promise<Saida<"previstos">> {
   return db(async ({ performance }) => {
     const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
-    const conjuntos = conjuntosDoCatalogo(await performance.catalogo(ctx.empresaId));
+    const catalogo = await performance.catalogo(ctx.empresaId);
     const base = { ...porEmissao(filtro), periodo: entrada.ignorarPeriodo ? null : filtro.periodo };
-    const grupos = await performance.previstos(consulta, base, conjuntos);
-    return montarPrevistos(grupos, conjuntos.pendencias, consulta.hoje);
+    const grupos = await performance.previstos(consulta, base, conjuntosDoCatalogo(catalogo));
+    return montarPrevistos(grupos, catalogo, agora);
   });
 }
 
@@ -451,8 +451,8 @@ async function fotoDoPeriodo(
         { ...porEmissao(filtro), periodo: ignorarPeriodo ? null : filtro.periodo },
         conjuntos,
       ),
-      conjuntos.pendencias,
-      consulta.hoje,
+      catalogo,
+      agora,
     );
 
   return {

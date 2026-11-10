@@ -1,10 +1,6 @@
+import { btrim, padroesTextoFiltro, somenteDigitos } from "@erp/dominio/nucleo/texto";
 import { codigosDoFiltro, ehUuid } from "@erp/dominio/performance/filtro";
-import {
-  btrim,
-  compararTexto,
-  digitos,
-  padroesTextoFiltro,
-} from "@erp/dominio/performance/primitivas";
+import { compararTexto } from "@erp/dominio/performance/primitivas";
 import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type CampoDeSugestao,
@@ -88,7 +84,7 @@ export async function listarUnidadesResponsaveis(
     const proprias = new Set(await filtrosCtrc.filiaisProprias(ctx.empresaId));
     const siglas = await filtrosCtrc.siglasComCtrc(ctx.empresaId, {
       periodo: { inicio: entrada.inicio, fim: entrada.fim },
-      parceiros: lista(entrada.parceiros?.map(digitos).filter(Boolean)),
+      parceiros: lista(entrada.parceiros?.map(somenteDigitos).filter(Boolean)),
       remetente: texto(entrada.remetente),
       destino: texto(entrada.destino),
       filiais: null,
@@ -120,7 +116,7 @@ export async function sugerirTexto(
       q ? `%${q}%` : null,
       {
         periodo,
-        parceiros: periodo ? lista(entrada.parceiros?.map(digitos).filter(Boolean)) : null,
+        parceiros: periodo ? lista(entrada.parceiros?.map(somenteDigitos).filter(Boolean)) : null,
         remetente: periodo && entrada.campo !== "remetente" ? texto(entrada.remetente) : null,
         destino: periodo && entrada.campo !== "cidade_destino" ? texto(entrada.destino) : null,
         filiais: periodo ? lista(entrada.filiais?.map((f) => f.trim().toUpperCase())) : null,

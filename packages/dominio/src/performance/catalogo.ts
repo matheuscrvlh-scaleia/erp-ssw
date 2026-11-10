@@ -1,14 +1,7 @@
-/** Tipo SSW do código de ocorrência (cadastro da empresa). */
-export type TipoSsw =
-  | "ENTREGA"
-  | "PRE_ENTREGA"
-  | "INFORMATIVA"
-  | "PENDENCIA_CLIENTE"
-  | "PENDENCIA_TRANSPORTADORA"
-  | "BAIXA";
+import { type Responsavel, TIPOS_PENDENCIA, type TipoSsw } from "../nucleo/codigos";
 
-export type ResponsavelOcorrencia =
-  "FR" | "transportador" | "destinatario" | "cliente" | "sistema" | "outro";
+export type { TipoSsw };
+export type ResponsavelOcorrencia = Responsavel;
 
 export interface CodigoDoCatalogo {
   codigo: number;
@@ -42,9 +35,7 @@ export function conjuntosDoCatalogo(catalogo: readonly CodigoDoCatalogo[]): Conj
     baixas: de((c) => c.tipoSsw === "BAIXA"),
     penalizantes: de((c) => c.pendenciaAcompanhada),
     pendentesClassificacao: de((c) => c.pendenteClassificacao),
-    pendencias: de(
-      (c) => c.tipoSsw === "PENDENCIA_CLIENTE" || c.tipoSsw === "PENDENCIA_TRANSPORTADORA",
-    ),
+    pendencias: de((c) => c.tipoSsw !== null && TIPOS_PENDENCIA.has(c.tipoSsw)),
   };
 }
 

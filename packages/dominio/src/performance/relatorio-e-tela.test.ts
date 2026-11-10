@@ -387,7 +387,7 @@ describe("SLA pelos arquivos", () => {
   });
 
   it("atraso de 1 dia útil com pendência do cliente: fora do prazo e do cliente", () => {
-    expect(calcularSlaDoCte(candidato, "America/Sao_Paulo", feriados)).toEqual({
+    expect(calcularSlaDoCte(candidato, feriados)).toEqual({
       id: "c1",
       performanceDias: 1,
       noPrazo: false,
@@ -419,7 +419,7 @@ describe("SLA pelos arquivos", () => {
         "responsabilidade_cliente",
       ],
     };
-    expect(calcularSlaDoCte(pronto, "America/Sao_Paulo", feriados)).toBeNull();
+    expect(calcularSlaDoCte(pronto, feriados)).toBeNull();
   });
 });
 

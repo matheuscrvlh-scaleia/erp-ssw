@@ -1,12 +1,12 @@
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/performance";
 import { describe, expect, it } from "vitest";
 
-import { codigosDePrejuizo, conjuntosDoCatalogo, type CodigoDoCatalogo } from "./catalogo";
+import { padroesTextoFiltro } from "../nucleo/texto";
+import { type CodigoDoCatalogo,codigosDePrejuizo, conjuntosDoCatalogo } from "./catalogo";
 import { normalizarFiltro } from "./filtro";
 import { arredondar, arredondarRazao, centavos } from "./numeros";
 import { montarPontualidade } from "./pontualidade";
 import { montarPrevistos } from "./previstos";
-import { diasUteisEntre, faixaPrevisao, padroesTextoFiltro, statusPrevisto } from "./primitivas";
 import {
   agregadosDeProducao,
   type ContagemDoGrupo,
@@ -275,23 +275,13 @@ describe("pontualidade (T4)", () => {
 });
 
 describe("previstos", () => {
-  it("status pela ocorrência efetiva (a ordem importa)", () => {
-    expect(statusPrevisto(35, true)).toBe("agendamento");
-    expect(statusPrevisto(7, false)).toBe("rota");
-    expect(statusPrevisto(9, true)).toBe("pendencia");
-    expect(statusPrevisto(null, false)).toBe("programacao");
-    expect(statusPrevisto(84, false)).toBe("programacao");
-    expect(statusPrevisto(88, false)).toBe("outros");
-  });
-
-  it("T10 com a decisão Q11: faixa pelo dia de Brasília", () => {
-    // 22:30 de 10/11 em SP já é 11/11 em UTC; pelo dia de SP a previsão 11/11 é D+1.
-    expect(faixaPrevisao("2026-11-11", "2026-11-10")).toBe("d1");
-    expect(faixaPrevisao(null, "2026-11-10")).toBe("sem_prev");
-    expect(faixaPrevisao("2026-11-09", "2026-11-10")).toBe("vencido");
-    expect(faixaPrevisao("2026-11-10", "2026-11-10")).toBe("hoje");
-    expect(faixaPrevisao("2026-11-12", "2026-11-10")).toBe("d2");
-    expect(faixaPrevisao("2026-11-13", "2026-11-10")).toBe("d3_mais");
+  it("T10 com a decisão Q11: faixa pelo dia de Brasília (22:30 de 10/11 já é 11/11 em UTC)", () => {
+    const p = montarPrevistos(
+      [{ codigo: null, prevista: "2026-11-11", qtd: 1, peso: null, volumes: 0, frete: null }],
+      [],
+      new Date("2026-11-11T01:30:00Z"),
+    );
+    expect(p.faixa.map((f) => f.key)).toEqual(["d1"]);
   });
 
   it("soma por status, por faixa e no total sem erro de float", () => {
@@ -301,8 +291,18 @@ describe("previstos", () => {
         { codigo: 20, prevista: "2026-11-09", qtd: 1, peso: "0.250", volumes: 1, frete: "0.20" },
         { codigo: null, prevista: null, qtd: 1, peso: null, volumes: 0, frete: null },
       ],
-      [20],
-      "2026-11-10",
+      [
+        {
+          codigo: 20,
+          descricao: "Cliente ausente",
+          tipoSsw: "PENDENCIA_CLIENTE",
+          penaliza: false,
+          responsavel: "cliente",
+          pendenteClassificacao: false,
+          pendenciaAcompanhada: false,
+        },
+      ],
+      new Date("2026-11-10T15:00:00Z"),
     );
     expect(p.total).toEqual({ qtd: 4, peso: 1000.75, volumes: 4, frete: 0.3 });
     expect(p.status.map((s) => [s.key, s.qtd])).toEqual([
@@ -314,17 +314,5 @@ describe("previstos", () => {
       ["vencido", 3],
       ["sem_prev", 1],
     ]);
-  });
-});
-
-describe("dias úteis (SLA pelos arquivos)", () => {
-  const feriados = new Set(["2026-11-02", "2026-11-20"]);
-  it("exemplos do núcleo", () => {
-    expect(diasUteisEntre("2026-11-06", "2026-11-09", feriados)).toBe(1);
-    expect(diasUteisEntre("2026-11-09", "2026-11-06", feriados)).toBe(-1);
-    expect(diasUteisEntre("2026-11-19", "2026-11-23", feriados)).toBe(1);
-    expect(diasUteisEntre("2026-10-30", "2026-11-03", feriados)).toBe(1);
-    expect(diasUteisEntre("2026-11-07", "2026-11-08", feriados)).toBe(0);
-    expect(diasUteisEntre("2026-11-10", "2026-11-10", feriados)).toBe(0);
   });
 });

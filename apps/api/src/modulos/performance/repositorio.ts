@@ -1,4 +1,5 @@
 import { type Transacao } from "@erp/db";
+import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
 import { type CodigoDoCatalogo } from "@erp/dominio/performance/catalogo";
 import { type SQL, sql } from "drizzle-orm";
 
@@ -315,7 +316,7 @@ export function criarRepositorioPerformance(tx: Transacao): RepositorioPerforman
           count(*) filter (where no_periodo and qtd_13 > 0)::int as ocorrencia_13,
           count(*) filter (
             where no_periodo and sem_entrega and qtd_13 >= 2
-              and (cod = -1 or (cod not in (1, 18, 67)
+              and (cod = -1 or (not cod = any(${lista([...CODIGOS_ENTREGA])}::int[])
                                 and not cod = any(${lista(conjuntos.baixas)}::int[])))
           )::int as ocorrencia_13_multipla,
           count(*) filter (where no_periodo)::int as fin_total_atual,

@@ -1,6 +1,8 @@
-import { hojeNoFuso, somarDias } from "@erp/shared/datas";
+import { somarDias } from "@erp/shared/datas";
 
-import { compararTexto, diasUteisEntre } from "./primitivas";
+import { diasUteisEntre } from "../nucleo/prazo";
+import { type DataIso, diaSp } from "../nucleo/tempo";
+import { compararTexto } from "./primitivas";
 
 /** Primeira emissão que o SLA pelos arquivos recalcula (antes disso vale o BI2). */
 export const SLA_ARQUIVOS_DESDE_MINIMO = "2025-12-01";
@@ -27,7 +29,7 @@ export function inicioDoSlaArquivos(hoje: string, desde: string | null): string 
  */
 export interface CandidatoSla {
   id: string;
-  dataPrevista: string;
+  dataPrevista: DataIso;
   dataEntrega: Date;
   /** Tem ocorrência de pendência do cliente (cadastro da empresa). */
   temPendenciaCliente: boolean;
@@ -48,21 +50,18 @@ export interface SlaCalculado {
 }
 
 /**
- * Pontualidade pelos arquivos: dias úteis entre a previsão e o dia da entrega (no fuso da
- * empresa); no prazo se ≤ 0; atraso com pendência do cliente é responsabilidade do cliente.
+ * Pontualidade pelos arquivos: dias úteis (só feriados nacionais, Q23) entre a previsão e o dia
+ * da entrega em Brasília (Q11); no prazo se ≤ 0; atraso com pendência do cliente é responsabilidade do cliente.
  * Devolve nulo quando nada muda (nem valor nem marca de campo do SSW).
  * origem: calcular_sla_arquivos (sistema atual)
  */
 export function calcularSlaDoCte(
   c: CandidatoSla,
-  fuso: string,
-  feriadosNacionais: ReadonlySet<string>,
+  feriadosQueContam: ReadonlySet<DataIso>,
 ): SlaCalculado | null {
-  const performanceDias = diasUteisEntre(
-    c.dataPrevista,
-    hojeNoFuso(fuso, c.dataEntrega),
-    feriadosNacionais,
-  );
+  // As duas datas existem: o resultado nunca é nulo aqui.
+  const performanceDias =
+    diasUteisEntre(c.dataPrevista, diaSp(c.dataEntrega), feriadosQueContam) ?? 0;
   const novo = {
     performanceDias,
     noPrazo: performanceDias <= 0,

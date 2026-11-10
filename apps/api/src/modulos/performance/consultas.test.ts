@@ -78,6 +78,6 @@ describe("ondeDoFiltro", () => {
 
   it("atraso usa o hoje e o fuso da consulta (decisão Q11)", () => {
     const q = dialeto.sqlToQuery(atraso(ctx, [12]));
-    expect(q.params).toEqual(["America/Sao_Paulo", [12], "2026-11-10"]);
+    expect(q.params).toEqual(["America/Sao_Paulo", [1, 18, 67], [12], "2026-11-10"]);
   });
 });
