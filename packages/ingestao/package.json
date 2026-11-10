@@ -1,0 +1,33 @@
+{
+  "name": "@erp/ingestao",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ingestão dos relatórios SSW (FTP/SFTP), XML de CT-e e ciclo de aplicação: leitores puros, regras de aplicação e casos de uso usados pelo worker e pelas rotas da API.",
+  "exports": {
+    "./relatorios": "./src/relatorios/index.ts",
+    "./aplicacao": "./src/aplicacao/index.ts",
+    "./xml-cte": "./src/xml-cte/index.ts",
+    "./casos-de-uso": "./src/casos-de-uso/index.ts",
+    "./infra": "./src/infra/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@erp/db": "workspace:*",
+    "@erp/dominio": "workspace:*",
+    "@erp/shared": "workspace:*",
+    "bullmq": "^5.61.0",
+    "drizzle-orm": "^0.45.4",
+    "fast-xml-parser": "^5.12.0",
+    "fflate": "^0.8.3",
+    "ioredis": "^5.8.0",
+    "ssh2-sftp-client": "^12.1.1"
+  },
+  "devDependencies": {
+    "@erp/config": "workspace:*",
+    "@types/ssh2-sftp-client": "^9.0.6"
+  }
+}
