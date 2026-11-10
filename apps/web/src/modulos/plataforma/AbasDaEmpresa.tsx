@@ -1,3 +1,4 @@
+import { moduloVigente } from "@erp/dominio/acesso";
 import { type NovoUsuario } from "@erp/shared/contratos/admin";
 import {
   contratosPlataforma as p,
@@ -37,14 +38,6 @@ const DATA_HORA = new Intl.DateTimeFormat("pt-BR", {
 });
 const dataHora = (iso: string) => DATA_HORA.format(new Date(iso));
 const PEQUENO = "h-8 rounded-md border border-input bg-background px-2 text-[12px] shadow-sm";
-
-/** Módulo vale hoje: essencial, ou ligado e dentro da vigência (regra de `modulosVigentes`). */
-export function moduloVale(m: ModuloDaEmpresa, hoje: string): boolean {
-  return (
-    m.essencial ||
-    (m.ativo && (m.inicio === null || m.inicio <= hoje) && (m.fim === null || m.fim >= hoje))
-  );
-}
 
 function Carregando({ consulta }: { consulta: { isLoading: boolean; error: unknown } }) {
   if (consulta.isLoading) return <p className="text-[12px] text-muted-foreground">Carregando…</p>;
@@ -121,7 +114,7 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
         <div className="mt-1 flex flex-wrap gap-1">
           {modulo.essencial ? (
             <Selo>Essencial · sempre ligado</Selo>
-          ) : moduloVale(modulo, hoje) ? (
+          ) : moduloVigente(modulo, hoje) ? (
             <Selo tom="bom">Liberado</Selo>
           ) : (
             <Selo>Não liberado</Selo>
@@ -563,7 +556,7 @@ export function itensDaImplantacao(
     !empresa.cnpj && "CNPJ",
     !empresa.dominioSsw && "domínio SSW",
   ].filter((x): x is string => typeof x === "string");
-  const liberados = modulos.filter((m) => !m.essencial && moduloVale(m, hoje));
+  const liberados = modulos.filter((m) => !m.essencial && moduloVigente(m, hoje));
   const ligadas = integracoes.filter((i) => i.ativo);
   const semSegredo = ligadas.filter(
     (i) => INFO_DA_INTEGRACAO[i.tipo].segredo && !i.segredoDefinidoEm,

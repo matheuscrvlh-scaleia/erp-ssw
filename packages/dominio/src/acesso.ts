@@ -158,6 +158,20 @@ export interface LiberacaoDeModulo {
   fim: string | null;
 }
 
+type Vigencia = Omit<LiberacaoDeModulo, "modulo">;
+
+/** Liberação ligada e dentro da vigência (datas no fuso da empresa, como texto ISO). */
+function liberacaoVigente(l: Vigencia, hoje: string): boolean {
+  const comecou = l.inicio === null || l.inicio <= hoje;
+  const naoAcabou = l.fim === null || l.fim >= hoje;
+  return l.ativo && comecou && naoAcabou;
+}
+
+/** Um módulo vale hoje: essencial, ou ligado e dentro da vigência (a mesma regra da lista). */
+export function moduloVigente(m: Vigencia & { essencial: boolean }, hoje: string): boolean {
+  return m.essencial || liberacaoVigente(m, hoje);
+}
+
 /**
  * Módulos que valem hoje para a empresa: os essenciais sempre, os demais se ativos e dentro da
  * vigência (datas no fuso da empresa, como texto ISO).
@@ -169,11 +183,7 @@ export function modulosVigentes(
   hoje: string,
 ): string[] {
   const vigentes = new Set(catalogo.filter((m) => m.essencial).map((m) => m.chave));
-  for (const l of liberacoes) {
-    const comecou = l.inicio === null || l.inicio <= hoje;
-    const naoAcabou = l.fim === null || l.fim >= hoje;
-    if (l.ativo && comecou && naoAcabou) vigentes.add(l.modulo);
-  }
+  for (const l of liberacoes) if (liberacaoVigente(l, hoje)) vigentes.add(l.modulo);
   return [...vigentes].sort();
 }
 
