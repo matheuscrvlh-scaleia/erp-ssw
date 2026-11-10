@@ -49,24 +49,27 @@ export function formatarData(iso: string | null | undefined): string {
   return ano && mes && dia ? `${dia}/${mes}/${ano}` : TRACO;
 }
 
-/** Instante ISO → `"dd/mm/aaaa hh:mm"` no fuso da empresa. */
+/**
+ * Instante ISO → `"dd/mm/aaaa hh:mm"` no fuso da empresa. `virgula` mantém o
+ * `"dd/mm/aaaa, hh:mm"` das telas que hoje mostram assim (ponto do Ahgora, Plataforma).
+ */
 export function formatarDataHora(
   iso: string | null | undefined,
   fuso = "America/Sao_Paulo",
+  { virgula = false }: { virgula?: boolean } = {},
 ): string {
   if (!iso) return TRACO;
   const data = new Date(iso);
   if (Number.isNaN(data.getTime())) return TRACO;
-  return data
-    .toLocaleString("pt-BR", {
-      timeZone: fuso,
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-    .replace(",", "");
+  const texto = data.toLocaleString("pt-BR", {
+    timeZone: fuso,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return virgula ? texto : texto.replace(",", "");
 }
 
 /** Só dígitos → `00.000.000/0000-00`. */

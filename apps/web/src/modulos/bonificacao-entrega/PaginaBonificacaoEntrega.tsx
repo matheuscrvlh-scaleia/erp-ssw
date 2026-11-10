@@ -8,6 +8,7 @@ import {
   type contratosBonificacaoEntrega as c,
   NIVEIS_DE_BONIFICACAO,
 } from "@erp/shared/contratos/bonificacao-entrega";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarMoeda } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
@@ -27,6 +28,7 @@ import {
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
@@ -200,7 +202,8 @@ type Filtros = EntradaDe<typeof c.apurar>;
 
 /** origem: features/bonificacao/components/BonificacaoScreen.tsx (sistema atual) */
 export function PaginaBonificacaoEntrega() {
-  const [mes, setMes] = useState(() => mesDe(new Date()));
+  const hoje = hojeNoFuso(useFusoDaEmpresa());
+  const [mes, setMes] = useState(() => mesDe(hoje));
   const [unidade, setUnidade] = useState<string>(TODAS);
   const [funcao, setFuncao] = useState<string>(TODAS);
   const [horaExtra, setHoraExtra] = useState<string>(TODAS);

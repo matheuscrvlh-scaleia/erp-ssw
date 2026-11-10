@@ -4,6 +4,7 @@ import {
   type FuncionarioApurado,
   type MOTIVOS_DE_REVISAO,
 } from "@erp/shared/contratos/ahgora";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useState } from "react";
@@ -21,6 +22,7 @@ import {
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
@@ -147,7 +149,8 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
 
 /** origem: features/ahgora/components/ApuracaoPontoScreen.tsx (sistema atual) */
 export function ApuracaoPonto() {
-  const [mes, setMes] = useState(() => mesDe(new Date()));
+  const hoje = hojeNoFuso(useFusoDaEmpresa());
+  const [mes, setMes] = useState(() => mesDe(hoje));
   const [departamento, setDepartamento] = useState<string>(TODOS);
   const [incluirDemitidos, setIncluirDemitidos] = useState(false);
   const [filtros, setFiltros] = useState<EntradaDe<typeof c.apuracao> | null>(null);

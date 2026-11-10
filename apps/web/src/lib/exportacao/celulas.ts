@@ -1,3 +1,4 @@
+import { FUSO_DO_NEGOCIO, relogioNoFuso } from "@erp/dominio/nucleo/tempo";
 import { hojeNoFuso } from "@erp/shared/datas";
 import {
   formatarData,
@@ -14,7 +15,7 @@ import { type FormatoColuna } from "./tipos";
  * Vazio (null, undefined, "") sai sempre como célula vazia, nunca "—".
  */
 
-export const FUSO_PADRAO = "America/Sao_Paulo";
+export const FUSO_PADRAO = FUSO_DO_NEGOCIO;
 
 export function valorDaLinha(linha: object, chave: string): unknown {
   if (!(chave in linha)) return undefined;
@@ -119,32 +120,6 @@ const FORMATO_EXCEL: Partial<Record<FormatoColuna, string>> = {
   data: "dd/mm/yyyy",
   datahora: "dd/mm/yyyy hh:mm",
 };
-
-/** Relógio de parede no fuso, gravado como UTC: é assim que o Excel guarda data sem fuso. */
-function relogioNoFuso(instante: Date, fuso: string): Date {
-  const partes = new Intl.DateTimeFormat("en-US", {
-    timeZone: fuso,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(instante);
-  const parte = (tipo: Intl.DateTimeFormatPartTypes) =>
-    Number(partes.find((p) => p.type === tipo)?.value ?? 0);
-  return new Date(
-    Date.UTC(
-      parte("year"),
-      parte("month") - 1,
-      parte("day"),
-      parte("hour"),
-      parte("minute"),
-      parte("second"),
-    ),
-  );
-}
 
 /** Valor nativo do Excel: número e data de verdade (filtro e soma funcionam na planilha). */
 export function celulaExcel(

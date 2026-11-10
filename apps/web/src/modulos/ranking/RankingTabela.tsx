@@ -21,6 +21,7 @@ import {
 import { GraficoLinha } from "@/componentes/comum/Graficos";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { type Periodo, resolverPeriodo, ROTULO_ATALHO } from "@/componentes/comum/periodo";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { type ColunaExportacao } from "@/lib/exportacao";
 import { consultaConfiguracoesPublicas } from "@/modulos/admin/api";
 import { consultaPagadores } from "@/modulos/filtros/api";
@@ -80,9 +81,10 @@ const classeDoAlternador = (ativo: boolean) =>
 
 export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const fuso = useFusoDaEmpresa();
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
   // Q11: "hoje" é o dia da empresa (Brasília), não o do navegador.
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const hoje = hojeNoFuso(fuso);
   const navigate = useNavigate();
   const { data: configuracoes } = useQuery(consultaConfiguracoesPublicas);
   const { meta, alerta } = limiaresDoSla(configuracoes?.valores);

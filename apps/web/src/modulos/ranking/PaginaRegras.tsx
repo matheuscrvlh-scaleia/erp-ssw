@@ -4,6 +4,7 @@ import {
   type CriterioDeRegra,
   CRITERIOS_DE_REGRA,
 } from "@erp/shared/contratos/ranking";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarMoeda } from "@erp/shared/formatacao";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -12,6 +13,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { ErroDoOperador, mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
@@ -31,6 +33,7 @@ type Simulacao = SaidaDe<typeof c.simularRegra>;
 /** origem: routes/_authenticated/ranking.regras.tsx (sistema atual) */
 export function PaginaRegras() {
   const qc = useQueryClient();
+  const hoje = hojeNoFuso(useFusoDaEmpresa());
   const [editando, setEditando] = useState<Rascunho | null>(null);
   const { data: regras } = useQuery(consultaRegras);
 
@@ -64,7 +67,7 @@ export function PaginaRegras() {
     setSimulacao(null);
     try {
       setSimulacao(
-        await chamar(c.simularRegra, { parametros: { id }, entrada: mesAnterior(new Date()) }),
+        await chamar(c.simularRegra, { parametros: { id }, entrada: mesAnterior(hoje) }),
       );
     } catch (e) {
       toast.error(mensagemAmigavel(e));
@@ -91,7 +94,7 @@ export function PaginaRegras() {
         </div>
         <Button
           onClick={() => {
-            setEditando(rascunhoVazio(new Date()));
+            setEditando(rascunhoVazio(hoje));
           }}
         >
           <Plus className="mr-1.5 h-4 w-4" /> Nova regra

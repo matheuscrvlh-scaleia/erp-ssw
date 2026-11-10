@@ -38,6 +38,7 @@ import { Button } from "@/componentes/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
@@ -92,6 +93,7 @@ const paraExportar = (l: LinhaPrazo) => ({
 
 export function PaginaPrazoParceiro() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const fuso = useFusoDaEmpresa();
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
   const { filtros: b, definir } = useFiltrosNaUrl(esquemaPrazo);
   const navigate = useNavigate();
@@ -99,12 +101,7 @@ export function PaginaPrazoParceiro() {
   const queryClient = useQueryClient();
   const atualizando = useIsFetching({ queryKey: CHAVE_DO_PRAZO }) > 0;
 
-  const intervalo = resolverPeriodo(
-    b.periodo,
-    "",
-    "",
-    hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo"),
-  );
+  const intervalo = resolverPeriodo(b.periodo, "", "", hojeNoFuso(fuso));
   const filtros = filtrosDaBusca(b, intervalo);
   const visao = useQuery(consultaVisaoGeral(filtros));
   const opcoes = useQuery(consultaOpcoes(intervalo)).data;

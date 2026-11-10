@@ -11,6 +11,7 @@ import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { data, inteiro, participacao } from "@/modulos/compartilhado/formatos";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
@@ -39,7 +40,7 @@ import { rotulosDoResponsavel } from "./rotulos";
 
 export function PaginaOcorrencias() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const nomeCurto = acesso.empresa?.nomeCurto ?? "FR";
   const rotulos = rotulosDoResponsavel(nomeCurto);
   const { filtros: busca, definir, limpar, ativos } = useFiltrosNaUrl(esquemaDaBusca);

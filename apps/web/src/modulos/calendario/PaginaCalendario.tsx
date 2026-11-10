@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
@@ -27,7 +28,8 @@ const ROTULO_DA_VISAO: Record<Visao, string> = {
 /** Tela molde: consulta por contrato, permissões vindas do acesso, escrita com aviso e invalidação. */
 export function PaginaCalendario() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const fuso = useFusoDaEmpresa();
+  const hoje = hojeNoFuso(fuso);
   // Escrita: admin da empresa (a Plataforma conta como admin). Nacionais: só a Plataforma (Q28).
   const podeEditar = ehAdminDaEmpresa(acesso.papel);
   const podeGerarNacionais = acesso.adminPlataforma;

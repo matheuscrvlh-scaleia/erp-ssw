@@ -38,6 +38,7 @@ import {
 } from "@/componentes/ui/dialog";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
@@ -72,7 +73,7 @@ export function PaginaCtrc() {
   const router = useRouter();
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const { data, isLoading, isError, refetch, isFetching } = useQuery(consultaCtrc(numero, sigla));
   const ctrc = data?.tipo === "encontrado" ? data.ctrc : null;
   const ssw = ctrc ? urlCtrcNoSsw(ctrc.sigla, ctrc.numero, ctrc.dataEmissao) : null;

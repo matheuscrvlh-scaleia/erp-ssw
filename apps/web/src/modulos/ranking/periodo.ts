@@ -1,30 +1,25 @@
 /**
- * Meses e datas das telas de ranking, bonificação e ponto, no fuso do navegador (igual a hoje).
- * O período do ranking operacional usa `resolverPeriodo` do kit (dia de Brasília).
+ * Meses das telas de ranking, bonificação e ponto. O "hoje" vem de fora, já no fuso da empresa
+ * (`hojeNoFuso(fuso)`, Q11), nunca do relógio do navegador.
+ * O período do ranking operacional usa `resolverPeriodo` do kit.
  * origem: periodoDoMes (BonificacaoScreen.tsx)
  */
-
-/** Data local (não UTC) como AAAA-MM-DD. */
-export function isoLocal(d: Date): string {
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const dia = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mes}-${dia}`;
-}
+import { montarDataIso, somarDias } from "@erp/shared/datas";
 
 /** `AAAA-MM` → do dia 1 ao último dia do mês. */
 export function periodoDoMes(mes: string): { inicio: string; fim: string } {
   const [ano = 0, m = 1] = mes.split("-").map(Number);
-  const ultimo = new Date(ano, m, 0).getDate();
-  return { inicio: `${mes}-01`, fim: `${mes}-${String(ultimo).padStart(2, "0")}` };
+  return { inicio: `${mes}-01`, fim: somarDias(montarDataIso(ano, m + 1, 1), -1) };
 }
 
-export function mesDe(d: Date): string {
-  return isoLocal(d).slice(0, 7);
+/** `AAAA-MM` do dia `AAAA-MM-DD`. */
+export function mesDe(dia: string): string {
+  return dia.slice(0, 7);
 }
 
 /** Mês anterior ao de `hoje` (simulador das regras). */
-export function mesAnterior(hoje: Date): { inicio: string; fim: string } {
-  return periodoDoMes(mesDe(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)));
+export function mesAnterior(hoje: string): { inicio: string; fim: string } {
+  return periodoDoMes(mesDe(somarDias(`${mesDe(hoje)}-01`, -1)));
 }
 
 /** "dd/mm" de uma data AAAA-MM-DD. */

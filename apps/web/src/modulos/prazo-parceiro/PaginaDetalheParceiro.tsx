@@ -5,11 +5,10 @@
 import { type NascidoAtrasado } from "@erp/shared/contratos/prazo-parceiro";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-import { consultaAcesso } from "@/acesso/sessao";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import {
@@ -21,6 +20,7 @@ import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
@@ -67,15 +67,10 @@ const slug = (nome: string) =>
 
 export function PaginaDetalheParceiro() {
   const { id } = rota.useParams();
-  const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const fuso = useFusoDaEmpresa();
   const { filtros: b, definir } = useFiltrosNaUrl(esquemaDetalhe);
   const abrirCte = useAbrirCte();
-  const intervalo = resolverPeriodo(
-    b.periodo,
-    "",
-    "",
-    hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo"),
-  );
+  const intervalo = resolverPeriodo(b.periodo, "", "", hojeNoFuso(fuso));
   const q = useQuery(consultaDetalhe(id, filtrosDaBusca(b, intervalo)));
   const opcoes = useQuery(consultaOpcoes(intervalo)).data;
   const d = q.data;

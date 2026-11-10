@@ -7,7 +7,7 @@ const ID = "7d0c7f1e-2a8b-4c55-9b1a-0d5e6f7a8b9c";
 describe("regraParaSalvar", () => {
   it("converte os parâmetros digitados em número, aceitando vírgula", () => {
     const d = {
-      ...rascunhoVazio(new Date(2026, 9, 5)),
+      ...rascunhoVazio("2026-10-05"),
       nome: "Regra Q4",
       criterios: [
         { criterio: "entregas_prazo" as const, parametros: { peso: "2,5" } },
@@ -34,7 +34,7 @@ describe("regraParaSalvar", () => {
 
   it("recusa parâmetro que não é número", () => {
     const d = {
-      ...rascunhoVazio(new Date(2026, 9, 5)),
+      ...rascunhoVazio("2026-10-05"),
       nome: "X",
       criterios: [
         { criterio: "piso_performance" as const, parametros: { performance_minima: "" } },
@@ -48,7 +48,7 @@ describe("regraParaSalvar", () => {
 
   it("os padrões de cada critério já são válidos", () => {
     const d = {
-      ...rascunhoVazio(new Date(2026, 9, 5)),
+      ...rascunhoVazio("2026-10-05"),
       nome: "Todos",
       criterios: Object.entries(PARAMETROS_PADRAO).map(([criterio, parametros]) => ({
         criterio: criterio as keyof typeof PARAMETROS_PADRAO,

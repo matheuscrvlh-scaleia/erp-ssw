@@ -27,6 +27,7 @@ import { InfoTip } from "@/componentes/comum/InfoTip";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { consultaPagadores } from "@/modulos/filtros/api";
 import {
@@ -129,12 +130,13 @@ function numeroOuNulo(texto: string): number | null {
  */
 export function PaginaListagem() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const fuso = useFusoDaEmpresa();
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
   const busca = rota.useSearch();
   const navegar = rota.useNavigate();
   const queryClient = useQueryClient();
 
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const hoje = hojeNoFuso(fuso);
   const periodo = useMemo(
     () => periodoDaLista({ periodo: busca.periodo, de: busca.de, ate: busca.ate }, hoje),
     [busca.periodo, busca.de, busca.ate, hoje],

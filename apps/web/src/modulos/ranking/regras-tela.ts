@@ -5,8 +5,6 @@ import {
   type Regra,
 } from "@erp/shared/contratos/ranking";
 
-import { isoLocal } from "./periodo";
-
 export const ROTULO_DO_CRITERIO: Record<CriterioDeRegra, string> = {
   entregas_prazo: "Entregas no prazo",
   penalizante: "Penalidade por ocorrência",
@@ -43,11 +41,12 @@ export interface Rascunho {
 type EntradaDaRegra = EntradaDe<typeof c.salvarRegra>;
 type CriterioDaEntrada = NonNullable<EntradaDaRegra["criterios"]>[number];
 
-export function rascunhoVazio(hoje: Date): Rascunho {
+/** `hoje` = AAAA-MM-DD no fuso da empresa. */
+export function rascunhoVazio(hoje: string): Rascunho {
   return {
     nome: "",
     descricao: "",
-    vigenciaInicio: isoLocal(hoje),
+    vigenciaInicio: hoje,
     vigenciaFim: "",
     ativo: true,
     criterios: [],

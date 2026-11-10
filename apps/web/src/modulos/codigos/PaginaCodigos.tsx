@@ -16,6 +16,7 @@ import { KpiCard, type StatusKpi } from "@/componentes/comum/KpiCard";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { inteiro, percentual } from "@/modulos/compartilhado/formatos";
@@ -114,7 +115,7 @@ function LinhaPendente({
 export function PaginaCodigos() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "FR";
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const podeEditar = ehAdminDaEmpresa(acesso.papel);
   const rotulos = rotulosDaLetra(nomeCurto);
   const queryClient = useQueryClient();

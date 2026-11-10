@@ -30,6 +30,7 @@ import {
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { consultaPagadores } from "@/modulos/filtros/api";
@@ -124,7 +125,7 @@ function useVisivel<E extends Element>(): [React.RefObject<E | null>, boolean] {
 export function PaginaPerformance() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "";
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const busca = rota.useSearch();
   const navegarNaTela = rota.useNavigate();
   const navegar = useNavigate();

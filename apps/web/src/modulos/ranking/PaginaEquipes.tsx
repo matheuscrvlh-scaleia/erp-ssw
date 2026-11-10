@@ -1,5 +1,6 @@
 import { ehAdminDaEmpresa, PAPEL_GESTOR } from "@erp/shared/acesso/papeis";
 import { contratosRanking as c, type Equipe } from "@erp/shared/contratos/ranking";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertTriangle, Copy, Link2, Plus, Trash2, UsersRound } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -7,11 +8,12 @@ import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DAS_EQUIPES, consultaCtesParaAtribuir, consultaEquipes } from "./api";
-import { isoLocal } from "./periodo";
+import { mesDe, periodoDoMes } from "./periodo";
 
 function urlDoLink(token: string): string {
   return `${window.location.origin}/ranking/publico/${token}`;
@@ -335,9 +337,9 @@ function NovoMembro({
 
 function AtribuirCtes({ equipes, podeGravar }: { equipes: Equipe[]; podeGravar: boolean }) {
   const qc = useQueryClient();
-  const hoje = new Date();
-  const [inicio, setInicio] = useState(isoLocal(new Date(hoje.getFullYear(), hoje.getMonth(), 1)));
-  const [fim, setFim] = useState(isoLocal(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)));
+  const doMes = periodoDoMes(mesDe(hojeNoFuso(useFusoDaEmpresa())));
+  const [inicio, setInicio] = useState(doMes.inicio);
+  const [fim, setFim] = useState(doMes.fim);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [equipeAlvo, setEquipeAlvo] = useState("");
   const { data, refetch } = useQuery(consultaCtesParaAtribuir(inicio, fim));

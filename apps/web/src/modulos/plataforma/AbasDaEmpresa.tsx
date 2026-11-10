@@ -9,6 +9,7 @@ import {
   type VinculoNaEmpresa,
 } from "@erp/shared/contratos/plataforma";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
+import { formatarDataHora } from "@erp/shared/formatacao";
 import { INFO_DA_INTEGRACAO } from "@erp/shared/plataforma";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Circle, ExternalLink, KeyRound } from "lucide-react";
@@ -18,6 +19,7 @@ import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { Switch } from "@/componentes/ui/switch";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { CAMPO, Selo, useGravacao } from "@/modulos/admin/comum";
 import { ModalNovoUsuario } from "@/modulos/admin/usuarios/ModalNovoUsuario";
@@ -30,13 +32,6 @@ import {
   consultaVinculos,
 } from "./api";
 
-const FUSO = "America/Sao_Paulo";
-const DATA_HORA = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "short",
-  timeStyle: "short",
-  timeZone: FUSO,
-});
-const dataHora = (iso: string) => DATA_HORA.format(new Date(iso));
 const PEQUENO = "h-8 rounded-md border border-input bg-background px-2 text-[12px] shadow-sm";
 
 function Carregando({ consulta }: { consulta: { isLoading: boolean; error: unknown } }) {
@@ -100,7 +95,8 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
     invalidar: [CHAVES_DA_PLATAFORMA.empresa(empresaId), CHAVES_DA_PLATAFORMA.empresas, ["acesso"]],
   });
 
-  const hoje = hojeNoFuso(FUSO);
+  const fuso = useFusoDaEmpresa();
+  const hoje = hojeNoFuso(fuso);
   const dias = modulo.fim ? diferencaEmDias(hoje, modulo.fim) : null;
   const bloqueado = modulo.essencial;
 
@@ -174,7 +170,7 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
         />
         {modulo.atualizadoEm && (
           <div className="mt-1 text-[10px] text-muted-foreground">
-            Alterado em {dataHora(modulo.atualizadoEm)}
+            Alterado em {formatarDataHora(modulo.atualizadoEm, fuso, { virgula: true })}
           </div>
         )}
       </td>
@@ -373,6 +369,7 @@ function CartaoDeIntegracao({
   empresaId: string;
   integracao: IntegracaoDaEmpresa;
 }) {
+  const fuso = useFusoDaEmpresa();
   const info = INFO_DA_INTEGRACAO[integracao.tipo];
   const [ativo, setAtivo] = useState(integracao.ativo);
   const [segredo, setSegredo] = useState("");
@@ -497,7 +494,7 @@ function CartaoDeIntegracao({
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <KeyRound className="h-3 w-3" />
             {integracao.segredoDefinidoEm
-              ? `Guardado cifrado em ${dataHora(integracao.segredoDefinidoEm)}`
+              ? `Guardado cifrado em ${formatarDataHora(integracao.segredoDefinidoEm, fuso, { virgula: true })}`
               : "Não definido."}
           </div>
         </div>
@@ -508,7 +505,7 @@ function CartaoDeIntegracao({
             tom={integracao.ultimoTesteOk ? "bom" : "ruim"}
             title={integracao.ultimoTesteMsg ?? undefined}
           >
-            {`Último teste ${integracao.ultimoTesteOk ? "ok" : "com erro"} em ${dataHora(integracao.ultimoTesteEm)}`}
+            {`Último teste ${integracao.ultimoTesteOk ? "ok" : "com erro"} em ${formatarDataHora(integracao.ultimoTesteEm, fuso, { virgula: true })}`}
           </Selo>
         ) : (
           <Selo>Nunca testada</Selo>
@@ -627,7 +624,7 @@ export function AbaImplantacao({ empresa }: { empresa: EmpresaCompleta }) {
     modulos.data.modulos,
     integracoes.data.integracoes,
     vinculos.data.usuarios,
-    hojeNoFuso(FUSO),
+    hojeNoFuso(empresa.fuso),
   );
   return (
     <div className="max-w-3xl space-y-2">

@@ -4,11 +4,10 @@ import {
   type StatusDeComprovante,
 } from "@erp/shared/contratos/comprovantes";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 
-import { consultaAcesso } from "@/acesso/sessao";
 import { DrawerDetalhe } from "@/componentes/comum/Detalhe";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
@@ -22,6 +21,7 @@ import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 import { data, diaMes, inteiro, percentual } from "@/modulos/compartilhado/formatos";
 import { consultaPagadores } from "@/modulos/filtros/api";
@@ -90,8 +90,7 @@ const colunasDoResumo = (coluna: string): ColunaTabela<LinhaResumo>[] => [
 const pct = (p: number | null) => (p === null ? "—" : percentual(p));
 
 export function PaginaComprovantes() {
-  const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const { filtros: busca, definir, limpar, ativos } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = resolverPeriodo(busca.periodo, busca.de, busca.ate, hojeNoFuso(fuso));
   const filtros = filtrosDaBusca(busca, periodo);

@@ -25,6 +25,7 @@ import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { data, dataHora, diaMes, inteiro, participacao } from "@/modulos/compartilhado/formatos";
 import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
 import { BuscaDocumento } from "@/modulos/filtros/componentes";
@@ -256,7 +257,7 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
 
 export function PaginaColetas() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
+  const fuso = useFusoDaEmpresa();
   const podeImportar = ehAdminDaEmpresa(acesso.papel);
   const { filtros: busca, definir, limpar, ativos } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = resolverPeriodo(busca.periodo, busca.de, busca.ate, hojeNoFuso(fuso), "30d");

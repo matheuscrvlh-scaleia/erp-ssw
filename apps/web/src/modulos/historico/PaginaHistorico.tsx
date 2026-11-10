@@ -20,6 +20,7 @@ import { FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { data as formatarData, inteiro } from "@/modulos/compartilhado/formatos";
@@ -261,7 +262,8 @@ function Calendario({
 
 export function PaginaHistorico() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const fuso = useFusoDaEmpresa();
+  const hoje = hojeNoFuso(fuso);
   const admin = ehAdminDaEmpresa(acesso.papel);
   const { filtros: busca, definir } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = intervaloDoPeriodo(busca.periodo, hoje);

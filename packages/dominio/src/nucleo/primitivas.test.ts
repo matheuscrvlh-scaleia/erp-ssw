@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { CATALOGO_FR } from "./apoio-testes";
 import { codigoNumericoOuNulo, codigosDeBaixa, normCodigoOcorr } from "./codigos";
-import { diaSp, difDias, hojeSp, horaSp, inicioDoDiaSp } from "./tempo";
+import {
+  diaSp,
+  difDias,
+  hojeSp,
+  horaSp,
+  inicioDoDiaSp,
+  instanteNoFuso,
+  relogioNoFuso,
+} from "./tempo";
 import { formatarCnpjCpf, normalizarNome, padroesTextoFiltro, tipoDocumentoEfetivo } from "./texto";
 
 describe("normCodigoOcorr (§2.1)", () => {
@@ -130,6 +138,19 @@ describe("tipoDocumentoEfetivo (§2.6)", () => {
 });
 
 describe("dia de Brasília (Q11)", () => {
+  it("relógio de parede no fuso e o caminho de volta (selo do prazo, Excel)", () => {
+    const instante = new Date("2026-11-10T02:30:15Z");
+    expect(relogioNoFuso(instante, "America/Sao_Paulo").toISOString()).toBe(
+      "2026-11-09T23:30:15.000Z",
+    );
+    expect(instanteNoFuso("2026-11-09", "23:59:59", "America/Sao_Paulo").toISOString()).toBe(
+      "2026-11-10T02:59:59.000Z",
+    );
+    expect(instanteNoFuso("2026-11-09", "23:59:59", "America/Manaus").toISOString()).toBe(
+      "2026-11-10T03:59:59.000Z",
+    );
+  });
+
   it("23:59 de Brasília ainda é o mesmo dia; 00:00 UTC não vira o dia seguinte", () => {
     expect(diaSp(new Date("2026-11-06T02:59:00Z"))).toBe("2026-11-05");
     expect(hojeSp(new Date("2026-11-10T23:30:00-03:00"))).toBe("2026-11-10");

@@ -1,16 +1,16 @@
 import { type Feriado, UFS } from "@erp/shared/contratos/calendario";
 import { contratosHistorico as c, type FeriadoDoHistorico } from "@erp/shared/contratos/historico";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, CalendarDays, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { consultaAcesso } from "@/acesso/sessao";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
+import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { CHAVE_DO_CALENDARIO } from "@/modulos/calendario/api";
@@ -25,8 +25,8 @@ type Tipo = "" | "nacional" | "municipal";
  * empresa vale para todas e só a Plataforma altera (Q28): aqui aparece sem os botões.
  */
 export function PaginaFeriados() {
-  const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
+  const fuso = useFusoDaEmpresa();
+  const hoje = hojeNoFuso(fuso);
   const queryClient = useQueryClient();
   const [ano, setAno] = useState(() => Number(hoje.slice(0, 4)));
   const [tipo, setTipo] = useState<Tipo>("");
