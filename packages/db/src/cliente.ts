@@ -48,6 +48,11 @@ export interface ContextoBanco {
   empresaId: string | null;
   usuarioId: string | null;
   plataforma: boolean;
+  /**
+   * Só a rota pública do ranking: SHA-256 do token do link. A política
+   * `equipes_token_publico_select` deixa ver a equipe desse link sem empresa na sessão.
+   */
+  tokenPublicoHash?: string;
 }
 
 export const CONTEXTO_VAZIO: ContextoBanco = {
@@ -58,10 +63,14 @@ export const CONTEXTO_VAZIO: ContextoBanco = {
 
 /** `set_config(..., true)` = `SET LOCAL`, mas com os valores como parâmetros (nada concatenado). */
 export function sqlDoContexto(contexto: ContextoBanco): SQL {
+  const token =
+    contexto.tokenPublicoHash === undefined
+      ? sql``
+      : sql`, set_config('app.token_publico_hash', ${contexto.tokenPublicoHash}, true)`;
   return sql`select
     set_config('app.empresa_id', ${contexto.empresaId ?? ""}, true),
     set_config('app.usuario_id', ${contexto.usuarioId ?? ""}, true),
-    set_config('app.plataforma', ${contexto.plataforma ? "on" : "off"}, true)`;
+    set_config('app.plataforma', ${contexto.plataforma ? "on" : "off"}, true)${token}`;
 }
 
 /**

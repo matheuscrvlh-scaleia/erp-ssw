@@ -1,4 +1,4 @@
-# ADR 0006 — Ingestão SSW num pacote próprio, com fila e travas no Redis
+# ADR 0007 — Ingestão SSW num pacote próprio, com fila e travas no Redis
 
 **Status:** aceita (10/11/2026)
 

@@ -51,6 +51,14 @@ const esquema = z
     METRICAS_TOKEN: z.string().min(16).optional(),
     /** Segredo `x-ftp-ingest-secret` das rotas públicas da ingestão; sem ele, 503. */
     FTP_INGEST_SECRET: z.string().min(16).optional(),
+
+    /** Chaves mestras dos segredos de integração: "1:<base64 de 32 bytes>,2:<…>". */
+    SEGREDOS_CHAVES: z.string().optional(),
+    /** Versão da chave usada para cifrar segredos novos. */
+    SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+    /** Transição da FR: credencial do Ahgora no ambiente (só com parametros.usar_env). */
+    AHGORA_API_USUARIO: z.string().optional(),
+    AHGORA_API_SENHA: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     const google = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI];

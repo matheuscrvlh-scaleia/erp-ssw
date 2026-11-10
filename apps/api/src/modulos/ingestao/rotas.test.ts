@@ -51,7 +51,7 @@ beforeEach(async () => {
     enfileirador,
     segredoDoFtp: SEGREDO,
   };
-  app = await construirAppDeTeste(cenario, null, servicos);
+  app = await construirAppDeTeste(cenario, null, { ingestao: servicos });
 });
 afterEach(() => app.close());
 
