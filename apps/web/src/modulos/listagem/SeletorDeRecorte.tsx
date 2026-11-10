@@ -1,9 +1,10 @@
 import { type TipoRecorte, TIPOS_RECORTE } from "@erp/shared/contratos/listagem";
 
+import { Badge } from "@/componentes/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { useSelecaoAdiada } from "@/hooks/use-selecao-adiada";
 import { cn } from "@/lib/utils";
-import { Contagem, ItemMarcavel } from "@/modulos/filtros/componentes";
+import { ItemMarcavel } from "@/modulos/filtros/componentes";
 
 /**
  * Próxima seleção do seletor Recorte: "CT-e emitidos" é o recorte sem condição — marcá-lo
@@ -55,7 +56,11 @@ export function SeletorDeRecorte({
           title={selecionados.map((t) => rotulos[t]).join(" + ")}
         >
           <span className="truncate">{resumo}</span>
-          {selecionados.length > 1 && <Contagem>{selecionados.length}</Contagem>}
+          {selecionados.length > 1 && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+              {selecionados.length}
+            </Badge>
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-80 max-w-[calc(100vw-2rem)] p-0" align="end">

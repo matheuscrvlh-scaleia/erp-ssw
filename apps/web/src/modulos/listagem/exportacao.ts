@@ -1,18 +1,11 @@
 /**
  * Colunas da exportação da Listagem (28, na ordem de hoje) e a linha achatada que vai para o
- * arquivo. A API de colunas é a da biblioteca de exportação (`{ chave, titulo, formato }`).
+ * arquivo (biblioteca `@/lib/exportacao`).
  * origem: lista/lista-export.ts (sistema atual)
  */
-import { linkDoSsw } from "@erp/dominio/ctrc/detalhe";
 import { type LinhaLista } from "@erp/shared/contratos/listagem";
 
-export type FormatoColuna = "texto" | "inteiro" | "decimal" | "moeda" | "data" | "datahora";
-
-export interface ColunaExportacao {
-  chave: keyof LinhaExportada;
-  titulo: string;
-  formato?: FormatoColuna;
-}
+import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 
 export interface LinhaExportada {
   nf: number | null;
@@ -73,24 +66,8 @@ export const COLUNAS_DA_EXPORTACAO: readonly ColunaExportacao[] = [
   { chave: "ultimoManifesto", titulo: "Último Manifesto" },
   { chave: "valorMercadoria", titulo: "Valor Mercadoria (R$)", formato: "moeda" },
   { chave: "tde", titulo: "TDE (R$)", formato: "moeda" },
-  { chave: "linkSsw", titulo: "Link SSW" },
+  { chave: "linkSsw", titulo: COLUNA_LINK_SSW },
 ];
-
-/**
- * A impressão A4 retrato esconde seis colunas para a tabela caber (as que o CSS de hoje esconde
- * de fato: Origem, Pagador, Remetente, Qtd Volume, Localização e 1º Manifesto).
- */
-const FORA_DA_IMPRESSAO: readonly (keyof LinhaExportada)[] = [
-  "origem",
-  "pagador",
-  "remetente",
-  "volumes",
-  "localizacao",
-  "primeiroManifesto",
-];
-export const COLUNAS_DA_IMPRESSAO = COLUNAS_DA_EXPORTACAO.filter(
-  (c) => !FORA_DA_IMPRESSAO.includes(c.chave),
-);
 
 export function linhaExportada(l: LinhaLista): LinhaExportada {
   return {
@@ -121,11 +98,11 @@ export function linhaExportada(l: LinhaLista): LinhaExportada {
     ultimoManifesto: l.ultimoManifesto,
     valorMercadoria: l.valorMercadoria,
     tde: l.tde !== null && l.tde > 0 ? l.tde : null,
-    linkSsw: linkDoSsw(l.sigla, l.numero, l.dataEmissao),
+    linkSsw: urlCtrcNoSsw(l.sigla, l.numero, l.dataEmissao),
   };
 }
 
-/** `listagem-ctrcs-atrasados+sem_movimento-2026-11-01-a-2026-11-10` */
+/** `listagem-ctrcs-atrasados+sem_movimento-2026-11-01-a-2026-11-10` (o kit acrescenta a data). */
 export function nomeDoArquivo(recortes: readonly string[], inicio: string, fim: string): string {
   return `listagem-ctrcs-${recortes.join("+")}-${inicio}-a-${fim}`;
 }

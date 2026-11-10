@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { filtroDaBusca, lerBuscaDaLista, resolverPeriodo, tituloDaLista } from "./busca";
+import { filtroDaBusca, lerBuscaDaLista, periodoDaLista, tituloDaLista } from "./busca";
 
 describe("lerBuscaDaLista", () => {
   it("URL vazia: padrões de hoje (emitidos, mês, por emissão, 1ª página)", () => {
@@ -46,23 +46,23 @@ describe("lerBuscaDaLista", () => {
   });
 });
 
-describe("resolverPeriodo", () => {
-  const agora = new Date(2026, 10, 10, 15, 0);
-  it("mês = do dia 1º até hoje", () => {
-    expect(resolverPeriodo("mes", "", "", agora)).toEqual({
-      inicio: "2026-11-01",
-      fim: "2026-11-10",
-      rotulo: "Este mês",
-    });
+describe("periodoDaLista", () => {
+  const hoje = "2026-11-10";
+  const periodo = (p: string, de = "", ate = "") =>
+    periodoDaLista(lerBuscaDaLista({ periodo: p, de, ate }), hoje);
+  it("mês = do dia 1º até hoje (dia de Brasília vindo de fora)", () => {
+    expect(periodo("mes")).toEqual({ inicio: "2026-11-01", fim: "2026-11-10", rotulo: "Este mês" });
   });
   it("7 dias contam hoje", () => {
-    expect(resolverPeriodo("7d", "", "", agora).inicio).toBe("2026-11-04");
+    expect(periodo("7d").inicio).toBe("2026-11-04");
   });
   it("personalizado sem as duas datas cai no mês", () => {
-    expect(resolverPeriodo("custom", "2026-10-01", "", agora).rotulo).toBe("Este mês");
-    expect(resolverPeriodo("custom", "2026-10-01", "2026-10-31", agora).rotulo).toBe(
-      "2026-10-01 → 2026-10-31",
-    );
+    expect(periodo("custom", "2026-10-01").rotulo).toBe("Este mês");
+    expect(periodo("custom", "2026-10-01", "2026-10-31")).toEqual({
+      inicio: "2026-10-01",
+      fim: "2026-10-31",
+      rotulo: "2026-10-01 → 2026-10-31",
+    });
   });
 });
 

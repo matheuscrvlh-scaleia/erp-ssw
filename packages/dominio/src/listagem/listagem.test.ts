@@ -30,7 +30,8 @@ describe("texto com vários valores (T13)", () => {
     expect(casa("SÃO PAULO - SP", "são paulo | campinas")).toBe(true);
     expect(casa("Campinas", "são paulo | campinas")).toBe(true);
     expect(casa("SÃO", "sao")).toBe(false);
-    expect(casa("qualquer", "a||b")).toBe(true);
+    expect(casa("XYZ", "a||b")).toBe(false);
+    expect(casa("BETA", "a||b")).toBe(true);
   });
 
   it("espaço nas pontas sai; vazio é sem filtro", () => {

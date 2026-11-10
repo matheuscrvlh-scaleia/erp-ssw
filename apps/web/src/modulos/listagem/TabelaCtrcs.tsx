@@ -1,4 +1,3 @@
-import { linkDoSsw } from "@erp/dominio/ctrc/detalhe";
 import { type LinhaLista, type OrdemLista } from "@erp/shared/contratos/listagem";
 import { formatarData, formatarDataHora, formatarMoeda } from "@erp/shared/formatacao";
 import { Link } from "@tanstack/react-router";
@@ -6,6 +5,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Clock, ExternalLink } f
 import { type ReactNode } from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
 
 import { type Ordenacao } from "./api";
@@ -155,7 +155,7 @@ export function TabelaCtrcs({
 
 function Linha({ l, saiuComPrazoVencido }: { l: LinhaLista; saiuComPrazoVencido: boolean }) {
   const nf = l.numeroNf !== null ? String(l.numeroNf) : "—";
-  const ssw = linkDoSsw(l.sigla, l.numero, l.dataEmissao);
+  const ssw = urlCtrcNoSsw(l.sigla, l.numero, l.dataEmissao);
   const temTde = l.tde !== null && l.tde > 0;
   return (
     <tr className="border-t border-border/40 odd:bg-background even:bg-muted/20 hover:bg-brand/[0.04]">

@@ -10,8 +10,8 @@ export interface Barra {
 }
 
 /**
- * Barras horizontais clicáveis (o clique filtra a lista).
- * TODO(kit-ui): trocar pelo gráfico de barras de `@/componentes/comum/Graficos`.
+ * Barras horizontais clicáveis, com a barra do filtro ativo em destaque (o clique filtra a lista).
+ * Fica fora do `GraficoBarras` do kit: aquele é vertical e não marca a barra ativa.
  * origem: ChartCard + BarChart vertical (performance.lista.tsx, sistema atual)
  */
 export function GraficoDeBarras({

@@ -5,25 +5,31 @@ import {
   recortesSelecionados,
   type TipoRecorte,
 } from "@erp/shared/contratos/listagem";
+import { hojeNoFuso } from "@erp/shared/datas";
+import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import { ArrowLeft, Download, FileText, FileType2, Filter, RefreshCw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Filter, RefreshCw } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { ExportMenu } from "@/componentes/comum/ExportMenu";
+import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
+import {
+  type EtiquetaFiltro,
+  FiltrandoPor,
+  FiltrosAvancados,
+  resumirNomes,
+} from "@/componentes/comum/FiltrosAvancados";
+import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
-  Contagem,
   type ContextoDosFiltros,
-  type Etiqueta,
-  FiltrandoPor,
   InfoDica,
-  IntervaloDeDatas,
-  LimparFiltros,
   SeletorDeFilial,
   SeletorDePagador,
   SeletorDeTexto,
@@ -41,22 +47,16 @@ import {
 import {
   type BuscaDaLista,
   filtroDaBusca,
-  resolverPeriodo,
+  periodoDaLista,
   rotulosDosRecortes,
   tituloDaLista,
 } from "./busca";
-import {
-  COLUNAS_DA_EXPORTACAO,
-  COLUNAS_DA_IMPRESSAO,
-  linhaExportada,
-  nomeDoArquivo,
-} from "./exportacao";
-import { baixarCsv, imprimirTabela, montarCsv } from "./exportacao-provisoria";
+import { COLUNAS_DA_EXPORTACAO, linhaExportada, nomeDoArquivo } from "./exportacao";
 import { GraficoDeBarras } from "./GraficoDeBarras";
 import { SeletorDeOcorrencia } from "./SeletorDeOcorrencia";
 import { SeletorDeRecorte } from "./SeletorDeRecorte";
 import { TabelaCtrcs } from "./TabelaCtrcs";
-import { resumirNomes, textoDaFaixa, valoresDoTexto } from "./textos";
+import { textoDaFaixa } from "./textos";
 
 const rota = getRouteApi("/_autenticado/performance/lista");
 
@@ -82,13 +82,6 @@ const BASE_CURTA: Record<Base, string> = {
   prevista: "por data prevista",
   concluido: "por data de conclusão",
 };
-const BOTOES_DE_PERIODO = [
-  ["hoje", "Hoje"],
-  ["7d", "7d"],
-  ["30d", "30d"],
-  ["mes", "Mês"],
-] as const;
-
 /** Recortes que mostram o gráfico "Dias de Atraso". */
 const RECORTES_COM_FAIXA: readonly TipoRecorte[] = [
   "atrasados",
@@ -138,9 +131,10 @@ export function PaginaListagem() {
   const navegar = rota.useNavigate();
   const queryClient = useQueryClient();
 
+  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
   const periodo = useMemo(
-    () => resolverPeriodo(busca.periodo, busca.de, busca.ate),
-    [busca.periodo, busca.de, busca.ate],
+    () => periodoDaLista({ periodo: busca.periodo, de: busca.de, ate: busca.ate }, hoje),
+    [busca.periodo, busca.de, busca.ate, hoje],
   );
   const filtro = useMemo(() => filtroDaBusca(busca, periodo), [busca, periodo]);
   const recortes = useMemo(
@@ -231,7 +225,7 @@ export function PaginaListagem() {
     return descricao ? `${c} — ${descricao}` : String(c);
   });
   const nomesDosTipos = busca.tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t));
-  const etiquetas: Etiqueta[] = [
+  const etiquetas: EtiquetaFiltro[] = [
     {
       rotulo: "CTRC",
       valor: busca.ctrc.trim(),
@@ -276,14 +270,14 @@ export function PaginaListagem() {
     },
     {
       rotulo: "Remetente",
-      ...resumirNomes(valoresDoTexto(busca.remetente)),
+      ...resumirNomes(lerFiltroTexto(busca.remetente)),
       limpar: () => {
         atualizarBusca({ remetente: "" });
       },
     },
     {
       rotulo: "Destino",
-      ...resumirNomes(valoresDoTexto(busca.destino)),
+      ...resumirNomes(lerFiltroTexto(busca.destino)),
       limpar: () => {
         atualizarBusca({ destino: "" });
       },
@@ -335,46 +329,27 @@ export function PaginaListagem() {
 
   // ------------------------------------------------------------ exportação
   const titulo = tituloDaLista(busca, periodo.rotulo, nomeCurto);
-  const [exportando, setExportando] = useState<number | null>(null);
-  const exportar = async (formato: "csv" | "imprimir") => {
-    setExportando(0);
-    try {
-      const { linhas: todas, cortada } = await carregarTodasAsLinhas(filtro, ordenacao, (n) => {
-        setExportando(n);
-      });
-      if (cortada) {
-        toast.warning(
-          `O arquivo saiu com os primeiros ${LIMITE_DA_EXPORTACAO.toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")} CTRCs (na ordem da tela). Reduza o período ou aplique mais filtros para exportar o restante.`,
-        );
-      }
-      const exportadas = todas.map(linhaExportada);
-      const subtitulo = [
-        `Período: ${periodo.inicio} → ${periodo.fim}`,
-        busca.unidades.length ? `Unidades: ${nomesDasUnidades.join(", ")}` : null,
-        busca.parceiros.length ? `Parceiros: ${busca.parceiros.length}` : null,
-        busca.codigos.length ? `Códigos: ${busca.codigos.join(", ")}` : null,
-        busca.filiais.length ? `Filiais: ${busca.filiais.join(", ")}` : null,
-        busca.remetente ? `Remetente: ${busca.remetente}` : null,
-        busca.destino ? `Destino: ${busca.destino}` : null,
-        busca.cidade ? `Cidade: ${busca.cidade}` : null,
-      ]
-        .filter((p) => p !== null)
-        .join(" · ");
-      if (formato === "csv") {
-        baixarCsv(
-          nomeDoArquivo(recortes, periodo.inicio, periodo.fim),
-          montarCsv(COLUNAS_DA_EXPORTACAO, exportadas),
-        );
-      } else {
-        imprimirTabela(titulo, subtitulo, COLUNAS_DA_IMPRESSAO, exportadas);
-      }
-    } catch (e) {
-      toast.error("Não foi possível gerar o arquivo", {
-        description: e instanceof Error ? e.message : undefined,
-      });
-    } finally {
-      setExportando(null);
+  const subtitulo = [
+    `Período: ${periodo.inicio} → ${periodo.fim}`,
+    busca.unidades.length ? `Unidades: ${nomesDasUnidades.join(", ")}` : null,
+    busca.parceiros.length ? `Parceiros: ${busca.parceiros.length}` : null,
+    busca.codigos.length ? `Códigos: ${busca.codigos.join(", ")}` : null,
+    busca.filiais.length ? `Filiais: ${busca.filiais.join(", ")}` : null,
+    busca.remetente ? `Remetente: ${busca.remetente}` : null,
+    busca.destino ? `Destino: ${busca.destino}` : null,
+    busca.cidade ? `Cidade: ${busca.cidade}` : null,
+  ]
+    .filter((p) => p !== null)
+    .join(" · ");
+  /** Todas as páginas do filtro (Q04: sem corte silencioso — passou do teto, avisa). */
+  const carregarParaExportar = async () => {
+    const { linhas: todas, cortada } = await carregarTodasAsLinhas(filtro, ordenacao);
+    if (cortada) {
+      toast.warning(
+        `O arquivo saiu com os primeiros ${LIMITE_DA_EXPORTACAO.toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")} CTRCs (na ordem da tela). Reduza o período ou aplique mais filtros para exportar o restante.`,
+      );
     }
+    return todas.map(linhaExportada);
   };
 
   const atualizar = () => queryClient.invalidateQueries({ queryKey: CHAVE_DA_LISTAGEM });
@@ -389,10 +364,16 @@ export function PaginaListagem() {
         <RefreshCw className="mr-1.5 h-3 w-3" />
         Atualizar
       </Button>
-      <MenuDeExportacao
-        ocupado={exportando}
-        desabilitado={exportando !== null || total === 0}
-        aoEscolher={(f) => void exportar(f)}
+      <ExportMenu
+        arquivo={nomeDoArquivo(recortes, periodo.inicio, periodo.fim)}
+        titulo={titulo}
+        subtitulo={subtitulo}
+        colunas={COLUNAS_DA_EXPORTACAO}
+        linhas={[]}
+        carregarLinhas={carregarParaExportar}
+        desabilitado={total === 0}
+        tamanhoFonte={5.5}
+        className="h-8"
       />
     </>
   );
@@ -416,7 +397,7 @@ export function PaginaListagem() {
         </h1>
         <div className="hidden items-center gap-2 sm:flex">{acoes}</div>
       </div>
-      {/* TODO(kit-ui): SeloAtualizacao (última carga do SSW) abaixo do título. */}
+      {/* TODO(ingestao): SeloAtualizacao quando houver a consulta da última carga do SSW. */}
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
         <div className="rounded-lg border border-l-[5px] border-border/70 border-l-kpi-positive bg-card p-4">
@@ -521,28 +502,19 @@ export function PaginaListagem() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-card p-2">
-        {BOTOES_DE_PERIODO.map(([p, rotulo]) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => {
-              atualizarBusca({ periodo: p, de: "", ate: "" });
-            }}
-            aria-pressed={busca.periodo === p}
-            className={`rounded-md px-2.5 py-1 text-[12px] ${
-              busca.periodo === p ? "bg-brand text-white" : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {rotulo}
-          </button>
-        ))}
-        <IntervaloDeDatas
-          rotulo={DATA_DA_BASE[busca.base]}
+      <FiltrosAvancados
+        ativos={filtrosAtivos}
+        aoLimpar={() => {
+          atualizarBusca(FILTROS_LIMPOS);
+        }}
+      >
+        <FiltroPeriodo
+          periodo={busca.periodo}
           de={busca.de}
           ate={busca.ate}
-          aoMudar={(de, ate) => {
-            atualizarBusca({ periodo: de && ate ? "custom" : "7d", de, ate });
+          rotulo={DATA_DA_BASE[busca.base]}
+          aoMudar={(p) => {
+            atualizarBusca(p);
           }}
         />
         <span className="inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground">
@@ -650,13 +622,7 @@ export function PaginaListagem() {
             }}
           />
         </div>
-        <LimparFiltros
-          visivel={filtrosAtivos}
-          aoLimpar={() => {
-            atualizarBusca(FILTROS_LIMPOS);
-          }}
-        />
-      </div>
+      </FiltrosAvancados>
 
       <FiltrandoPor etiquetas={etiquetas} />
 
@@ -709,59 +675,6 @@ export function PaginaListagem() {
   );
 }
 
-/**
- * Exportar: CSV e PDF (pela impressão do navegador).
- * TODO(kit-ui): trocar pelo ExportMenu de `@/componentes/comum` (entra o Excel com a marca).
- */
-function MenuDeExportacao({
-  ocupado,
-  desabilitado,
-  aoEscolher,
-}: {
-  /** Linhas já carregadas durante a exportação; `null` = parado. */
-  ocupado: number | null;
-  desabilitado: boolean;
-  aoEscolher: (formato: "csv" | "imprimir") => void;
-}) {
-  const [aberto, setAberto] = useState(false);
-  const escolher = (formato: "csv" | "imprimir") => {
-    setAberto(false);
-    aoEscolher(formato);
-  };
-  return (
-    <Popover open={aberto} onOpenChange={setAberto}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8" disabled={desabilitado}>
-          <Download className="mr-1.5 h-3 w-3" />
-          {ocupado === null
-            ? "Exportar"
-            : `Exportando… ${ocupado > 0 ? ocupado.toLocaleString("pt-BR") : ""}`}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-44 p-1">
-        <button
-          type="button"
-          onClick={() => {
-            escolher("csv");
-          }}
-          className="flex w-full items-center rounded px-2 py-1.5 text-[12px] hover:bg-muted"
-        >
-          <FileText className="mr-2 h-3 w-3" /> CSV
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            escolher("imprimir");
-          }}
-          className="flex w-full items-center rounded px-2 py-1.5 text-[12px] hover:bg-muted"
-        >
-          <FileType2 className="mr-2 h-3 w-3" /> PDF
-        </button>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 /** Cidade, peso e atraso; cada campo aplica ao sair dele. */
 function MaisFiltros({
   busca,
@@ -786,7 +699,11 @@ function MaisFiltros({
         >
           <Filter className="h-3 w-3" />
           Mais filtros
-          {ativo && <Contagem>ativo</Contagem>}
+          {ativo && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+              ativo
+            </Badge>
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-3 p-3">

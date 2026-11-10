@@ -7,16 +7,12 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
+import { GatilhoFiltro } from "@/componentes/comum/GatilhoFiltro";
+import { Badge } from "@/componentes/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { useSelecaoAdiada } from "@/hooks/use-selecao-adiada";
 import { cn } from "@/lib/utils";
-import {
-  AvisoDaLista,
-  Contagem,
-  GatilhoDeFiltro,
-  ItemMarcavel,
-  LimparNoGatilho,
-} from "@/modulos/filtros/componentes";
+import { AvisoDaLista, ItemMarcavel } from "@/modulos/filtros/componentes";
 
 import { consultaCodigosDoRecorte } from "./api";
 
@@ -126,27 +122,23 @@ export function SeletorDeOcorrencia({
       }}
     >
       <PopoverTrigger asChild>
-        <GatilhoDeFiltro
+        <GatilhoFiltro
           ativo={selecionados.length > 0}
+          rotulo="Ocorrência"
+          aoLimpar={() => {
+            definir([]);
+          }}
           title="Filtrar pela ocorrência atual (efetiva) do CT-e"
         >
-          Ocorrência
+          Ocorrência{" "}
           {selecionados.length > 0 ? (
-            <Contagem>
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
               {selecionados.length === 1 ? `#${primeiro ?? ""}` : `${selecionados.length} códigos`}
-            </Contagem>
+            </Badge>
           ) : (
             <span className="text-muted-foreground">qualquer</span>
           )}
-          {selecionados.length > 0 && (
-            <LimparNoGatilho
-              rotulo="Limpar ocorrências"
-              aoLimpar={() => {
-                definir([]);
-              }}
-            />
-          )}
-        </GatilhoDeFiltro>
+        </GatilhoFiltro>
       </PopoverTrigger>
       <PopoverContent className="w-96 max-w-[calc(100vw-2rem)] p-0" align="start">
         <div className="space-y-2 border-b border-border/60 p-2">

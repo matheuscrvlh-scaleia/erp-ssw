@@ -1,7 +1,7 @@
 /**
  * Regras do detalhe do CT-e (`/ctrc/$numero`): identificação pela série + número, ocorrências
- * exibidas, localização, finalização, link do SSW e o selo do status do prazo.
- * origem: ctrc.functions.ts, ctrc.$numero.tsx, src/lib/ssw.ts (sistema atual)
+ * exibidas, localização, finalização e o selo do status do prazo.
+ * origem: ctrc.functions.ts, ctrc.$numero.tsx, (sistema atual)
  */
 import { lerCtrcProcurado } from "../listagem/texto";
 import { CODIGOS_ENTREGA, diaSp, estaEntregue } from "../nucleo";
@@ -69,31 +69,6 @@ export function finalizacaoDoCtrc(
       ? { codigo: efetiva.codigo, descricao: efetiva.descricao }
       : null;
   return { entregue, baixa };
-}
-
-/**
- * Link do CT-e no SSW (consulta pela série, número com 6 dígitos e o dia da emissão). Falta
- * série, número ou emissão → sem link.
- * origem: sswCtrcUrl (src/lib/ssw.ts, sistema atual)
- */
-export function linkDoSsw(
-  sigla: string | null | undefined,
-  numero: string | null | undefined,
-  dataEmissao: string | null | undefined,
-): string | null {
-  if (!sigla || !numero || !dataEmissao) return null;
-  const data = /^(\d{4})-(\d{2})-(\d{2})/.exec(dataEmissao);
-  if (!data) return null;
-  const [, ano = "", mes = "", dia = ""] = data;
-  const ddmmaa = `${dia}${mes}${ano.slice(2)}`;
-  const nro = numero.replace(/\D+/g, "").padStart(6, "0");
-  return (
-    `https://sistema.ssw.inf.br/bin/ssw0053?act=P1` +
-    `&t_ser_ctrc=${encodeURIComponent(sigla)}` +
-    `&t_nro_ctrc=${nro}` +
-    `&t_data_ini=${ddmmaa}` +
-    `&t_data_fin=${ddmmaa}`
-  );
 }
 
 const MS_POR_DIA = 86_400_000;

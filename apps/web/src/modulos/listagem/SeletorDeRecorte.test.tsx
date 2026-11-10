@@ -17,8 +17,8 @@ describe("SeletorDeRecorte", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "CT-e emitidos" }));
-    fireEvent.click(screen.getByRole("button", { name: "CT-e atrasados" }));
-    fireEvent.click(screen.getByRole("button", { name: "Em atraso (ACME)" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "CT-e atrasados" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Em atraso (ACME)" }));
     expect(aoMudar).not.toHaveBeenCalled();
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     expect(aoMudar).toHaveBeenCalledTimes(1);

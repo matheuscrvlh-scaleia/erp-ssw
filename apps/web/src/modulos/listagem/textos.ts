@@ -35,23 +35,3 @@ export function textoDaFaixa(min: number | null, max: number | null, unidade: st
   if (max !== null) return `até ${numero(max)} ${unidade}`;
   return "";
 }
-
-/** Até `maximo` nomes e o resto como "+N"; a lista inteira vai no `completo` (title). */
-export function resumirNomes(
-  nomes: readonly string[],
-  maximo = 3,
-): { valor: string; completo: string } {
-  const valor =
-    nomes.length > maximo
-      ? `${nomes.slice(0, maximo).join(" · ")} +${nomes.length - maximo}`
-      : nomes.join(" · ");
-  return { valor, completo: nomes.join("\n") };
-}
-
-/** Valores de um filtro de texto "a|b" (para etiquetas e seletores). */
-export function valoresDoTexto(texto: string): string[] {
-  return texto
-    .split("|")
-    .map((v) => v.trim())
-    .filter((v) => v !== "");
-}

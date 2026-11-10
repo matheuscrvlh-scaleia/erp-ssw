@@ -19,8 +19,14 @@ import {
   TIPOS_RECORTE,
 } from "@erp/shared/contratos/listagem";
 
-export const PERIODOS = ["hoje", "7d", "30d", "mes", "custom"] as const;
-export type Periodo = (typeof PERIODOS)[number];
+import {
+  type AtalhoPeriodo,
+  ATALHOS_PERIODO,
+  type Periodo,
+  resolverPeriodo,
+} from "@/componentes/comum/periodo";
+
+const PERIODOS: readonly Periodo[] = [...ATALHOS_PERIODO, "custom"];
 
 export interface BuscaDaLista {
   tipo: TipoRecorte;
@@ -137,33 +143,27 @@ export function lerBuscaDaLista(bruto: Record<string, unknown>): BuscaDaLista {
   };
 }
 
-/** Dia local do navegador (como hoje). */
-function diaLocal(d: Date): string {
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-}
+const ROTULO_DO_PERIODO: Record<AtalhoPeriodo, string> = {
+  hoje: "Hoje",
+  "7d": "Últimos 7 dias",
+  "30d": "Últimos 30 dias",
+  mes: "Este mês",
+  mes_anterior: "Mês anterior",
+};
 
 /**
- * Período da tela no fuso do navegador. Mês (padrão) = do dia 1º até hoje.
+ * Período da tela e o rótulo do título. `hoje` é o dia de Brasília (Q11), vindo de fora.
  * origem: resolvePeriodo (performance.lista.tsx, sistema atual)
  */
-export function resolverPeriodo(
-  periodo: Periodo,
-  de: string,
-  ate: string,
-  agora: Date = new Date(),
+export function periodoDaLista(
+  busca: Pick<BuscaDaLista, "periodo" | "de" | "ate">,
+  hoje: string,
 ): { inicio: string; fim: string; rotulo: string } {
-  if (periodo === "custom" && de && ate) return { inicio: de, fim: ate, rotulo: `${de} → ${ate}` };
-  const fim = diaLocal(agora);
-  const diasAtras = (n: number) => {
-    const d = new Date(agora);
-    d.setDate(d.getDate() - n);
-    return diaLocal(d);
-  };
-  if (periodo === "hoje") return { inicio: fim, fim, rotulo: "Hoje" };
-  if (periodo === "7d") return { inicio: diasAtras(6), fim, rotulo: "Últimos 7 dias" };
-  if (periodo === "30d") return { inicio: diasAtras(29), fim, rotulo: "Últimos 30 dias" };
-  const primeiro = diaLocal(new Date(agora.getFullYear(), agora.getMonth(), 1));
-  return { inicio: primeiro, fim, rotulo: "Este mês" };
+  const { inicio, fim } = resolverPeriodo(busca.periodo, busca.de, busca.ate, hoje);
+  if (busca.periodo === "custom") {
+    return { inicio, fim, rotulo: busca.de && busca.ate ? `${inicio} → ${fim}` : "Este mês" };
+  }
+  return { inicio, fim, rotulo: ROTULO_DO_PERIODO[busca.periodo] };
 }
 
 /** Só o que tem valor vai para a API (query string curta). */

@@ -22,13 +22,6 @@ export const consultaOpcoesDeFiltro = (entrada: EntradaDe<typeof c.opcoes>) =>
     queryFn: () => chamar(c.opcoes, { entrada }),
   });
 
-export const consultaSugestoes = (entrada: EntradaDe<typeof c.sugestoes>) =>
-  queryOptions({
-    queryKey: ["filtros", "sugestoes", entrada],
-    queryFn: () => chamar(c.sugestoes, { entrada }),
-    staleTime: 60_000,
-  });
-
 /** A lista de pagadores do período muda pouco (ciclos de carga de 30 min). */
 export const consultaPagadores = (entrada: EntradaDe<typeof c.pagadores>) =>
   queryOptions({
@@ -36,9 +29,3 @@ export const consultaPagadores = (entrada: EntradaDe<typeof c.pagadores>) =>
     queryFn: () => chamar(c.pagadores, { entrada }),
     staleTime: 15 * 60_000,
   });
-
-export const consultaTiposDocumento = queryOptions({
-  queryKey: ["filtros", "tipos-documento"],
-  queryFn: () => chamar(c.tiposDocumento),
-  staleTime: 30 * 60_000,
-});

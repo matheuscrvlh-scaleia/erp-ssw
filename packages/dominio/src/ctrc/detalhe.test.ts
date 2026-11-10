@@ -4,7 +4,6 @@ import { atrasoDias } from "../nucleo";
 import {
   finalizacaoDoCtrc,
   lerIdentificacao,
-  linkDoSsw,
   localizacaoExibida,
   ocorrenciasExibidas,
   statusDoPrazo,
@@ -64,15 +63,6 @@ describe("finalização", () => {
       baixa: { codigo: 12, descricao: "X" },
     });
     expect(finalizacaoDoCtrc(new Date(), efetiva(12), BAIXAS).baixa).toBeNull();
-  });
-});
-
-describe("link do SSW", () => {
-  it("série, número com 6 dígitos e o dia da emissão", () => {
-    expect(linkDoSsw("CAP", "3214", "2026-11-05")).toBe(
-      "https://sistema.ssw.inf.br/bin/ssw0053?act=P1&t_ser_ctrc=CAP&t_nro_ctrc=003214&t_data_ini=051126&t_data_fin=051126",
-    );
-    expect(linkDoSsw(null, "3214", "2026-11-05")).toBeNull();
   });
 });
 

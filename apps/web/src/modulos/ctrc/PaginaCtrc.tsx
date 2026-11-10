@@ -1,4 +1,4 @@
-import { linkDoSsw, statusDoPrazo } from "@erp/dominio/ctrc/detalhe";
+import { statusDoPrazo } from "@erp/dominio/ctrc/detalhe";
 import {
   type DetalheCtrc,
   type OcorrenciaDoCtrc,
@@ -26,6 +26,8 @@ import {
 import { type ReactNode, useState } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { ExportMenu } from "@/componentes/comum/ExportMenu";
+import { Badge, type BadgeProps } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -36,9 +38,11 @@ import {
 } from "@/componentes/ui/dialog";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
 
 import { consultaCtrc } from "./api";
+import { COLUNAS_DO_PDF, linhasDoPdf } from "./exportacao";
 import {
   formatarCep,
   formatarChave,
@@ -70,7 +74,7 @@ export function PaginaCtrc() {
   const fuso = acesso.empresa?.fuso ?? "America/Sao_Paulo";
   const { data, isLoading, isError, refetch, isFetching } = useQuery(consultaCtrc(numero, sigla));
   const ctrc = data?.tipo === "encontrado" ? data.ctrc : null;
-  const ssw = ctrc ? linkDoSsw(ctrc.sigla, ctrc.numero, ctrc.dataEmissao) : null;
+  const ssw = ctrc ? urlCtrcNoSsw(ctrc.sigla, ctrc.numero, ctrc.dataEmissao) : null;
 
   return (
     <div className="space-y-4">
@@ -100,7 +104,17 @@ export function PaginaCtrc() {
               Abrir no SSW
             </a>
           )}
-          {/* TODO(kit-ui): botão "Exportar PDF" do CT-e com a marca da empresa. */}
+          {ctrc && (
+            <ExportMenu
+              arquivo={`ctrc-${ctrc.sigla}-${ctrc.numero}`}
+              titulo={`CT-e ${ctrc.sigla} ${ctrc.numero}`}
+              subtitulo={ctrc.destinatario ?? undefined}
+              colunas={COLUNAS_DO_PDF}
+              linhas={linhasDoPdf(ctrc, fuso)}
+              formatos={["pdf"]}
+              orientacao="retrato"
+            />
+          )}
           <Button size="sm" variant="ghost" onClick={() => void refetch()} disabled={isFetching}>
             <RefreshCw className={cn("mr-1.5 h-3 w-3", isFetching && "animate-spin")} /> Atualizar
           </Button>
@@ -157,7 +171,7 @@ function Titulo({ numero, ctrc }: { numero: string; ctrc: DetalheCtrc | null }) 
         )}
         <span className="font-mono text-brand">{id.principal}</span>
       </h1>
-      {/* TODO(kit-ui): SeloAtualizacao (última carga do SSW). */}
+      {/* TODO(ingestao): SeloAtualizacao quando houver a consulta da última carga do SSW. */}
       <p className="text-[12px] text-muted-foreground">
         {id.secundario ? `CTRC ${ctrc?.sigla ?? ""} ${id.secundario} · ` : ""}
         Detalhes do conhecimento de transporte
@@ -489,20 +503,22 @@ function Detalhe({
 
 // ---------------------------------------------------------------- peças
 
-type Variante = "padrao" | "secundario" | "contorno" | "perigo" | "sucesso" | "atencao";
+type Variante = "secundario" | "contorno" | "perigo" | "sucesso" | "atencao";
 
-const CLASSE_DA_VARIANTE: Record<Variante, string> = {
-  padrao: "border-transparent bg-primary text-primary-foreground",
-  secundario: "border-transparent bg-secondary text-secondary-foreground",
-  contorno: "text-foreground",
-  perigo: "border-transparent bg-destructive text-destructive-foreground",
-  sucesso:
-    "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-  atencao:
-    "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300",
+const SUCESSO =
+  "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300";
+const ATENCAO =
+  "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300";
+
+const VARIANTE: Record<Variante, { variant: BadgeProps["variant"]; className?: string }> = {
+  secundario: { variant: "secondary" },
+  contorno: { variant: "outline" },
+  perigo: { variant: "destructive" },
+  sucesso: { variant: "default", className: SUCESSO },
+  atencao: { variant: "default", className: ATENCAO },
 };
 
-/** TODO(kit-ui): trocar pelo Badge de `@/componentes/ui/badge`. */
+/** Selo de situação (verde/âmbar além das variantes do Badge, como hoje). */
 function Selo({
   variante,
   className,
@@ -512,16 +528,11 @@ function Selo({
   className?: string;
   children: ReactNode;
 }) {
+  const v = VARIANTE[variante];
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold",
-        CLASSE_DA_VARIANTE[variante],
-        className,
-      )}
-    >
+    <Badge variant={v.variant} className={cn(v.className, className)}>
       {children}
-    </span>
+    </Badge>
   );
 }
 

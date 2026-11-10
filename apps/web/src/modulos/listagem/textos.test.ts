@@ -1,11 +1,10 @@
 import { type CodigoDoRecorte, type LinhaLista } from "@erp/shared/contratos/listagem";
 import { describe, expect, it } from "vitest";
 
-import { COLUNAS_DA_EXPORTACAO, COLUNAS_DA_IMPRESSAO, linhaExportada } from "./exportacao";
-import { montarCsv } from "./exportacao-provisoria";
+import { COLUNAS_DA_EXPORTACAO, linhaExportada } from "./exportacao";
 import { codigosDoGrupo } from "./SeletorDeOcorrencia";
 import { alternarRecorte } from "./SeletorDeRecorte";
-import { resumirNomes, selo, textoDaFaixa, valoresDoTexto } from "./textos";
+import { selo, textoDaFaixa } from "./textos";
 
 describe("selo do atraso", () => {
   it.each([
@@ -26,18 +25,6 @@ describe("textos das etiquetas", () => {
     expect(textoDaFaixa(3, null, "dias")).toBe("a partir de 3 dias");
     expect(textoDaFaixa(null, 5, "dias")).toBe("até 5 dias");
     expect(textoDaFaixa(null, null, "kg")).toBe("");
-  });
-
-  it("até 3 nomes e o resto como +N", () => {
-    expect(resumirNomes(["A", "B", "C", "D", "E"])).toEqual({
-      valor: "A · B · C +2",
-      completo: "A\nB\nC\nD\nE",
-    });
-    expect(resumirNomes([]).valor).toBe("");
-  });
-
-  it("texto com vários valores", () => {
-    expect(valoresDoTexto(" MANAUS | | BELÉM ")).toEqual(["MANAUS", "BELÉM"]);
   });
 });
 
@@ -123,17 +110,8 @@ describe("exportação", () => {
     expect(l.linkSsw).toContain("ssw0053");
   });
 
-  it("28 colunas no arquivo; a impressão esconde 6", () => {
+  it("28 colunas no arquivo, com o link do SSW no fim", () => {
     expect(COLUNAS_DA_EXPORTACAO).toHaveLength(28);
-    expect(COLUNAS_DA_IMPRESSAO).toHaveLength(22);
-  });
-
-  it("CSV com BOM, ponto e vírgula, aspas quando precisa e números crus", () => {
-    const csv = montarCsv(COLUNAS_DA_EXPORTACAO, [linhaExportada(linha)]);
-    expect(csv.startsWith("\uFEFFNF;CT-e;Cliente Destino;")).toBe(true);
-    const [, dados = ""] = csv.split("\r\n");
-    expect(dados).toContain('"LOJA ""CENTRO""; FILIAL"');
-    expect(dados).toContain(";03/11/2026;08/11/2026;;2;");
-    expect(dados).toContain(";NORMAL;1234.5;10;2;");
+    expect(COLUNAS_DA_EXPORTACAO.at(-1)?.titulo).toBe("Link SSW");
   });
 });

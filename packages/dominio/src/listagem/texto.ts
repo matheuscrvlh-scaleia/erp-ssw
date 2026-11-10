@@ -1,11 +1,7 @@
 /**
  * Filtros de texto da Listagem: "a|b" (remetente, destino, cidade) e a busca por CT-e / nota.
  */
-
-/** `btrim` do Postgres: tira só espaço (' '), não tab nem quebra de linha. */
-function btrim(texto: string): string {
-  return texto.replace(/^ +| +$/g, "");
-}
+import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 
 /** `%`, `_` e `\` digitados valem como letra, não como curinga do ILIKE (Q10 do dono). */
 function escaparCuringas(texto: string): string {
@@ -14,15 +10,13 @@ function escaparCuringas(texto: string): string {
 
 /**
  * Padrões ILIKE de um filtro de texto: casa se o campo contém qualquer um dos valores separados
- * por "|". Caixa ignorada, acento não ("sao" não casa "SÃO"). Vazio = sem filtro (`null`).
- * "a||b" gera o padrão "%%", que casa tudo (atalho conhecido de hoje, mantido).
+ * por "|" (`lerFiltroTexto`, a mesma leitura da tela). Caixa ignorada, acento não ("sao" não casa
+ * "SÃO"). Vazio = sem filtro (`null`).
  * origem: texto_casa_filtro (função SQL) e src/lib/filtro-texto.ts (sistema atual)
  */
 export function padroesDeTexto(filtro: string | null | undefined): string[] | null {
-  if (!filtro?.trim()) return null;
-  return btrim(filtro)
-    .split(/\s*\|\s*/)
-    .map((parte) => `%${escaparCuringas(parte)}%`);
+  const valores = lerFiltroTexto(filtro);
+  return valores.length > 0 ? valores.map((v) => `%${escaparCuringas(v)}%`) : null;
 }
 
 /** Padrão ILIKE "contém" de um texto só (sugestões do autocompletar); vazio = sem filtro. */
