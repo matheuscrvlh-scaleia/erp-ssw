@@ -21,6 +21,10 @@ import { Route as AutenticadoAdminDepartamentosRouteImport } from './routes/_aut
 import { Route as AutenticadoAdminLogsRouteImport } from './routes/_autenticado/admin/logs'
 import { Route as AutenticadoAdminRolesRouteImport } from './routes/_autenticado/admin/roles'
 import { Route as AutenticadoAdminUsuariosRouteImport } from './routes/_autenticado/admin/usuarios'
+import { Route as AutenticadoPlataformaAdministradoresRouteImport } from './routes/_autenticado/plataforma/administradores'
+import { Route as AutenticadoPlataformaLogsRouteImport } from './routes/_autenticado/plataforma/logs'
+import { Route as AutenticadoPlataformaEmpresasIndexRouteImport } from './routes/_autenticado/plataforma/empresas/index'
+import { Route as AutenticadoPlataformaEmpresasIdRouteImport } from './routes/_autenticado/plataforma/empresas/$id'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -84,6 +88,30 @@ const AutenticadoAdminUsuariosRoute =
     path: '/admin/usuarios',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoPlataformaAdministradoresRoute =
+  AutenticadoPlataformaAdministradoresRouteImport.update({
+    id: '/plataforma/administradores',
+    path: '/plataforma/administradores',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoPlataformaLogsRoute =
+  AutenticadoPlataformaLogsRouteImport.update({
+    id: '/plataforma/logs',
+    path: '/plataforma/logs',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoPlataformaEmpresasIndexRoute =
+  AutenticadoPlataformaEmpresasIndexRouteImport.update({
+    id: '/plataforma/empresas/',
+    path: '/plataforma/empresas/',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoPlataformaEmpresasIdRoute =
+  AutenticadoPlataformaEmpresasIdRouteImport.update({
+    id: '/plataforma/empresas/$id',
+    path: '/plataforma/empresas/$id',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -97,6 +125,10 @@ export interface FileRoutesByFullPath {
   '/admin/logs': typeof AutenticadoAdminLogsRoute
   '/admin/roles': typeof AutenticadoAdminRolesRoute
   '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
+  '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
+  '/plataforma/empresas/': typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -110,6 +142,10 @@ export interface FileRoutesByTo {
   '/admin/logs': typeof AutenticadoAdminLogsRoute
   '/admin/roles': typeof AutenticadoAdminRolesRoute
   '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
+  '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
+  '/plataforma/empresas': typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +161,10 @@ export interface FileRoutesById {
   '/_autenticado/admin/logs': typeof AutenticadoAdminLogsRoute
   '/_autenticado/admin/roles': typeof AutenticadoAdminRolesRoute
   '/_autenticado/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
+  '/_autenticado/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/_autenticado/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/_autenticado/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
+  '/_autenticado/plataforma/empresas/': typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,6 +180,10 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/roles'
     | '/admin/usuarios'
+    | '/plataforma/administradores'
+    | '/plataforma/logs'
+    | '/plataforma/empresas/$id'
+    | '/plataforma/empresas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -153,6 +197,10 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/roles'
     | '/admin/usuarios'
+    | '/plataforma/administradores'
+    | '/plataforma/logs'
+    | '/plataforma/empresas/$id'
+    | '/plataforma/empresas'
   id:
     | '__root__'
     | '/_autenticado'
@@ -167,6 +215,10 @@ export interface FileRouteTypes {
     | '/_autenticado/admin/logs'
     | '/_autenticado/admin/roles'
     | '/_autenticado/admin/usuarios'
+    | '/_autenticado/plataforma/administradores'
+    | '/_autenticado/plataforma/logs'
+    | '/_autenticado/plataforma/empresas/$id'
+    | '/_autenticado/plataforma/empresas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -262,6 +314,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoAdminUsuariosRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/plataforma/administradores': {
+      id: '/_autenticado/plataforma/administradores'
+      path: '/plataforma/administradores'
+      fullPath: '/plataforma/administradores'
+      preLoaderRoute: typeof AutenticadoPlataformaAdministradoresRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/plataforma/logs': {
+      id: '/_autenticado/plataforma/logs'
+      path: '/plataforma/logs'
+      fullPath: '/plataforma/logs'
+      preLoaderRoute: typeof AutenticadoPlataformaLogsRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/plataforma/empresas/': {
+      id: '/_autenticado/plataforma/empresas/'
+      path: '/plataforma/empresas'
+      fullPath: '/plataforma/empresas/'
+      preLoaderRoute: typeof AutenticadoPlataformaEmpresasIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/plataforma/empresas/$id': {
+      id: '/_autenticado/plataforma/empresas/$id'
+      path: '/plataforma/empresas/$id'
+      fullPath: '/plataforma/empresas/$id'
+      preLoaderRoute: typeof AutenticadoPlataformaEmpresasIdRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
@@ -274,6 +354,10 @@ interface AutenticadoRouteChildren {
   AutenticadoAdminLogsRoute: typeof AutenticadoAdminLogsRoute
   AutenticadoAdminRolesRoute: typeof AutenticadoAdminRolesRoute
   AutenticadoAdminUsuariosRoute: typeof AutenticadoAdminUsuariosRoute
+  AutenticadoPlataformaAdministradoresRoute: typeof AutenticadoPlataformaAdministradoresRoute
+  AutenticadoPlataformaLogsRoute: typeof AutenticadoPlataformaLogsRoute
+  AutenticadoPlataformaEmpresasIdRoute: typeof AutenticadoPlataformaEmpresasIdRoute
+  AutenticadoPlataformaEmpresasIndexRoute: typeof AutenticadoPlataformaEmpresasIndexRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
@@ -285,6 +369,12 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoAdminLogsRoute: AutenticadoAdminLogsRoute,
   AutenticadoAdminRolesRoute: AutenticadoAdminRolesRoute,
   AutenticadoAdminUsuariosRoute: AutenticadoAdminUsuariosRoute,
+  AutenticadoPlataformaAdministradoresRoute:
+    AutenticadoPlataformaAdministradoresRoute,
+  AutenticadoPlataformaLogsRoute: AutenticadoPlataformaLogsRoute,
+  AutenticadoPlataformaEmpresasIdRoute: AutenticadoPlataformaEmpresasIdRoute,
+  AutenticadoPlataformaEmpresasIndexRoute:
+    AutenticadoPlataformaEmpresasIndexRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(

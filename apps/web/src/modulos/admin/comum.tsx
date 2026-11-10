@@ -16,6 +16,8 @@ export function useGravacao<E, S>(opcoes: {
   executar: (entrada: E) => Promise<S>;
   sucesso: string | ((entrada: E, saida: S) => string);
   invalidar: readonly QueryKey[];
+  /** Depois do sucesso, com a resposta (ex.: abrir o que acabou de ser criado). */
+  aoConcluir?: (saida: S) => void;
 }) {
   const queryClient = useQueryClient();
   const mutacao = useMutation({ mutationFn: opcoes.executar });
@@ -28,6 +30,7 @@ export function useGravacao<E, S>(opcoes: {
       await Promise.all(
         opcoes.invalidar.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       );
+      opcoes.aoConcluir?.(saida);
       return true;
     } catch (e) {
       toast.error(mensagemAmigavel(e));
@@ -114,7 +117,7 @@ export function Selo({
 }: {
   tom?: keyof typeof TOM_DO_SELO;
   children: ReactNode;
-  title?: string;
+  title?: string | undefined;
 }) {
   return (
     <span
