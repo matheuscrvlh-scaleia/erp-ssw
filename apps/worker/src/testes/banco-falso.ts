@@ -43,7 +43,10 @@ export class BancoFalso {
   trocas: (TrocaDePrevisao & { cteId: string })[] = [];
   bruto = new Map<string, { dataAlvo: string; payload: Record<string, string> }>();
   sincronizacoes: SincronizacaoNova[] = [];
-  eventos = new Map<string, { payload: unknown; resultado: ResultadoDoEvento | null }>();
+  eventos = new Map<
+    string,
+    { payload: unknown; autenticado?: boolean; resultado: ResultadoDoEvento | null }
+  >();
   codigosCadastrados: CodigoNovo[] = [];
   coletas = new Map<string, ColetaParaGravar>();
   apelidos = new Map<string, string>();
@@ -160,8 +163,12 @@ export class BancoFalso {
       webhook: {
         payloadDoEvento: (id) => {
           const e = this.eventos.get(id);
-          return Promise.resolve(e ? { payload: e.payload } : null);
+          return Promise.resolve(
+            e ? { payload: e.payload, autenticado: e.autenticado ?? true } : null,
+          );
         },
+        cnpjsAceitos: () =>
+          Promise.resolve(this.integracoes.get("ssw_webhook")?.parametros.cnpjs_aceitos ?? []),
         atualizarEvento: (id, resultado) => {
           const e = this.eventos.get(id);
           if (e) e.resultado = resultado;

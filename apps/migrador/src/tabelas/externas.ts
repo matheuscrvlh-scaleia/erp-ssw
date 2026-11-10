@@ -383,6 +383,8 @@ export const passoSswWebhookEventos = definirTabela({
           motivoRejeicao: o.motivo_rejeicao,
           statusHttp: smallint(o.status_http, "status_http") ?? o.status_http,
           payloadBruto: o.payload_bruto,
+          // O sistema atual não guarda o resumo do token: evento antigo recusado não é reprocessado.
+          tokenSha256: null,
           cteId: o.ctrc_id,
           ocorrenciaId: o.ocorrencia_id,
           erroProcessamento: o.erro_processamento,

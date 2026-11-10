@@ -36,6 +36,12 @@ export const sswWebhookEventos = erp.table(
     motivoRejeicao: text("motivo_rejeicao"),
     statusHttp: smallint("status_http").notNull(),
     payloadBruto: jsonb("payload_bruto"),
+    /**
+     * SHA-256 (hex) de cada candidato a segredo da credencial recebida; nunca o token em si. O
+     * reprocesso de "token incorreto" só aceita o evento se o resumo do segredo atual ou do
+     * anterior estiver aqui.
+     */
+    tokenSha256: text("token_sha256").array(),
     cteId: uuid("cte_id").references(() => ctes.id, { onDelete: "set null" }),
     ocorrenciaId: uuid("ocorrencia_id").references(() => ocorrencias.id, { onDelete: "set null" }),
     erroProcessamento: text("erro_processamento"),

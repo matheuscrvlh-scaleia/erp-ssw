@@ -8,6 +8,9 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  cnpjsAceitosDosParametros,
+  cnpjTransportadora,
+  cnpjTransportadoraAceito,
   cteVigente,
   emissaoDoCteDoWebhook,
   type EventoSsw2181,
@@ -59,7 +62,9 @@ export interface OcorrenciaDoWebhook {
 }
 
 export interface RepositorioWebhook {
-  payloadDoEvento(eventoId: string): Promise<{ payload: unknown } | null>;
+  payloadDoEvento(eventoId: string): Promise<{ payload: unknown; autenticado: boolean } | null>;
+  /** `parametros.cnpjs_aceitos` da integração do webhook, como está agora. */
+  cnpjsAceitos(): Promise<unknown>;
   atualizarEvento(eventoId: string, resultado: ResultadoDoEvento): Promise<void>;
   ctePorSiglaENumero(sigla: string, numero: string): Promise<CteDaIngestao | null>;
   ctesPorNumero(numero: string): Promise<CteDaIngestao[]>;
@@ -118,14 +123,36 @@ export async function processarEvento(
 ): Promise<ResultadoDoEvento | null> {
   const gravado = await webhook.payloadDoEvento(eventoId);
   if (gravado === null) return null;
-  const resultado = await aplicarEvento(
-    webhook,
-    repo,
-    { empresaId, payload: gravado.payload, protocolo },
-    agora,
-  );
+  const resultado =
+    (await conferirOrigem(webhook, gravado)) ??
+    (await aplicarEvento(webhook, repo, { empresaId, payload: gravado.payload, protocolo }, agora));
   await webhook.atualizarEvento(eventoId, resultado);
   return resultado;
+}
+
+/**
+ * Só vira dado o evento autenticado (na recepção ou no reprocesso pelo resumo do token) e de
+ * CNPJ aceito pela lista atual da integração; o resto volta como recusa.
+ */
+async function conferirOrigem(
+  webhook: RepositorioWebhook,
+  gravado: { payload: unknown; autenticado: boolean },
+): Promise<ResultadoDoEvento | null> {
+  const recusa = (motivo: string, erro: string): ResultadoDoEvento => ({
+    statusHttp: 401,
+    motivoRejeicao: motivo,
+    erroProcessamento: erro,
+    cteId: null,
+    ocorrenciaId: null,
+  });
+  if (!gravado.autenticado) {
+    return recusa("token_incorreto", "Evento sem token conferido: não é processado.");
+  }
+  const cnpj = cnpjTransportadora(gravado.payload);
+  if (!cnpjTransportadoraAceito(cnpj, cnpjsAceitosDosParametros(await webhook.cnpjsAceitos()))) {
+    return recusa("cnpj_nao_autorizado", "CNPJ da transportadora fora da lista aceita.");
+  }
+  return null;
 }
 
 const semVinculo = (motivo: string, cteId: string | null = null): ResultadoDoEvento => ({

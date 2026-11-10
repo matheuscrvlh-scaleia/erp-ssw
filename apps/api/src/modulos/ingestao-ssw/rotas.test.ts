@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import {
   cifrarSegredo,
@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
 import { type FilasDeIngestao, type ResultadoDaExecucao } from "./casos-de-uso";
+import { resumoDoSegredo } from "./webhook";
 
 const chaves = lerChavesDeSegredo(`1:${randomBytes(32).toString("base64")}`, 1);
 const SEGREDO_WEBHOOK = "s".repeat(40);
@@ -24,6 +25,8 @@ class FilasFalsas implements FilasDeIngestao {
   resultado: ResultadoDaExecucao = { tipo: "pendente" };
   esquecidos: string[] = [];
   falhar = false;
+  /** Simula o worker rodando logo que o job entra na fila. */
+  aoEnfileirar: (dados: Readonly<Record<string, unknown>>) => void = () => undefined;
 
   enfileirar(
     job: string,
@@ -32,6 +35,7 @@ class FilasFalsas implements FilasDeIngestao {
   ) {
     if (this.falhar) return Promise.reject(new Error("redis fora"));
     this.enfileirados.push({ job, dados, deduplicar });
+    this.aoEnfileirar(dados);
     return Promise.resolve(`job-${this.enfileirados.length}`);
   }
   aguardar() {
@@ -266,5 +270,105 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
     });
     expect(r.statusCode).toBe(400);
     expect(r.json()).toMatchObject([{ retorno: { codigo: 400 } }]);
+  });
+});
+
+describe("Reprocessar webhooks rejeitados por token", () => {
+  const URL = "/api/v1/admin/ssw-diagnostico/webhook/reprocessar-token-incorreto";
+  const ATUAL = "n".repeat(40);
+  const ANTERIOR = "a".repeat(40);
+  const cifrar = (texto: string) =>
+    cifrarSegredo(chaves, texto, contextoDoSegredo(empresaId, "ssw_webhook"));
+
+  function configurarSegredos() {
+    cenario.banco.ingestao.integracoes.set(`${empresaId}:ssw_webhook`, {
+      ativo: true,
+      parametros: {},
+      segredo: cifrar(ATUAL),
+      segredoAnterior: cifrar(ANTERIOR),
+      temSegredo: true,
+      ultimoTesteEm: null,
+      ultimoTesteOk: null,
+      ultimoTesteMsg: null,
+      atualizadoEm: null,
+    });
+  }
+
+  function recusado(tokenSha256: string[] | null) {
+    const id = randomUUID();
+    cenario.banco.ingestao.eventos.push({
+      id,
+      empresaId,
+      recebidoEm: new Date("2026-11-10T10:00:00Z"),
+      ip: "1.2.3.4",
+      userAgent: null,
+      autenticado: false,
+      motivoRejeicao: "token_incorreto",
+      statusHttp: 401,
+      payloadBruto: { cte: { numeroCTe: "1" } },
+      tokenSha256,
+      erroProcessamento: null,
+      cteId: null,
+    });
+    return id;
+  }
+
+  it("só reenvia evento cujo token é o segredo atual ou o anterior; o resto nunca vira dado", async () => {
+    configurarSegredos();
+    const doAtual = recusado([resumoDoSegredo("x"), resumoDoSegredo(ATUAL)]);
+    const doAnterior = recusado([resumoDoSegredo(ANTERIOR)]);
+    const estranho = recusado([resumoDoSegredo("token-de-quem-tenta-adivinhar")]);
+    const semResumo = recusado(null);
+
+    const r = await app.inject({ method: "POST", url: URL, headers: await plataforma() });
+    expect(r.json()).toEqual({ total: 4, enfileirados: 2 });
+    const enviados = filas.enfileirados.map((e) => e.dados.eventoId);
+    expect(enviados.sort()).toEqual([doAtual, doAnterior].sort());
+    const evento = (id: string) => cenario.banco.ingestao.eventos.find((e) => e.id === id);
+    expect(evento(doAtual)?.autenticado).toBe(true);
+    expect(evento(estranho)?.autenticado).toBe(false);
+    expect(evento(semResumo)?.autenticado).toBe(false);
+
+    const umSo = await app.inject({
+      method: "POST",
+      url: `/api/v1/admin/ingestao/webhook/eventos/${estranho}/reprocessar`,
+      headers: await plataforma(),
+    });
+    expect(umSo.statusCode).toBe(409);
+  });
+
+  it("marca o reenvio antes de enfileirar: o worker que termina antes não fica pendente", async () => {
+    configurarSegredos();
+    const id = recusado([resumoDoSegredo(ATUAL)]);
+    filas.aoEnfileirar = () => {
+      const e = cenario.banco.ingestao.eventos.find((x) => x.id === id);
+      if (e) Object.assign(e, { statusHttp: 200, erroProcessamento: null });
+    };
+    await app.inject({ method: "POST", url: URL, headers: await plataforma() });
+    expect(cenario.banco.ingestao.eventos.find((x) => x.id === id)).toMatchObject({
+      statusHttp: 200,
+      erroProcessamento: null,
+    });
+  });
+
+  it("recebimento guarda o SHA-256 do token, nunca o token", async () => {
+    cenario.banco.ingestao.empresasDoWebhook.push({
+      id: empresaId,
+      slug: "fr",
+      nome: "FR Transportes",
+      status: "ativa",
+      integracaoAtiva: true,
+      parametros: {},
+      segredo: cifrar(SEGREDO_WEBHOOK),
+    });
+    await app.inject({
+      method: "POST",
+      url: "/api/public/ssw-ocorrencias",
+      headers: { authorization: `Bearer ${SEGREDO_WEBHOOK}` },
+      payload: { cte: { numeroCTe: "1" }, ocorrencia: { codigo: "1" } },
+    });
+    const [evento] = cenario.banco.ingestao.eventos;
+    expect(JSON.stringify(evento)).not.toContain(SEGREDO_WEBHOOK);
+    expect(evento?.tokenSha256).toContain(resumoDoSegredo(SEGREDO_WEBHOOK));
   });
 });

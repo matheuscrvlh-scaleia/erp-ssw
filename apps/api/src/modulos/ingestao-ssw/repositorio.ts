@@ -23,6 +23,7 @@ const COLUNAS_DO_EVENTO = {
   cteId: sswWebhookEventos.cteId,
   numeroCte: ctes.numero,
   temPayload: sql<boolean>`${sswWebhookEventos.payloadBruto} is not null`,
+  tokenSha256: sswWebhookEventos.tokenSha256,
 };
 
 /** Mesma classificação da tela: rejeitado (auth/4xx), erro (5xx), sem vínculo (202), processado. */
@@ -54,6 +55,8 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
           parametros: empresaIntegracoes.parametros,
           segredoCifrado: empresaIntegracoes.segredoCifrado,
           segredoVersaoChave: empresaIntegracoes.segredoVersaoChave,
+          segredoAnteriorCifrado: empresaIntegracoes.segredoAnteriorCifrado,
+          segredoAnteriorVersaoChave: empresaIntegracoes.segredoAnteriorVersaoChave,
           ultimoTesteEm: empresaIntegracoes.ultimoTesteEm,
           ultimoTesteOk: empresaIntegracoes.ultimoTesteOk,
           ultimoTesteMsg: empresaIntegracoes.ultimoTesteMsg,
@@ -62,9 +65,20 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
         .from(empresaIntegracoes)
         .where(and(eq(empresaIntegracoes.empresaId, empresaId), eq(empresaIntegracoes.tipo, tipo)));
       if (!linha) return null;
-      const { segredoCifrado, segredoVersaoChave, ...resto } = linha;
+      const {
+        segredoCifrado,
+        segredoVersaoChave,
+        segredoAnteriorCifrado,
+        segredoAnteriorVersaoChave,
+        ...resto
+      } = linha;
       const segredo = segredoDaLinha(segredoCifrado, segredoVersaoChave);
-      return { ...resto, segredo, temSegredo: segredo !== null };
+      return {
+        ...resto,
+        segredo,
+        segredoAnterior: segredoDaLinha(segredoAnteriorCifrado, segredoAnteriorVersaoChave),
+        temSegredo: segredo !== null,
+      };
     },
 
     salvarIntegracao: async (empresaId, tipo, { parametros, segredo }, usuarioId, agora) => {
@@ -108,9 +122,9 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
 
     evento: async (id) => (await eventos().where(eq(sswWebhookEventos.id, id)))[0] ?? null,
 
-    eventosComMotivo: async (motivo, limite) => {
-      const linhas = await tx
-        .select({ id: sswWebhookEventos.id })
+    eventosComMotivo: (motivo, limite) =>
+      tx
+        .select({ id: sswWebhookEventos.id, tokenSha256: sswWebhookEventos.tokenSha256 })
         .from(sswWebhookEventos)
         .where(
           and(
@@ -119,9 +133,7 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
           ),
         )
         .orderBy(desc(sswWebhookEventos.recebidoEm))
-        .limit(limite);
-      return linhas.map((e) => e.id);
-    },
+        .limit(limite),
 
     contagemWebhook: async (desde) => {
       const [linha] = await tx
@@ -193,7 +205,7 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
     marcarReprocesso: async (id) => {
       await tx
         .update(sswWebhookEventos)
-        .set({ erroProcessamento: "reenviado para processamento" })
+        .set({ autenticado: true, erroProcessamento: "reenviado para processamento" })
         .where(eq(sswWebhookEventos.id, id));
     },
 

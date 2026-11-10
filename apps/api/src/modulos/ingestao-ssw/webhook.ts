@@ -5,8 +5,12 @@
  * grava `ssw_webhook_eventos`; sem empresa vai só para o log (sem o segredo).
  * Especificação: docs/regras/06-ingestao.md §0.1, §3.17.
  */
+import { createHash } from "node:crypto";
+
 import { type SegredoCifrado } from "@erp/db/segredos";
 import {
+  candidatosDaCredencial,
+  cnpjsAceitosDosParametros,
   cnpjTransportadora,
   cnpjTransportadoraAceito,
   conferirSegredo,
@@ -41,6 +45,8 @@ export interface EventoRecebido {
   motivoRejeicao: string | null;
   statusHttp: number;
   payloadBruto: unknown;
+  /** SHA-256 de cada candidato a token recebido; nunca o token. */
+  tokenSha256: string[] | null;
   erroProcessamento: string | null;
 }
 
@@ -77,6 +83,11 @@ export interface RespostaDoWebhook {
   corpo: RetornoSsw2181[];
 }
 
+/** SHA-256 em hex: o que se guarda da credencial recebida e o que o reprocesso compara. */
+export function resumoDoSegredo(texto: string): string {
+  return createHash("sha256").update(texto, "utf8").digest("hex");
+}
+
 const STATUS_QUE_INGERE = new Set(["ativa", "implantacao"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -105,6 +116,14 @@ export async function receberWebhook(
   });
   const auth = extrairTokensAuthorization(req.authorization);
   const base = { ip: req.ip, userAgent: req.userAgent };
+  let esperado = "";
+  // Sem o texto do token: só os resumos (com o comprimento do segredo atual para o caso "contém").
+  const resumos = () =>
+    req.authorization || req.segredoNaQuery
+      ? candidatosDaCredencial(req.authorization, req.segredoNaQuery, [esperado.length]).map(
+          resumoDoSegredo,
+        )
+      : null;
   const registrar = (
     empresaId: string,
     statusHttp: number,
@@ -118,6 +137,7 @@ export async function receberWebhook(
       statusHttp,
       motivoRejeicao: motivo,
       payloadBruto: payload,
+      tokenSha256: resumos(),
       autenticado,
       erroProcessamento: null,
     });
@@ -143,7 +163,6 @@ export async function receberWebhook(
 
   const cadastradas = await portas.empresas();
   let empresa: EmpresaDoWebhook | null = null;
-  let esperado = "";
   if (req.empresaNaQuery) {
     const r = resolverEmpresa(cadastradas, req.empresaNaQuery);
     if (r.tipo === "erro") {
@@ -222,7 +241,9 @@ export async function receberWebhook(
   }
 
   const cnpj = cnpjTransportadora(corpo);
-  if (!cnpjTransportadoraAceito(cnpj, listaDe(empresa.parametros.cnpjs_aceitos))) {
+  if (
+    !cnpjTransportadoraAceito(cnpj, cnpjsAceitosDosParametros(empresa.parametros.cnpjs_aceitos))
+  ) {
     avisar("cnpj_nao_autorizado", { cnpjRecebido: cnpj || "(vazio)" });
     await registrar(empresa.id, 401, "cnpj_nao_autorizado", corpo, true);
     return erro(
@@ -270,9 +291,4 @@ function lerJson(texto: string): unknown {
   } catch {
     return undefined;
   }
-}
-
-function listaDe(valor: unknown): string[] {
-  const itens = Array.isArray(valor) ? valor : typeof valor === "string" ? valor.split(",") : [];
-  return itens.filter((i): i is string => typeof i === "string" && i.trim() !== "");
 }

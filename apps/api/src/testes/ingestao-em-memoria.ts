@@ -33,6 +33,7 @@ export class IngestaoEmMemoria {
       cteId: e.cteId,
       numeroCte: null,
       temPayload: e.payloadBruto !== null,
+      tokenSha256: e.tokenSha256,
     });
     const recentes = () => [...this.eventos].sort((a, b) => +b.recebidoEm - +a.recebidoEm);
     const chave = (empresaId: string, tipo: IntegracaoDaIngestao) => `${empresaId}:${tipo}`;
@@ -46,6 +47,7 @@ export class IngestaoEmMemoria {
           ativo: atual?.ativo ?? false,
           parametros,
           segredo: novoSegredo,
+          segredoAnterior: atual?.segredoAnterior ?? null,
           temSegredo: novoSegredo !== null,
           ultimoTesteEm: atual?.ultimoTesteEm ?? null,
           ultimoTesteOk: atual?.ultimoTesteOk ?? null,
@@ -70,7 +72,7 @@ export class IngestaoEmMemoria {
           recentes()
             .filter((e) => e.motivoRejeicao === motivo && e.payloadBruto !== null)
             .slice(0, limite)
-            .map((e) => e.id),
+            .map((e) => ({ id: e.id, tokenSha256: e.tokenSha256 })),
         ),
       contagemWebhook: (desde) => {
         const janela = this.eventos.filter((e) => e.recebidoEm >= desde);
@@ -101,7 +103,11 @@ export class IngestaoEmMemoria {
       ultimaAplicacao: () => Promise.resolve(this.ultimaAplicacao),
       marcarReprocesso: (id) => {
         const e = this.eventos.find((x) => x.id === id);
-        if (e) e.erroProcessamento = "reenviado para processamento";
+        if (e)
+          Object.assign(e, {
+            autenticado: true,
+            erroProcessamento: "reenviado para processamento",
+          });
         return Promise.resolve();
       },
       empresasComWebhook: () => Promise.resolve(this.empresasDoWebhook),

@@ -47,6 +47,8 @@ interface IntegracaoFalsa extends IntegracaoGravada {
   empresaId: string;
   segredoCifrado: string | null;
   segredoVersaoChave: number | null;
+  segredoAnteriorCifrado: string | null;
+  segredoAnteriorVersaoChave: number | null;
 }
 
 /** Só dados (sem métodos): a transação falsa copia e restaura este estado. */
@@ -579,7 +581,16 @@ export function criarRepositoriosDeAdministracao(
       Promise.resolve(
         adm.integracoes
           .filter((i) => i.empresaId === empresaId)
-          .map(({ empresaId: _e, segredoCifrado: _s, segredoVersaoChave: _v, ...i }) => i),
+          .map(
+            ({
+              empresaId: _e,
+              segredoCifrado: _s,
+              segredoVersaoChave: _v,
+              segredoAnteriorCifrado: _sa,
+              segredoAnteriorVersaoChave: _va,
+              ...i
+            }) => i,
+          ),
       ),
     gravarIntegracao: (empresaId, tipo, dados) => {
       const atual = integracaoFalsa(empresaId, tipo);
@@ -588,6 +599,10 @@ export function criarRepositoriosDeAdministracao(
     },
     gravarSegredo: (empresaId, tipo, segredo) => {
       const atual = integracaoFalsa(empresaId, tipo);
+      if (tipo === "ssw_webhook" && atual.segredoCifrado !== null) {
+        atual.segredoAnteriorCifrado = atual.segredoCifrado;
+        atual.segredoAnteriorVersaoChave = atual.segredoVersaoChave;
+      }
       Object.assign(atual, {
         segredoCifrado: segredo?.cifrado ?? null,
         segredoVersaoChave: segredo?.versaoChave ?? null,
@@ -653,6 +668,8 @@ export function criarRepositoriosDeAdministracao(
         parametros: {},
         segredoCifrado: null,
         segredoVersaoChave: null,
+        segredoAnteriorCifrado: null,
+        segredoAnteriorVersaoChave: null,
         segredoDefinidoEm: null,
         ultimoTesteEm: null,
         ultimoTesteOk: null,

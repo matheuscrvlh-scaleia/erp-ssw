@@ -1,4 +1,4 @@
-import { type ChavesDeSegredo, cifrarSegredo } from "@erp/db/segredos";
+import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/segredos";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -164,7 +164,16 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     deps: {
       filas: deps.filasDeIngestao,
       cifrador: chaves
-        ? { cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto) }
+        ? {
+            cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto),
+            decifrar: (segredo, contexto) => {
+              try {
+                return decifrarSegredo(chaves, segredo, contexto);
+              } catch {
+                return null;
+              }
+            },
+          }
         : null,
       agora: deps.agora,
     },
