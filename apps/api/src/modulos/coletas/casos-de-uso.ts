@@ -11,7 +11,7 @@ import {
   planejarGravacao050,
 } from "@erp/dominio/coletas/gravacao-050";
 import { lerRelatorio050 } from "@erp/dominio/coletas/leitor-050";
-import { tipoDocumentoEfetivo } from "@erp/dominio/ocorrencias/busca";
+import { tipoDocumentoEfetivo } from "@erp/dominio/nucleo";
 import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type contratosColetas,
@@ -20,7 +20,6 @@ import {
   type FiltrosDeColetas,
   type LinhaDeColeta,
 } from "@erp/shared/contratos/coletas";
-import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
 import { type z } from "@erp/shared/zod";
 
 import { consultaAmplaDemais, naoEncontrado } from "../../http/erros";
@@ -109,12 +108,14 @@ type Db = Executor<"coletas">;
 const iso = (d: Date | null) => d?.toISOString() ?? null;
 
 function paraATela(c: ColetaLida, agora: Date, fuso: string): ColetaDaTela & ColetaLida {
-  const tipo = tipoDocumentoEfetivo(c.cteTipoDocumento455, c.cteTipoDocumento);
   return {
     ...c,
     statusPrazo: statusDoPrazo(c, agora, fuso),
     // CT-e não encontrado ou sem tipo: sem tipo (o agrupamento mostra vazio).
-    cteTipoDocumento: c.cteEmissao === null || tipo === SEM_TIPO_DOCUMENTO ? null : tipo,
+    cteTipoDocumento:
+      c.cteEmissao === null
+        ? null
+        : tipoDocumentoEfetivo(c.cteTipoDocumento455, c.cteTipoDocumento),
   };
 }
 

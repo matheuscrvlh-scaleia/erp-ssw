@@ -6,7 +6,7 @@ import {
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
 
 import { agrupar } from "../colecoes";
-import { tipoDocumentoEfetivo } from "../ocorrencias/busca";
+import { tipoDocumentoDoFiltro } from "../ocorrencias/busca";
 import { compararTexto } from "../ordem";
 
 /** CT-e entregue no período, já com os filtros (menos o de tipo). */
@@ -48,7 +48,7 @@ export function classificarComprovantes(
 ): Comprovante[] {
   return ctes.map((c) => ({
     ...c,
-    tipoEfetivo: tipoDocumentoEfetivo(c.tipoDocumento455, c.tipoDocumento),
+    tipoEfetivo: tipoDocumentoDoFiltro(c.tipoDocumento455, c.tipoDocumento),
     digitalizado: c.comprovanteEscaneado === true || c.tem88,
     coberto: diasCobertos.has(c.dia) || c.comprovanteEscaneado !== null,
   }));

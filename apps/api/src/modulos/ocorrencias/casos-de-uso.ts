@@ -4,7 +4,7 @@ import {
   saneTipos,
   termoCtrc,
   termoNf,
-  tipoDocumentoEfetivo,
+  tipoDocumentoDoFiltro,
 } from "@erp/dominio/ocorrencias/busca";
 import { codigosDoCard } from "@erp/dominio/ocorrencias/card";
 import {
@@ -187,7 +187,7 @@ function paraOPainel(
     .filter(
       (c) =>
         tipos.length === 0 ||
-        tipos.includes(tipoDocumentoEfetivo(c.tipoDocumento455, c.tipoDocumento)),
+        tipos.includes(tipoDocumentoDoFiltro(c.tipoDocumento455, c.tipoDocumento)),
     )
     .flatMap((c) => {
       const dataBase = f.campoData === "prevista" ? c.dataPrevistaEntrega : c.dataEmissao;

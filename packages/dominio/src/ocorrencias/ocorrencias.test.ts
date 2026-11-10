@@ -7,7 +7,7 @@ import {
   saneTipos,
   termoCtrc,
   termoNf,
-  tipoDocumentoEfetivo,
+  tipoDocumentoDoFiltro,
 } from "./busca";
 import { codigosDoCard } from "./card";
 import {
@@ -64,8 +64,8 @@ describe("busca", () => {
 
   it("tipos e rótulos", () => {
     expect(saneTipos([" cte ", "CTE", "", "nfs"])).toEqual(["CTE", "NFS"]);
-    expect(tipoDocumentoEfetivo("  ", "normal")).toBe("NORMAL");
-    expect(tipoDocumentoEfetivo(null, null)).toBe("__SEM_TIPO__");
+    expect(tipoDocumentoDoFiltro("  ", "normal")).toBe("NORMAL");
+    expect(tipoDocumentoDoFiltro(null, null)).toBe("__SEM_TIPO__");
     expect(rotuloDoPagador("", "123")).toBe("123");
     expect(rotuloDoPagador(null, null)).toBe("—");
   });

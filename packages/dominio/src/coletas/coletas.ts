@@ -8,7 +8,7 @@ import {
 import { hojeNoFuso } from "@erp/shared/datas";
 
 import { agrupar } from "../colecoes";
-import { aparar } from "../ocorrencias/busca";
+import { btrim } from "../nucleo";
 import { compararComNulosNoFim, compararNumero, compararTexto } from "../ordem";
 
 /**
@@ -170,7 +170,7 @@ export function calcularPainelDeColetas(
  * origem: coletas_lista (sistema atual)
  */
 export function casaBusca(c: ColetaDaTela, busca: string): boolean {
-  const b = aparar(busca);
+  const b = btrim(busca);
   if (b === "") return true;
   const minusculo = b.toLowerCase();
   const contem = (valor: string | null) => valor?.toLowerCase().includes(minusculo) ?? false;

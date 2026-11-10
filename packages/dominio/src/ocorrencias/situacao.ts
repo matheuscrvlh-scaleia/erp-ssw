@@ -1,8 +1,7 @@
 import { type FaixaAtraso } from "@erp/shared/contratos/ocorrencias";
 import { diferencaEmDias } from "@erp/shared/datas";
 
-/** Códigos que contam como entrega, qualquer que seja o catálogo. */
-export const CODIGOS_DE_ENTREGA: ReadonlySet<number> = new Set([1, 18, 67]);
+import { estaEntregue, estaFinalizadoSemEntrega } from "../nucleo";
 
 export interface DadosDaSituacao {
   dataEntregaRealizada: Date | null;
@@ -26,18 +25,16 @@ export interface Situacao {
  * Situação do CT-e para as telas de ocorrências. Entrega gravada vence qualquer código; baixa =
  * código do catálogo da empresa com tipo SSW "BAIXA" (Q22 do dono). `hoje` = dia em
  * America/Sao_Paulo (Q11 do dono).
- * origem: _is_entregue / _is_finalizado_sem_entrega / CTE univ de ocorrencias_painel_v5
- * TODO(nucleo): trocar por nucleo/situacao
+ * origem: CTE univ de ocorrencias_painel_v5 (sistema atual)
  */
 export function situacaoDoCte(
   cte: DadosDaSituacao,
   codigosDeBaixa: ReadonlySet<number>,
   hoje: string,
 ): Situacao {
-  const codigo = cte.codigoEfetivo;
-  const entregue =
-    cte.dataEntregaRealizada !== null || (codigo !== null && CODIGOS_DE_ENTREGA.has(codigo));
-  const baixado = !entregue && codigo !== null && codigosDeBaixa.has(codigo);
+  const codigo = cte.codigoEfetivo === null ? null : String(cte.codigoEfetivo);
+  const entregue = estaEntregue(cte.dataEntregaRealizada, codigo);
+  const baixado = estaFinalizadoSemEntrega(cte.dataEntregaRealizada, codigo, codigosDeBaixa);
   const emAberto = !entregue && !baixado;
   const previsao = cte.dataPrevistaEntrega;
   const atrasoDias =

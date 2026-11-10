@@ -160,6 +160,8 @@ export async function salvarCodigo(
     }
     // Código novo ainda não tem ocorrência (a ocorrência exige o código no catálogo).
     const precisaPropagar = antes !== undefined && classificacaoMudou(antes, depois);
+    // TODO(nucleo): trocar por nucleo/recalculo-de-ctes — descrição mudou (efeitoDaAlteracaoDeCodigo
+    // .recalcularCtes, Q20) exige recalcular os CT-e com o código; o núcleo ainda não tem o lote.
     return {
       afetadas: await codigosOcorrencia.contarOcorrencias(ctx.empresaId, [codigo]),
       depoisDoCommit: await propagar(

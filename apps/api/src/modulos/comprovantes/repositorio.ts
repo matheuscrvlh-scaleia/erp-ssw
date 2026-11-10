@@ -1,6 +1,6 @@
 import { type Transacao } from "@erp/db";
 import { ctes, ingestaoArquivos, ocorrencias } from "@erp/db/schema";
-import { CODIGOS_DE_ENTREGA } from "@erp/dominio/ocorrencias/situacao";
+import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo";
 import {
   and,
   between,
@@ -41,7 +41,7 @@ function ondeEntregues(tx: Transacao, f: FiltroDeEntregues): SQL | undefined {
     inArray(ctes.filialEfetiva, filiaisProprias(tx, f.empresaId)),
     or(
       isNotNull(ctes.dataEntregaRealizada),
-      inArray(ctes.ocorrEfetivaCodigoNum, [...CODIGOS_DE_ENTREGA]),
+      inArray(ctes.ocorrEfetivaCodigoNum, [...CODIGOS_ENTREGA]),
     ),
     or(isNotNull(ctes.dataEntregaRealizada), isNotNull(ctes.ocorrEfetivaData)),
     between(ctes.dataConclusaoEfetiva, f.inicio, f.fim),
