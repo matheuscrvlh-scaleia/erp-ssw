@@ -3,13 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CATALOGO_FR } from "./apoio-testes";
 import { codigoNumericoOuNulo, codigosDeBaixa, normCodigoOcorr } from "./codigos";
 import { diaSp, difDias, hojeSp, horaSp, inicioDoDiaSp } from "./tempo";
-import {
-  casaFiltroTexto,
-  formatarCnpjCpf,
-  normalizarNome,
-  padroesTextoFiltro,
-  tipoDocumentoEfetivo,
-} from "./texto";
+import { formatarCnpjCpf, normalizarNome, padroesTextoFiltro, tipoDocumentoEfetivo } from "./texto";
 
 describe("normCodigoOcorr (§2.1)", () => {
   it.each([
@@ -45,6 +39,34 @@ describe("códigos de baixa vêm do cadastro da empresa (Q22)", () => {
     ]);
   });
 });
+
+/**
+ * Paridade dos padrões com o `ILIKE ANY` da consulta: a mesma decisão, linha a linha (só no teste;
+ * em produção quem casa é o Postgres).
+ */
+function casaFiltroTexto(valor: string | null, filtro: string | null): boolean {
+  if (valor === null || filtro === null) return false;
+  return padroesTextoFiltro(filtro).some((p) => ilike(valor, p));
+}
+
+/** ILIKE com escape padrão `\`: `%` = qualquer sequência, `_` = um caractere. */
+function ilike(valor: string, padrao: string): boolean {
+  let regex = "";
+  for (let i = 0; i < padrao.length; i++) {
+    const ch = padrao.charAt(i);
+    if (ch === "\\" && i + 1 < padrao.length) {
+      i++;
+      regex += escaparRegex(padrao.charAt(i));
+    } else if (ch === "%") regex += "[\\s\\S]*";
+    else if (ch === "_") regex += "[\\s\\S]";
+    else regex += escaparRegex(ch);
+  }
+  return new RegExp(`^${regex}$`, "iu").test(valor);
+}
+
+function escaparRegex(ch: string): string {
+  return ch.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
+}
 
 describe("filtro de texto com vários valores (§2.3)", () => {
   it.each([

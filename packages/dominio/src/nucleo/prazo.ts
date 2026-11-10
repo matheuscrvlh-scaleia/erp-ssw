@@ -97,11 +97,6 @@ export function prazoPadraoData(
   return dias === null ? null : somarDiasCorridos(emissao, dias);
 }
 
-/** Previsão antes do prazo mínimo. Avaliado = as duas datas preenchidas. */
-export function nascidoEmAtraso(previsao: DataIso | null, padraoData: DataIso | null): boolean {
-  return previsao !== null && padraoData !== null && previsao < padraoData;
-}
-
 // --- Prazos configurados (Admin) -------------------------------------------------------------
 
 /** Linha de `prazos_configurados`. */

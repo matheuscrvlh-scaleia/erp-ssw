@@ -1,8 +1,10 @@
 /**
- * Escopo de visibilidade de CT-e e ocorrência por unidade/equipe (Q26 do dono: uma regra só,
- * na prática desligada enquanto nenhuma tela grava a unidade do usuário — sem escopo, vê tudo).
- * O RLS já restringe à empresa; o repositório aplica este escopo nas consultas com o fragmento
- * `($verTudo OR c.unidade_id = $unidade OR c.equipe_id = ANY($equipes))`.
+ * Escopo de visibilidade de CT-e e ocorrência por unidade/equipe. Q26 do dono: uma regra só,
+ * portada **desligada** até existir a tela que grava a unidade/equipe do usuário (hoje ninguém tem
+ * escopo, então todos veem tudo da empresa). Por isso nenhuma consulta usa estas funções ainda:
+ * quando a tela vier, o repositório aplica o fragmento
+ * `($verTudo OR c.unidade_id = $unidade OR c.equipe_id = ANY($equipes))`. O RLS já restringe à
+ * empresa.
  */
 import { PAPEL_ADMIN, PAPEL_GESTOR, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 
