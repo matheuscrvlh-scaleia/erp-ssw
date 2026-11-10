@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/componentes/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
+import { dataDoCalendario, isoDoCalendario } from "@/lib/dia-do-calendario";
 import { cn } from "@/lib/utils";
 
 import { consultaOpcoes, consultaPerformanceAjudantes } from "./api";
@@ -81,7 +82,6 @@ export function BaseDeData({ busca: b, definir }: Pick<PropsDaBarra, "busca" | "
 /** Data prevista de entrega (um dia só). */
 function FiltroPrevisao({ valor, aoMudar }: { valor: string; aoMudar: (v: string) => void }) {
   const [aberto, setAberto] = useState(false);
-  const [ano = 1970, mes = 1, dia = 1] = valor.split("-").map(Number);
   return (
     <div className="inline-flex items-center gap-1">
       <Popover open={aberto} onOpenChange={setAberto}>
@@ -98,12 +98,10 @@ function FiltroPrevisao({ valor, aoMudar }: { valor: string; aoMudar: (v: string
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={valor ? new Date(ano, mes - 1, dia) : undefined}
+            selected={valor ? dataDoCalendario(valor) : undefined}
             onSelect={(d) => {
               if (!d) return;
-              const m = String(d.getMonth() + 1).padStart(2, "0");
-              const dd = String(d.getDate()).padStart(2, "0");
-              aoMudar(`${String(d.getFullYear())}-${m}-${dd}`);
+              aoMudar(isoDoCalendario(d));
               setAberto(false);
             }}
             autoFocus

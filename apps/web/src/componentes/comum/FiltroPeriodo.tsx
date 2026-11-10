@@ -5,21 +5,11 @@ import { type DateRange } from "react-day-picker";
 
 import { Calendar } from "@/componentes/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
+import { dataDoCalendario, isoDoCalendario } from "@/lib/dia-do-calendario";
 import { cn } from "@/lib/utils";
 
 import { GatilhoFiltro } from "./GatilhoFiltro";
 import { type AtalhoPeriodo, type Periodo, ROTULO_ATALHO } from "./periodo";
-
-/** Dia do calendário (meia-noite local) ↔ "AAAA-MM-DD", sem passar por UTC. */
-function paraData(iso: string): Date {
-  const [ano = 1970, mes = 1, dia = 1] = iso.split("-").map(Number);
-  return new Date(ano, mes - 1, dia);
-}
-function paraIso(data: Date): string {
-  const mes = String(data.getMonth() + 1).padStart(2, "0");
-  const dia = String(data.getDate()).padStart(2, "0");
-  return `${String(data.getFullYear())}-${mes}-${dia}`;
-}
 
 export interface MudancaPeriodo {
   periodo: Periodo;
@@ -60,7 +50,7 @@ export function FiltroPeriodo({
   const [aberto, setAberto] = useState(false);
   const personalizado = periodo === "custom" && Boolean(de && ate);
   const intervalo: DateRange | undefined = personalizado
-    ? { from: paraData(de), to: paraData(ate) }
+    ? { from: dataDoCalendario(de), to: dataDoCalendario(ate) }
     : undefined;
 
   return (
@@ -111,10 +101,18 @@ export function FiltroPeriodo({
             selected={intervalo}
             onSelect={(r) => {
               if (r?.from && r.to) {
-                aoMudar({ periodo: "custom", de: paraIso(r.from), ate: paraIso(r.to) });
+                aoMudar({
+                  periodo: "custom",
+                  de: isoDoCalendario(r.from),
+                  ate: isoDoCalendario(r.to),
+                });
                 setAberto(false);
               } else if (r?.from) {
-                aoMudar({ periodo: "custom", de: paraIso(r.from), ate: paraIso(r.from) });
+                aoMudar({
+                  periodo: "custom",
+                  de: isoDoCalendario(r.from),
+                  ate: isoDoCalendario(r.from),
+                });
               }
             }}
             autoFocus
