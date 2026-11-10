@@ -13,15 +13,8 @@ import {
   inicioDoDiaSp,
   normCodigoOcorr,
 } from "../nucleo";
-import {
-  arredondar,
-  CODIGO_SAIDA,
-  COLLATOR,
-  maxTexto,
-  normPlaca,
-  sswNum,
-  sswSigla,
-} from "./normalizacao";
+import { arredondar } from "../performance/numeros";
+import { CODIGO_SAIDA, COLLATOR, maxTexto, normPlaca, sswNum, sswSigla } from "./normalizacao";
 import { type Cadastro, ehPenalizanteFR, type OcorrenciaDoCte } from "./situacao";
 
 /** Linha do relatório 036 como a ingestão grava (campos usados aqui). */

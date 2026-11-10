@@ -7,14 +7,8 @@
  * Q15 (prejuízo só de CT-e que saiu para entrega, inclusive na Performance Motorista/Ajudante).
  */
 import { diaSp, horaSp, normalizarNome } from "../nucleo";
-import {
-  arredondar,
-  chaveAjudante,
-  CODIGO_RETORNO,
-  COLLATOR,
-  maxTexto,
-  normNome,
-} from "./normalizacao";
+import { arredondar } from "../performance/numeros";
+import { chaveAjudante, CODIGO_RETORNO, COLLATOR, maxTexto, normNome } from "./normalizacao";
 import {
   type Cadastro,
   type CteAnalisado,

@@ -92,9 +92,3 @@ export function maxTexto(valores: Iterable<string | null>): string | null {
   }
   return maior;
 }
-
-/** `round(x, casas)` do Postgres (meio para longe do zero). */
-export function arredondar(valor: number, casas: number): number {
-  const fator = 10 ** casas;
-  return (Math.sign(valor) * Math.round(Math.abs(valor) * fator)) / fator;
-}
