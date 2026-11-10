@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { filtroDaBusca, lerBuscaDaLista, periodoDaLista, tituloDaLista } from "./busca";
+import {
+  caminhoDaLista,
+  filtroDaBusca,
+  lerBuscaDaLista,
+  periodoDaLista,
+  tituloDaLista,
+} from "./busca";
 
 describe("lerBuscaDaLista", () => {
   it("URL vazia: padrões de hoje (emitidos, mês, por emissão, 1ª página)", () => {
@@ -121,5 +127,29 @@ describe("tituloDaLista", () => {
   it("penalizados de uma unidade levam a unidade no título", () => {
     const b = lerBuscaDaLista({ tipo: "penalizados", unidades: "CAP" });
     expect(tituloDaLista(b, "Hoje", "ACME")).toBe("CT-e penalizados em CAP — Hoje");
+  });
+});
+
+describe("caminhoDaLista", () => {
+  it("listas vão em JSON, vazios ficam de fora e a rota lê de volta", () => {
+    const caminho = caminhoDaLista({
+      tipo: "no_prazo",
+      de: "2026-10-01",
+      parceiros: ["123"],
+      destino: "",
+      tipos: [],
+    });
+    expect(caminho).toBe(
+      "/performance/lista?tipo=no_prazo&de=2026-10-01&parceiros=%5B%22123%22%5D",
+    );
+    const lida = lerBuscaDaLista(
+      Object.fromEntries(
+        [...new URLSearchParams(caminho.split("?")[1])].map(([k, v]) => [
+          k,
+          v.startsWith("[") ? (JSON.parse(v) as unknown) : v,
+        ]),
+      ),
+    );
+    expect(lida).toMatchObject({ tipo: "no_prazo", de: "2026-10-01", parceiros: ["123"] });
   });
 });

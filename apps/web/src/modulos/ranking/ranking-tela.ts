@@ -7,9 +7,26 @@ import { type StatusKpi } from "@/componentes/comum/KpiCard";
  * origem: RankingTabela.tsx (sistema atual)
  */
 
-// TODO(admin): ler `sla_meta_pct` e `sla_alerta_amarelo_pct` das configurações da empresa.
-export const META_PADRAO = 0.95;
-export const ALERTA_PADRAO = 0.9;
+/** Fração do percentual configurado; sem valor (ou inválido), o padrão. */
+function fracao(valor: string | undefined, padrao: number): number {
+  const n = Number(valor);
+  return valor === undefined || !Number.isFinite(n) ? padrao : n / 100;
+}
+
+/**
+ * Meta e alerta amarelo do SLA, das configurações da empresa (`sla_meta_pct`,
+ * `sla_alerta_amarelo_pct`); 95% e 90% enquanto não chegam.
+ * origem: useSlaThresholds (sistema atual)
+ */
+export function limiaresDoSla(valores: Readonly<Record<string, string>> | undefined): {
+  meta: number;
+  alerta: number;
+} {
+  return {
+    meta: fracao(valores?.["sla_meta_pct"], 0.95),
+    alerta: fracao(valores?.["sla_alerta_amarelo_pct"], 0.9),
+  };
+}
 
 export type ChaveDeOrdem =
   | "nome"
@@ -101,20 +118,4 @@ export function formatarPct(v: number | null): string {
   return v === null
     ? "—"
     : `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
-}
-
-/**
- * Busca da Listagem detalhada no formato do roteador (texto puro; lista em JSON).
- * TODO(listagem): usar o tipo de busca da rota `/performance/lista` quando ela existir na main.
- */
-export function caminhoDaLista(busca: Record<string, string | string[]>): string {
-  const q = new URLSearchParams();
-  for (const [chave, valor] of Object.entries(busca)) {
-    if (Array.isArray(valor)) {
-      if (valor.length > 0) q.set(chave, JSON.stringify(valor));
-    } else if (valor !== "") {
-      q.set(chave, valor);
-    }
-  }
-  return `/performance/lista?${q.toString()}`;
 }

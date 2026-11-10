@@ -12,11 +12,11 @@ import { type Regra } from "@erp/shared/contratos/ranking";
 import { type IntegracaoAhgora, type RepositorioAhgora } from "../modulos/ahgora/casos-de-uso";
 import { type RepositorioBonificacaoEntrega } from "../modulos/bonificacao-entrega/casos-de-uso";
 import {
+  type ConsultaDoRanking,
   type EquipeGravada,
   type MembroGravado,
   type RepositorioRanking,
 } from "../modulos/ranking/casos-de-uso";
-import { type FiltroPerformance } from "../modulos/ranking/filtro-performance";
 
 /*
  * Dados falsos de Ranking, Bonificação de entrega e Ahgora para os testes: arrays por empresa e
@@ -42,7 +42,7 @@ export class DadosDoRanking {
   codigosBaixa: number[] = [12, 36, 61, 77, 92, 93, 94, 99];
   baldesRanking: BaldeRanking[] = [];
   rotulosRanking: RotuloRanking[] = [];
-  filtrosRecebidos: FiltroPerformance[] = [];
+  consultasRecebidas: ConsultaDoRanking[] = [];
   /** Erros que as próximas consultas do ranking operacional lançam (um por consulta). */
   falhasDoRanking: Error[] = [];
 
@@ -80,8 +80,8 @@ export class DadosDoRanking {
     return {
       filiaisProprias: (empresaId) => resolver(this.filiaisProprias.get(empresaId) ?? []),
       codigosBaixa: () => resolver(this.codigosBaixa),
-      baldes: (filtro) => {
-        this.filtrosRecebidos.push(filtro);
+      baldes: (consulta) => {
+        this.consultasRecebidas.push(consulta);
         const falha = this.falhasDoRanking.shift();
         return falha === undefined ? resolver(this.baldesRanking) : Promise.reject(falha);
       },

@@ -1,4 +1,4 @@
-import { contratosAdmin as c } from "@erp/shared/contratos/admin";
+import { contratosAdmin as c, contratosConfiguracoes } from "@erp/shared/contratos/admin";
 import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
@@ -31,6 +31,13 @@ export const consultaDepartamentos = queryOptions({
 export const consultaConfiguracoes = queryOptions({
   queryKey: CHAVES.configuracoes,
   queryFn: () => chamar(c.listarConfiguracoes),
+});
+
+/** Limiares das telas (meta de SLA etc.) da empresa ativa: qualquer usuário lê. */
+export const consultaConfiguracoesPublicas = queryOptions({
+  queryKey: CHAVES.publicas,
+  queryFn: () => chamar(contratosConfiguracoes.publicas),
+  staleTime: 5 * 60_000,
 });
 
 export const consultaPrazos = queryOptions({

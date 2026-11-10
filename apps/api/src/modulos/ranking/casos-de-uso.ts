@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { type LiberacaoDeModulo, modulosVigentes } from "@erp/dominio/acesso";
+import { type FiltroCtrc, normalizarFiltro } from "@erp/dominio/performance/filtro";
 import {
   agregarRanking,
   type BaldeRanking,
@@ -32,12 +33,7 @@ import { type z } from "@erp/shared/zod";
 import { naoEncontrado } from "../../http/erros";
 import { type Executor, type ExecutorComContexto } from "../../repositorios";
 import { type Ator } from "../auditoria/auditoria";
-import {
-  digitos,
-  filiaisPedidas,
-  type FiltroPerformance,
-  tiposPedidos,
-} from "./filtro-performance";
+import { type ContextoDaConsulta } from "../performance/consultas";
 
 type C = typeof contratosRanking;
 
@@ -69,12 +65,18 @@ export interface DadosDaRegra {
   ativo: boolean;
 }
 
+/** Filtro da tela Performance (mesmo universo e filtros) e quem consulta. */
+export interface ConsultaDoRanking {
+  filtro: FiltroCtrc;
+  contexto: ContextoDaConsulta;
+}
+
 export interface RepositorioRanking {
   filiaisProprias(empresaId: string): Promise<string[]>;
   /** Códigos do catálogo da empresa com tipo BAIXA. */
   codigosBaixa(empresaId: string): Promise<number[]>;
-  baldes(filtro: FiltroPerformance, grupo: GrupoRanking, hoje: string): Promise<BaldeRanking[]>;
-  rotulos(filtro: FiltroPerformance, grupo: GrupoRanking): Promise<RotuloRanking[]>;
+  baldes(consulta: ConsultaDoRanking, grupo: GrupoRanking): Promise<BaldeRanking[]>;
+  rotulos(consulta: ConsultaDoRanking, grupo: GrupoRanking): Promise<RotuloRanking[]>;
 
   equipes(empresaId: string): Promise<EquipeGravada[]>;
   equipe(empresaId: string, id: string): Promise<EquipeGravada | null>;
@@ -145,23 +147,31 @@ export async function rankingOperacional(
   const consultar = () =>
     db(async ({ ranking }) => {
       const proprias = await ranking.filiaisProprias(ctx.empresaId);
-      const pagadores = (entrada.pagadores ?? []).map(digitos).filter(Boolean);
-      const filtro: FiltroPerformance = {
-        empresaId: ctx.empresaId,
-        inicio: entrada.inicio,
-        fim: entrada.fim,
-        baseData: entrada.baseData,
-        filiais: filiaisPedidas(entrada.filiais, proprias),
-        filiaisProprias: proprias,
-        pagadores: pagadores.length > 0 ? pagadores : null,
-        remetente: entrada.remetente?.trim() || null,
-        destino: entrada.destino?.trim() || null,
-        tipos: tiposPedidos(entrada.tipos),
+      const consulta: ConsultaDoRanking = {
+        // origem: _perf_filtro_ctrcs (o ranking_operacional usa o filtro da Performance)
+        filtro: normalizarFiltro(
+          {
+            inicio: entrada.inicio,
+            fim: entrada.fim,
+            baseData: entrada.baseData,
+            filiais: entrada.filiais,
+            parceiros: entrada.pagadores,
+            remetente: entrada.remetente,
+            destino: entrada.destino,
+            tipos: entrada.tipos,
+          },
+          proprias,
+        ),
+        contexto: {
+          empresaId: ctx.empresaId,
+          fuso: ctx.fuso,
+          hoje: hojeNoFuso(ctx.fuso, deps.agora),
+          filiaisProprias: proprias,
+        },
       };
-      const hoje = hojeNoFuso(ctx.fuso, deps.agora);
       const [baldes, rotulos, baixas] = await Promise.all([
-        ranking.baldes(filtro, entrada.grupo, hoje),
-        ranking.rotulos(filtro, entrada.grupo),
+        ranking.baldes(consulta, entrada.grupo),
+        ranking.rotulos(consulta, entrada.grupo),
         ranking.codigosBaixa(ctx.empresaId),
       ]);
       return agregarRanking(baldes, rotulos, new Set(baixas));

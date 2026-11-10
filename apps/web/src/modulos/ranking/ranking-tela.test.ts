@@ -2,10 +2,10 @@ import { type LinhaDoRanking } from "@erp/shared/contratos/ranking";
 import { describe, expect, it } from "vitest";
 
 import {
-  caminhoDaLista,
   filtrarPorCard,
   formatarPct,
   kpisDoRanking,
+  limiaresDoSla,
   nivelDoSla,
   ordenarLinhas,
 } from "./ranking-tela";
@@ -75,9 +75,12 @@ describe("ranking operacional — regras da tela", () => {
     expect(formatarPct(null)).toBe("—");
   });
 
-  it("listas vão em JSON na busca e vazios ficam de fora", () => {
-    expect(caminhoDaLista({ inicio: "2026-10-01", pagadores: ["123"], destino: "" })).toBe(
-      "/performance/lista?inicio=2026-10-01&pagadores=%5B%22123%22%5D",
-    );
+  it("meta e alerta vêm das configurações da empresa; sem elas, 95% e 90%", () => {
+    expect(limiaresDoSla(undefined)).toEqual({ meta: 0.95, alerta: 0.9 });
+    expect(limiaresDoSla({ sla_meta_pct: "97", sla_alerta_amarelo_pct: "92.5" })).toEqual({
+      meta: 0.97,
+      alerta: 0.925,
+    });
+    expect(limiaresDoSla({ sla_meta_pct: "x" }).meta).toBe(0.95);
   });
 });

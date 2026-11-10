@@ -18,6 +18,7 @@ import {
   type TipoRecorte,
   TIPOS_RECORTE,
 } from "@erp/shared/contratos/listagem";
+import { defaultStringifySearch } from "@tanstack/react-router";
 
 import {
   type AtalhoPeriodo,
@@ -304,4 +305,17 @@ export function tituloDaLista(busca: BuscaDaLista, rotuloDoPeriodo: string, nome
   const sufixo =
     busca.ignorar_periodo && recortes.some(recorteSemPeriodo) ? "Todos em aberto" : rotuloDoPeriodo;
   return `${titulo} — ${sufixo}`;
+}
+
+/**
+ * Endereço da Listagem para quem abre a lista de outra tela: só os parâmetros preenchidos (listas
+ * em JSON, como o roteador lê); o que ficar de fora volta ao padrão da rota.
+ */
+export function caminhoDaLista(busca: Partial<BuscaDaLista>): string {
+  const preenchidos = Object.fromEntries(
+    Object.entries(busca).filter(
+      ([, v]) => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0),
+    ),
+  );
+  return `/performance/lista${defaultStringifySearch(preenchidos)}`;
 }
