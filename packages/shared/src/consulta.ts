@@ -18,7 +18,7 @@ export const inteiro = z.union([
     .string()
     .regex(/^-?\d+$/, "Número inteiro inválido.")
     .transform(Number)
-    .pipe(z.number().int().safe()),
+    .pipe(z.number().int()),
 ]);
 
 export const decimal = z.union([

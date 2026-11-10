@@ -13,6 +13,9 @@ import { type EmissorDeTokens } from "./infra/tokens";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { rotasCtrc } from "./modulos/ctrc/rotas";
+import { rotasFiltros } from "./modulos/filtros/rotas";
+import { rotasListagem } from "./modulos/listagem/rotas";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -92,6 +95,9 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+  await app.register(rotasFiltros);
+  await app.register(rotasListagem, { agora: deps.agora });
+  await app.register(rotasCtrc, { agora: deps.agora });
 
   return app;
 }

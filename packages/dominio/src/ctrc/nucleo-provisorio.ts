@@ -5,7 +5,8 @@
  */
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 
-const FUSO_DO_NEGOCIO = "America/Sao_Paulo";
+// TODO(nucleo): trocar por nucleo/tempo FUSO_DO_NEGOCIO
+export const FUSO_DO_NEGOCIO = "America/Sao_Paulo";
 /** Brasília não tem horário de verão desde 2019. */
 const DESLOCAMENTO_SP = "-03:00";
 

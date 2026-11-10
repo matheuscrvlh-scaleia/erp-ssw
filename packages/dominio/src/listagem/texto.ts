@@ -25,6 +25,12 @@ export function padroesDeTexto(filtro: string | null | undefined): string[] | nu
     .map((parte) => `%${escaparCuringas(parte)}%`);
 }
 
+/** Padrão ILIKE "contém" de um texto só (sugestões do autocompletar); vazio = sem filtro. */
+export function padraoContem(texto: string): string | null {
+  const t = texto.trim();
+  return t === "" ? null : `%${escaparCuringas(t)}%`;
+}
+
 const digitos = (texto: string) => texto.replace(/\D/g, "");
 const semZerosAEsquerda = (texto: string) => texto.replace(/^0+/, "");
 
