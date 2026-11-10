@@ -14,6 +14,7 @@ import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { BotoesDePagina } from "@/componentes/comum/BotoesDePagina";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import {
@@ -647,28 +648,15 @@ export function PaginaListagem() {
           Página {busca.page} de {totalDePaginas} · {total.toLocaleString("pt-BR")} CTRCs
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7"
-            disabled={busca.page <= 1 || lista.isLoading}
-            onClick={() => {
-              atualizarBusca({ page: Math.max(1, busca.page - 1) });
+          <BotoesDePagina
+            pagina={busca.page}
+            totalDePaginas={totalDePaginas}
+            aoMudar={(page) => {
+              atualizarBusca({ page });
             }}
-          >
-            Anterior
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
+            desabilitado={lista.isLoading}
             className="h-7"
-            disabled={busca.page >= totalDePaginas || lista.isLoading}
-            onClick={() => {
-              atualizarBusca({ page: Math.min(totalDePaginas, busca.page + 1) });
-            }}
-          >
-            Próxima
-          </Button>
+          />
         </div>
       </div>
     </div>

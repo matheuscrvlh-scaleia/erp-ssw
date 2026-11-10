@@ -10,6 +10,7 @@ e leitor de tela. Componentes em `apps/web/src/componentes/comum/`, exportação
 | Card de indicador | `KpiCard` (+ `statusDaMeta`) |
 | "Dados atualizados em…" | `SeloAtualizacao` |
 | Tabela | `TabelaDados` |
+| "Anterior" / "Próxima" de lista paginada fora da `TabelaDados` | `BotoesDePagina` |
 | Barra de filtros | `FiltrosAvancados` + `FiltroPeriodo` / `FiltroMultiplo` / `FiltroTexto` + `FiltrandoPor` |
 | Filtros na URL | `useFiltrosNaUrl` + `campoFiltro` |
 | Detalhe | `DrawerDetalhe` / `ModalDetalhe` + `GradeDetalhe` / `CampoDetalhe` |
