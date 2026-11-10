@@ -39,6 +39,7 @@ function bancoFalso(pendentesPorCodigo: Record<number, number> = {}) {
           apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
         },
         recalculo: {
+          ...repositorios.recalculo,
           propagarClassificacao: (_empresaId, codigo, limite) => {
             const pendentes = pendentesPorCodigo[codigo] ?? 0;
             const regravadas = Math.min(pendentes, limite);

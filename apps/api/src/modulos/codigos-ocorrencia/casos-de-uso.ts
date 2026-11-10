@@ -11,7 +11,7 @@ import {
 } from "@erp/dominio/ocorrencias/codigos-admin";
 import { type SaidaDe } from "@erp/shared/contrato";
 import { type contratosCodigosOcorrencia } from "@erp/shared/contratos/codigos-ocorrencia";
-import { JOB_PROPAGAR_CLASSIFICACAO } from "@erp/shared/jobs";
+import { JOB_PROPAGAR_CLASSIFICACAO, JOB_RECALCULAR_CTES_DO_CODIGO } from "@erp/shared/jobs";
 import { type z } from "@erp/shared/zod";
 
 import { type FilaDeJobs } from "../../infra/fila";
@@ -95,7 +95,10 @@ export async function historicoDoCodigoNaEmpresa(
 }
 
 export interface DependenciasCodigos {
-  /** Desligada sem Redis (desenvolvimento): a cópia vai sempre na transação. */
+  /**
+   * Desligada sem Redis (desenvolvimento): a cópia vai sempre na transação e os CT-e não são
+   * recalculados (o recálculo é do worker).
+   */
   fila: FilaDeJobs;
 }
 
@@ -164,16 +167,24 @@ export async function salvarCodigo(
     // Código novo ainda não tem ocorrência (a ocorrência exige o código no catálogo).
     const efeito = antes ? efeitoDaAlteracao(codigo, antes, depois) : null;
     const precisaPropagar = efeito?.regravarOcorrencias != null;
-    // TODO(nucleo): efeito.recalcularCtes (descrição mudou, Q20) pede recalcular os CT-e com o
-    // código pelo núcleo; falta a gravação de CT-e em lote (gravar-cte, onda1/ingestao-ssw) na main.
+    const propagacao = await propagar(
+      codigosOcorrencia,
+      deps,
+      ctx.empresaId,
+      precisaPropagar ? [codigo] : [],
+    );
     return {
       afetadas: await codigosOcorrencia.contarOcorrencias(ctx.empresaId, [codigo]),
-      depoisDoCommit: await propagar(
-        codigosOcorrencia,
-        deps,
-        ctx.empresaId,
-        precisaPropagar ? [codigo] : [],
-      ),
+      // Depois do commit: o worker lê o catálogo já gravado. A propagação (mesma fila) vem antes.
+      depoisDoCommit: async () => {
+        await propagacao();
+        if (efeito?.recalcularCtes) {
+          await deps.fila.enfileirar(JOB_RECALCULAR_CTES_DO_CODIGO, {
+            empresaId: ctx.empresaId,
+            codigos: [codigo],
+          });
+        }
+      },
     };
   });
   await depoisDoCommit();

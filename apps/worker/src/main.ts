@@ -33,7 +33,7 @@ import {
   reconstruirProjecoesRomaneio,
 } from "./jobs/projecoes-romaneio/job";
 import { criarRepositorioProjecoesRomaneio } from "./jobs/projecoes-romaneio/repositorio";
-import { propagarClassificacao } from "./jobs/recalculo/job";
+import { propagarClassificacao, recalcularCtesDoCodigo } from "./jobs/recalculo/job";
 import { criarRepositorioRecalculo } from "./jobs/recalculo/repositorio";
 import {
   type DefinicaoDeJob,
@@ -123,6 +123,7 @@ const JOBS: readonly DefinicaoDeJob[] = [
   recalcularProjecoesRomaneio,
   reconstruirProjecoesRomaneio,
   propagarClassificacao,
+  recalcularCtesDoCodigo,
 ];
 
 const processar = criarProcessador({ jobs: JOBS, executar, log, agora: () => new Date() });

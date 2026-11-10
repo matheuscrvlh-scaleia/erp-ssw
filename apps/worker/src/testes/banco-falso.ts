@@ -89,7 +89,21 @@ export class BancoFalso {
         candidatos: () => Promise.resolve([]),
         gravar: () => Promise.resolve(),
       },
-      recalculo: { propagarClassificacao: () => Promise.resolve(0) },
+      recalculo: {
+        propagarClassificacao: () => Promise.resolve(0),
+        ctesDoCodigo: (_empresa, codigo, aposId, limite) =>
+          Promise.resolve(
+            this.ctes
+              .filter(
+                (c) =>
+                  (aposId === null || c.id > aposId) &&
+                  (c.ocorrEfetivaCodigoNum === codigo ||
+                    this.ocorrencias.some((o) => o.cteId === c.id && o.codigo === codigo)),
+              )
+              .sort((a, b) => (a.id < b.id ? -1 : 1))
+              .slice(0, limite),
+          ),
+      },
       prazos: {
         regras: () => Promise.resolve([]),
         candidatos: () => Promise.resolve([]),
