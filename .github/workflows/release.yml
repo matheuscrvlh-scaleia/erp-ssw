@@ -2,7 +2,7 @@
 # Run workflow). Nada aqui faz deploy: na VPS, `./infra/deploy.sh <tag>` puxa a tag publicada
 # (docs/deploy.md §6).
 #
-#   ghcr.io/<dono>/<repo>/erp-{api,worker,web,migrador,caddy}:<sha7>
+#   ghcr.io/<dono>/<repo>/erp-{api,web,migrador,caddy}:<sha7>
 #
 # Antes do push cada imagem passa pelo Trivy (HIGH/CRITICAL com correção = não publica). Saem
 # com SBOM e proveniência (attestations do BuildKit). Nenhum segredo de produção vai para o
@@ -41,8 +41,6 @@ jobs:
       matrix:
         include:
           - imagem: api
-            contexto: .
-          - imagem: worker
             contexto: .
           - imagem: web
             contexto: .

@@ -1,7 +1,7 @@
 # CI do ERP SSW. Jobs em paralelo:
-#   verificar     tipos, ESLint, Prettier, testes com cobertura e build (api, worker, web)
+#   verificar     tipos, ESLint, Prettier, testes com cobertura e build (api, web)
 #   dependencias  vulnerabilidades no bun.lock (osv-scanner)
-#   imagens       build das 5 imagens (sem push) + Trivy (vulnerabilidade e segredo)
+#   imagens       build das 4 imagens (sem push) + Trivy (vulnerabilidade e segredo)
 #   infra         compose.yaml, Caddyfiles, Dockerfiles (hadolint), scripts (shellcheck) e
 #                 workflows (actionlint)
 #   segredos      gitleaks no histórico
@@ -80,7 +80,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Build (api, worker, web)
+      - name: Build (api, web)
         run: bun run build
 
   dependencias:
@@ -108,8 +108,6 @@ jobs:
       matrix:
         include:
           - imagem: api
-            contexto: .
-          - imagem: worker
             contexto: .
           - imagem: web
             contexto: .

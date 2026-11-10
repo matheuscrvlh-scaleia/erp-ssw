@@ -10,8 +10,9 @@
 #      as novas e para — as antigas nunca saíram do ar;
 #   3. manda SIGTERM nas antigas: param de aceitar conexão e terminam o que está em andamento;
 #      o Caddy já vê as novas pelo DNS e refaz noutra réplica o que bater em porta fechada.
-# Depois: worker (uma réplica, troca simples; o BullMQ devolve à fila o job interrompido), caddy
-# (só recria se a CADDY_TAG mudou) e `caddy reload`. Grava a tag no .env e no histórico.
+# Os jobs do ERP rodam na api: a réplica antiga devolve à fila o job interrompido. Depois: caddy
+# (só recria se a CADDY_TAG mudou) e `caddy reload`. Grava a tag no .env e no histórico. O
+# worker-ssw tem deploy próprio (outro compose).
 # Runbook: docs/deploy.md §6.
 set -euo pipefail
 
@@ -23,6 +24,8 @@ log() { printf '[deploy %s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 falhar() { printf '[deploy] %s\n' "$*" >&2; exit 1; }
 
 [[ -f .env ]] || falhar "falta infra/.env (modelo: .env.example)"
+docker network inspect erp-interna >/dev/null 2>&1 ||
+  falhar "falta a rede erp-interna: docker network create erp-interna (docs/deploy.md §1)"
 
 TAG="${1:?uso: ./deploy.sh <tag> [--migrar] | ./deploy.sh voltar}"
 MIGRAR=0
@@ -89,7 +92,7 @@ rolar() {
 
 log "baixando imagens da tag $TAG"
 if [[ "${SEM_PULL:-0}" != 1 ]]; then
-  compose pull --quiet web api worker
+  compose pull --quiet web api
   if [[ "$MIGRAR" -eq 1 ]]; then compose --profile ferramentas pull --quiet migrador; fi
 fi
 
@@ -103,9 +106,6 @@ fi
 compose up -d --no-deps redis
 rolar web
 rolar api
-
-log "worker: trocando"
-compose up -d --no-deps worker
 
 log "caddy: recarregando o Caddyfile"
 # Espera o Caddy reler o DNS (refresh 5 s) antes do reload: o reload cancela as novas tentativas
