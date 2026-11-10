@@ -46,7 +46,8 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   mesmo dado de hoje, lido dos eventos recebidos).
 - **Q02 — webhook casa o CT-e por sigla + número.** Ocorrência que chega só com o número da NF, ou
   sem sigla, vai para o CT-e mais recente com aquele número; CT-e desconhecido sem sigla não é
-  criado e o evento fica "sem vínculo" (antes criava ou casava o primeiro encontrado).
+  criado e o evento fica "sem vínculo" (antes podia cair no CT-e da outra série e às vezes criava
+  CT-e sem sigla).
 - **Webhook responde antes de aplicar.** O SSW recebe "OCORRENCIA PROCESSADA COM SUCESSO" assim que
   o evento é autenticado e gravado; a ocorrência entra no CT-e segundos depois (fila). Se a fila
   estiver fora, a resposta é 503 e o SSW reenvia. Na tela, o evento aparece primeiro como
