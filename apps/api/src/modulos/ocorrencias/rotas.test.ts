@@ -189,6 +189,36 @@ describe("lista, ver códigos e opções", () => {
     });
   });
 
+  it("página depois da última volta vazia com o total da lista (Q10)", async () => {
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/v1/ocorrencias/lista",
+      headers: await comoPapel("operador"),
+      payload: { ...PERIODO, tamanho: 2, pagina: 5 },
+    });
+    expect(r.json()).toEqual({ linhas: [], total: 3 });
+  });
+
+  it("exportação traz a lista inteira na ordem da tela, numa leitura só", async () => {
+    const pedido = { ...PERIODO, ordem: "numero_ctrc", direcao: "asc" };
+    const headers = await comoPapel("operador");
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/v1/ocorrencias/lista/exportacao",
+      headers,
+      payload: pedido,
+    });
+    expect(r.statusCode).toBe(200);
+    const pagina = await app.inject({
+      method: "POST",
+      url: "/api/v1/ocorrencias/lista",
+      headers,
+      payload: { ...pedido, tamanho: 500 },
+    });
+    expect(r.json()).toEqual({ linhas: pagina.json<{ linhas: unknown[] }>().linhas });
+    expect(r.json<{ linhas: unknown[] }>().linhas).toHaveLength(3);
+  });
+
   it("422 com tamanho de página acima de 500", async () => {
     const r = await app.inject({
       method: "POST",

@@ -7,6 +7,8 @@ import {
   listarComprovantes,
 } from "@erp/dominio/comprovantes/comprovantes";
 import { tipoDocumentoEfetivo } from "@erp/dominio/nucleo";
+import { montarLista } from "@erp/dominio/ocorrencias/lista";
+import { type LinhaDeOcorrencia } from "@erp/shared/contratos/ocorrencias";
 
 import { type CodigoGravado } from "../modulos/codigos-ocorrencia/casos-de-uso";
 import { type ColetaLida } from "../modulos/coletas/casos-de-uso";
@@ -16,10 +18,9 @@ import {
 } from "../modulos/comprovantes/casos-de-uso";
 import { type AnotacaoGravada, type RepositorioHistorico } from "../modulos/historico/casos-de-uso";
 import {
-  type ConferenteDoCte,
   type CteLido,
-  type DetalheDoCte,
   type OcorrenciaLida,
+  paraOPainel,
   type RepositorioOcorrencias,
 } from "../modulos/ocorrencias/casos-de-uso";
 import { type Repositorios } from "../repositorios";
@@ -32,7 +33,26 @@ import { type BancoEmMemoria } from "./banco-em-memoria";
 
 type DaEmpresa<T> = T & { empresaId: string };
 
-export type CteFalso = DaEmpresa<CteLido & Omit<DetalheDoCte, "id">>;
+/** Campos do CT-e que só a lista detalhada mostra. */
+interface DetalheDoCte {
+  numeroNf: number | null;
+  destinatario: string | null;
+  cidadeDestino: string | null;
+  ufDestino: string | null;
+  peso: number | null;
+  volumes: number | null;
+  valorFrete: number | null;
+  setor: string | null;
+}
+
+interface ConferenteDoCte {
+  sigla: string;
+  numero: string;
+  conferente: string | null;
+  romaneio: string;
+}
+
+export type CteFalso = DaEmpresa<CteLido & DetalheDoCte>;
 export type OcorrenciaFalsa = DaEmpresa<
   OcorrenciaLida & { quarentena: boolean; penaliza: boolean; responsavel: string }
 >;
@@ -97,15 +117,78 @@ export class DadosDeOcorrencias {
             .slice(0, limite),
         );
       },
-      detalhes: (ids) => Promise.resolve(this.ctes.filter((c) => ids.includes(c.id))),
-      conferentesDosCtes: (empresaId, chaves) =>
-        Promise.resolve(
-          this.conferentes.filter(
-            (c) =>
-              c.empresaId === empresaId &&
-              chaves.some((k) => k.sigla === c.sigla && k.numero === c.numero),
-          ),
-        ),
+      // Mesma regra do SQL do repositório, pelo domínio (`montarLista`).
+      lista: (filtro, pedido, pagina) => {
+        const ctes = new Map(
+          paraOPainel(
+            ctesDoFiltro(filtro),
+            { campoData: filtro.campoData, tipos: pedido.tipos },
+            new Set(pedido.baixas),
+            pedido.hoje,
+          ).map((c) => [c.id, c]),
+        );
+        const eventos = this.ocorrencias.flatMap((o) => {
+          const cte = ctes.get(o.cteId);
+          return cte && pedido.codigosTela.includes(o.codigo) && !o.quarentena
+            ? [
+                {
+                  ...o,
+                  cte: { ...cte, numero: cte.lido.numero, parceiroNome: cte.lido.parceiroNome },
+                },
+              ]
+            : [];
+        });
+        const { linhas, total } = montarLista(
+          eventos,
+          new Map(pedido.catalogo.map((c) => [c.codigo, c])),
+          {
+            recortes: pedido.recortes,
+            ordem: pedido.ordem,
+            direcao: pedido.direcao,
+            pagina: Math.floor(pagina.deslocamento / pagina.limite) + 1,
+            tamanho: pagina.limite,
+          },
+        );
+        return Promise.resolve({
+          total,
+          linhas: linhas.flatMap((l): LinhaDeOcorrencia[] => {
+            const c = this.ctes.find((x) => x.id === l.cte.id);
+            if (!c) return [];
+            const conf = this.conferentes.find(
+              (x) => x.empresaId === c.empresaId && x.sigla === c.sigla && x.numero === c.numero,
+            );
+            return [
+              {
+                id: l.id,
+                dataHora: l.dataHora.toISOString(),
+                codigo: l.codigo,
+                descricao: l.classificacao.descricao,
+                responsavel: l.classificacao.responsavel,
+                penaliza: l.classificacao.penaliza,
+                pendente: l.classificacao.pendente,
+                cteId: c.id,
+                numeroCtrc: c.numero,
+                siglaCtrc: c.sigla,
+                numeroNf: c.numeroNf,
+                dataEmissao: c.dataEmissao,
+                unidadeResp: c.filialEfetiva,
+                pagador: l.cte.pagador,
+                destinatario: c.destinatario,
+                cidadeDestino: c.cidadeDestino,
+                ufDestino: c.ufDestino,
+                peso: c.peso,
+                volumes: c.volumes,
+                valorFrete: c.valorFrete,
+                dataPrevistaEntrega: c.dataPrevistaEntrega,
+                setor: c.setor,
+                atrasoDias: l.cte.situacao.atrasoDias,
+                conferente: conf?.conferente ?? null,
+                romaneio: conf?.romaneio ?? null,
+              },
+            ];
+          }),
+        });
+      },
       conferentes: (empresaId, limite) =>
         Promise.resolve(
           [

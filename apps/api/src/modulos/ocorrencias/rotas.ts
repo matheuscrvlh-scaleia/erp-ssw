@@ -6,6 +6,7 @@ import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirModulo, exigirTela } from "../../http/guardas";
 import {
   type ContextoOcorrencias,
+  exportarLista,
   listarConferentes,
   obterCodigosDoCard,
   obterLista,
@@ -38,6 +39,16 @@ export const rotasOcorrencias: FastifyPluginCallbackZod<{ agora: () => Date }> =
     { schema: { body: c.lista.entrada, response: { 200: c.lista.saida } }, preHandler: ler },
     async (request) =>
       obterLista(request.db, await contextoDaEmpresa(request), request.body, agora()),
+  );
+
+  app.post(
+    c.exportar.caminho,
+    {
+      schema: { body: c.exportar.entrada, response: { 200: c.exportar.saida } },
+      preHandler: ler,
+    },
+    async (request) =>
+      exportarLista(request.db, await contextoDaEmpresa(request), request.body, agora()),
   );
 
   app.post(

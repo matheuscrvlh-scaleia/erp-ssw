@@ -188,6 +188,11 @@ export const linhaDeOcorrencia = z.object({
 });
 export type LinhaDeOcorrencia = z.infer<typeof linhaDeOcorrencia>;
 
+const filtrosDaLista = filtrosDeCte.extend(recortes.shape).extend({
+  ordem: z.enum(ORDENS_DA_LISTA).default("data_hora"),
+  direcao: z.enum(["asc", "desc"]).default("desc"),
+});
+
 export const CARDS = ["todas", "penalizantes", "externas", "pendentes"] as const;
 export type Card = (typeof CARDS)[number];
 
@@ -208,13 +213,18 @@ export const contratosOcorrencias = {
   lista: contrato({
     metodo: "POST",
     caminho: "/api/v1/ocorrencias/lista",
-    entrada: filtrosDeCte.extend(recortes.shape).extend({
-      ordem: z.enum(ORDENS_DA_LISTA).default("data_hora"),
-      direcao: z.enum(["asc", "desc"]).default("desc"),
+    entrada: filtrosDaLista.extend({
       pagina: z.number().int().min(1).default(1),
       tamanho: z.number().int().min(1).max(500).default(50),
     }),
     saida: z.object({ linhas: z.array(linhaDeOcorrencia), total: z.number().int() }),
+  }),
+  /** A lista detalhada inteira numa leitura só, na ordem da tela (até 200 mil linhas). */
+  exportar: contrato({
+    metodo: "POST",
+    caminho: "/api/v1/ocorrencias/lista/exportacao",
+    entrada: filtrosDaLista,
+    saida: z.object({ linhas: z.array(linhaDeOcorrencia) }),
   }),
   codigosDoCard: contrato({
     metodo: "POST",

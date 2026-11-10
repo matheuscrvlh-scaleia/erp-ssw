@@ -11,9 +11,9 @@ import {
   type CodigoDoCatalogo,
   codigosDaTela,
   codigosDeBaixa,
+  CONFIG_CODIGOS_FORA_DA_TELA,
   lerListaDeInteiros,
 } from "@erp/dominio/ocorrencias/catalogo";
-import { montarLista } from "@erp/dominio/ocorrencias/lista";
 import { calcularPainel, type CteDoPainel } from "@erp/dominio/ocorrencias/painel";
 import { type Periodo, periodoDoMesAnterior } from "@erp/dominio/ocorrencias/periodo";
 import { situacaoDoCte } from "@erp/dominio/ocorrencias/situacao";
@@ -23,6 +23,8 @@ import {
   type contratosOcorrencias,
   type FiltrosDeCte,
   type LinhaDeOcorrencia,
+  type OrdemDaLista,
+  type Recortes,
 } from "@erp/shared/contratos/ocorrencias";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
@@ -78,23 +80,20 @@ export interface OcorrenciaLida {
   dataHora: Date;
 }
 
-export interface DetalheDoCte {
-  id: string;
-  numeroNf: number | null;
-  destinatario: string | null;
-  cidadeDestino: string | null;
-  ufDestino: string | null;
-  peso: number | null;
-  volumes: number | null;
-  valorFrete: number | null;
-  setor: string | null;
-}
-
-export interface ConferenteDoCte {
-  sigla: string;
-  numero: string;
-  conferente: string | null;
-  romaneio: string;
+/** O que a lista detalhada pede além dos filtros de CT-e (as regras vão para o SQL). */
+export interface PedidoDaLista {
+  /** Tipos já saneados; vazio = sem filtro. */
+  tipos: string[];
+  recortes: Recortes;
+  /** Catálogo da empresa: a classificação de cada código é a dele no momento da consulta. */
+  catalogo: CodigoDoCatalogo[];
+  codigosTela: number[];
+  /** Códigos de baixa do catálogo (Q22). */
+  baixas: number[];
+  /** Hoje no fuso da empresa (atraso). */
+  hoje: string;
+  ordem: OrdemDaLista;
+  direcao: "asc" | "desc";
 }
 
 export interface RepositorioOcorrencias {
@@ -105,11 +104,15 @@ export interface RepositorioOcorrencias {
   ctes(filtro: FiltroDeCtes, limite: number): Promise<CteLido[]>;
   /** Ocorrências fora de quarentena dos códigos dados, dos CT-e do filtro. */
   ocorrencias(filtro: FiltroDeCtes, codigos: number[], limite: number): Promise<OcorrenciaLida[]>;
-  detalhes(ids: string[]): Promise<DetalheDoCte[]>;
-  conferentesDosCtes(
-    empresaId: string,
-    ctes: { sigla: string; numero: string }[],
-  ): Promise<ConferenteDoCte[]>;
+  /**
+   * Lista detalhada filtrada, classificada, ordenada e paginada no banco, com o total da lista
+   * inteira (mesma regra de `montarLista`, dominio/ocorrencias/lista.ts).
+   */
+  lista(
+    filtro: FiltroDeCtes,
+    pedido: PedidoDaLista,
+    pagina: { limite: number; deslocamento: number },
+  ): Promise<{ linhas: LinhaDeOcorrencia[]; total: number }>;
   conferentes(empresaId: string, limite: number): Promise<string[]>;
   unidadesAtivas(
     empresaId: string,
@@ -166,7 +169,7 @@ async function catalogoDaTela(
 ): Promise<CatalogoDaTela> {
   const catalogo = await ocorrencias.catalogo(empresaId);
   const foraDaTela = lerListaDeInteiros(
-    await ocorrencias.configuracao(empresaId, "ocorrencias_codigos_fora_da_tela"),
+    await ocorrencias.configuracao(empresaId, CONFIG_CODIGOS_FORA_DA_TELA),
   );
   return {
     porCodigo: new Map(catalogo.map((c) => [c.codigo, c])),
@@ -176,7 +179,7 @@ async function catalogoDaTela(
 }
 
 /** CT-e lidos → o que as regras do painel usam; filtro de tipo de documento aplicado aqui. */
-function paraOPainel(
+export function paraOPainel(
   ctes: readonly CteLido[],
   f: Pick<FiltrosDeCte, "campoData" | "tipos">,
   baixas: ReadonlySet<number>,
@@ -247,8 +250,38 @@ export async function obterPainel(
   });
 }
 
+type EntradaDaLista = z.output<typeof contratosOcorrencias.exportar.entrada>;
+
+async function lerLista(
+  ocorrencias: RepositorioOcorrencias,
+  ctx: ContextoOcorrencias,
+  entrada: EntradaDaLista,
+  agora: Date,
+  pagina: { limite: number; deslocamento: number },
+) {
+  const catalogo = await ocorrencias.catalogo(ctx.empresaId);
+  const foraDaTela = lerListaDeInteiros(
+    await ocorrencias.configuracao(ctx.empresaId, CONFIG_CODIGOS_FORA_DA_TELA),
+  );
+  return ocorrencias.lista(
+    normalizarFiltro(ctx, entrada, [{ inicio: entrada.inicio, fim: entrada.fim }]),
+    {
+      tipos: saneTipos(entrada.tipos),
+      recortes: entrada,
+      catalogo,
+      codigosTela: codigosDaTela(catalogo, foraDaTela),
+      baixas: [...codigosDeBaixa(catalogo)],
+      hoje: hojeNoFuso(ctx.fuso, agora),
+      ordem: entrada.ordem,
+      direcao: entrada.direcao,
+    },
+    pagina,
+  );
+}
+
 /**
- * Lista detalhada de ocorrências (só o período atual), com conferente e romaneio da página.
+ * Lista detalhada de ocorrências (só o período atual), com conferente e romaneio, paginada no
+ * banco.
  * origem: ocorrencias_lista_v5 (sistema atual)
  */
 export async function obterLista(
@@ -257,88 +290,27 @@ export async function obterLista(
   entrada: z.output<typeof contratosOcorrencias.lista.entrada>,
   agora: Date,
 ): Promise<SaidaDe<typeof contratosOcorrencias.lista>> {
-  const hoje = hojeNoFuso(ctx.fuso, agora);
+  return db(({ ocorrencias }) =>
+    lerLista(ocorrencias, ctx, entrada, agora, {
+      limite: entrada.tamanho,
+      deslocamento: (entrada.pagina - 1) * entrada.tamanho,
+    }),
+  );
+}
+
+/** Lista detalhada inteira, numa leitura só, na ordem da tela (exportação). */
+export async function exportarLista(
+  db: Db,
+  ctx: ContextoOcorrencias,
+  entrada: EntradaDaLista,
+  agora: Date,
+): Promise<SaidaDe<typeof contratosOcorrencias.exportar>> {
   return db(async ({ ocorrencias }) => {
-    const cat = await catalogoDaTela(ocorrencias, ctx.empresaId);
-    const filtro = normalizarFiltro(ctx, entrada, [{ inicio: entrada.inicio, fim: entrada.fim }]);
-    const ctes = new Map(
-      paraOPainel(
-        comTeto(await ocorrencias.ctes(filtro, LIMITE_DE_LINHAS + 1)),
-        entrada,
-        cat.baixas,
-        hoje,
-      ).map((c) => [c.id, c]),
-    );
-    const eventos = comTeto(
-      await ocorrencias.ocorrencias(filtro, cat.codigosTela, LIMITE_DE_LINHAS + 1),
-    ).flatMap((o) => {
-      const cte = ctes.get(o.cteId);
-      return cte
-        ? [
-            {
-              ...o,
-              cte: { ...cte, numero: cte.lido.numero, parceiroNome: cte.lido.parceiroNome },
-            },
-          ]
-        : [];
+    const { linhas } = await lerLista(ocorrencias, ctx, entrada, agora, {
+      limite: LIMITE_DE_LINHAS + 1,
+      deslocamento: 0,
     });
-    const { linhas, total } = montarLista(eventos, cat.porCodigo, {
-      recortes: entrada,
-      ordem: entrada.ordem,
-      direcao: entrada.direcao,
-      pagina: entrada.pagina,
-      tamanho: entrada.tamanho,
-    });
-    const idsDaPagina = [...new Set(linhas.map((l) => l.cte.id))];
-    const detalhes = new Map((await ocorrencias.detalhes(idsDaPagina)).map((d) => [d.id, d]));
-    // Toda linha veio de um CT-e do mapa; o flatMap só convence o tipo.
-    const daPagina = linhas.flatMap((l) => {
-      const cte = ctes.get(l.cte.id);
-      return cte ? [{ l, c: cte.lido }] : [];
-    });
-    const doPagina = daPagina.map(({ c }) => c);
-    const conferentes = new Map(
-      (
-        await ocorrencias.conferentesDosCtes(
-          ctx.empresaId,
-          doPagina.map((c) => ({ sigla: c.sigla, numero: c.numero })),
-        )
-      ).map((c) => [`${c.sigla}|${c.numero}`, c]),
-    );
-    return {
-      total,
-      linhas: daPagina.map(({ l, c }): LinhaDeOcorrencia => {
-        const d = detalhes.get(c.id);
-        const conf = conferentes.get(`${c.sigla}|${c.numero}`);
-        return {
-          id: l.id,
-          dataHora: l.dataHora.toISOString(),
-          codigo: l.codigo,
-          descricao: l.classificacao.descricao,
-          responsavel: l.classificacao.responsavel,
-          penaliza: l.classificacao.penaliza,
-          pendente: l.classificacao.pendente,
-          cteId: c.id,
-          numeroCtrc: c.numero,
-          siglaCtrc: c.sigla,
-          numeroNf: d?.numeroNf ?? null,
-          dataEmissao: c.dataEmissao,
-          unidadeResp: c.filialEfetiva,
-          pagador: l.cte.pagador,
-          destinatario: d?.destinatario ?? null,
-          cidadeDestino: d?.cidadeDestino ?? null,
-          ufDestino: d?.ufDestino ?? null,
-          peso: d?.peso ?? null,
-          volumes: d?.volumes ?? null,
-          valorFrete: d?.valorFrete ?? null,
-          dataPrevistaEntrega: c.dataPrevistaEntrega,
-          setor: d?.setor ?? null,
-          atrasoDias: l.cte.situacao.atrasoDias,
-          conferente: conf?.conferente ?? null,
-          romaneio: conf?.romaneio ?? null,
-        };
-      }),
-    };
+    return { linhas: comTeto(linhas) };
   });
 }
 
