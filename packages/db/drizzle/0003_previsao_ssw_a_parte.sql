@@ -1,3 +1,0 @@
-ALTER TABLE "erp"."ctes" ADD COLUMN "previsao_ssw" date;--> statement-breakpoint
-ALTER TABLE "erp"."ctes" ADD COLUMN "previsao_ssw_fonte" text;--> statement-breakpoint
-ALTER TABLE "erp"."ctes" ADD CONSTRAINT "ctes_previsao_ssw_fonte_ck" CHECK ("erp"."ctes"."previsao_ssw_fonte" is null or "erp"."ctes"."previsao_ssw_fonte" in ('xml_dprog', 'consulta_prazo_oc80', 'consulta_prazo_emissao', 'regra_parceiro', 'regra_transbordo', 'regra_unidade', 'fora_malha', 'bi2', 'ssw_manual', 'ssw_038'));
