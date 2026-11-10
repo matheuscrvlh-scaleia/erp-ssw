@@ -1,4 +1,4 @@
-import { diaDaSemana, diferencaEmDias, hojeNoFuso, somarDias } from "@erp/shared/datas";
+import { diferencaEmDias, hojeNoFuso, somarDias } from "@erp/shared/datas";
 
 /**
  * Dia de negócio como texto `AAAA-MM-DD` (coluna `date`). Todo "dia" do núcleo é o de Brasília
@@ -87,12 +87,6 @@ export function menosDias(instante: Date, dias: number): Date {
 /** `instante + interval 'N hours'`. */
 export function somarHoras(instante: Date, horas: number): Date {
   return new Date(instante.getTime() + horas * MS_POR_HORA);
-}
-
-/** Segunda a sexta. */
-export function ehDiaDeSemana(dia: DataIso): boolean {
-  const semana = diaDaSemana(dia);
-  return semana >= 1 && semana <= 5;
 }
 
 /** Menor instante; vazio dá `null`. */

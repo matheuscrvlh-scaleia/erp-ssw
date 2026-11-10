@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@erp/dominio": "workspace:*",
-    "@erp/ingestao": "workspace:*",
     "@erp/shared": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-checkbox": "^1.3.3",

@@ -4,9 +4,9 @@
  * do ERP e copiada no worker-ssw (ADR 0012): mudança de regra aqui vai aos dois.
  */
 import { type FonteDaEscrita } from "./bi2";
+import { type FilialCadastrada } from "./cadastros";
 import { type CatalogoDeCodigos } from "./codigos";
 import { type ConfiguracaoDoNucleo } from "./configuracao";
-import { type FilialCadastrada } from "./cadastros";
 import { type CteNucleo, type MotivoDoDescarte, prepararGravacaoDoCte } from "./derivar-cte";
 import { type OcorrenciaDoCte } from "./ocorrencia";
 import { type RegraDePrazo, type TrocaDePrevisao } from "./prazo";

@@ -1,6 +1,6 @@
 /**
- * Prazo do CT-e: dias úteis, prazo padrão (mínimo 48 h corridas / nascido em atraso), prazos
- * configurados no Admin e histórico de previsão.
+ * Prazo do CT-e: prazo padrão (mínimo 48 h corridas / nascido em atraso), prazos configurados no
+ * Admin e histórico de previsão.
  */
 /** De onde veio a previsão gravada (`ctes.prazo_fonte`). */
 import type { FontePrazo } from "@erp/shared/dominio/prazo";
@@ -10,7 +10,6 @@ import { foraDeQuarentena, type OcorrenciaDoCte } from "./ocorrencia";
 import {
   type DataIso,
   diaSp,
-  ehDiaDeSemana,
   inicioDoDiaSp,
   menorInstante,
   somarDiasCorridos,
@@ -23,38 +22,6 @@ type FonteDeRegra = Extract<FontePrazo, `regra_${string}`>;
 
 export function ehFonteDeRegra(fonte: FontePrazo | null): fonte is FonteDeRegra {
   return fonte === "regra_parceiro" || fonte === "regra_transbordo" || fonte === "regra_unidade";
-}
-
-// --- Dias úteis ------------------------------------------------------------------------------
-
-/**
- * Feriados que pulam o dia útil: só os nacionais (Q23 do dono), entre os que a empresa enxerga
- * (nacional da Plataforma, empresa nula, ou nacional cadastrado pela própria empresa — Q28).
- */
-export function feriadosQueContamNosDiasUteis(
-  feriados: readonly { data: DataIso; tipo: string }[],
-): ReadonlySet<DataIso> {
-  return new Set(feriados.filter((f) => f.tipo === "nacional").map((f) => f.data));
-}
-
-/**
- * Dias úteis no intervalo (menor, maior] com sinal: positivo se `entrega` é depois da previsão.
- * Útil = segunda a sexta e não feriado.
- * origem: _dias_uteis_sla (sistema atual)
- */
-export function diasUteisEntre(
-  previsao: DataIso | null,
-  entrega: DataIso | null,
-  feriados: ReadonlySet<DataIso>,
-): number | null {
-  if (previsao === null || entrega === null) return null;
-  if (previsao === entrega) return 0;
-  const [de, ate] = previsao < entrega ? [previsao, entrega] : [entrega, previsao];
-  let uteis = 0;
-  for (let d = somarDiasCorridos(de, 1); d <= ate; d = somarDiasCorridos(d, 1)) {
-    if (ehDiaDeSemana(d) && !feriados.has(d)) uteis++;
-  }
-  return entrega > previsao ? uteis : -uteis;
 }
 
 // --- Prazo padrão (mínimo 48 h) e nascido em atraso ------------------------------------------

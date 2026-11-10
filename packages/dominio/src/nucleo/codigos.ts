@@ -53,8 +53,6 @@ export const CODIGO_ANCORA_EMISSAO = 80;
 export const CODIGO_CANCELAMENTO = 99;
 /** Chegada na unidade (prazos configurados). origem: aplicar_prazo_configurado */
 export const CODIGO_CHEGADA_NA_UNIDADE = 84;
-const CODIGO_MINIMO = 0;
-const CODIGO_MAXIMO = 99;
 
 export const TIPOS_PENDENCIA: ReadonlySet<TipoSsw> = new Set([
   "PENDENCIA_CLIENTE",
@@ -113,8 +111,4 @@ export function normCodigoOcorr(texto: string | null): number | null {
 export function codigoNumericoOuNulo(texto: string | null): number | null {
   const limpo = (texto ?? "").trim();
   return /^\d+$/.test(limpo) ? Number.parseInt(limpo, 10) : null;
-}
-
-export function ehCodigoValido(codigo: number): boolean {
-  return Number.isInteger(codigo) && codigo >= CODIGO_MINIMO && codigo <= CODIGO_MAXIMO;
 }

@@ -139,12 +139,6 @@ const naoEhO050 = (detalhe: string) =>
     `Este arquivo não é o relatório 050 (Relação das Coletas) do SSW: ${detalhe}`,
   );
 
-/** É um 050 (impresso ou CSV do FTP)? Olha só o começo do arquivo. */
-export function pareceRelatorio050(conteudo: string): boolean {
-  const inicio = conteudo.slice(0, 2000);
-  return /^ssw0157\s+RELACAO DAS COLETAS/m.test(inicio) || RE_CABECALHO_CSV.test(inicio);
-}
-
 /** Grupo de captura obrigatório da expressão (sempre presente quando ela casa). */
 const grupo = (m: RegExpExecArray, i: number): string => m[i] ?? "";
 

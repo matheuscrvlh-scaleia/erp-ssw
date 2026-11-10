@@ -1,7 +1,7 @@
 /**
- * Linha de cada relatório SSW como o leitor de `@erp/ingestao/relatorios` a produz e como ela fica
- * guardada em `ingestao_linhas.dados`: o tipo do registro de cada leitor sai daqui, e quem lê a
- * linha guardada (Romaneio, projeções) valida com o mesmo schema. Nomes e formatos da spec
+ * Linha de cada relatório SSW como o leitor de `@erp/dominio/ingestao/relatorios` a produz e como
+ * ela fica guardada em `ingestao_linhas.dados`: o tipo do registro de cada leitor sai daqui, e quem
+ * lê a linha guardada (Romaneio, projeções) valida com o mesmo schema. Nomes e formatos da spec
  * (docs/regras/06-ingestao.md §2.1 e §3): datas `AAAA-MM-DD`, números já convertidos.
  *
  * Campo ausente vira nulo: as linhas migradas do sistema atual (`to_jsonb` da staging) passam
@@ -140,9 +140,3 @@ export const registro930 = z.object({
   nome_pagador: texto,
 });
 export type Registro930 = z.output<typeof registro930>;
-
-/**
- * 455 CSV — as colunas configuráveis (`COLUNAS_455_CSV` do leitor) que alguém lê da linha
- * guardada. A linha inteira é `Registro455Csv` do leitor.
- */
-export const registro455Csv = z.object({ valor_da_mercadoria: numero });

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Regras de negócio puras (sem I/O), usadas pela API e pelo worker.",
+  "description": "Regras de negócio puras (sem I/O), usadas pela API, pela web e pelo migrador.",
   "exports": {
     "./nucleo": "./src/nucleo/index.ts",
     "./ingestao/relatorios": "./src/ingestao/relatorios/index.ts",

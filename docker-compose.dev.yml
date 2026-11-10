@@ -1,4 +1,4 @@
-# Só para desenvolvimento local: Redis do rate limit da API e das filas do worker.
+# Só para desenvolvimento local: Redis do rate limit e dos jobs da API.
 # O banco é o Postgres do Supabase DEVELOP (ver docs/arquitetura.md), não sobe aqui.
 services:
   redis:

@@ -12,7 +12,7 @@ import {
   statusDoPrazo,
 } from "./coletas";
 import { planejarGravacao050 } from "./gravacao-050";
-import { type Coleta050, lerRelatorio050, pareceRelatorio050 } from "./leitor-050";
+import { type Coleta050, lerRelatorio050 } from "./leitor-050";
 
 const FUSO = "America/Sao_Paulo";
 const fixture = (nome: string) => readFileSync(join(__dirname, "__fixtures__", nome), "latin1");
@@ -39,7 +39,6 @@ describe("leitor do 050 impresso", () => {
   const por = (u: string, n: number) => r.coletas.find((c) => c.unidade === u && c.numero === n)!;
 
   it("lê cabeçalho, períodos e todas as coletas, inclusive depois da quebra de página", () => {
-    expect(pareceRelatorio050(amostra)).toBe(true);
     expect(r.emitidoEm).toBe("2026-11-03T15:01:00.000Z");
     expect(r.periodoCadastro).toEqual({ inicio: "2026-10-01", fim: "2026-10-31" });
     expect(r.periodoColeta).toEqual({ inicio: "2026-10-01", fim: "2026-10-31" });
@@ -104,7 +103,6 @@ describe("leitor do 050 impresso", () => {
   });
 
   it("recusa arquivo que não é o 050", () => {
-    expect(pareceRelatorio050("Serie;Numero;Data\n1;2;3")).toBe(false);
     expect(() => lerRelatorio050("Serie;Numero;Data\n1;2;3")).toThrow(/não é o relatório 050/);
   });
 
@@ -121,7 +119,6 @@ describe("leitor do 050 em CSV (FTP)", () => {
   const r = lerRelatorio050(csv, "050_coletas_2026-11-05_1330.csv");
 
   it("emissão pelo nome do arquivo e período pelo cadastro", () => {
-    expect(pareceRelatorio050(csv)).toBe(true);
     expect(r.emitidoEm).toBe("2026-11-05T16:30:00.000Z");
     expect(r.avisos).toEqual([]);
     expect(r.coletas).toHaveLength(2);

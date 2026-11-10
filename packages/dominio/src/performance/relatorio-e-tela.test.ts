@@ -19,7 +19,6 @@ import {
   unidadesDoRelatorio,
 } from "./relatorio";
 import { completarSerie, janelaDaSerie, valorDaMetrica } from "./serie";
-import { calcularSlaDoCte, inicioDoSlaArquivos } from "./sla-arquivos";
 import {
   configuracaoDaTela,
   ordenarCodigosDisponiveis,
@@ -362,64 +361,6 @@ describe("série (T19)", () => {
       ["2026-10-01", 0],
       ["2026-11-01", 0],
     ]);
-  });
-});
-
-describe("SLA pelos arquivos", () => {
-  const feriados = new Set(["2026-11-02"]);
-  const candidato = {
-    id: "c1",
-    dataPrevista: "2026-11-05",
-    // 22:00 de 06/11 em Brasília (01:00Z de 07/11): conta o dia 06 de SP.
-    dataEntrega: new Date("2026-11-07T01:00:00Z"),
-    temPendenciaCliente: true,
-    performanceDias: null,
-    noPrazo: null,
-    responsabilidadeCliente: null,
-    fontePerformance: null,
-    camposSsw: ["data_entrega_realizada"],
-  };
-
-  it("desde: 60 dias atrás, nunca antes de 01/12/2025", () => {
-    expect(inicioDoSlaArquivos("2026-11-10", null)).toBe("2026-09-11");
-    expect(inicioDoSlaArquivos("2026-01-10", null)).toBe("2025-12-01");
-    expect(inicioDoSlaArquivos("2026-11-10", "2026-10-01")).toBe("2026-10-01");
-  });
-
-  it("atraso de 1 dia útil com pendência do cliente: fora do prazo e do cliente", () => {
-    expect(calcularSlaDoCte(candidato, feriados)).toEqual({
-      id: "c1",
-      performanceDias: 1,
-      noPrazo: false,
-      responsabilidadeCliente: true,
-      fontePerformance: "ssw_arquivos",
-      camposSsw: [
-        "data_entrega_realizada",
-        "fonte_performance",
-        "no_prazo",
-        "performance_dias",
-        "responsabilidade_cliente",
-      ],
-    });
-  });
-
-  it("já calculado e marcado: nada a gravar", () => {
-    const pronto = {
-      ...candidato,
-      dataEntrega: new Date("2026-11-05T15:00:00Z"),
-      performanceDias: 0,
-      noPrazo: true,
-      responsabilidadeCliente: false,
-      fontePerformance: "ssw_arquivos",
-      camposSsw: [
-        "data_entrega_realizada",
-        "fonte_performance",
-        "no_prazo",
-        "performance_dias",
-        "responsabilidade_cliente",
-      ],
-    };
-    expect(calcularSlaDoCte(pronto, feriados)).toBeNull();
   });
 });
 

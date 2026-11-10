@@ -6,17 +6,11 @@ import { CONFIGURACAO_PADRAO } from "./configuracao";
 import {
   type CteParaPrazo,
   definirPrevisao,
-  diasUteisEntre,
-  feriadosQueContamNosDiasUteis,
   prazoPadraoData,
   prazoPadraoDias,
   type RegraDePrazo,
   trocaDePrevisao,
 } from "./prazo";
-
-const FERIADOS_2026 = feriadosQueContamNosDiasUteis(
-  feriadosNacionaisDoAno(2026).map((f) => ({ data: f.data, tipo: "nacional" })),
-);
 
 describe("Páscoa e feriados móveis 2025–2027 (§6.2)", () => {
   it.each([
@@ -28,32 +22,6 @@ describe("Páscoa e feriados móveis 2025–2027 (§6.2)", () => {
     const datas = feriadosNacionaisDoAno(ano).map((f) => f.data);
     expect(datas).toEqual(expect.arrayContaining([carnavalSeg, carnavalTer, sexta, corpus]));
     expect(datas).toHaveLength(13);
-  });
-});
-
-describe("dias úteis (§6.1)", () => {
-  it.each([
-    ["2026-11-06", "2026-11-09", 1],
-    ["2026-11-09", "2026-11-06", -1],
-    ["2026-11-19", "2026-11-23", 1],
-    ["2026-10-30", "2026-11-03", 1],
-    ["2026-11-07", "2026-11-08", 0],
-    ["2026-11-10", "2026-11-10", 0],
-  ])("(%s, %s) → %i", (prev, ent, esperado) => {
-    expect(diasUteisEntre(prev, ent, FERIADOS_2026)).toBe(esperado);
-  });
-
-  it("nulo em qualquer ponta → nulo", () => {
-    expect(diasUteisEntre(null, "2026-11-10", FERIADOS_2026)).toBeNull();
-    expect(diasUteisEntre("2026-11-10", null, FERIADOS_2026)).toBeNull();
-  });
-
-  it("só feriado nacional pula o dia (Q23)", () => {
-    const feriados = feriadosQueContamNosDiasUteis([
-      { data: "2026-11-10", tipo: "municipal" },
-      { data: "2026-11-11", tipo: "nacional" },
-    ]);
-    expect([...feriados]).toEqual(["2026-11-11"]);
   });
 });
 
