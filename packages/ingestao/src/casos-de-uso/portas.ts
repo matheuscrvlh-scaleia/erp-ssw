@@ -227,7 +227,6 @@ export interface RepositorioIngestao {
   >;
 
   // Linhas e erros
-  apagarLote(loteId: string): Promise<number>;
   /** Por relatório: 455csv ignora a repetida; os demais a passam para o lote novo (pendente). */
   gravarLinhas(
     relatorio: RelatorioGuardado,

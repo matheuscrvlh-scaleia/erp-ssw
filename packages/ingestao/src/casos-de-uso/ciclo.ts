@@ -277,9 +277,7 @@ export async function aplicarCiclo(
 }
 
 /** Job `ssw_ciclo_aplicar`: aplica os ciclos abertos com arquivo importado, dentro do orçamento. */
-export async function rodarCiclos(
-  deps: DependenciasDoCiclo,
-): Promise<{
+export async function rodarCiclos(deps: DependenciasDoCiclo): Promise<{
   status: "ok" | "ja_rodando";
   resultados: Awaited<ReturnType<typeof aplicarCiclo>>[];
 }> {
