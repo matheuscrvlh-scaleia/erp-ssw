@@ -4,13 +4,21 @@ import { diasComContexto, garantirQuePodeAlterarAnotacao, nacionaisFixosDoAno } 
 
 describe("histórico", () => {
   it("só o autor ou um administrador altera a anotação (Q09)", () => {
-    expect(() => { garantirQuePodeAlterarAnotacao("u1", "u1", "operador"); }).not.toThrow();
-    expect(() => { garantirQuePodeAlterarAnotacao("u1", "u2", "admin"); }).not.toThrow();
-    expect(() => { garantirQuePodeAlterarAnotacao("u1", "u2", "super_admin"); }).not.toThrow();
-    expect(() => { garantirQuePodeAlterarAnotacao("u1", "u2", "gestor"); }).toThrow(
-      "Só o autor ou um administrador pode alterar esta anotação.",
-    );
-    expect(() => { garantirQuePodeAlterarAnotacao(null, "u2", null); }).toThrow();
+    expect(() => {
+      garantirQuePodeAlterarAnotacao("u1", "u1", "operador");
+    }).not.toThrow();
+    expect(() => {
+      garantirQuePodeAlterarAnotacao("u1", "u2", "admin");
+    }).not.toThrow();
+    expect(() => {
+      garantirQuePodeAlterarAnotacao("u1", "u2", "super_admin");
+    }).not.toThrow();
+    expect(() => {
+      garantirQuePodeAlterarAnotacao("u1", "u2", "gestor");
+    }).toThrow("Só o autor ou um administrador pode alterar esta anotação.");
+    expect(() => {
+      garantirQuePodeAlterarAnotacao(null, "u2", null);
+    }).toThrow();
   });
 
   it("dias com contexto juntam anotações e feriados", () => {
