@@ -7,7 +7,7 @@
  * Q15 (prejuízo só de CT-e que saiu para entrega, inclusive na Performance Motorista/Ajudante).
  */
 import { diaSp, horaSp, normalizarNome } from "../nucleo";
-import { arredondar } from "../performance/numeros";
+import { arredondar, centavos, reais } from "../performance/numeros";
 import { chaveAjudante, CODIGO_RETORNO, COLLATOR, maxTexto, normNome } from "./normalizacao";
 import {
   type Cadastro,
@@ -156,15 +156,16 @@ export function porViagem(
     }
   }
   const linhas = [...grupos].map(([romaneio, viagens]): LinhaPorViagem => {
+    // Dinheiro em centavos inteiros, como o `sum(numeric)` do banco.
     let frete = 0;
     let entregues = 0;
     let fretePerdido = 0;
     let transferidas = 0;
     for (const { v, item } of viagens) {
-      frete += item.fato.valorFrete;
+      frete += centavos(item.fato.valorFrete);
       if (item.analise.entregue && v.ultima) entregues += 1;
       if (!v.ultima) transferidas += 1;
-      if (prejudicadoNaViagem(item, v, ctx)) fretePerdido += item.fato.valorFrete;
+      if (prejudicadoNaViagem(item, v, ctx)) fretePerdido += centavos(item.fato.valorFrete);
     }
     const vs = viagens.map((x) => x.v);
     return {
@@ -177,11 +178,11 @@ export function porViagem(
       ajudante2: maxTexto(vs.map((v) => v.ajudante2)),
       ajudante3: maxTexto(vs.map((v) => v.ajudante3)),
       ctes: viagens.length,
-      frete,
+      frete: reais(frete),
       entregues,
       naoEntregues: viagens.length - entregues,
       performance: arredondar((100 * entregues) / viagens.length, 1),
-      fretePerdido,
+      fretePerdido: reais(fretePerdido),
       transferidas,
     };
   });
@@ -436,12 +437,12 @@ export function ctesPorCarro(itens: readonly CteComViagens[]): LinhaCtesPorCarro
       g.linha.ctes += 1;
       g.linha.peso += item.fato.peso;
       g.linha.volumes += item.fato.volumes;
-      g.linha.frete += item.fato.valorFrete;
+      g.linha.frete += centavos(item.fato.valorFrete);
       g.motoristas.push(v?.motorista ?? null);
     }
   }
   return [...grupos.values()]
-    .map((g) => ({ ...g.linha, motorista: maxTexto(g.motoristas) }))
+    .map((g) => ({ ...g.linha, frete: reais(g.linha.frete), motorista: maxTexto(g.motoristas) }))
     .sort((a, b) => {
       if (a.placa === null || b.placa === null) return a.placa === null ? 1 : -1;
       return b.ctes - a.ctes || COLLATOR.compare(a.placa, b.placa);
@@ -469,16 +470,19 @@ export interface Prejuizo {
   motoristas: RankingPrejuizo[];
 }
 
+/** Soma o frete em centavos inteiros; `emReais` converte na saída. */
 function somar<K>(mapa: Map<K, PontoPrejuizo>, chave: K, frete: number) {
   const p = mapa.get(chave) ?? { ctes: 0, frete: 0 };
   p.ctes += 1;
-  p.frete += frete;
+  p.frete += centavos(frete);
   mapa.set(chave, p);
 }
 
+const emReais = <P extends PontoPrejuizo>(p: P): P => ({ ...p, frete: reais(p.frete) });
+
 function topo(mapa: Map<string, PontoPrejuizo>, n: number): RankingPrejuizo[] {
   return [...mapa]
-    .map(([nome, p]) => ({ nome, placa: null, ...p }))
+    .map(([nome, p]) => ({ nome, placa: null, ...emReais(p) }))
     .sort((a, b) => b.ctes - a.ctes || COLLATOR.compare(a.nome, b.nome))
     .slice(0, n);
 }
@@ -516,16 +520,25 @@ export function prejuizo(itens: readonly CteComViagens[], ctx: ContextoPorViagem
     const chave = JSON.stringify([motorista, placa]);
     const m = motoristas.get(chave) ?? { motorista, placa, ctes: 0, frete: 0 };
     m.ctes += 1;
-    m.frete += c.valorFrete;
+    m.frete += centavos(c.valorFrete);
     motoristas.set(chave, m);
   }
   return {
-    porDia: [...dias].map(([dia, p]) => ({ dia, ...p })).sort((a, b) => a.dia.localeCompare(b.dia)),
-    porHora: [...horas].map(([hora, p]) => ({ hora, ...p })).sort((a, b) => a.hora - b.hora),
+    porDia: [...dias]
+      .map(([dia, p]) => ({ dia, ...emReais(p) }))
+      .sort((a, b) => a.dia.localeCompare(b.dia)),
+    porHora: [...horas]
+      .map(([hora, p]) => ({ hora, ...emReais(p) }))
+      .sort((a, b) => a.hora - b.hora),
     cidades: topo(cidades, 10),
     pagadores: topo(pagadores, 10),
     motoristas: [...motoristas.values()]
-      .map(({ motorista, placa, ctes, frete }) => ({ nome: motorista, placa, ctes, frete }))
+      .map(({ motorista, placa, ctes, frete }) => ({
+        nome: motorista,
+        placa,
+        ctes,
+        frete: reais(frete),
+      }))
       .sort((a, b) => b.ctes - a.ctes || COLLATOR.compare(a.nome, b.nome))
       .slice(0, 15),
   };

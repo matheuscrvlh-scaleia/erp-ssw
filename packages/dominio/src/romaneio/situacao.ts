@@ -17,6 +17,7 @@ import {
   inicioDoDiaSp,
   normCodigoOcorr,
 } from "../nucleo";
+import { centavos, reais } from "../performance/numeros";
 import { CODIGO_RETORNO, CODIGO_SAIDA, CODIGOS_ROTA } from "./normalizacao";
 
 export interface Periodo {
@@ -373,11 +374,13 @@ export function totaisDoTopo(
     tdeRomaneadoValor: 0,
   };
   const travados: CteAnalisado[] = [];
+  // Dinheiro somado em centavos inteiros (o banco soma `numeric` sem erro de float).
+  const centavosDe = { frete: 0, prejuizoFrete: 0, tdeRomaneadoValor: 0 };
   for (const item of ctes) {
     const { fato: c, analise: a } = item;
     if (a.prejudicado) {
       t.prejuizoCtes += 1;
-      t.prejuizoFrete += c.valorFrete;
+      centavosDe.prejuizoFrete += centavos(c.valorFrete);
     }
     const tde = c.tde ?? 0;
     if (tde > 0) {
@@ -385,7 +388,7 @@ export function totaisDoTopo(
       const tdeEmRota = a.emRota && !a.entregue && !a.finalizado;
       if (tdeEmRota) t.tdeRomaneadoEmRota += 1;
       if (a.entregue) t.tdeRomaneadoEntregue += 1;
-      if (a.entregue || (a.emRota && !a.finalizado)) t.tdeRomaneadoValor += tde;
+      if (a.entregue || (a.emRota && !a.finalizado)) centavosDe.tdeRomaneadoValor += centavos(tde);
     }
     const saiu = a.entregue || a.finalizado || a.emRota || a.travado;
     if (universo === "romaneados" && !saiu) continue;
@@ -393,7 +396,7 @@ export function totaisDoTopo(
     t.ctes += 1;
     t.peso += c.peso;
     t.volumes += c.volumes;
-    t.frete += c.valorFrete;
+    centavosDe.frete += centavos(c.valorFrete);
     if (a.entregue) t.entregues += 1;
     if (a.teveProblema) t.otifProblemas += 1;
     if (!a.entregue && a.saiuCard) {
@@ -414,6 +417,9 @@ export function totaisDoTopo(
   }
   t.tdeRomaneado = t.tdeRomaneadoEmRota + t.tdeRomaneadoEntregue;
   t.travadoMotivo = motivoDosTravados(travados, cadastro);
+  t.frete = reais(centavosDe.frete);
+  t.prejuizoFrete = reais(centavosDe.prejuizoFrete);
+  t.tdeRomaneadoValor = reais(centavosDe.tdeRomaneadoValor);
   return t;
 }
 
@@ -441,18 +447,20 @@ export function kpisDoRomaneio(ctes: readonly CteAnalisado[]): KpisRomaneio {
     freteRomaneado: 0,
     fretePerdido: 0,
   };
+  let romaneadoCentavos = 0;
+  let perdidoCentavos = 0;
   for (const { fato: c, analise: a } of ctes) {
     if (a.prejudicado) {
       k.prejudicada += 1;
-      k.fretePerdido += c.valorFrete;
+      perdidoCentavos += centavos(c.valorFrete);
     }
     if (a.saiuEntrega !== "sim") continue;
     k.romaneado += 1;
-    k.freteRomaneado += c.valorFrete;
+    romaneadoCentavos += centavos(c.valorFrete);
     if (a.entregue) k.entregue += 1;
     else if (!a.finalizado) k.naoEntregue += 1;
   }
-  return k;
+  return { ...k, freteRomaneado: reais(romaneadoCentavos), fretePerdido: reais(perdidoCentavos) };
 }
 
 export interface LinhaDistribuicao {

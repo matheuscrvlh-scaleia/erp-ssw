@@ -29,6 +29,13 @@ export function reais(centavosInteiros: number): number {
   return centavosInteiros / 100;
 }
 
+/** Soma de valores em reais feita em centavos inteiros (como o `sum(numeric)` do banco). */
+export function somarReais(valores: Iterable<number>): number {
+  let total = 0;
+  for (const v of valores) total += centavos(v);
+  return reais(total);
+}
+
 /** Razão ou nulo quando o denominador é zero. */
 export function razao(num: number, den: number): number | null {
   return den > 0 ? num / den : null;

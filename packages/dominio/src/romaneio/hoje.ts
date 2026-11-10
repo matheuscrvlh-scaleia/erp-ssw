@@ -13,7 +13,7 @@ import {
   inicioDoDiaSp,
   normCodigoOcorr,
 } from "../nucleo";
-import { arredondar } from "../performance/numeros";
+import { arredondar, somarReais } from "../performance/numeros";
 import { CODIGO_SAIDA, COLLATOR, maxTexto, normPlaca, sswNum, sswSigla } from "./normalizacao";
 import { type Cadastro, ehPenalizanteFR, type OcorrenciaDoCte } from "./situacao";
 
@@ -322,11 +322,11 @@ export function romaneioDoDia(
       rota: juntarPorFrequencia(ls.map((l) => cidadeDaRota(l.cidadeEntrega))),
       bairros: juntarPorFrequencia(bairros),
       ctes: contam.length,
-      frete: contam.reduce((s, x) => s + x.valorFrete, 0),
+      frete: somarReais(contam.map((x) => x.valorFrete)),
       entregues,
       naoEntregues: contam.length - entregues,
       performance: contam.length > 0 ? arredondar((100 * entregues) / contam.length, 1) : null,
-      fretePerdido: contam.filter((x) => x.prejudicada).reduce((s, x) => s + x.valorFrete, 0),
+      fretePerdido: somarReais(contam.filter((x) => x.prejudicada).map((x) => x.valorFrete)),
       prejudicadas: contam.filter((x) => x.prejudicada).length,
     };
   });
@@ -346,8 +346,8 @@ export function romaneioDoDia(
       romaneios: tabela.length,
       ctes: u.length,
       entregues: u.filter((x) => x.entregue).length,
-      frete: u.reduce((s, x) => s + x.valorFrete, 0),
-      prejuizoFrete: prejudicadas.reduce((s, x) => s + x.valorFrete, 0),
+      frete: somarReais(u.map((x) => x.valorFrete)),
+      prejuizoFrete: somarReais(prejudicadas.map((x) => x.valorFrete)),
       prejuizoCtes: prejudicadas.length,
       prazo,
       prazoNaoEntregue,

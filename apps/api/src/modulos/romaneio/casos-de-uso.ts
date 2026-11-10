@@ -12,6 +12,7 @@ import {
   padroesTextoFiltro,
   unidadeResponsavel,
 } from "@erp/dominio/nucleo";
+import { centavos, reais } from "@erp/dominio/performance/numeros";
 import {
   type CteDoDia,
   ctesDaFaixa,
@@ -662,6 +663,7 @@ interface Soma {
   ctes: number;
   peso: number;
   volumes: number;
+  /** Em centavos inteiros até a saída (como o `sum(numeric)` do banco). */
   frete: number;
 }
 
@@ -669,7 +671,7 @@ const somar = (s: Soma, f: FatoCte) => {
   s.ctes += 1;
   s.peso += f.peso;
   s.volumes += f.volumes;
-  s.frete += f.valorFrete;
+  s.frete += centavos(f.valorFrete);
 };
 
 /**
@@ -708,10 +710,10 @@ export async function obterLista(
     return {
       linhas: pagina.map((i) => linhaDaLista(i, porId.get(i.fato.id), cadastro)),
       total: totais.ctes,
-      totais,
-      grupos: [...grupos.values()].sort(
-        (a, b) => b.ctes - a.ctes || COLLATOR.compare(a.rotulo, b.rotulo),
-      ),
+      totais: { ...totais, frete: reais(totais.frete) },
+      grupos: [...grupos.values()]
+        .map((g) => ({ ...g, frete: reais(g.frete) }))
+        .sort((a, b) => b.ctes - a.ctes || COLLATOR.compare(a.rotulo, b.rotulo)),
       limites,
       hoje,
     };

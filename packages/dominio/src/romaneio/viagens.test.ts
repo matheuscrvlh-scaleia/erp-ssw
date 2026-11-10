@@ -147,4 +147,29 @@ describe("telas por viagem", () => {
     ]);
     expect(p.cidades[0]).toMatchObject({ nome: "CAMPINAS", ctes: 1 });
   });
+
+  it("frete somado em centavos por romaneio, por carro e no Prejuízo (0,1 + 0,2 = 0,3)", () => {
+    const comFrete = [0.1, 0.2].map((valorFrete) =>
+      item(
+        fato({
+          valorFrete,
+          ocorrEfetivaCodigo: "1",
+          ocorrencias: [
+            ocorrencia(85, "2026-10-27T11:00:00Z"),
+            ocorrencia(13, "2026-10-27T15:00:00Z"),
+          ],
+        }),
+        [A],
+      ),
+    );
+    expect(porViagem(comFrete, ctx, null)).toMatchObject([
+      { romaneio: "A", frete: 0.3, fretePerdido: 0.3 },
+    ]);
+    expect(ctesPorCarro(comFrete)).toMatchObject([{ frete: 0.3 }]);
+    const p = prejuizo(comFrete, ctx);
+    expect([p.porDia[0]?.frete, p.porHora[0]?.frete, p.motoristas[0]?.frete]).toEqual([
+      0.3, 0.3, 0.3,
+    ]);
+    expect(p.cidades[0]?.frete).toBe(0.3);
+  });
 });

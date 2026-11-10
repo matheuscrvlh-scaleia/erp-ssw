@@ -146,6 +146,20 @@ describe("situação do CT-e (cards)", () => {
     );
     expect(totaisDoTopo([c], "todos", CADASTRO_FR, "2026-11-10").travadoMotivo).toBe("RETORNO");
   });
+
+  it("frete, prejuízo e TDE somados em centavos, sem erro de float", () => {
+    // 0.1 + 0.2 em float dá 0.30000000000000004; o banco soma numeric e dá 0.30.
+    const entregues = [0.1, 0.2].map((v) =>
+      analisar(fato({ valorFrete: v, tde: v, ocorrEfetivaCodigo: "1" })),
+    );
+    const prejudicados = entregues.map((c) => ({
+      ...c,
+      analise: { ...c.analise, saiuEntrega: "sim" as const, prejudicado: true },
+    }));
+    const t = totaisDoTopo(prejudicados, "todos", CADASTRO_FR, "2026-11-10");
+    expect([t.frete, t.prejuizoFrete, t.tdeRomaneadoValor]).toEqual([0.3, 0.3, 0.3]);
+    expect(kpisDoRomaneio(prejudicados)).toMatchObject({ freteRomaneado: 0.3, fretePerdido: 0.3 });
+  });
 });
 
 describe("lista segue o card (Q13)", () => {
