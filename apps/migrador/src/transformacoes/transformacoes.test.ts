@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   digitos,
-  filialEfetiva,
   maiusculaAparada,
-  normCodigoOcorr,
   numeroDoCte,
   numeroSsw,
   siglaDoCte,
@@ -103,19 +101,11 @@ describe("identidade do CT-e", () => {
     expect(siglaDoSufixo("33214")).toBeNull();
   });
 
-  it("filial efetiva = coalesce(destino, atual, filial): vazio não é nulo", () => {
-    expect(filialEfetiva(null, "RIO", "CAP")).toBe("RIO");
-    expect(filialEfetiva(null, null, "CAP")).toBe("CAP");
-    expect(filialEfetiva("", "RIO", "CAP")).toBe("");
-  });
-
-  it("dígitos do pagador e código numérico da ocorrência", () => {
+  it("dígitos e trim do Postgres (só espaço)", () => {
     expect(digitos("12.345.678/0001-90")).toBe("12345678000190");
     expect(digitos("--")).toBeNull();
-    expect(normCodigoOcorr("01")).toBe(1);
-    expect(normCodigoOcorr("A-18")).toBe(18);
-    expect(normCodigoOcorr("ABC")).toBeNull();
     expect(maiusculaAparada("  ")).toBeNull();
+    expect(maiusculaAparada("	cap ")).toBe("	CAP");
   });
 });
 

@@ -1,4 +1,5 @@
 import { type PassoFinal } from "../motor/executar";
+import { conferirColunasCalculadas } from "./recalculo";
 
 /**
  * Projeções do Romaneio e do detalhe: o migrador não copia matview; reconstrói com o mesmo caso
@@ -14,22 +15,6 @@ export const recalcularProjecoes: PassoFinal = {
     Promise.resolve([
       "PENDENTE: romaneio_viagens_cte, romaneio_cte_atual e cte_dados_relatorios ficam vazias " +
         "até o caso de uso de recálculo do worker existir (TODO(projecoes)).",
-    ]),
-};
-
-/**
- * Colunas calculadas (`fora_universo`, `ocorr_efetiva_*`, `data_conclusao_efetiva`,
- * `prazo_padrao_*`, `penaliza`, `quarentena`...) foram copiadas como estão, para o primeiro dia
- * bater com o sistema atual. O de-para pede, no fim, o recálculo em lote pelo backend para
- * conferir (diferença vira relatório, não correção).
- * TODO(nucleo): `packages/dominio/src/nucleo` ainda não existe na main; quando existir, recalcular
- * aqui e listar os CT-e que mudam.
- */
-export const conferirColunasCalculadas: PassoFinal = {
-  nome: "conferir-colunas-calculadas",
-  executar: () =>
-    Promise.resolve([
-      "PENDENTE: colunas calculadas copiadas da origem sem recálculo (TODO(nucleo)).",
     ]),
 };
 

@@ -58,7 +58,7 @@ export const passoOcorrencias = definirTabela({
       protocoloSsw: o.protocolo_ssw,
       origem: ou(o.origem, "manual"),
       responsavel: daLista(o.responsavel, responsavelOcorrencia.enumValues, "responsavel"),
-      // TODO(nucleo): penaliza/quarentena são calculadas; copiadas como estão.
+      // penaliza/quarentena são decididas na gravação (código da época, chegada); copiadas como estão.
       penaliza: ou(o.penaliza, false),
       quarentena: ou(o.quarentena, false),
       criadoEm: o.created_at ?? filtros.instante,

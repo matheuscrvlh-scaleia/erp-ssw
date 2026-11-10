@@ -88,8 +88,8 @@ Dependências primeiro (`src/tabelas/registro.ts`):
    → `ingestao_linhas`), `xml_*`, `ssw_webhook_eventos`, `ssw_sincronizacoes`.
 6. **Pós-migração:** `criado_por`/`atualizado_por` das empresas, `duplicado_de` dos CT-e,
    sequência de `auditoria.id`.
-7. **Passos finais:** `recalcular-projecoes` e `conferir-colunas-calculadas` (pendentes, ver
-   abaixo).
+7. **Passos finais:** `recalcular-projecoes` (pendente, ver abaixo) e
+   `conferir-colunas-calculadas` (recálculo pelo núcleo; não roda no `--dry-run`).
 8. **Conferência** de cada tabela.
 
 ### Usuários e senhas
@@ -163,9 +163,13 @@ O `public` nunca é escrito: o sistema atual continua igual, não há o que desf
 - **Colunas calculadas** (`fora_universo`, `ocorr_efetiva_*`, `data_conclusao_efetiva`,
   `prazo_padrao_*`, `penaliza`, `quarentena`...): copiadas como estão, para o primeiro dia bater.
   As três colunas novas de `ctes` (`filial_efetiva`, `pagador_cnpj_digitos`,
-  `ocorr_efetiva_codigo_num`) são calculadas pelo migrador com a regra do de-para.
-  `TODO(nucleo)`: quando `packages/dominio/src/nucleo` existir, o passo
-  `conferir-colunas-calculadas` recalcula em lote e lista as diferenças.
+  `ocorr_efetiva_codigo_num`) são calculadas pelo migrador com as funções do núcleo
+  (`@erp/dominio/nucleo`). `previsao_ssw_*` só é copiada quando `prazo_fonte` não é regra
+  configurada: com regra, a previsão do SSW de antes não está na origem e fica nula (ajuste no
+  relatório) até o próximo 038/BI2. O passo `conferir-colunas-calculadas` recalcula cada CT-e
+  gravado com `recalcularDerivadosDoCte` e lista, por campo, quantos mudariam (até 20 exemplos):
+  é relatório, não correção (Q20/Q52 explicam parte das diferenças). `penaliza` e `quarentena`
+  das ocorrências são decididas na gravação e ficam como estão.
 
 ## Riscos
 

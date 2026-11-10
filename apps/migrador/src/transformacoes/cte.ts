@@ -2,6 +2,7 @@
  * Identidade do CT-e e colunas derivadas de texto. Mesma semântica das funções SQL do sistema
  * atual, para o primeiro dia bater.
  */
+import { btrim } from "@erp/dominio/nucleo";
 
 /** Só os dígitos; texto sem dígito vira nulo. origem: regexp_replace(x, '\D', '', 'g') das RPCs */
 export function digitos(valor: string | null): string | null {
@@ -9,21 +10,21 @@ export function digitos(valor: string | null): string | null {
   return d === "" ? null : d;
 }
 
-/** `upper(btrim(x))`, com vazio = nulo. */
+/** `upper(btrim(x))`, com vazio = nulo (`btrim` do Postgres: só espaço). */
 export function maiusculaAparada(valor: string | null): string | null {
-  const v = (valor ?? "").trim().toUpperCase();
+  const v = btrim(valor ?? "").toUpperCase();
   return v === "" ? null : v;
 }
 
 /** Sigla do campo de CT-e de um relatório ("CAP033214-5" → "CAP"). origem: ssw_sigla_ctrc */
 export function siglaSsw(campo: string | null): string | null {
-  const letras = /^([A-Za-z]+)/.exec((campo ?? "").trim());
+  const letras = /^([A-Za-z]+)/.exec(btrim(campo ?? ""));
   return letras?.[1] ? letras[1].toUpperCase() : null;
 }
 
 /** Número do campo de CT-e de um relatório ("CAP033214-5" → "33214"). origem: ssw_num_ctrc */
 export function numeroSsw(campo: string | null): string | null {
-  const antesDoTraco = (campo ?? "").trim().split("-")[0] ?? "";
+  const antesDoTraco = btrim(campo ?? "").split("-")[0] ?? "";
   const d = digitos(antesDoTraco);
   return d === null ? null : d.replace(/^0+(?=\d)/, "");
 }
@@ -56,24 +57,3 @@ export function siglaDoCte(
 
 export const NUMERO_DE_CTE_VALIDO = /^[1-9][0-9]*$/;
 export const SIGLA_DE_CTE_VALIDA = /^[A-Z]+$/;
-
-/**
- * Código de ocorrência como número: tira todo caractere que não é dígito. origem:
- * norm_codigo_ocorr (docs/regras/01 §2.1).
- */
-export function normCodigoOcorr(texto: string | null): number | null {
-  const d = digitos(texto);
-  return d === null ? null : Number.parseInt(d, 10);
-}
-
-/**
- * A sigla que decide o universo e o filtro de filial. `coalesce` do SQL: só nulo passa adiante
- * (texto vazio fica). origem: expressão repetida nas RPCs
- */
-export function filialEfetiva(
-  unidadeDestino: string | null,
-  unidadeAtual: string | null,
-  filial: string | null,
-): string | null {
-  return unidadeDestino ?? unidadeAtual ?? filial;
-}
