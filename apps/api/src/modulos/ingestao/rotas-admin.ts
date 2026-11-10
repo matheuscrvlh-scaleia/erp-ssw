@@ -2,87 +2,55 @@
  * Telas de ingestão (Admin › Importação SSW e Admin › XML CT-e): só a equipe da Plataforma, na
  * empresa ativa. Spec 06 §3.13 (retomar/descartar/aplicar manual) e §5.
  */
-import { ErroDeNegocio } from "@erp/dominio/erros";
 import {
-  aplicar036,
-  aplicarBloco,
   descartarCiclo,
-  importarArquivoXml,
   importarRelatorioManual,
-  LEASE_DO_CICLO_MS,
   LIMITE_PADRAO_DOS_ORFAOS,
   reprocessarOrfaos,
   retomarCiclo,
-  travaDoCiclo,
-  travaDoFtp,
 } from "@erp/ingestao/casos-de-uso";
 import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
-import { filaDoJob, idDeExecucao, JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirAdminPlataforma, exigirEmpresa } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
+import {
+  aplicarManualmente,
+  importarXmlDaTela,
+  type IngestaoDaEmpresa,
+  lerAplicacoes,
+  lerArquivosXml,
+  lerFtp,
+  lerPipeline,
+  liberarTravaDoFtp,
+  pausarOuRetomarFtp,
+  rodarFtpAgora,
+} from "./casos-de-uso";
 import { dependenciasDaEmpresa, type ServicosDaIngestao } from "./servicos";
 
 const LIMITE_COM_ARQUIVO = 64 * 1024 * 1024;
 const soPlataforma = [exigirEmpresa, exigirAdminPlataforma];
 
-const iso = (d: Date | null) => (d ? d.toISOString() : null);
-const isoObrigatorio = (d: Date) => d.toISOString();
-
-/** Horário do FTP em português (Q37: o de produção, igual para todas as empresas). */
-const CRON_DO_FTP = JOBS_DE_INGESTAO.find((j) => j.job === "sincronizar-ftp")?.cron ?? "";
-const DESCRICAO_DA_AGENDA = `A cada minuto, exceto :00 e :30 (${CRON_DO_FTP} UTC)`;
-
 export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
   servicos: ServicosDaIngestao;
   agora: () => Date;
 }> = (app, { servicos, agora }, pronto) => {
-  async function daEmpresa(request: FastifyRequest) {
+  async function daEmpresa(request: FastifyRequest): Promise<IngestaoDaEmpresa> {
     const { empresa } = await empresaDaRequisicao(request);
     const ator = await atorDa(request);
     return {
       empresaId: empresa.id,
       deps: dependenciasDaEmpresa(servicos, empresa.id, ator, agora),
+      servicos,
     };
   }
 
   app.get(
     c.pipeline.caminho,
     { schema: { response: { 200: c.pipeline.saida } }, preHandler: soPlataforma },
-    async (request) => {
-      const { empresaId, deps } = await daEmpresa(request);
-      const dados = await deps.executar(async (r) => ({
-        ciclos: await r.ultimosCiclos(10),
-        arquivos: await r.ultimosArquivos(25),
-        esperados: await r.relatoriosEsperados(),
-      }));
-      return {
-        ciclos: dados.ciclos.map((x) => ({
-          ...x,
-          primeiroArquivoEm: isoObrigatorio(x.primeiroArquivoEm),
-          ultimoArquivoEm: isoObrigatorio(x.ultimoArquivoEm),
-          fechadoEm: iso(x.fechadoEm),
-          aplicadoEm: iso(x.aplicadoEm),
-        })),
-        arquivos: dados.arquivos.map((a) => ({
-          nomeArquivo: a.nomeArquivo,
-          cicloChave: a.cicloChave,
-          relatorio: a.relatorio,
-          unidade: a.unidade,
-          status: a.status,
-          linhas: a.linhas,
-          mensagem: a.mensagem,
-          vistoEm: isoObrigatorio(a.vistoEm),
-          importadoEm: iso(a.importadoEm),
-        })),
-        esperados: dados.esperados,
-        filaPendente: await servicos.fila.contar(empresaId),
-        aplicacaoRodando: await servicos.travas.ativa(travaDoCiclo(empresaId)),
-      };
-    },
+    async (request) => lerPipeline(await daEmpresa(request)),
   );
 
   app.post(
@@ -134,97 +102,29 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
       preHandler: soPlataforma,
     },
     async (request) => {
-      const { empresaId, deps } = await daEmpresa(request);
-      const { dryRun, limite, offset } = request.body;
-      // A aplicação de verdade não roda junto com o ciclo automático (mesma trava).
-      const token = dryRun
-        ? null
-        : await servicos.travas.adquirir(travaDoCiclo(empresaId), LEASE_DO_CICLO_MS);
-      if (!dryRun && token === null) {
-        throw new ErroDeNegocio(
-          "CONFLITO",
-          "A aplicação automática está rodando agora. Tente de novo em instantes.",
-        );
-      }
-      try {
-        const ator = await atorDa(request);
-        const r = await aplicarBloco(deps, { dryRun, limite, offset, usuarioId: ator.usuarioId });
-        const temMais = dryRun ? r.processados === limite : r.pendentes > 0 && r.processados > 0;
-        // Romaneio pelo 036 só no último bloco; a manual não roda as partes do 455 (spec §3.13).
-        const romaneio036 = temMais ? null : (await aplicar036(deps, dryRun)).alterados;
-        return { ...r, temMais, romaneio036 };
-      } finally {
-        if (token) await servicos.travas.liberar(travaDoCiclo(empresaId), token);
-      }
+      const ingestao = await daEmpresa(request);
+      const ator = await atorDa(request);
+      return aplicarManualmente(ingestao, request.body, ator.usuarioId);
     },
   );
 
   app.get(
     c.aplicacoes.caminho,
     { schema: { response: { 200: c.aplicacoes.saida } }, preHandler: soPlataforma },
-    async (request) => {
-      const { deps } = await daEmpresa(request);
-      const lista = await deps.executar((r) => r.ultimasAplicacoes(20));
-      return {
-        aplicacoes: lista.map(({ aplicadoPor: _, ...a }) => ({
-          ...a,
-          iniciadoEm: isoObrigatorio(a.iniciadoEm),
-          finalizadoEm: iso(a.finalizadoEm),
-        })),
-      };
-    },
+    async (request) => lerAplicacoes(await daEmpresa(request)),
   );
 
   app.get(
     c.ftp.caminho,
     { schema: { response: { 200: c.ftp.saida } }, preHandler: soPlataforma },
-    async (request) => {
-      const { empresaId, deps } = await daEmpresa(request);
-      const { config, historico } = await deps.executar(async (r) => ({
-        config: await r.configuracoes(["ftp_sync_ativo"]),
-        historico: await r.ultimasSincronizacoes(10),
-      }));
-      const p = await servicos.progressos.ler(empresaId);
-      return {
-        ativo: config.get("ftp_sync_ativo") !== "false",
-        agenda: DESCRICAO_DA_AGENDA,
-        travaAtiva: await servicos.travas.ativa(travaDoFtp(empresaId)),
-        progresso: p && {
-          ...p,
-          iniciadoEm: iso(p.iniciadoEm),
-          heartbeatEm: iso(p.heartbeatEm),
-          finalizadoEm: iso(p.finalizadoEm),
-        },
-        historico: historico.map((h) => ({
-          ...h,
-          executadoEm: isoObrigatorio(h.executadoEm),
-          finalizadoEm: iso(h.finalizadoEm),
-        })),
-      };
-    },
+    async (request) => lerFtp(await daEmpresa(request)),
   );
 
   app.post(
     c.rodarFtp.caminho,
     { schema: { response: { 200: c.rodarFtp.saida } }, preHandler: soPlataforma },
     async (request) => {
-      const { empresaId, deps } = await daEmpresa(request);
-      // "Rodar agora" ignora a pausa; singleton por empresa (disparo repetido é descartado).
-      await servicos.enfileirador.enfileirar(
-        filaDoJob("sincronizar-ftp"),
-        "sincronizar-ftp",
-        { empresaId, manual: true },
-        { deduplicacao: idDeExecucao("sincronizar-ftp", empresaId) },
-      );
-      await deps.executar((r) =>
-        r.auditar({
-          acao: "executar",
-          entidade: "empresa_integracoes",
-          entidadeId: "sftp",
-          resumo: "Sincronização do FTP disparada",
-          depois: {},
-        }),
-      );
+      await rodarFtpAgora(await daEmpresa(request));
       return { ok: true as const };
     },
   );
@@ -236,18 +136,7 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
       preHandler: soPlataforma,
     },
     async (request) => {
-      const { deps } = await daEmpresa(request);
-      const { ativo } = request.body;
-      await deps.executar(async (r) => {
-        await r.gravarConfiguracao("ftp_sync_ativo", String(ativo));
-        await r.auditar({
-          acao: ativo ? "retomar" : "pausar",
-          entidade: "configuracoes",
-          entidadeId: "ftp_sync_ativo",
-          resumo: ativo ? "Sincronização do FTP retomada" : "Sincronização do FTP pausada",
-          depois: { ativo },
-        });
-      });
+      await pausarOuRetomarFtp(await daEmpresa(request), request.body.ativo);
       return { ok: true as const };
     },
   );
@@ -256,18 +145,7 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
     c.liberarTravaFtp.caminho,
     { schema: { response: { 200: c.liberarTravaFtp.saida } }, preHandler: soPlataforma },
     async (request) => {
-      const { empresaId, deps } = await daEmpresa(request);
-      await servicos.travas.forcarLiberacao(travaDoFtp(empresaId));
-      await servicos.progressos.limpar(empresaId);
-      await deps.executar((r) =>
-        r.auditar({
-          acao: "liberar_trava",
-          entidade: "empresa_integracoes",
-          entidadeId: "sftp",
-          resumo: "Trava do FTP liberada à mão",
-          depois: {},
-        }),
-      );
+      await liberarTravaDoFtp(await daEmpresa(request));
       return { ok: true as const };
     },
   );
@@ -279,32 +157,13 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
       schema: { body: c.importarXml.entrada, response: { 200: c.importarXml.saida } },
       preHandler: soPlataforma,
     },
-    async (request) => {
-      const { deps } = await daEmpresa(request);
-      const { nome, base64 } = request.body;
-      const texto = base64.includes(",") ? (base64.split(",", 2)[1] ?? "") : base64;
-      return importarArquivoXml(
-        deps.executar,
-        { nome, bytes: new Uint8Array(Buffer.from(texto, "base64")) },
-        agora(),
-      );
-    },
+    async (request) => importarXmlDaTela(await daEmpresa(request), request.body, agora()),
   );
 
   app.get(
     c.arquivosXml.caminho,
     { schema: { response: { 200: c.arquivosXml.saida } }, preHandler: soPlataforma },
-    async (request) => {
-      const { deps } = await daEmpresa(request);
-      const { arquivos, orfaos } = await deps.executar(async (r) => ({
-        arquivos: await r.ultimosArquivosXml(50),
-        orfaos: await r.estatisticasDosOrfaos(),
-      }));
-      return {
-        arquivos: arquivos.map((a) => ({ ...a, criadoEm: isoObrigatorio(a.criadoEm) })),
-        orfaos: { ...orfaos, maisAntigo: iso(orfaos.maisAntigo) },
-      };
-    },
+    async (request) => lerArquivosXml(await daEmpresa(request)),
   );
 
   app.post(

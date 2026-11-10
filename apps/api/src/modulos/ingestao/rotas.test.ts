@@ -194,4 +194,20 @@ describe("telas (só Plataforma)", () => {
       dados: { empresaId, manual: true },
     });
   });
+
+  it("rodar o FTP só enfileira depois de gravar a auditoria", async () => {
+    const usuario = cenario.banco.criarUsuario({ email: "admin@fr.com.br" });
+    cenario.banco.vincular(usuario.id, empresaId, { papel: "admin" });
+    cenario.banco.plataformaAdmins.add(usuario.id);
+    const headers = await entrarComo(cenario, usuario.id, empresaId);
+    falharGravacao = true;
+
+    const rodar = await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/ingestao/ftp/rodar",
+      headers,
+    });
+    expect(rodar.statusCode).toBe(500);
+    expect(enfileirador.jobs).toEqual([]);
+  });
 });
