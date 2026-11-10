@@ -1,0 +1,65 @@
+import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
+
+/** Tira espaços só das pontas (o `btrim` do Postgres, que não mexe em tab nem quebra de linha). */
+export function aparar(texto: string): string {
+  return texto.replace(/^ +| +$/g, "");
+}
+
+/**
+ * Número do CT-e digitado na busca, como está gravado (`ctes.numero`: dígitos sem zero à
+ * esquerda). Aceita sigla colada e dígito verificador: "CAS 150354-5" → "150354". Sem dígito
+ * útil ("ABC", "000") → nulo, e o filtro fica desligado.
+ * origem: ocorrencias_painel_v5 / comprovantes_lista_v2 (sistema atual)
+ */
+export function termoCtrc(entrada: string): string | null {
+  const termo = aparar(entrada)
+    .toUpperCase()
+    .replace(/^[A-Z]+/, "")
+    .split("-")[0]!
+    .replace(/[^0-9]/g, "")
+    .replace(/^0+/, "");
+  return termo === "" ? null : termo;
+}
+
+/** Número da NF digitado na busca: só dígitos, sem zero à esquerda. Vazio → nulo. */
+export function termoNf(entrada: string): string | null {
+  const termo = entrada.replace(/[^0-9]/g, "").replace(/^0+/, "");
+  return termo === "" ? null : termo;
+}
+
+/**
+ * Padrões `ILIKE` de um filtro de texto. Vários valores separados por "|" casam se qualquer um
+ * casar ("a||b" tem um valor vazio, que casa tudo). `%`, `_` e `\` digitados valem como texto
+ * (Q10 do dono: busca literal).
+ * origem: texto_casa_filtro (sistema atual)
+ */
+export function padroesDoFiltroDeTexto(filtro: string): string[] {
+  const literal = (valor: string) => valor.replace(/[\\%_]/g, (c) => `\\${c}`);
+  return aparar(filtro)
+    .split(/\s*\|\s*/)
+    .map((valor) => `%${literal(valor)}%`);
+}
+
+/**
+ * Tipos de documento do seletor: maiúsculos, sem vazios nem repetidos. Lista vazia = sem filtro.
+ * origem: saneTipos (src/features/performance, sistema atual)
+ */
+export function saneTipos(tipos: readonly string[]): string[] {
+  return [...new Set(tipos.map((t) => t.trim().toUpperCase()).filter((t) => t !== ""))];
+}
+
+/**
+ * Tipo de documento que vale para o CT-e: o do 455, senão o do BI2; vazio conta como ausente.
+ * Sem nenhum, o seletor usa `SEM_TIPO_DOCUMENTO`.
+ * origem: tipo_documento_efetivo (sistema atual)
+ * TODO(nucleo): trocar por nucleo/tipoDocumentoEfetivo
+ */
+export function tipoDocumentoEfetivo(tipo455: string | null, tipoBi2: string | null): string {
+  const tipo = aparar(tipo455 ?? "") || aparar(tipoBi2 ?? "");
+  return tipo === "" ? SEM_TIPO_DOCUMENTO : tipo.toUpperCase();
+}
+
+/** Rótulo do pagador nas telas: nome, senão CNPJ, senão "—" (texto vazio conta como ausente). */
+export function rotuloDoPagador(nome: string | null, cnpj: string | null): string {
+  return nome || cnpj || "—";
+}
