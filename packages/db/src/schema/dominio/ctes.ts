@@ -150,6 +150,13 @@ export const ctes = erp.table(
     prazoFonte: text("prazo_fonte", { enum: fontesDePrazo }),
     dataBasePrazo: instante("data_base_prazo"),
     dataPrevistaEntrega: dia("data_prevista_entrega"),
+    /**
+     * Previsão (e fonte) que veio do SSW, guardada à parte: a regra de prazo configurado
+     * sobrescreve `data_prevista_entrega` e, quando deixa de valer, a previsão volta a esta
+     * (decisão Q19 do dono).
+     */
+    previsaoSsw: dia("previsao_ssw"),
+    previsaoSswFonte: text("previsao_ssw_fonte", { enum: fontesDePrazo }),
     // calculada pelo backend: 2 dias corridos (48 h); nulo para pagador/parceiro com raiz de CNPJ 00193687 (TROCA). origem: prazo_padrao_do_ctrc
     prazoPadraoDias: smallint("prazo_padrao_dias"),
     // calculada pelo backend: data_emissao + prazo_padrao_dias; nulo se a previsão é anterior à emissão. Nascido em atraso = previsão < esta data. origem: prazo_padrao_data_do_ctrc
@@ -228,6 +235,12 @@ export const ctes = erp.table(
     check(
       "ctes_prazo_fonte_ck",
       sql`${t.prazoFonte} is null or ${t.prazoFonte} in (${sql.raw(
+        fontesDePrazo.map((f) => `'${f}'`).join(", "),
+      )})`,
+    ),
+    check(
+      "ctes_previsao_ssw_fonte_ck",
+      sql`${t.previsaoSswFonte} is null or ${t.previsaoSswFonte} in (${sql.raw(
         fontesDePrazo.map((f) => `'${f}'`).join(", "),
       )})`,
     ),

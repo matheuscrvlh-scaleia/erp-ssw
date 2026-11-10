@@ -37,6 +37,10 @@ Regras gerais (valem para toda tabela, salvo o que a tabela disser):
 | `created_at` / `updated_at`                  | `criado_em` / `atualizado_em` | igual                                                                                                                                                                                 |
 | demais colunas mantidas                      | mesmo nome                    | igual                                                                                                                                                                                 |
 
+Colunas novas `previsao_ssw` / `previsao_ssw_fonte` (Q19: previsão do SSW guardada à parte da
+regra de prazo configurado): `data_prevista_entrega` / `prazo_fonte` quando `prazo_fonte` **não**
+é `regra_*`; nulas quando é (a previsão do SSW anterior à regra não existe mais na base atual).
+
 Chave: `ctrcs_numero_ctrc_empresa_key (numero_ctrc, empresa_id)` → `ctes_empresa_sigla_numero_uq
 (empresa_id, sigla, numero)`. Conflito na chave nova (dois `ctrcs` com mesma sigla e número):
 não deveria existir; se existir, migra o de `atualizado_em` mais novo e reporta o outro.
