@@ -12,6 +12,7 @@ import {
   sincronizarAgendamentos,
 } from "./agendamentos/agendamentos";
 import { limparSessoes } from "./jobs/manutencao/job";
+import { propagarClassificacao, TAMANHO_DO_LOTE } from "./jobs/recalculo/job";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
 import { criarProcessador } from "./processador";
 import { BancoFalso } from "./testes/banco-falso";
@@ -19,9 +20,10 @@ import { BancoFalso } from "./testes/banco-falso";
 const log = pino({ level: "silent" });
 const EMPRESA = randomUUID();
 
-function bancoFalso() {
+function bancoFalso(pendentesPorCodigo: Record<number, number> = {}) {
   const contextos: ContextoBanco[] = [];
   const limites: Date[] = [];
+  const lotes: [number, number][] = [];
   const banco = new BancoFalso();
   const executar: ExecutorDoWorker = (contexto, fn) => {
     contextos.push(contexto);
@@ -36,10 +38,19 @@ function bancoFalso() {
           },
           apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
         },
+        recalculo: {
+          propagarClassificacao: (_empresaId, codigo, limite) => {
+            const pendentes = pendentesPorCodigo[codigo] ?? 0;
+            const regravadas = Math.min(pendentes, limite);
+            pendentesPorCodigo[codigo] = pendentes - regravadas;
+            lotes.push([codigo, regravadas]);
+            return Promise.resolve(regravadas);
+          },
+        },
       }),
     );
   };
-  return { executar, contextos, limites };
+  return { executar, contextos, limites, lotes };
 }
 
 const porEmpresa = definirJob({
@@ -95,6 +106,36 @@ describe("processador", () => {
       processar({ name: "conferir-empresa", data: { empresaId: "x" } }),
     ).rejects.toBeInstanceOf(UnrecoverableError);
     expect(banco.contextos).toEqual([]);
+  });
+});
+
+describe("propagar classificação de código", () => {
+  it("regrava em lotes, uma transação por lote, no contexto da empresa, até acabar", async () => {
+    const banco = bancoFalso({ 13: TAMANHO_DO_LOTE * 2 + 5, 77: 0 });
+    const processar = criarProcessador({
+      jobs: [propagarClassificacao],
+      executar: banco.executar,
+      log,
+      agora: () => new Date(),
+    });
+    await processar({
+      name: "propagar-classificacao-codigo",
+      data: { empresaId: EMPRESA, codigos: [13, 77] },
+    });
+    expect(banco.lotes).toEqual([
+      [13, TAMANHO_DO_LOTE],
+      [13, TAMANHO_DO_LOTE],
+      [13, 5],
+      [77, 0],
+    ]);
+    expect(banco.contextos).toHaveLength(4);
+    expect(banco.contextos[0]).toEqual({ empresaId: EMPRESA, usuarioId: null, plataforma: false });
+  });
+
+  it("sob demanda: não gera agendamento", () => {
+    expect(agendamentosDesejados([propagarClassificacao], [{ id: EMPRESA, fuso: "UTC" }])).toEqual(
+      [],
+    );
   });
 });
 

@@ -231,6 +231,8 @@ export const auditoria = erp.table(
   (t) => [
     index("auditoria_empresa_criado_idx").on(t.empresaId, t.criadoEm.desc()),
     index("auditoria_criado_idx").on(t.criadoEm.desc()),
+    // Histórico de um registro (aba Histórico do código de ocorrência, e de feriado etc.).
+    index("auditoria_entidade_idx").on(t.empresaId, t.entidade, t.entidadeId, t.criadoEm.desc()),
     ...politicas("auditoria", {
       select: daEmpresaOuPlataforma(t.empresaId),
       insert: sql`(${daEmpresaOuPlataforma(t.empresaId)}

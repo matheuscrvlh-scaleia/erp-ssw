@@ -33,6 +33,8 @@ import {
   reconstruirProjecoesRomaneio,
 } from "./jobs/projecoes-romaneio/job";
 import { criarRepositorioProjecoesRomaneio } from "./jobs/projecoes-romaneio/repositorio";
+import { propagarClassificacao } from "./jobs/recalculo/job";
+import { criarRepositorioRecalculo } from "./jobs/recalculo/repositorio";
 import {
   type DefinicaoDeJob,
   type ExecutorDoWorker,
@@ -77,6 +79,7 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     slaArquivos: criarRepositorioSlaArquivos(tx),
     prazos: criarRepositorioPrazosDoWorker(tx),
     projecoesRomaneio: criarRepositorioProjecoesRomaneio(tx, empresaId),
+    recalculo: criarRepositorioRecalculo(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
@@ -119,6 +122,7 @@ const JOBS: readonly DefinicaoDeJob[] = [
   recalcularPrazos,
   recalcularProjecoesRomaneio,
   reconstruirProjecoesRomaneio,
+  propagarClassificacao,
 ];
 
 const processar = criarProcessador({ jobs: JOBS, executar, log, agora: () => new Date() });

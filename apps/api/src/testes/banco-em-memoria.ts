@@ -16,6 +16,7 @@ import {
   EstadoDeAdministracao,
 } from "./administracao-em-memoria";
 import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
+import { DadosDeOcorrencias } from "./falsos-ocorrencias";
 import { DadosDoRanking } from "./falsos-ranking";
 import { IngestaoEmMemoria } from "./ingestao-em-memoria";
 import { criarPerformanceFalsa } from "./leituras-falsas";
@@ -118,6 +119,8 @@ export class BancoEmMemoria {
   prazoParceiro = new PrazoParceiroEmMemoria();
   contextos: ContextoBanco[] = [];
   readonly ingestao = new IngestaoEmMemoria();
+  /** Ocorrências, Comprovantes, Coletas, Histórico e Admin › Códigos. */
+  readonly ocorrencias = new DadosDeOcorrencias(this);
   /** Telas de CT-e: repositórios falsos próprios (ver falsos-ctrc.ts). */
   ctrc = new CtrcFalso();
   filtros = new FiltrosFalso();
@@ -210,6 +213,7 @@ export class BancoEmMemoria {
 
   private repositorios(contexto: ContextoBanco): Repositorios {
     return {
+      ...this.ocorrencias.repositorios(),
       ctrc: this.ctrc,
       filtros: this.filtros,
       listagem: this.listagem,

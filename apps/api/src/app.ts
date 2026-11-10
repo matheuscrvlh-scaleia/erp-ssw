@@ -20,15 +20,20 @@ import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasBonificacaoEntrega } from "./modulos/bonificacao-entrega/rotas";
 import { rotasCadastros } from "./modulos/cadastros/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { rotasCodigosOcorrencia } from "./modulos/codigos-ocorrencia/rotas";
+import { rotasColetas } from "./modulos/coletas/rotas";
+import { rotasComprovantes } from "./modulos/comprovantes/rotas";
 import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
 import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
 import { rotasCtrc } from "./modulos/ctrc/rotas";
 import { rotasFiltros } from "./modulos/filtros/rotas";
+import { rotasHistorico } from "./modulos/historico/rotas";
 import { type FilasDeIngestao } from "./modulos/ingestao-ssw/casos-de-uso";
 import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
 import { rotasPublicasSsw } from "./modulos/ingestao-ssw/rotas-publicas";
 import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasLogs } from "./modulos/logs/rotas";
+import { rotasOcorrencias } from "./modulos/ocorrencias/rotas";
 import { rotasPerformance } from "./modulos/performance/rotas";
 import { rotasPlataforma } from "./modulos/plataforma/rotas";
 import { rotasPrazoParceiro } from "./modulos/prazo-parceiro/rotas";
@@ -128,6 +133,14 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   await app.register(rotasCalendario, { agora: deps.agora });
   await app.register(rotasRomaneio, { agora: deps.agora });
   await app.register(rotasPrazoParceiro);
+  await app.register(rotasOcorrencias, { agora: deps.agora });
+  await app.register(rotasComprovantes);
+  await app.register(rotasColetas, { agora: deps.agora });
+  await app.register(rotasHistorico, { agora: deps.agora });
+  await app.register(rotasCodigosOcorrencia, {
+    agora: deps.agora,
+    fila: deps.fila,
+  });
   await app.register(rotasFiltros);
   await app.register(rotasListagem, { agora: deps.agora });
   await app.register(rotasCtrc, { agora: deps.agora });
