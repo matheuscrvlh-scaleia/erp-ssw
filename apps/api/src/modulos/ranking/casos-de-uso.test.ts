@@ -4,9 +4,12 @@ import { BancoEmMemoria } from "../../testes/banco-em-memoria";
 import { rankingOperacional } from "./casos-de-uso";
 import { padroesDoTexto } from "./filtro-performance";
 
-const TEMPO_ESGOTADO = { code: "57014" };
+// O driver do Postgres rejeita com Error + `code` (57014 = statement_timeout).
+const TEMPO_ESGOTADO = Object.assign(new Error("canceling statement due to statement timeout"), {
+  code: "57014",
+});
 
-function cenario(falhas: unknown[]) {
+function cenario(falhas: Error[]) {
   const banco = new BancoEmMemoria();
   banco.ranking.falhasDoRanking = falhas;
   const esperas: number[] = [];

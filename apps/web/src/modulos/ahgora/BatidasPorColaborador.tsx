@@ -95,7 +95,9 @@ export function BatidasPorColaborador() {
                 className="h-8 pl-7 text-[12px]"
                 placeholder="Nome, matrícula ou CPF"
                 value={busca}
-                onChange={(e) => { setBusca(e.target.value); }}
+                onChange={(e) => {
+                  setBusca(e.target.value);
+                }}
               />
             </div>
           </div>
@@ -123,7 +125,9 @@ export function BatidasPorColaborador() {
               type="date"
               className="h-8 text-[12px]"
               value={start}
-              onChange={(e) => { setStart(e.target.value); }}
+              onChange={(e) => {
+                setStart(e.target.value);
+              }}
             />
           </div>
           <div className="space-y-1">
@@ -135,7 +139,9 @@ export function BatidasPorColaborador() {
               type="date"
               className="h-8 text-[12px]"
               value={end}
-              onChange={(e) => { setEnd(e.target.value); }}
+              onChange={(e) => {
+                setEnd(e.target.value);
+              }}
             />
           </div>
           <div className="flex items-end">

@@ -156,7 +156,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const ordenadas = ordenarLinhas(filtradas, ordem.chave, ordem.direcao, nomeDe);
   const rotuloDoFiltro =
     filtroCard === "na_meta" ? "na meta" : filtroCard === "abaixo_meta" ? "abaixo da meta" : "";
-  const alternarCard = (f: FiltroDoCard) => { setFiltroCard((atual) => (atual === f ? "todos" : f)); };
+  const alternarCard = (f: FiltroDoCard) => {
+    setFiltroCard((atual) => (atual === f ? "todos" : f));
+  };
 
   // Clique no número abre o recorte daquela coluna; no resto da linha, todos os CT-e dela.
   const abrirCasos = (r: LinhaDoRanking, tipo: Recorte = "emitidos") => {
@@ -228,11 +230,13 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
     { chave: "frete", rotulo: "Frete", alinhar: "right" },
   ];
 
-  const alternarOrdem = (chave: ChaveDeOrdem) => { setOrdem((o) =>
+  const alternarOrdem = (chave: ChaveDeOrdem) => {
+    setOrdem((o) =>
       o.chave === chave
         ? { chave, direcao: o.direcao === "asc" ? "desc" : "asc" }
         : { chave, direcao: chave === "nome" ? "asc" : "desc" },
-    ); };
+    );
+  };
 
   return (
     <div className="space-y-3">
@@ -262,7 +266,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
             <button
               key={b}
               type="button"
-              onClick={() => { setBase(b); }}
+              onClick={() => {
+                setBase(b);
+              }}
               aria-pressed={base === b}
               title={`Recorta o período pela ${ROTULO_DA_BASE[b]} do CT-e`}
               className={classeDoAlternador(base === b)}
@@ -299,14 +305,18 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           aria-label="Remetente"
           placeholder="Remetente (a|b)"
           value={remetente}
-          onChange={(e) => { setRemetente(e.target.value); }}
+          onChange={(e) => {
+            setRemetente(e.target.value);
+          }}
           className="w-40 rounded-md border border-border bg-card px-2 py-1 text-[12px]"
         />
         <input
           aria-label="Destino"
           placeholder="Destino (a|b)"
           value={destino}
-          onChange={(e) => { setDestino(e.target.value); }}
+          onChange={(e) => {
+            setDestino(e.target.value);
+          }}
           className="w-40 rounded-md border border-border bg-card px-2 py-1 text-[12px]"
         />
         <div className="ml-auto flex items-center gap-2">
@@ -317,7 +327,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
             size="sm"
             variant="outline"
             className="h-7 text-[12px]"
-            onClick={() => { baixarCsv(`ranking-${grupo}`, colunasExportacao, ordenadas); }}
+            onClick={() => {
+              baixarCsv(`ranking-${grupo}`, colunasExportacao, ordenadas);
+            }}
           >
             <Download className="mr-1 h-3.5 w-3.5" /> Exportar
           </Button>
@@ -331,7 +343,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           status="good"
           neutro
           meta="no período · ver todos"
-          aoClicar={() => { setFiltroCard("todos"); }}
+          aoClicar={() => {
+            setFiltroCard("todos");
+          }}
           ativo={filtroCard === "todos"}
         />
         <KpiCard
@@ -340,7 +354,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           status="good"
           neutro
           meta={periodo.rotulo}
-          aoClicar={() => { setFiltroCard("todos"); }}
+          aoClicar={() => {
+            setFiltroCard("todos");
+          }}
           ativo={filtroCard === "todos"}
         />
         <KpiCard
@@ -350,7 +366,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           neutro={statusDoSlaMedio === null}
           progresso={kpis.slaMedio ?? undefined}
           meta={`meta ${formatarPct(meta)} · ver os que atingem`}
-          aoClicar={() => { alternarCard("na_meta"); }}
+          aoClicar={() => {
+            alternarCard("na_meta");
+          }}
           ativo={filtroCard === "na_meta"}
         />
         <KpiCard
@@ -358,7 +376,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           valor={nfInt.format(kpis.abaixoMeta)}
           status={kpis.abaixoMeta > 0 ? "bad" : "good"}
           meta={`de ${nfInt.format(kpis.grupos)} ${plural}`}
-          aoClicar={() => { alternarCard("abaixo_meta"); }}
+          aoClicar={() => {
+            alternarCard("abaixo_meta");
+          }}
           ativo={filtroCard === "abaixo_meta"}
         />
       </div>
@@ -375,7 +395,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           <select
             aria-label="Ano do gráfico"
             value={ano}
-            onChange={(e) => { setAno(Number(e.target.value)); }}
+            onChange={(e) => {
+              setAno(Number(e.target.value));
+            }}
             className="rounded-md border border-border bg-card px-2 py-1 text-[12px]"
           >
             {[anoAtual, anoAtual - 1, anoAtual - 2].map((a) => (
@@ -395,7 +417,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           </span>
           <button
             type="button"
-            onClick={() => { setFiltroCard("todos"); }}
+            onClick={() => {
+              setFiltroCard("todos");
+            }}
             className="text-[var(--brand)] underline-offset-2 hover:underline"
           >
             Ver todos
@@ -413,7 +437,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
                 return (
                   <th
                     key={h.chave}
-                    onClick={() => { alternarOrdem(h.chave); }}
+                    onClick={() => {
+                      alternarOrdem(h.chave);
+                    }}
                     title="Ordenar por esta coluna"
                     className={
                       "cursor-pointer select-none px-2 py-2 text-[13px] font-semibold hover:text-foreground " +
@@ -486,7 +512,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
               return (
                 <tr
                   key={r.chave}
-                  onClick={() => { abrirCasos(r); }}
+                  onClick={() => {
+                    abrirCasos(r);
+                  }}
                   title="Ver todos os CT-e (clique num número para ver só aquela coluna)"
                   className="cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/40"
                   style={nivel === "bad" ? { background: FUNDO_DO_STATUS.bad } : undefined}
@@ -578,11 +606,13 @@ function SeletorDeParceiros({
       (o) => !termo || (o.rotulo ?? "").toLowerCase().includes(termo) || o.chave.includes(termo),
     )
     .sort((a, b) => (a.rotulo ?? a.chave).localeCompare(b.rotulo ?? b.chave, "pt-BR"));
-  const alternar = (cnpj: string) => { aoMudar(
+  const alternar = (cnpj: string) => {
+    aoMudar(
       selecionados.includes(cnpj)
         ? selecionados.filter((c) => c !== cnpj)
         : [...selecionados, cnpj].sort(),
-    ); };
+    );
+  };
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -597,7 +627,9 @@ function SeletorDeParceiros({
         <input
           placeholder="Buscar parceiro ou CNPJ"
           value={busca}
-          onChange={(e) => { setBusca(e.target.value); }}
+          onChange={(e) => {
+            setBusca(e.target.value);
+          }}
           className="mb-2 w-full rounded-md border border-border bg-background px-2 py-1 text-[12px]"
         />
         <div className="max-h-64 space-y-0.5 overflow-auto">
@@ -609,7 +641,9 @@ function SeletorDeParceiros({
               <input
                 type="checkbox"
                 checked={selecionados.includes(o.chave)}
-                onChange={() => { alternar(o.chave); }}
+                onChange={() => {
+                  alternar(o.chave);
+                }}
               />
               <span className="truncate">{o.rotulo ?? formatarCnpj(o.chave)}</span>
               <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
@@ -624,7 +658,9 @@ function SeletorDeParceiros({
         {selecionados.length > 0 && (
           <button
             type="button"
-            onClick={() => { aoMudar([]); }}
+            onClick={() => {
+              aoMudar([]);
+            }}
             className="mt-2 text-[12px] text-[var(--brand)] hover:underline"
           >
             Limpar

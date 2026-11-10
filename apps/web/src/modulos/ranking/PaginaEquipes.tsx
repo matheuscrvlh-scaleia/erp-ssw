@@ -1,4 +1,4 @@
-import { ehAdminDaEmpresa,PAPEL_GESTOR } from "@erp/shared/acesso/papeis";
+import { ehAdminDaEmpresa, PAPEL_GESTOR } from "@erp/shared/acesso/papeis";
 import { contratosRanking as c, type Equipe } from "@erp/shared/contratos/ranking";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertTriangle, Copy, Link2, Plus, Trash2, UsersRound } from "lucide-react";
@@ -110,12 +110,16 @@ export function PaginaEquipes() {
               className="min-w-[200px] flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
               placeholder="Nome da equipe (ex.: Equipe Cabo Frio A)"
               value={nome}
-              onChange={(e) => { setNome(e.target.value); }}
+              onChange={(e) => {
+                setNome(e.target.value);
+              }}
             />
             <select
               aria-label="Unidade"
               value={unidadeId}
-              onChange={(e) => { setUnidadeId(e.target.value); }}
+              onChange={(e) => {
+                setUnidadeId(e.target.value);
+              }}
               className="rounded-md border border-border bg-background px-3 py-2 text-sm"
             >
               <option value="">Sem unidade</option>
@@ -125,7 +129,12 @@ export function PaginaEquipes() {
                 </option>
               ))}
             </select>
-            <Button onClick={() => { criar.mutate(); }} disabled={!nome.trim() || criar.isPending}>
+            <Button
+              onClick={() => {
+                criar.mutate();
+              }}
+              disabled={!nome.trim() || criar.isPending}
+            >
               <Plus className="mr-1 h-4 w-4" /> Criar
             </Button>
           </div>
@@ -151,8 +160,12 @@ export function PaginaEquipes() {
                   <BotoesDoLink
                     equipe={e}
                     link={link}
-                    aoGerar={() => { gerar.mutate(e.id); }}
-                    aoRevogar={() => { revogar.mutate(e.id); }}
+                    aoGerar={() => {
+                      gerar.mutate(e.id);
+                    }}
+                    aoRevogar={() => {
+                      revogar.mutate(e.id);
+                    }}
                   />
                 )}
               </div>
@@ -171,7 +184,9 @@ export function PaginaEquipes() {
                         size="sm"
                         variant="ghost"
                         aria-label={`Remover ${m.nome}`}
-                        onClick={() => { remover.mutate(m.id); }}
+                        onClick={() => {
+                          remover.mutate(m.id);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -183,7 +198,9 @@ export function PaginaEquipes() {
                     ocupadas={membros.flatMap((m) =>
                       m.papel === "ajudante" && m.posicao !== null ? [m.posicao] : [],
                     )}
-                    aoIncluir={(v) => { incluir.mutate({ ...v, equipeId: e.id }); }}
+                    aoIncluir={(v) => {
+                      incluir.mutate({ ...v, equipeId: e.id });
+                    }}
                   />
                 )}
               </div>
@@ -218,7 +235,13 @@ function BotoesDoLink({
   return (
     <div className="flex gap-1">
       {link ? (
-        <Button size="sm" variant="outline" onClick={() => { copiar(link, "Link copiado"); }}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            copiar(link, "Link copiado");
+          }}
+        >
           <Copy className="mr-1 h-4 w-4" /> Copiar link
         </Button>
       ) : (
@@ -259,12 +282,16 @@ function NovoMembro({
         className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-sm"
         placeholder="Nome do membro"
         value={nome}
-        onChange={(e) => { setNome(e.target.value); }}
+        onChange={(e) => {
+          setNome(e.target.value);
+        }}
       />
       <select
         aria-label="Papel"
         value={papel}
-        onChange={(e) => { setPapel(e.target.value === "ajudante" ? "ajudante" : "motorista"); }}
+        onChange={(e) => {
+          setPapel(e.target.value === "ajudante" ? "ajudante" : "motorista");
+        }}
         className="rounded-md border border-border bg-background px-2 py-1 text-sm"
       >
         <option value="motorista">motorista</option>
@@ -273,7 +300,9 @@ function NovoMembro({
       {papel === "ajudante" ? (
         <select
           value={posicaoEfetiva ?? ""}
-          onChange={(e) => { setPosicao(e.target.value ? Number(e.target.value) : null); }}
+          onChange={(e) => {
+            setPosicao(e.target.value ? Number(e.target.value) : null);
+          }}
           disabled={semVaga}
           className="rounded-md border border-border bg-background px-2 py-1 text-sm disabled:opacity-50"
           aria-label="Posição do ajudante"
@@ -340,14 +369,18 @@ function AtribuirCtes({ equipes, podeGravar }: { equipes: Equipe[]; podeGravar: 
           type="date"
           aria-label="De"
           value={inicio}
-          onChange={(e) => { setInicio(e.target.value); }}
+          onChange={(e) => {
+            setInicio(e.target.value);
+          }}
           className="rounded-md border border-border bg-background px-2 py-1 text-sm"
         />
         <input
           type="date"
           aria-label="Até"
           value={fim}
-          onChange={(e) => { setFim(e.target.value); }}
+          onChange={(e) => {
+            setFim(e.target.value);
+          }}
           className="rounded-md border border-border bg-background px-2 py-1 text-sm"
         />
         {podeGravar && (
@@ -355,7 +388,9 @@ function AtribuirCtes({ equipes, podeGravar }: { equipes: Equipe[]; podeGravar: 
             <select
               aria-label="Equipe"
               value={equipeAlvo}
-              onChange={(e) => { setEquipeAlvo(e.target.value); }}
+              onChange={(e) => {
+                setEquipeAlvo(e.target.value);
+              }}
               className="rounded-md border border-border bg-background px-2 py-1 text-sm"
             >
               <option value="">Selecione equipe…</option>
@@ -368,7 +403,9 @@ function AtribuirCtes({ equipes, podeGravar }: { equipes: Equipe[]; podeGravar: 
             <Button
               size="sm"
               disabled={selecionados.size === 0 || !equipeAlvo || atribuir.isPending}
-              onClick={() => { atribuir.mutate(); }}
+              onClick={() => {
+                atribuir.mutate();
+              }}
             >
               Atribuir {selecionados.size > 0 ? `(${selecionados.size})` : ""}
             </Button>

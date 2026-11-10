@@ -96,7 +96,9 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
             id="falta-nome"
             className="h-8 text-[12px]"
             value={nome}
-            onChange={(e) => { setNome(e.target.value); }}
+            onChange={(e) => {
+              setNome(e.target.value);
+            }}
           />
         </div>
         <div className="space-y-1">
@@ -108,7 +110,9 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
             type="date"
             className="h-8 text-[12px]"
             value={data}
-            onChange={(e) => { setData(e.target.value); }}
+            onChange={(e) => {
+              setData(e.target.value);
+            }}
           />
         </div>
         <div className="space-y-1">
@@ -140,7 +144,9 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
             id="falta-observacao"
             className="h-8 text-[12px]"
             value={observacao}
-            onChange={(e) => { setObservacao(e.target.value); }}
+            onChange={(e) => {
+              setObservacao(e.target.value);
+            }}
           />
         </div>
         <div className="flex items-end">
@@ -148,7 +154,9 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
             size="sm"
             className="h-8"
             disabled={nome.trim().length < 3 || !data || registrar.isPending}
-            onClick={() => { registrar.mutate(); }}
+            onClick={() => {
+              registrar.mutate();
+            }}
           >
             <Plus className="mr-1.5 h-3 w-3" /> Registrar
           </Button>

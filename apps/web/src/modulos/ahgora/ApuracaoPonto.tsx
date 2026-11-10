@@ -48,7 +48,9 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
     <>
       <tr
         className="cursor-pointer hover:bg-muted/30"
-        onClick={() => { setAberto((v) => !v); }}
+        onClick={() => {
+          setAberto((v) => !v);
+        }}
         aria-expanded={aberto}
       >
         <td className="px-3 py-1.5">
@@ -191,7 +193,9 @@ export function ApuracaoPonto() {
               type="month"
               className="h-8 text-[12px]"
               value={mes}
-              onChange={(e) => { setMes(e.target.value); }}
+              onChange={(e) => {
+                setMes(e.target.value);
+              }}
             />
           </div>
 

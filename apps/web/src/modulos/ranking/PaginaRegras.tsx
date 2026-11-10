@@ -91,7 +91,11 @@ export function PaginaRegras() {
             </p>
           </div>
         </div>
-        <Button onClick={() => { setEditando(rascunhoVazio(new Date())); }}>
+        <Button
+          onClick={() => {
+            setEditando(rascunhoVazio(new Date()));
+          }}
+        >
           <Plus className="mr-1.5 h-4 w-4" /> Nova regra
         </Button>
       </header>
@@ -142,7 +146,9 @@ export function PaginaRegras() {
                     size="sm"
                     variant="ghost"
                     aria-label="Editar regra"
-                    onClick={() => { setEditando(rascunhoDaRegra(r)); }}
+                    onClick={() => {
+                      setEditando(rascunhoDaRegra(r));
+                    }}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -150,12 +156,13 @@ export function PaginaRegras() {
                     size="sm"
                     variant="ghost"
                     aria-label="Copiar regra"
-                    onClick={() => { setEditando({
+                    onClick={() => {
+                      setEditando({
                         ...rascunhoDaRegra(r),
                         id: undefined,
                         nome: `${r.nome} (cópia)`,
-                      }); }
-                    }
+                      });
+                    }}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -205,8 +212,12 @@ export function PaginaRegras() {
         <ModalDaRegra
           inicial={editando}
           salvando={salvar.isPending}
-          aoCancelar={() => { setEditando(null); }}
-          aoSalvar={(d) => { salvar.mutate(d); }}
+          aoCancelar={() => {
+            setEditando(null);
+          }}
+          aoSalvar={(d) => {
+            salvar.mutate(d);
+          }}
         />
       )}
     </div>
@@ -227,18 +238,22 @@ function ModalDaRegra({
   aoSalvar: (d: Rascunho) => void;
 }) {
   const [d, setD] = useState<Rascunho>(inicial);
-  const trocarCriterio = (i: number, criterio: CriterioDeRegra) => { setD({
+  const trocarCriterio = (i: number, criterio: CriterioDeRegra) => {
+    setD({
       ...d,
       criterios: d.criterios.map((x, j) =>
         j === i ? { criterio, parametros: { ...PARAMETROS_PADRAO[criterio] } } : x,
       ),
-    }); };
-  const trocarParametro = (i: number, chave: string, valor: string) => { setD({
+    });
+  };
+  const trocarParametro = (i: number, chave: string, valor: string) => {
+    setD({
       ...d,
       criterios: d.criterios.map((x, j) =>
         j === i ? { ...x, parametros: { ...x.parametros, [chave]: valor } } : x,
       ),
-    }); };
+    });
+  };
 
   return (
     <div
@@ -254,14 +269,18 @@ function ModalDaRegra({
             className={CAMPO}
             placeholder="Nome (ex.: Regra Q3 2026)"
             value={d.nome}
-            onChange={(e) => { setD({ ...d, nome: e.target.value }); }}
+            onChange={(e) => {
+              setD({ ...d, nome: e.target.value });
+            }}
           />
           <textarea
             className={CAMPO}
             placeholder="Descrição (opcional)"
             rows={2}
             value={d.descricao}
-            onChange={(e) => { setD({ ...d, descricao: e.target.value }); }}
+            onChange={(e) => {
+              setD({ ...d, descricao: e.target.value });
+            }}
           />
           <div className="grid grid-cols-2 gap-3">
             <label className="text-xs">
@@ -270,7 +289,9 @@ function ModalDaRegra({
                 type="date"
                 className={CAMPO}
                 value={d.vigenciaInicio}
-                onChange={(e) => { setD({ ...d, vigenciaInicio: e.target.value }); }}
+                onChange={(e) => {
+                  setD({ ...d, vigenciaInicio: e.target.value });
+                }}
               />
             </label>
             <label className="text-xs">
@@ -279,7 +300,9 @@ function ModalDaRegra({
                 type="date"
                 className={CAMPO}
                 value={d.vigenciaFim}
-                onChange={(e) => { setD({ ...d, vigenciaFim: e.target.value }); }}
+                onChange={(e) => {
+                  setD({ ...d, vigenciaFim: e.target.value });
+                }}
               />
             </label>
           </div>
@@ -287,7 +310,9 @@ function ModalDaRegra({
             <input
               type="checkbox"
               checked={d.ativo}
-              onChange={(e) => { setD({ ...d, ativo: e.target.checked }); }}
+              onChange={(e) => {
+                setD({ ...d, ativo: e.target.checked });
+              }}
             />
             Ativa
           </label>
@@ -317,8 +342,9 @@ function ModalDaRegra({
                       size="sm"
                       variant="ghost"
                       aria-label="Remover critério"
-                      onClick={() => { setD({ ...d, criterios: d.criterios.filter((_, j) => j !== i) }); }
-                      }
+                      onClick={() => {
+                        setD({ ...d, criterios: d.criterios.filter((_, j) => j !== i) });
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -330,7 +356,9 @@ function ModalDaRegra({
                         <input
                           className="w-full rounded-md border border-border bg-card px-2 py-1"
                           value={k.parametros[chave] ?? ""}
-                          onChange={(e) => { trocarParametro(i, chave, e.target.value); }}
+                          onChange={(e) => {
+                            trocarParametro(i, chave, e.target.value);
+                          }}
                         />
                       </label>
                     ))}
@@ -340,7 +368,8 @@ function ModalDaRegra({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { setD({
+                onClick={() => {
+                  setD({
                     ...d,
                     criterios: [
                       ...d.criterios,
@@ -349,8 +378,8 @@ function ModalDaRegra({
                         parametros: { ...PARAMETROS_PADRAO.entregas_prazo },
                       },
                     ],
-                  }); }
-                }
+                  });
+                }}
               >
                 <Plus className="mr-1 h-4 w-4" /> Adicionar critério
               </Button>
@@ -361,7 +390,12 @@ function ModalDaRegra({
           <Button variant="ghost" onClick={aoCancelar}>
             Cancelar
           </Button>
-          <Button onClick={() => { aoSalvar(d); }} disabled={!d.nome.trim() || salvando}>
+          <Button
+            onClick={() => {
+              aoSalvar(d);
+            }}
+            disabled={!d.nome.trim() || salvando}
+          >
             Salvar
           </Button>
         </div>

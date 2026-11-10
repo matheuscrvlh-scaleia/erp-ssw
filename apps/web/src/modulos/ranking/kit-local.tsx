@@ -64,7 +64,9 @@ export function Aba({
       type="button"
       role="tab"
       aria-selected={ativa}
-      onClick={() => { atual.mudar(valor); }}
+      onClick={() => {
+        atual.mudar(valor);
+      }}
       className={cn(
         "inline-flex items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-all",
         ativa && "bg-background text-foreground shadow",

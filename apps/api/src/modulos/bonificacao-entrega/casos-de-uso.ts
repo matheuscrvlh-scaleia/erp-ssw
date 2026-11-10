@@ -15,8 +15,8 @@ import {
 import { type z } from "@erp/shared/zod";
 
 import { naoEncontrado } from "../../http/erros";
-import { type Executor } from "../../repositorios";
 import { type ClienteAhgora } from "../../infra/ahgora";
+import { type Executor } from "../../repositorios";
 import { calcularHorasExtras } from "../ahgora/casos-de-uso";
 import { type Ator } from "../auditoria/auditoria";
 

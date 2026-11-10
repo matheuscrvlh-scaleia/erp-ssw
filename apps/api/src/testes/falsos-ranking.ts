@@ -44,7 +44,7 @@ export class DadosDoRanking {
   rotulosRanking: RotuloRanking[] = [];
   filtrosRecebidos: FiltroPerformance[] = [];
   /** Erros que as próximas consultas do ranking operacional lançam (um por consulta). */
-  falhasDoRanking: unknown[] = [];
+  falhasDoRanking: Error[] = [];
 
   equipes: (EquipeGravada & { empresaId: string })[] = [];
   membros: (MembroGravado & { empresaId: string })[] = [];

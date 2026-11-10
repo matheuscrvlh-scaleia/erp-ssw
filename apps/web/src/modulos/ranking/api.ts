@@ -1,5 +1,5 @@
 import { type EntradaDe } from "@erp/shared/contrato";
-import { contratosRanking as c,type FiltroDoRanking } from "@erp/shared/contratos/ranking";
+import { contratosRanking as c, type FiltroDoRanking } from "@erp/shared/contratos/ranking";
 import { contratoSlaSerie } from "@erp/shared/contratos/sla-serie";
 import { queryOptions } from "@tanstack/react-query";
 

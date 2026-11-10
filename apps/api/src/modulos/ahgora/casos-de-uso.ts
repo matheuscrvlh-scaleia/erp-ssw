@@ -19,8 +19,8 @@ import { type z } from "@erp/shared/zod";
 import { conflito, naoEncontrado, semPermissao } from "../../http/erros";
 import {
   type ClienteAhgora,
-  criarClienteAhgora,
   type CredencialAhgora,
+  criarClienteAhgora,
   emParalelo,
 } from "../../infra/ahgora";
 import { type Executor } from "../../repositorios";

@@ -78,7 +78,9 @@ export function EquipeMobileView({
         <button
           type="button"
           className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium"
-          onClick={() => { setAberto((v) => !v); }}
+          onClick={() => {
+            setAberto((v) => !v);
+          }}
         >
           Como esse valor é calculado
           {aberto ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}

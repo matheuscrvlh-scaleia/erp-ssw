@@ -134,7 +134,6 @@ export function calcularBonificacaoDaEquipe(
   const performance = totalEntregas > 0 ? 1 - penalizantes / totalEntregas : 1;
   const performancePct = Math.round(performance * 100 * 1e9) / 1e9;
   let valor = 0;
-  let zerado = false;
   const breakdown: ItemDoCalculo[] = criterios.map(({ criterio, parametros: p }) => {
     switch (criterio) {
       case "entregas_prazo": {
@@ -173,7 +172,6 @@ export function calcularBonificacaoDaEquipe(
       case "piso_performance": {
         const piso = numero(p["performance_minima"]);
         const abaixo = performancePct < piso;
-        if (abaixo) zerado = true;
         const pct = arredondar1(performance * 100);
         return {
           criterio,
@@ -196,6 +194,11 @@ export function calcularBonificacaoDaEquipe(
       }
     }
   });
+  const zerado = criterios.some(
+    (k) =>
+      k.criterio === "piso_performance" &&
+      performancePct < numero(k.parametros["performance_minima"]),
+  );
   return {
     totalEntregas,
     entregasNoPrazo,

@@ -69,7 +69,12 @@ function LinhaPessoa({ p }: { p: ResumoPessoa }) {
   const [aberto, setAberto] = useState(false);
   return (
     <>
-      <tr className="cursor-pointer hover:bg-muted/30" onClick={() => { setAberto((v) => !v); }}>
+      <tr
+        className="cursor-pointer hover:bg-muted/30"
+        onClick={() => {
+          setAberto((v) => !v);
+        }}
+      >
         <td className="px-3 py-1.5">
           <div className="flex items-center gap-1.5">
             {aberto ? (
@@ -270,7 +275,9 @@ export function PaginaBonificacaoEntrega() {
               type="month"
               className="h-8 text-[12px]"
               value={mes}
-              onChange={(e) => { setMes(e.target.value); }}
+              onChange={(e) => {
+                setMes(e.target.value);
+              }}
             />
           </div>
           <div className="space-y-1">
