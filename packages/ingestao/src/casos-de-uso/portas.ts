@@ -402,6 +402,11 @@ export interface ConfiguracaoSftp {
   porta: number;
   usuario: string;
   senha: string;
+  /**
+   * Impressão SHA-256 da chave do servidor (`SHA256:…`, como o `ssh-keygen -lf` mostra). Sem ela
+   * a conexão é recusada: não se fala com servidor que não se conferiu.
+   */
+  impressaoDigital: string | null;
   relatoriosPath: string;
   importadosPath: string;
 }

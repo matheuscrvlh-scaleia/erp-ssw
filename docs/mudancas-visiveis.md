@@ -283,3 +283,7 @@ Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP
   `x-cron-token`) passam a ser o segredo da integração "Rotas públicas da ingestão" da empresa; o
   `FTP_INGEST_SECRET` global e o `backfill_cron_token` saem. Cadastrando o valor de hoje para a FR,
   quem chama não percebe; pedir outra empresa com esse segredo dá 404.
+- **SFTP confere a chave do servidor.** A integração SFTP ganha o campo "Impressão digital do
+  servidor" (SHA256:…), obrigatório: sem ele, ou com a chave do servidor diferente, a sincronização
+  do FTP falha com a mensagem do que cadastrar (antes conectava em qualquer servidor que
+  respondesse no endereço). Na transição com `usar_env`, vale `SFTP_IMPRESSAO_DIGITAL`.

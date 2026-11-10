@@ -34,6 +34,8 @@ const esquema = z.object({
   SFTP_PORTA: z.string().optional(),
   SFTP_USUARIO: z.string().optional(),
   SFTP_SENHA: z.string().optional(),
+  /** Impressão SHA-256 da chave do servidor (`SHA256:…`); sem ela o SFTP não conecta. */
+  SFTP_IMPRESSAO_DIGITAL: z.string().optional(),
 });
 
 export type AmbienteWorker = z.output<typeof esquema>;

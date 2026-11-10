@@ -42,6 +42,11 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
       { chave: "host", rotulo: "Servidor" },
       { chave: "porta", rotulo: "Porta" },
       { chave: "usuario", rotulo: "Usuário" },
+      {
+        chave: "impressao_digital",
+        rotulo: "Impressão digital do servidor",
+        dica: "Obrigatória: sem ela o sistema não conecta. Peça ao provedor ou rode “ssh-keyscan -p <porta> <servidor> | ssh-keygen -lf -” e copie o SHA256:… da linha da chave.",
+      },
       { chave: "caminho_xml", rotulo: "Pasta dos XML", dica: "Ex.: /xml_ssw" },
       { chave: "relatorios_path", rotulo: "Pasta dos relatórios" },
       { chave: "importados_path", rotulo: "Pasta dos importados" },
