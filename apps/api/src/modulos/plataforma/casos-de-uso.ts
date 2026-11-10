@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type codigosOcorrencia } from "@erp/db/schema";
-import { type ChavesDeSegredo, cifrarSegredo } from "@erp/db/segredos";
+import { type ChavesDeSegredo, cifrarSegredo, contextoDoSegredo } from "@erp/db/segredos";
 import { modulosVigentes } from "@erp/dominio/acesso";
 import {
   caminhoDoLogo,
@@ -567,10 +567,6 @@ const cofreDesligado = () =>
     "INDISPONIVEL",
     "O cofre de senhas não está configurado neste ambiente. Fale com o suporte.",
   );
-
-/** Dado autenticado da cifra: o segredo de uma integração não decifra na linha de outra. */
-export const contextoDoSegredo = (empresaId: string, tipo: TipoIntegracao) =>
-  `${empresaId}:${tipo}`;
 
 /**
  * Grava (cifrado com AES-256-GCM) ou, com valor vazio, apaga a senha/token da integração. O valor

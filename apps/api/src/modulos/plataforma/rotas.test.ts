@@ -1,11 +1,10 @@
 import { TIPOS_INTEGRACAO as TIPOS_DO_BANCO } from "@erp/db/schema";
-import { decifrarSegredo } from "@erp/db/segredos";
+import { contextoDoSegredo, decifrarSegredo } from "@erp/db/segredos";
 import { TIPOS_INTEGRACAO } from "@erp/shared/plataforma";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { CAMINHOS_SENSIVEIS } from "../../infra/log";
 import { cenarioDeAdmin } from "../../testes/admin";
-import { contextoDoSegredo } from "./casos-de-uso";
 
 let t: Awaited<ReturnType<typeof cenarioDeAdmin>>;
 beforeEach(async () => {

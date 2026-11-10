@@ -1,5 +1,11 @@
-import { type ChavesDeSegredo, decifrarSegredo, type SegredoCifrado } from "@erp/db/segredos";
+import {
+  type ChavesDeSegredo,
+  contextoDoSegredo,
+  decifrarSegredo,
+  type SegredoCifrado,
+} from "@erp/db/segredos";
 import { type HoraExtraDoDia } from "@erp/dominio/bonificacao-entrega";
+import { empresaEmOperacao } from "@erp/dominio/empresas";
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import {
   apurarDia,
@@ -30,8 +36,6 @@ type C = typeof contratosAhgora;
 /** Medido em produção: 10 chamadas simultâneas levam ~79 ms por funcionário. */
 const CONCORRENCIA = 10;
 
-const STATUS_QUE_INTEGRAM = ["ativa", "implantacao"];
-
 export interface IntegracaoAhgora {
   empresaNome: string;
   empresaStatus: string;
@@ -53,11 +57,6 @@ export interface DependenciasAhgora {
   http: typeof fetch;
 }
 
-/** Contexto que cifra/decifra o segredo de uma integração (dado autenticado do AES-GCM). */
-export function contextoDoSegredo(empresaId: string, tipo: string): string {
-  return `${empresaId}:${tipo}`;
-}
-
 function usaAmbiente(parametros: Record<string, unknown>): boolean {
   return parametros["usar_env"] === true || parametros["usar_env"] === "true";
 }
@@ -73,7 +72,7 @@ export function credencialDaIntegracao(
   deps: Pick<DependenciasAhgora, "segredos" | "ambiente">,
 ): CredencialAhgora {
   if (!integracao) throw naoEncontrado(`Empresa "${empresaId}" não encontrada.`);
-  if (!STATUS_QUE_INTEGRAM.includes(integracao.empresaStatus)) {
+  if (!empresaEmOperacao(integracao.empresaStatus)) {
     throw semPermissao(
       `Empresa ${integracao.empresaNome} está ${integracao.empresaStatus}: a ingestão não roda.`,
     );

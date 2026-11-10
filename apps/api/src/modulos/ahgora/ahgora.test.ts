@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { cifrarSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
+import { cifrarSegredo, contextoDoSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -9,7 +9,6 @@ import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../
 import {
   apurarPeriodo,
   calcularHorasExtras,
-  contextoDoSegredo,
   credencialDaIntegracao,
   type IntegracaoAhgora,
 } from "./casos-de-uso";
