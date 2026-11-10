@@ -1,0 +1,176 @@
+# Caddy de borda da VPS. Único ponto exposto à internet (80/tcp, 443/tcp, 443/udp).
+#
+#   https://{$DOMINIO}/api/public/*    → api (integrações por segredo; arquivo base64 até 64 MB)
+#   https://{$DOMINIO}/api/*           → api (/api/v1, sessão por cookie + access token)
+#   https://{$DOMINIO}/healthz|readyz  → api (monitoramento externo)
+#   https://{$DOMINIO}/metrics|docs*   → 404 (métricas só pela rede interna; swagger nunca)
+#   https://{$DOMINIO}/*               → web (SPA estática; cache decidido na imagem erp-web)
+#
+# Variáveis ({$NOME}) vêm do ambiente do contêiner (infra/.env via compose), lidas ao carregar:
+# mudou o .env → `docker compose up -d caddy`; mudou só este arquivo →
+# `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile` (sem queda).
+# Runbook: docs/deploy.md.
+{
+	email {$ACME_EMAIL}
+
+	servers {
+		# HTTP/3 precisa do 443/udp aberto no firewall e publicado no compose.
+		protocols h1 h2 h3
+		timeouts {
+			read_header 10s
+			# Arquivo de 64 MB (base64) vindo de conexão lenta.
+			read_body 5m
+			# Exportação grande sendo baixada devagar.
+			write 5m
+			idle 2m
+		}
+	}
+
+	# Log do próprio Caddy (certificados, erros) em JSON no stdout; o Docker rotaciona.
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+}
+
+# --- Cabeçalhos de segurança --------------------------------------------------------------------
+# CSP da SPA (Vite + React; a API está na mesma origem):
+#   - script: só o próprio domínio (o build do Vite não tem script inline);
+#   - style: 'unsafe-inline' porque Radix/shadcn escrevem style="..." (atributo); folha do
+#     Google Fonts (apps/web/index.html);
+#   - font: Google Fonts; img: data:/blob: (exportação gera imagem em memória) e a origem dos
+#     logos das empresas (LOGO_ORIGEM, o bucket S3 de LOGO_URL_BASE);
+#   - connect: só a própria origem (/api). O login pelo Google é navegação, não fetch.
+# CSP_CABECALHO=Content-Security-Policy-Report-Only no .env deixa a política só em observação
+# (fase de paridade). Ver docs/deploy.md §6.5.
+(seguranca) {
+	header {
+		# defer: vale na resposta final, por cima do que a API (helmet) ou a imagem web mandarem.
+		defer
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		{$CSP_CABECALHO:Content-Security-Policy} "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: {$LOGO_ORIGEM:'self'}; connect-src 'self'; frame-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+		-Server
+		-Via
+	}
+}
+
+# --- Upstreams ----------------------------------------------------------------------------------
+# Réplicas descobertas pelo DNS interno do Docker (um registro A por contêiner), relidas a cada
+# 5 s: contêiner novo entra, parado sai. Se uma réplica recusa conexão (subindo ou encerrando), o
+# Caddy tenta outra por até 15 s (lb_try_duration): é isso que faz o deploy sem queda.
+(upstream_api) {
+	reverse_proxy {
+		dynamic a {
+			name api
+			port 3001
+			refresh 5s
+		}
+		lb_policy least_conn
+		lb_try_duration 15s
+		lb_try_interval 250ms
+		fail_duration 10s
+		transport http {
+			dial_timeout 1s
+			# Maior que o teto de consulta da API (DB_TIMEOUT_CONSULTA_MS, 30 s): quem corta
+			# consulta lenta é a API, com a mensagem para o operador, não o proxy com um 502 seco.
+			response_header_timeout 60s
+		}
+	}
+}
+
+(upstream_web) {
+	reverse_proxy {
+		dynamic a {
+			name web
+			port 8080
+			refresh 5s
+		}
+		lb_try_duration 10s
+		lb_try_interval 250ms
+		fail_duration 10s
+		transport http {
+			dial_timeout 1s
+			response_header_timeout 15s
+		}
+	}
+}
+
+# --- Site ---------------------------------------------------------------------------------------
+{$DOMINIO} {
+	import seguranca
+	encode zstd gzip
+
+	# Log de acesso em JSON. Authorization e Cookie o Caddy já omite; aqui saem também os
+	# cabeçalhos de segredo das rotas públicas e os parâmetros sensíveis da query (o webhook do
+	# SSW pode mandar ?secret=).
+	log {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request>headers>X-Ftp-Ingest-Secret delete
+				request>headers>X-Ingest-Secret delete
+				request>headers>X-Cron-Token delete
+				request>headers>Apikey delete
+				request>uri query {
+					replace secret ***
+					replace segredo ***
+					replace token ***
+					replace apikey ***
+					replace senha ***
+					replace password ***
+					replace code ***
+					replace state ***
+				}
+			}
+		}
+	}
+
+	# Métricas só pela rede interna (Prometheus/agent), swagger nunca: segunda tranca além da API.
+	@fechado path /metrics /metrics/* /docs /docs/*
+	handle @fechado {
+		respond 404
+	}
+
+	# Rotas públicas de integração: arquivo em base64 (o 455 tem ~39 MB → ~52 MB em base64).
+	# Tetos IGUAIS aos da API (bodyLimit): acima deles a borda responde 413 sem repassar. Teto
+	# maior que o da API não serve: a API responde 413 e fecha a conexão no meio do envio, e o
+	# cliente recebe 502 (medido). Autenticação por segredo fica na API.
+	@publico path /api/public/*
+	handle @publico {
+		request_body {
+			max_size {$LIMITE_CORPO_PUBLICO_MB:64}MiB
+		}
+		header Cache-Control "no-store"
+		import upstream_api
+	}
+
+	# API autenticada: JSON (bodyLimit da API: 1 MiB).
+	handle /api/* {
+		request_body {
+			max_size {$LIMITE_CORPO_API_MB:1}MiB
+		}
+		# Resposta autenticada nunca em cache compartilhado; a API pode mandar outro valor.
+		header ?Cache-Control "no-store"
+		import upstream_api
+	}
+
+	@saude path /healthz /readyz
+	handle @saude {
+		header Cache-Control "no-store"
+		import upstream_api
+	}
+
+	handle {
+		request_body {
+			max_size 64KiB
+		}
+		import upstream_web
+	}
+}

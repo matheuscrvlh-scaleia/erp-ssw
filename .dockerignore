@@ -1,0 +1,20 @@
+# Contexto do build das imagens (infra/docker/*.Dockerfile) = raiz do repositório.
+# Lista de permissão: entra só o que algum build usa.
+*
+!package.json
+!bun.lock
+!bunfig.toml
+!apps/
+!packages/
+!infra/docker/web.Caddyfile
+!infra/docker/migrador.sh
+
+# Dentro do que entrou, nunca: dependências, saídas de build, cobertura, segredos.
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+**/*.log
+**/*.tsbuildinfo
+**/.DS_Store
