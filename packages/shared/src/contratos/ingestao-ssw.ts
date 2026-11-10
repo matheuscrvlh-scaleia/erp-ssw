@@ -20,6 +20,13 @@ export const saudeSsw = z.object({
   motivo: z.enum(MOTIVOS_DA_SAUDE),
 });
 
+/** Selo "Dados atualizados em…": última aplicação do ciclo de arquivos e XML aguardando. */
+export const atualizacaoDosDados = z.object({
+  atualizadoEm: instante.nullable(),
+  /** Só para a Plataforma (a fila de XML é dela); nulo para os demais. */
+  xmlAguardando: z.object({ pendentes: z.number().int(), expirados: z.number().int() }).nullable(),
+});
+
 export const sincronizacaoBi2 = z.object({
   relatorio: z.string(),
   dataAlvo: z.string(),
@@ -150,6 +157,11 @@ export const diagnosticoSsw = z.object({
 });
 
 export const contratosIngestaoSsw = {
+  atualizacao: contrato({
+    metodo: "GET",
+    caminho: "/api/v1/ssw/atualizacao",
+    saida: atualizacaoDosDados,
+  }),
   saude: contrato({
     metodo: "GET",
     caminho: "/api/v1/ssw/saude",

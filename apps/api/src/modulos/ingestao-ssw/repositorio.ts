@@ -4,11 +4,12 @@ import {
   ctes,
   empresaIntegracoes,
   empresas,
+  ingestaoCiclos,
   sswWebhookEventos,
   xmlCteOrfaos,
 } from "@erp/db/schema";
 import { type ContagemWebhook } from "@erp/shared/contratos/ingestao-ssw";
-import { and, count, desc, eq, gte, isNotNull, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, max, sql } from "drizzle-orm";
 
 import { type EventoLido, type RepositorioIngestaoSsw } from "./casos-de-uso";
 
@@ -168,12 +169,25 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
       return { total: total?.n ?? 0, recentes };
     },
 
-    xmlOrfaosPendentes: async () => {
+    xmlOrfaos: async () => {
       const [linha] = await tx
-        .select({ n: count() })
+        .select({
+          pendentes: sql<number>`(count(*) filter (where ${xmlCteOrfaos.status} = 'pendente'))::int`,
+          expirados: sql<number>`(count(*) filter (where ${xmlCteOrfaos.status} = 'expirado'))::int`,
+        })
         .from(xmlCteOrfaos)
-        .where(eq(xmlCteOrfaos.status, "pendente"));
-      return linha?.n ?? 0;
+        .where(inArray(xmlCteOrfaos.status, ["pendente", "expirado"]));
+      return { pendentes: linha?.pendentes ?? 0, expirados: linha?.expirados ?? 0 };
+    },
+
+    ultimaAplicacao: async () => {
+      const [linha] = await tx
+        .select({ em: ingestaoCiclos.aplicadoEm })
+        .from(ingestaoCiclos)
+        .where(and(eq(ingestaoCiclos.status, "aplicado"), isNotNull(ingestaoCiclos.aplicadoEm)))
+        .orderBy(desc(ingestaoCiclos.aplicadoEm))
+        .limit(1);
+      return linha?.em ?? null;
     },
 
     marcarReprocesso: async (id) => {

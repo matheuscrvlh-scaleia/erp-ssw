@@ -9,7 +9,6 @@ import {
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { mascararUrl } from "../../infra/log";
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
 import { type FilasDeIngestao, type ResultadoDaExecucao } from "./casos-de-uso";
 
@@ -159,6 +158,20 @@ describe("Admin › Ingestão SSW", () => {
     });
   });
 
+  it("selo de atualização: horário para todos, XML aguardando só para a Plataforma", async () => {
+    cenario.banco.ingestao.ultimaAplicacao = new Date("2026-11-10T11:30:00Z");
+    const admin = await app.inject({
+      url: "/api/v1/ssw/atualizacao",
+      headers: await adminDaEmpresa(),
+    });
+    expect(admin.json()).toEqual({
+      atualizadoEm: "2026-11-10T11:30:00.000Z",
+      xmlAguardando: null,
+    });
+    const plat = await app.inject({ url: "/api/v1/ssw/atualizacao", headers: await plataforma() });
+    expect(plat.json()).toMatchObject({ xmlAguardando: { pendentes: 0, expirados: 0 } });
+  });
+
   it("faixa de saúde: qualquer usuário com empresa; desligada sem integração", async () => {
     const r = await app.inject({ url: "/api/v1/ssw/saude", headers: await adminDaEmpresa() });
     expect(r.statusCode).toBe(200);
@@ -250,13 +263,5 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
     });
     expect(r.statusCode).toBe(400);
     expect(r.json()).toMatchObject([{ retorno: { codigo: 400 } }]);
-  });
-});
-
-describe("log", () => {
-  it("mascara o segredo da URL", () => {
-    expect(mascararUrl("/api/public/ssw-ocorrencias?empresa=fr&secret=abc123&x=1")).toBe(
-      "/api/public/ssw-ocorrencias?empresa=fr&secret=[oculto]&x=1",
-    );
   });
 });

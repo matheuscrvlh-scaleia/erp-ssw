@@ -5,6 +5,7 @@ import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirAdminPlataforma, exigirEmpresa, exigirTela } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import {
+  atualizacaoDosDados,
   credenciaisSsw,
   type DependenciasIngestaoSsw,
   diagnosticoSsw,
@@ -32,6 +33,12 @@ export const rotasIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasInge
 ) => {
   const empresa = async (request: Parameters<typeof empresaDaRequisicao>[0]) =>
     (await empresaDaRequisicao(request)).empresa.id;
+
+  app.get(
+    c.atualizacao.caminho,
+    { schema: { response: { 200: c.atualizacao.saida } }, preHandler: [exigirEmpresa] },
+    async (request) => atualizacaoDosDados(request.db, (await request.acesso()).adminPlataforma),
+  );
 
   app.get(
     c.saude.caminho,

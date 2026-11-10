@@ -75,7 +75,9 @@ export interface RepositorioIngestaoSsw {
   contagemWebhook(desde: Date): Promise<ContagemWebhook>;
   ultimaAtividadeWebhook(): Promise<Date | null>;
   semVinculo(desde: Date, limite: number): Promise<{ total: number; recentes: EventoLido[] }>;
-  xmlOrfaosPendentes(): Promise<number>;
+  xmlOrfaos(): Promise<{ pendentes: number; expirados: number }>;
+  /** Última aplicação do ciclo de arquivos do SSW (o "Dados atualizados em"). */
+  ultimaAplicacao(): Promise<Date | null>;
   /** Marca o evento como reenviado à fila (a tela mostra "processando" até o worker gravar). */
   marcarReprocesso(id: string): Promise<void>;
   // Recepção do webhook (rota pública).
@@ -162,6 +164,20 @@ export async function saudeSsw(
     agora: deps.agora(),
   });
   return { ...s, tokenAtualizadoEm: iso(s.tokenAtualizadoEm) };
+}
+
+/**
+ * Selo das telas. A contagem de XML aguardando é só da Plataforma (como hoje).
+ * origem: getUltimaAtualizacao + getXmlOrfaosStats (sistema atual)
+ */
+export async function atualizacaoDosDados(
+  db: Db,
+  plataforma: boolean,
+): Promise<SaidaDe<typeof contratosIngestaoSsw.atualizacao>> {
+  return db(async ({ ingestaoSsw }) => ({
+    atualizadoEm: iso(await ingestaoSsw.ultimaAplicacao()),
+    xmlAguardando: plataforma ? await ingestaoSsw.xmlOrfaos() : null,
+  }));
 }
 
 // --- BI2 0017 ---------------------------------------------------------------------------------
@@ -460,7 +476,7 @@ export async function diagnosticoSsw(
       ultimas24h: await ingestaoSsw.contagemWebhook(new Date(agora - DIA_MS)),
       ultimos7d: await ingestaoSsw.contagemWebhook(new Date(agora - 7 * DIA_MS)),
       semVinculo,
-      xmlPendentes: await ingestaoSsw.xmlOrfaosPendentes(),
+      xml: await ingestaoSsw.xmlOrfaos(),
     };
   });
   const jobs: StatusDoJob[] = [];
@@ -498,7 +514,7 @@ export async function diagnosticoSsw(
         recebidoEm: e.recebidoEm.toISOString(),
         numero: e.numeroCte,
       })),
-      xmlPendentes: dados.xmlPendentes,
+      xmlPendentes: dados.xml.pendentes,
     },
   };
 }

@@ -18,6 +18,7 @@ export class IngestaoEmMemoria {
   empresasDoWebhook: EmpresaDoWebhook[] = [];
   eventos: EventoGravado[] = [];
   sincronizacoes: SincronizacaoLida[] = [];
+  ultimaAplicacao: Date | null = null;
   /** Relógio do `recebido_em` (o cenário liga ao relógio dos testes). */
   agora: () => Date = () => new Date();
 
@@ -96,7 +97,8 @@ export class IngestaoEmMemoria {
         );
         return Promise.resolve({ total: lista.length, recentes: lista.slice(0, limite).map(lido) });
       },
-      xmlOrfaosPendentes: () => Promise.resolve(0),
+      xmlOrfaos: () => Promise.resolve({ pendentes: 0, expirados: 0 }),
+      ultimaAplicacao: () => Promise.resolve(this.ultimaAplicacao),
       marcarReprocesso: (id) => {
         const e = this.eventos.find((x) => x.id === id);
         if (e) e.erroProcessamento = "reenviado para processamento";
