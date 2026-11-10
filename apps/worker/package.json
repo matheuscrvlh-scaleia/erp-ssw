@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@erp/db": "workspace:*",
+    "@erp/dominio": "workspace:*",
     "@erp/shared": "workspace:*",
     "bullmq": "^5.61.0",
     "ioredis": "^5.8.0",

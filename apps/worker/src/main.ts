@@ -1,12 +1,30 @@
-import { comContexto, conectarBanco, type Transacao } from "@erp/db";
+import { setTimeout as esperar } from "node:timers/promises";
+
+import { comContexto, conectarBanco, type ContextoBanco, type Transacao } from "@erp/db";
+import { lerChavesDeSegredo } from "@erp/db/segredos";
+import { filaDoJob, PREFIXO_DAS_FILAS } from "@erp/shared/ingestao";
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { pino } from "pino";
 
 import { agendamentosDesejados, sincronizarAgendamentos } from "./agendamentos/agendamentos";
+import {
+  agendamentosDeIngestao,
+  criarDespachante,
+  type Enfileirador,
+} from "./agendamentos/ingestao";
 import { criarRepositorioAgendamentos } from "./agendamentos/repositorio";
 import { carregarAmbiente } from "./config/env";
-import { limparSessoes } from "./jobs/manutencao/job";
+import { criarJobBi2_0017 } from "./fontes/bi2/job";
+import { criarRepositorioBi2 } from "./fontes/bi2/repositorio";
+import { criarCofre } from "./fontes/comum/integracao";
+import { criarRepositorioCteNucleo } from "./fontes/comum/repositorio-cte";
+import { criarRepositorioIntegracoes } from "./fontes/comum/repositorio-integracoes";
+import { criarCofreDeToken } from "./fontes/ssw-api/cofre-de-token";
+import { criarJobTokenSsw } from "./fontes/ssw-api/job";
+import { jobWebhookSsw } from "./fontes/webhook/job";
+import { criarRepositorioWebhook } from "./fontes/webhook/repositorio";
+import { limparIngestaoSsw, limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
 import {
   type DefinicaoDeJob,
@@ -18,12 +36,12 @@ import {
 import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
 
-/** Todos os jobs do sistema. Job novo entra aqui. */
-const JOBS: readonly DefinicaoDeJob[] = [limparSessoes];
-
 const PRAZO_DE_DESLIGAMENTO_MS = 30_000;
 
 const ambiente = carregarAmbiente(process.env);
+const chavesDeSegredo = ambiente.SEGREDOS_CHAVES
+  ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_VERSAO_ATUAL)
+  : null;
 const log = pino({
   level: ambiente.LOG_NIVEL,
   base: { servico: "erp-worker" },
@@ -39,25 +57,65 @@ const conexao = conectarBanco({
 // O BullMQ exige maxRetriesPerRequest nulo nas conexões de worker.
 const redis = new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: null });
 
-function repositorios(tx: Transacao): RepositoriosDoWorker {
+function repositorios(tx: Transacao, { empresaId }: ContextoBanco): RepositoriosDoWorker {
   return {
     agendamentos: criarRepositorioAgendamentos(tx),
     manutencao: criarRepositorioManutencao(tx),
+    integracoes: criarRepositorioIntegracoes(tx),
+    cteNucleo: criarRepositorioCteNucleo(tx, empresaId),
+    bi2: criarRepositorioBi2(tx, empresaId),
+    webhook: criarRepositorioWebhook(tx, empresaId),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
-  comContexto(conexao.banco, contexto, (tx) => fn(repositorios(tx)));
+  comContexto(conexao.banco, contexto, (tx) => fn(repositorios(tx, contexto)));
 
-const filas = FILAS.map(
-  ({ nome }) =>
-    new Queue(nome, { connection: redis, defaultJobOptions: OPCOES_PADRAO_DO_JOB, prefix: "erp" }),
+const filas = new Map(
+  FILAS.map(({ nome }) => [
+    nome,
+    new Queue(nome, {
+      connection: redis,
+      defaultJobOptions: OPCOES_PADRAO_DO_JOB,
+      prefix: PREFIXO_DAS_FILAS,
+    }),
+  ]),
 );
+
+const enfileirador: Enfileirador = {
+  enfileirar: async (job, dados, { deduplicar }) => {
+    const fila = filas.get(filaDoJob(job));
+    if (!fila) throw new Error(`Fila do job ${job} não existe.`);
+    await fila.add(job, dados, deduplicar ? { deduplication: { id: deduplicar } } : {});
+  },
+};
+
+const cofre = criarCofre(chavesDeSegredo);
+/** Todos os jobs do sistema. Job novo entra aqui. */
+const JOBS: readonly DefinicaoDeJob[] = [
+  limparSessoes,
+  limparIngestaoSsw,
+  criarDespachante(enfileirador),
+  criarJobBi2_0017({ buscar: fetch, cofre }),
+  criarJobTokenSsw({
+    buscar: fetch,
+    cofre,
+    tokens: criarCofreDeToken(redis, chavesDeSegredo),
+    esperar: (ms) => esperar(ms),
+  }),
+  jobWebhookSsw,
+];
+
 const processar = criarProcessador({ jobs: JOBS, executar, log, agora: () => new Date() });
-const workers = FILAS.map(({ nome, concorrencia }) => {
+const filasComJob = FILAS.filter((f) => JOBS.some((j) => j.fila === f.nome));
+for (const { nome, concorrenciaGlobal } of filasComJob) {
+  if (concorrenciaGlobal !== undefined)
+    await filas.get(nome)?.setGlobalConcurrency(concorrenciaGlobal);
+}
+const workers = filasComJob.map(({ nome, concorrencia }) => {
   const worker = new Worker(nome, processar, {
     connection: redis,
     concurrency: concorrencia,
-    prefix: "erp",
+    prefix: PREFIXO_DAS_FILAS,
   });
   worker.on("failed", (job, erro) => {
     log.error(
@@ -73,10 +131,16 @@ const empresas = ambiente.AGENDAMENTOS_LIGADOS
       agendamentos.empresasAtivas(),
     )
   : [];
-for (const fila of filas) {
+const registrados = new Set(JOBS.map((j) => j.nome));
+for (const fila of filas.values()) {
   const jobsDaFila = JOBS.filter((j) => j.fila === fila.name);
   const desejados = ambiente.AGENDAMENTOS_LIGADOS
-    ? agendamentosDesejados(jobsDaFila, empresas)
+    ? [
+        ...agendamentosDesejados(jobsDaFila, empresas),
+        ...(fila.name === "agendador"
+          ? agendamentosDeIngestao(ambiente.INGESTAO_JOBS_LIGADOS, registrados)
+          : []),
+      ]
     : [];
   const resultado = await sincronizarAgendamentos(fila, desejados);
   log.info(
@@ -90,7 +154,7 @@ const saude = criarServidorDeSaude(async () => {
   if (workers.some((w) => !w.isRunning())) throw new Error("worker parado");
 });
 saude.listen(ambiente.PORTA_SAUDE);
-log.info({ filas: FILAS.map((f) => f.nome), porta: ambiente.PORTA_SAUDE }, "worker no ar");
+log.info({ filas: filasComJob.map((f) => f.nome), porta: ambiente.PORTA_SAUDE }, "worker no ar");
 
 /** Para de pegar jobs, espera os que estão rodando terminarem e fecha as conexões. */
 async function desligar(sinal: string) {
@@ -101,7 +165,7 @@ async function desligar(sinal: string) {
   }, PRAZO_DE_DESLIGAMENTO_MS).unref();
   saude.close();
   await Promise.all(workers.map((w) => w.close()));
-  await Promise.all(filas.map((f) => f.close()));
+  await Promise.all([...filas.values()].map((f) => f.close()));
   await conexao.encerrar();
   await redis.quit();
   process.exit(0);
