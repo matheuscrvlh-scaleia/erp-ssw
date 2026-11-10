@@ -1,0 +1,18 @@
+# Só para desenvolvimento local: Redis do rate limit da API e das filas do worker.
+# O banco é o Postgres do Supabase DEVELOP (ver docs/arquitetura.md), não sobe aqui.
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-dados:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis-dados:

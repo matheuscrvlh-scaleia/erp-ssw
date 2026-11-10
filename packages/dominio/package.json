@@ -1,0 +1,20 @@
+{
+  "name": "@erp/dominio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Regras de negócio puras (sem I/O), usadas pela API e pelo worker.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@erp/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@erp/config": "workspace:*"
+  }
+}

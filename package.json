@@ -1,0 +1,27 @@
+{
+  "name": "erp-ssw",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": ">=22.12.0",
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "dev": "bun run --filter \"@erp/api\" --filter \"@erp/web\" --filter \"@erp/worker\" dev",
+    "build": "bun run --filter \"@erp/api\" --filter \"@erp/web\" --filter \"@erp/worker\" build",
+    "typecheck": "bun run --filter \"*\" typecheck",
+    "lint": "eslint . && prettier --check .",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "db:gerar": "bun run --cwd packages/db gerar",
+    "db:migrar": "bun run --cwd packages/db migrar"
+  },
+  "devDependencies": {
+    "@erp/config": "workspace:*"
+  }
+}

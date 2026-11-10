@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+bun.lock
+**/drizzle/meta
+**/routeTree.gen.ts
+.worktrees
+docs
