@@ -7,12 +7,12 @@
 import { type EntradaDe } from "@erp/shared/contrato";
 import { contratosFiltros as c, type PagadorOpcao } from "@erp/shared/contratos/filtros";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Info, Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { chamar } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -68,21 +68,6 @@ export function AvisoDaLista({ children, erro }: { children: ReactNode; erro?: b
     >
       {children}
     </li>
-  );
-}
-
-export function InfoDica({ texto }: { texto: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex cursor-help text-muted-foreground" aria-label={texto}>
-          <Info className="h-3 w-3" />
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
-        {texto}
-      </TooltipContent>
-    </Tooltip>
   );
 }
 
@@ -180,7 +165,7 @@ export function SeletorDeFilial({
         larguraClasse="w-48"
         monoespacado
       />
-      <InfoDica texto="Unidade responsável pelo CT-e: usa a unidade de destino; na falta dela, a unidade atual; e por último a filial emissora." />
+      <InfoTip texto="Unidade responsável pelo CT-e: usa a unidade de destino; na falta dela, a unidade atual; e por último a filial emissora." />
     </span>
   );
 }

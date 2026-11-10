@@ -22,6 +22,7 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
@@ -29,7 +30,6 @@ import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
   type ContextoDosFiltros,
-  InfoDica,
   SeletorDeFilial,
   SeletorDePagador,
   SeletorDeTexto,
@@ -518,7 +518,7 @@ export function PaginaListagem() {
           }}
         />
         <span className="inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground">
-          <InfoDica texto={DICA_DA_BASE[busca.base]} />
+          <InfoTip texto={DICA_DA_BASE[busca.base]} />
           <span className="hidden sm:inline">{BASE_CURTA[busca.base]}</span>
         </span>
         <div className="flex rounded-md border border-border/70 p-0.5">

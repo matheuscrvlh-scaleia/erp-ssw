@@ -17,6 +17,7 @@ import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrandoPor, FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { GraficoBarras } from "@/componentes/comum/Graficos";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
@@ -27,7 +28,6 @@ import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 import { CampoDeTexto, listaDoTexto } from "@/modulos/compartilhado/CampoDeTexto";
 import { data, diaMes, inteiro, percentual } from "@/modulos/compartilhado/formatos";
-import { InfoTip } from "@/modulos/compartilhado/InfoTip";
 
 import { carregarListaInteira, consultaLista, consultaPainel } from "./api";
 import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, temFiltro } from "./busca";

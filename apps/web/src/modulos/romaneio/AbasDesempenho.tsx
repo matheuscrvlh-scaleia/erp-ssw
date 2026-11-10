@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +29,6 @@ import {
   AtribuicaoLegenda,
   AvisoDoBloco,
   CardAba,
-  InfoTip,
   PrejuizoSubtitulo,
   textoDoPrejuizo,
 } from "./componentes";

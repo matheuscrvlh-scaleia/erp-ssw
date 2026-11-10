@@ -4,8 +4,8 @@ import { FiltroMultiplo, type OpcaoFiltro } from "@/componentes/comum/FiltroMult
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { CampoDeTexto, classeDoSegmento, listaDoTexto } from "@/modulos/compartilhado/CampoDeTexto";
-import { InfoTip } from "@/modulos/compartilhado/InfoTip";
 
 import { type BuscaOcorrencias } from "./busca";
 import { rotulosDoResponsavel } from "./rotulos";

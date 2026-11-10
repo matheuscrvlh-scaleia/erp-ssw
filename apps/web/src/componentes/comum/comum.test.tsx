@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ErroDaApi } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
+import { Abas, ConteudoDaAba } from "./Abas";
+import { ComoFunciona } from "./ComoFunciona";
 import { KpiCard, statusDaMeta } from "./KpiCard";
 import { MensagemErro } from "./MensagemErro";
 import { SeloAtualizacao } from "./SeloAtualizacao";
@@ -68,5 +70,49 @@ describe("SeloAtualizacao", () => {
     expect(screen.getByText("Dados atualizados em 10/11/2026 10:30")).toBeTruthy();
     rerender(<SeloAtualizacao atualizadoEm={null} />);
     expect(screen.getByText("Aguardando a primeira importação")).toBeTruthy();
+  });
+});
+
+describe("Abas", () => {
+  const ABAS = [
+    { valor: "parceiro", rotulo: "Parceiro" },
+    { valor: "cidade", rotulo: "Cidade" },
+  ] as const;
+
+  it("sozinha: começa no padrão e só a aba aberta fica na tela", () => {
+    render(
+      <Abas abas={ABAS} padrao="parceiro">
+        <ConteudoDaAba valor="parceiro">lista por parceiro</ConteudoDaAba>
+        <ConteudoDaAba valor="cidade">lista por cidade</ConteudoDaAba>
+      </Abas>,
+    );
+    expect(screen.getByText("lista por parceiro")).toBeTruthy();
+    expect(screen.queryByText("lista por cidade")).toBeNull();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Cidade" }));
+    expect(screen.getByText("lista por cidade")).toBeTruthy();
+  });
+
+  it("controlada: avisa a aba escolhida e marca a do valor", () => {
+    const aoMudar = vi.fn();
+    render(<Abas abas={ABAS} valor="cidade" aoMudar={aoMudar} rotulo="Agrupar por" />);
+    expect(screen.getByRole("tablist", { name: "Agrupar por" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Cidade" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Parceiro" }));
+    expect(aoMudar).toHaveBeenCalledWith("parceiro");
+  });
+});
+
+describe("ComoFunciona", () => {
+  it("abre a explicação e lembra que a pessoa já viu", () => {
+    window.localStorage.removeItem("como-funciona:teste");
+    render(
+      <ComoFunciona chave="teste" titulo="Como funciona o teste" resumo="Resumo da regra.">
+        <p>Detalhe da regra.</p>
+      </ComoFunciona>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Como funciona: Como funciona o teste" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByText("Detalhe da regra.")).toBeTruthy();
+    expect(window.localStorage.getItem("como-funciona:teste")).toBe("1");
   });
 });

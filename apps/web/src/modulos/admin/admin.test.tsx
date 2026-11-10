@@ -77,7 +77,8 @@ describe("ModalNovoUsuario", () => {
     const aoGravar = vi.fn(() => Promise.resolve(false));
     render(<ModalNovoUsuario cargos={CARGOS} departamentos={[]} aoGravar={aoGravar} />);
     fireEvent.click(screen.getByRole("button", { name: /Novo usuário/ }));
-    fireEvent.click(screen.getByRole("tab", { name: "Criar com senha" }));
+    // A aba do Radix troca no mousedown (o clique de verdade começa por ele).
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Criar com senha" }));
     digitar("Nome", "Bia");
     digitar("E-mail", "bia@fr.com.br");
     digitar("Senha", "curta");

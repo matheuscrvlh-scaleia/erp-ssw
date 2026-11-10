@@ -1,4 +1,5 @@
-import { Aba, Abas, ConteudoDaAba, ListaDeAbas } from "./kit-local";
+import { Abas, ConteudoDaAba } from "@/componentes/comum/Abas";
+
 import { RankingTabela } from "./RankingTabela";
 
 /** origem: routes/_authenticated/ranking.tsx (sistema atual) */
@@ -13,13 +14,14 @@ export function PaginaRanking() {
           os casos que estão puxando o SLA para baixo.
         </p>
       </header>
-      <Abas padrao="parceiro" className="w-full">
-        <div className="-mx-1 overflow-x-auto px-1">
-          <ListaDeAbas>
-            <Aba valor="parceiro">Parceiro</Aba>
-            <Aba valor="cidade">Cidade</Aba>
-          </ListaDeAbas>
-        </div>
+      <Abas
+        abas={[
+          { valor: "parceiro", rotulo: "Parceiro" },
+          { valor: "cidade", rotulo: "Cidade" },
+        ]}
+        padrao="parceiro"
+        classeDoGrupo="w-full"
+      >
         <ConteudoDaAba valor="parceiro" className="mt-4">
           <RankingTabela grupo="pagador" />
         </ConteudoDaAba>

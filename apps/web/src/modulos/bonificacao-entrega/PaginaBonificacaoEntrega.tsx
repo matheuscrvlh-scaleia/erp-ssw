@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Abas, ConteudoDaAba } from "@/componentes/comum/Abas";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
@@ -27,8 +28,6 @@ import {
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 
-// TODO(kit-ui): o kit ainda não tem Tabs; abas locais.
-import { Aba, Abas, ConteudoDaAba, ListaDeAbas } from "../ranking/kit-local";
 import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracao, consultaUnidades } from "./api";
 import { ComoFuncionaBonificacao } from "./ComoFuncionaBonificacao";
@@ -403,16 +402,14 @@ export function PaginaBonificacaoEntrega() {
             </div>
           )}
 
-          <Abas padrao="pessoa">
-            <ListaDeAbas>
-              <Aba valor="pessoa" className="text-[12px]">
-                Por colaborador
-              </Aba>
-              <Aba valor="dia" className="text-[12px]">
-                Por dia
-              </Aba>
-            </ListaDeAbas>
-
+          <Abas
+            abas={[
+              { valor: "pessoa", rotulo: "Por colaborador" },
+              { valor: "dia", rotulo: "Por dia" },
+            ]}
+            padrao="pessoa"
+            classeDaAba="text-[12px]"
+          >
             <ConteudoDaAba valor="pessoa">
               <section className="overflow-x-auto rounded-[10px] border border-border/70 bg-card">
                 <table className="w-full text-[12px]">

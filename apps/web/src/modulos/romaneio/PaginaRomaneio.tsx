@@ -10,6 +10,7 @@ import { RefreshCw, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { Abas } from "@/componentes/comum/Abas";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
@@ -129,29 +130,15 @@ export function PaginaRomaneio() {
 
       {/* As abas ficam logo abaixo do cabeçalho em todas as abas: trocar nunca desloca os botões. */}
       <div className="sticky top-0 z-20 -mx-1 bg-background px-1 py-1.5">
-        <div
-          role="tablist"
-          aria-label="Abas do Romaneio"
-          className="inline-flex h-9 max-w-full items-center overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground"
-        >
-          {ABAS.map((aba) => (
-            <button
-              key={aba}
-              type="button"
-              role="tab"
-              aria-selected={b.tab === aba}
-              onClick={() => {
-                definir({ tab: aba, page: 1 });
-              }}
-              className={cn(
-                "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all",
-                b.tab === aba && "bg-background text-foreground shadow",
-              )}
-            >
-              {ROTULO_ABA[aba]}
-            </button>
-          ))}
-        </div>
+        <Abas
+          abas={ABAS.map((aba) => ({ valor: aba, rotulo: ROTULO_ABA[aba] }))}
+          valor={b.tab}
+          aoMudar={(tab) => {
+            definir({ tab, page: 1 });
+          }}
+          rotulo="Abas do Romaneio"
+          className="max-w-full justify-start overflow-x-auto"
+        />
       </div>
 
       {ehHoje ? (

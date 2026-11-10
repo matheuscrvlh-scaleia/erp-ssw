@@ -60,48 +60,6 @@ export function CabecalhoDaPagina({
   );
 }
 
-export function Abas<T extends string>({
-  abas,
-  valor,
-  aoMudar,
-  className,
-}: {
-  abas: readonly { valor: T; rotulo: ReactNode }[];
-  valor: T;
-  aoMudar: (valor: T) => void;
-  className?: string;
-}) {
-  return (
-    <div
-      role="tablist"
-      className={cn(
-        "inline-flex gap-1 rounded-md border border-border/60 bg-muted/40 p-1",
-        className,
-      )}
-    >
-      {abas.map((a) => (
-        <button
-          key={a.valor}
-          type="button"
-          role="tab"
-          aria-selected={a.valor === valor}
-          onClick={() => {
-            aoMudar(a.valor);
-          }}
-          className={cn(
-            "flex-1 rounded px-3 py-1 text-[12px] font-medium transition-colors",
-            a.valor === valor
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {a.rotulo}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 const TOM_DO_SELO = {
   bom: "bg-status-good-bg text-status-good-fg",
   ruim: "bg-status-bad-bg text-status-bad-fg",

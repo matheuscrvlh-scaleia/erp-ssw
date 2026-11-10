@@ -7,6 +7,7 @@ import { useState } from "react";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltrandoPor, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { ordenarPorPlaca } from "@/componentes/comum/ordenar-por-placa";
 import {
   Sheet,
@@ -20,7 +21,7 @@ import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 
 import { consultaCtesDoDia, consultaHoje, consultaOpcoes } from "./api";
 import { type Abertura } from "./busca";
-import { CardAba, FaixaChip, GradeCards, InfoTip, PrejuizoSubtitulo } from "./componentes";
+import { CardAba, FaixaChip, GradeCards, PrejuizoSubtitulo } from "./componentes";
 import { fmtMoedaInteira, nfInt, nfPct } from "./formatos";
 
 const SEM_TIPO = "__SEM_TIPO__";

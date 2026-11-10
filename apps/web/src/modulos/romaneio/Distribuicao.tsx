@@ -3,12 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
 import { consultaDistribuicao, consultaPerformanceCarros } from "./api";
 import { type Abertura } from "./busca";
-import { InfoTip } from "./componentes";
 import { nfInt, nfPct2 } from "./formatos";
 
 type Visao = "codigo" | "placa";

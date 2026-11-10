@@ -3,6 +3,7 @@ import { type NovoUsuario, novoUsuario } from "@erp/shared/contratos/admin";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
 
+import { Abas } from "@/componentes/comum/Abas";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -13,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/componentes/ui/dialog";
 
-import { Abas, CAMPO, Campo, CampoDeSenha } from "../comum";
+import { CAMPO, Campo, CampoDeSenha } from "../comum";
 import { EditorDeExcecoes } from "../EditorDeTelas";
 import { listaDasExcecoes, type MapaDeExcecoes } from "../telas";
 

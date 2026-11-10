@@ -1,5 +1,4 @@
-// TODO(kit-ui): trocar pelo ComoFunciona do kit comum.
-import { ComoFunciona, ComoFuncionaSecao, Formula } from "../ranking/kit-local";
+import { ComoFunciona, ComoFuncionaSecao, Formula } from "@/componentes/comum/ComoFunciona";
 
 /**
  * Explicação da página de ponto — vale para as duas abas.
