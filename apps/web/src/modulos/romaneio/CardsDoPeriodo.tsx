@@ -1,4 +1,5 @@
 import { type Recorte, type TotaisDoTopo } from "@erp/shared/contratos/romaneio";
+import { formatarPercentual } from "@erp/shared/formatacao";
 
 import { AlternarCardsSecundarios, FaixaChip, GradeCards, TotCard } from "./componentes";
 import { fmtMoeda, fmtPeso, nfInt } from "./formatos";
@@ -25,9 +26,7 @@ export function CardsDoPeriodo({
 }: PropsCardsDoPeriodo) {
   const base = t?.ctes ?? 0;
   const pctBase = (n: number) =>
-    base > 0
-      ? `${((n / base) * 100).toFixed(1).replace(".", ",")}% do total do período`
-      : undefined;
+    base > 0 ? `${formatarPercentual(n / base)} do total do período` : undefined;
   const otifPct = t && base > 0 ? (t.otifProblemas / base) * 100 : null;
   const n = (v: number | undefined) => nfInt.format(v ?? 0);
   return (
@@ -129,7 +128,7 @@ export function CardsDoPeriodo({
           <TotCard
             rotulo="CTRC com problema (OTIF)"
             tom="alert"
-            valor={otifPct == null ? "—" : `${otifPct.toFixed(1).replace(".", ",")}%`}
+            valor={otifPct == null ? "—" : formatarPercentual(otifPct, { escala: "cem" })}
             base={`${n(t?.otifProblemas)} CTRC`}
             dica="De cada 100 cargas do período, quantas tiveram algum problema no percurso — pendência do cliente ou da operação — mesmo que tenham sido entregues no prazo. Quanto menor, melhor."
             aoClicar={() => {

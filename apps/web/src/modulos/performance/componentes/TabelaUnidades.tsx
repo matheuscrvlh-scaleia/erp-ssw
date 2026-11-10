@@ -1,9 +1,10 @@
 import { statusDoSla } from "@erp/dominio/performance/tela";
 import { type UnidadeResumo } from "@erp/shared/contratos/performance";
+import { formatarPercentual } from "@erp/shared/formatacao";
 
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 
-import { corDoStatus, fmtPct, fundoDoStatus, textoDoStatus } from "../formato";
+import { corDoStatus, fundoDoStatus, textoDoStatus } from "../formato";
 import { clicavel } from "./Kpis";
 
 export type LinhaDaUnidade = UnidadeResumo & {
@@ -189,10 +190,12 @@ function LinhaDeUnidade({
         className="w-20 shrink-0 text-right text-[13px] font-medium tabular-nums"
         style={{ color: sla != null ? textoDoStatus[status] : "var(--muted-foreground)" }}
       >
-        {sla != null ? fmtPct(sla) : "—"}
+        {sla != null ? formatarPercentual(sla, { separador: "." }) : "—"}
       </div>
       <div className="hidden w-20 shrink-0 text-right text-[13px] text-muted-foreground tabular-nums md:block">
-        {linha.nascidosPct != null ? fmtPct(linha.nascidosPct) : "—"}
+        {linha.nascidosPct != null
+          ? formatarPercentual(linha.nascidosPct, { separador: "." })
+          : "—"}
       </div>
     </li>
   );

@@ -7,14 +7,34 @@ export function formatarInteiro(valor: number | null | undefined): string {
   return valor == null || !Number.isFinite(valor) ? TRACO : inteiro.format(valor);
 }
 
-/** `0.951` → `"95,1%"`. */
-export function formatarPercentual(fracao: number | null | undefined, casas = 1): string {
-  if (fracao == null || !Number.isFinite(fracao)) return TRACO;
-  return new Intl.NumberFormat("pt-BR", {
-    style: "percent",
+export interface OpcoesPercentual {
+  /** Casas decimais, sempre mostradas (padrão 1). */
+  casas?: number;
+  /** `"fracao"` (0,951) é o padrão; `"cem"` quando o valor já vem de 0 a 100 (95,1). */
+  escala?: "fracao" | "cem";
+  /**
+   * `"."` só onde o sistema atual mostra ponto ("95.0%": cards e tabela por unidade da
+   * Performance). O resto usa vírgula.
+   */
+  separador?: "," | ".";
+}
+
+/**
+ * Percentual com arredondamento único (Intl) em tela, PDF, Excel e impressão:
+ * `0.951` → `"95,1%"`; `{ escala: "cem" }` aceita `95.1`.
+ */
+export function formatarPercentual(
+  valor: number | null | undefined,
+  { casas = 1, escala = "fracao", separador = "," }: OpcoesPercentual = {},
+): string {
+  if (valor == null || !Number.isFinite(valor)) return TRACO;
+  const texto = new Intl.NumberFormat(separador === "." ? "en-US" : "pt-BR", {
+    style: escala === "fracao" ? "percent" : "decimal",
     minimumFractionDigits: casas,
     maximumFractionDigits: casas,
-  }).format(fracao);
+    useGrouping: separador === ",",
+  }).format(valor);
+  return escala === "fracao" ? texto : `${texto}%`;
 }
 
 export function formatarMoeda(valor: number | null | undefined): string {

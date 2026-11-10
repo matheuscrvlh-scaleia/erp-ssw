@@ -1,4 +1,5 @@
 import { type FiltrosRomaneio } from "@erp/shared/contratos/romaneio";
+import { formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -9,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { consultaDistribuicao, consultaPerformanceCarros } from "./api";
 import { type Abertura } from "./busca";
-import { nfInt, nfPct2 } from "./formatos";
+import { nfInt } from "./formatos";
 
 type Visao = "codigo" | "placa";
 
@@ -264,14 +265,16 @@ function TabelaCarros({
                   <td className="px-3 py-1 text-right tabular-nums">
                     {nfInt.format(r.prejudicadas)}
                   </td>
-                  <td className="px-3 py-1 text-right tabular-nums">{nfPct2.format(100 - pct)}%</td>
+                  <td className="px-3 py-1 text-right tabular-nums">
+                    {formatarPercentual(100 - pct, { escala: "cem", casas: 2 })}
+                  </td>
                   <td
                     className={cn(
                       "px-3 py-1 text-right font-medium tabular-nums",
                       r.prejudicadas > 0 && "text-[var(--status-bad)]",
                     )}
                   >
-                    {nfPct2.format(pct)}%
+                    {formatarPercentual(pct, { escala: "cem", casas: 2 })}
                   </td>
                 </tr>
               );
@@ -290,10 +293,10 @@ function TabelaCarros({
                   {nfInt.format(total.prejudicadas)}
                 </td>
                 <td className="px-3 py-1.5 text-right tabular-nums">
-                  {nfPct2.format(100 - pctPrejudicada(total))}%
+                  {formatarPercentual(100 - pctPrejudicada(total), { escala: "cem", casas: 2 })}
                 </td>
                 <td className="px-3 py-1.5 text-right tabular-nums">
-                  {nfPct2.format(pctPrejudicada(total))}%
+                  {formatarPercentual(pctPrejudicada(total), { escala: "cem", casas: 2 })}
                 </td>
               </tr>
             </tfoot>

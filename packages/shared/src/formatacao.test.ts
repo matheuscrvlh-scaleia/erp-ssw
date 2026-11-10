@@ -16,6 +16,16 @@ describe("formatação pt-BR", () => {
     expect(formatarMoeda(1234.5)).toMatch(/^R\$\s1\.234,50$/);
   });
 
+  it("percentual: um arredondamento só; ponto só onde o sistema atual usa ponto", () => {
+    // 0,9505: o card fazia toFixed ("95.0%") e o PDF Intl ("95,1%") — o mesmo número em dois.
+    expect(formatarPercentual(0.9505)).toBe("95,1%");
+    expect(formatarPercentual(0.9505, { separador: "." })).toBe("95.1%");
+    expect(formatarPercentual(95.05, { escala: "cem" })).toBe("95,1%");
+    expect(formatarPercentual(99.724, { escala: "cem", casas: 2 })).toBe("99,72%");
+    expect(formatarPercentual(0.4, { casas: 0 })).toBe("40%");
+    expect(formatarPercentual(null, { escala: "cem" })).toBe("—");
+  });
+
   it("vazio vira traço", () => {
     expect(formatarInteiro(null)).toBe("—");
     expect(formatarPercentual(Number.NaN)).toBe("—");

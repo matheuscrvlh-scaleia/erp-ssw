@@ -1,5 +1,6 @@
 import { valorDaMetrica } from "@erp/dominio/performance/serie";
 import { type Granularidade, type PontoSerie } from "@erp/shared/contratos/performance";
+import { formatarPercentual } from "@erp/shared/formatacao";
 import { useState } from "react";
 
 import { GraficoLinha } from "@/componentes/comum/Graficos";
@@ -98,11 +99,7 @@ export function GraficoSerie({
         series={[{ chave: "valor", nome: def.rotulo }]}
         formato={def.pct ? "percentual" : "inteiro"}
         dominioY={def.pct ? [piso, 1] : undefined}
-        meta={
-          def.pct
-            ? { valor: meta, rotulo: `meta ${(meta * 100).toFixed(1).replace(".", ",")}%` }
-            : undefined
-        }
+        meta={def.pct ? { valor: meta, rotulo: `meta ${formatarPercentual(meta)}` } : undefined}
         dica={(d) => (
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-[12px] shadow-sm">
             <div className="font-medium">
@@ -110,11 +107,7 @@ export function GraficoSerie({
             </div>
             <div className="mt-0.5 tabular-nums">
               {def.rotulo}:{" "}
-              {d.valor == null
-                ? "—"
-                : def.pct
-                  ? `${(d.valor * 100).toFixed(1).replace(".", ",")}%`
-                  : fmtInt(d.valor)}
+              {d.valor == null ? "—" : def.pct ? formatarPercentual(d.valor) : fmtInt(d.valor)}
             </div>
             <div className="text-[11px] text-muted-foreground tabular-nums">
               {def.detalhe(d.ponto)}

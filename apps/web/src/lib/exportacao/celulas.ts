@@ -100,7 +100,7 @@ export function textoCsv(valor: unknown, formato: FormatoColuna = "texto", fuso 
   const numero = paraNumero(valor);
   if (numero != null) {
     if (formato === "moeda") return numero.toFixed(2).replace(".", ",");
-    if (formato === "percentual") return `${(numero * 100).toFixed(1).replace(".", ",")}%`;
+    if (formato === "percentual") return formatarPercentual(numero);
     if (formato === "inteiro" || formato === "decimal") return String(numero).replace(".", ",");
   }
   return textoDaCelula(valor, formato, fuso);

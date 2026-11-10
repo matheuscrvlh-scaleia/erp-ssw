@@ -112,10 +112,3 @@ export function ordenarLinhas(
     return sinal * (va - vb);
   });
 }
-
-/** Percentual com vírgula e uma casa ("95,7%"); nulo = "—". */
-export function formatarPct(v: number | null): string {
-  return v === null
-    ? "—"
-    : `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
-}

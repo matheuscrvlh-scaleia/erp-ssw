@@ -1,6 +1,6 @@
 import { type CteDaFaixa, type FaixaDoDia, type LinhaDoDia } from "@erp/shared/contratos/romaneio";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData } from "@erp/shared/formatacao";
+import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -22,7 +22,7 @@ import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 import { consultaCtesDoDia, consultaHoje, consultaOpcoes } from "./api";
 import { type Abertura } from "./busca";
 import { CardAba, FaixaChip, GradeCards, PrejuizoSubtitulo } from "./componentes";
-import { fmtMoedaInteira, nfInt, nfPct } from "./formatos";
+import { fmtMoedaInteira, nfInt } from "./formatos";
 
 const SEM_TIPO = "__SEM_TIPO__";
 
@@ -289,7 +289,11 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
         <CardAba
           rotulo="Já entregues"
           valor={r ? nfInt.format(r.entregues) : "—"}
-          dica={perf !== null ? `${nfPct.format(perf)}% de performance` : undefined}
+          dica={
+            perf !== null
+              ? `${formatarPercentual(perf, { escala: "cem" })} de performance`
+              : undefined
+          }
           tom={perf !== null && perf >= 90 ? "ok" : undefined}
         />
         <CardAba
@@ -562,7 +566,9 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
                     {nfInt.format(l.naoEntregues)}
                   </td>
                   <td className="px-3 py-1 text-right font-medium tabular-nums">
-                    {l.performance !== null ? `${nfPct.format(l.performance)}%` : "—"}
+                    {l.performance !== null
+                      ? formatarPercentual(l.performance, { escala: "cem" })
+                      : "—"}
                   </td>
                   <td className="px-3 py-1 text-right tabular-nums">
                     {l.fretePerdido > 0 ? fmtMoedaInteira(l.fretePerdido) : "—"}

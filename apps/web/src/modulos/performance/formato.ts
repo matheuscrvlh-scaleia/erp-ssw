@@ -1,12 +1,5 @@
 import { type Status } from "@erp/dominio/performance/tela";
 
-/** Fração → "95.0%" (mesmo formato dos cards de hoje). */
-export const fmtPct = (fracao: number): string => `${(fracao * 100).toFixed(1)}%`;
-
-/** Percentual já em 0–100 → "95,0%" (cards de produção e relatório). */
-export const fmtPct100 = (v: number | null): string =>
-  v == null ? "—" : `${v.toFixed(1).replace(".", ",")}%`;
-
 export const fmtInt = (v: number): string => v.toLocaleString("pt-BR");
 
 export const fmtBRL = (v: number): string =>

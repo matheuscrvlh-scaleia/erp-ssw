@@ -1,10 +1,11 @@
 import { verificarParticao } from "@erp/dominio/performance/tela";
 import { type BlocoProducao, type TdeAguardando } from "@erp/shared/contratos/performance";
+import { formatarPercentual } from "@erp/shared/formatacao";
 import { ArrowRight } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 
-import { fmtBRL, fmtInt, fmtPct100 } from "../formato";
+import { fmtBRL, fmtInt } from "../formato";
 
 export type CardDeProducao =
   | "emitidos"
@@ -104,7 +105,11 @@ export function LinhaDeProducao({
       <CartaoDeProducao
         rotulo="Entregues"
         valor={fmtInt(bloco.entregues)}
-        sub={bloco.totalCtrcs > 0 ? `${fmtPct100(producaoPct)} dos emitidos` : "sem emissões"}
+        sub={
+          bloco.totalCtrcs > 0
+            ? `${formatarPercentual(producaoPct, { escala: "cem" })} dos emitidos`
+            : "sem emissões"
+        }
         onClick={() => {
           onCard("entregues");
         }}
@@ -113,7 +118,11 @@ export function LinhaDeProducao({
         rotulo="No Prazo"
         valor={fmtInt(bloco.noPrazo)}
         legenda="Entregues até a data combinada"
-        sub={noPrazoPct != null ? `${fmtPct100(noPrazoPct)} dos entregues` : "aguardando entregas"}
+        sub={
+          noPrazoPct != null
+            ? `${formatarPercentual(noPrazoPct, { escala: "cem" })} dos entregues`
+            : "aguardando entregas"
+        }
         tom={noPrazoPct != null && noPrazoPct >= slaMetaPct ? "bom" : "neutro"}
         dica="Entregas que chegaram até a data combinada."
         onClick={() => {
@@ -136,7 +145,7 @@ export function LinhaDeProducao({
         valor={fmtInt(bloco.finalizadoSistema)}
         sub={
           bloco.totalCtrcs > 0
-            ? `${fmtPct100((bloco.finalizadoSistema / bloco.totalCtrcs) * 100)} dos emitidos`
+            ? `${formatarPercentual((bloco.finalizadoSistema / bloco.totalCtrcs) * 100, { escala: "cem" })} dos emitidos`
             : "sem emissões"
         }
         tom="info"
@@ -147,8 +156,8 @@ export function LinhaDeProducao({
       />
       <CartaoDeProducao
         rotulo="% Produção"
-        valor={fmtPct100(producaoPct)}
-        sub={`entregues / emitidos · meta ${fmtPct100(slaMetaPct)}`}
+        valor={formatarPercentual(producaoPct, { escala: "cem" })}
+        sub={`entregues / emitidos · meta ${formatarPercentual(slaMetaPct, { escala: "cem" })}`}
         tom={producaoPct != null && producaoPct >= slaMetaPct ? "bom" : "neutro"}
         onClick={() => {
           onCard("producao_pct");

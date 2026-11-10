@@ -4,7 +4,7 @@
  */
 import { type NascidoAtrasado } from "@erp/shared/contratos/prazo-parceiro";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData } from "@erp/shared/formatacao";
+import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw } from "lucide-react";
@@ -34,7 +34,6 @@ import {
   fmtPP,
   LinhasCarregando,
   nfInt,
-  nfPct,
   tomDoSla,
 } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
@@ -171,7 +170,7 @@ export function PaginaDetalheParceiro() {
         <CartaoMetrica
           tamanho="medio"
           rotulo="Performance total"
-          valor={r ? nfPct.format(r.performanceTotal) : "—"}
+          valor={r ? formatarPercentual(r.performanceTotal) : "—"}
           tom={r && tomDoSla(r.performanceTotal, sla)}
           dica={`${nfInt.format(r?.totalCtes ?? 0)} CTRC(s) no período`}
           carregando={q.isLoading}
@@ -179,7 +178,7 @@ export function PaginaDetalheParceiro() {
         <CartaoMetrica
           tamanho="medio"
           rotulo="Performance própria"
-          valor={r ? nfPct.format(r.performancePropria) : "—"}
+          valor={r ? formatarPercentual(r.performancePropria) : "—"}
           tom={r && tomDoSla(r.performancePropria, sla)}
           dica={`apenas ${nfInt.format(r?.totalProprio ?? 0)} CTRC(s) com prazo próprio`}
           carregando={q.isLoading}

@@ -60,6 +60,8 @@ describe("células", () => {
     expect(textoCsv(1234.5, "moeda")).toBe("1234,50");
     expect(textoCsv(1234.5, "decimal")).toBe("1234,5");
     expect(textoCsv(0.951, "percentual")).toBe("95,1%");
+    // Mesmo arredondamento da tela: antes o CSV dava "95,0%" e o PDF "95,1%" para 0,9505.
+    expect(textoCsv(0.9505, "percentual")).toBe(textoDaCelula(0.9505, "percentual"));
     expect(textoCsv("2026-11-05", "data")).toBe("05/11/2026");
   });
 

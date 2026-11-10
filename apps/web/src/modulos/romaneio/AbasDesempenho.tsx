@@ -3,7 +3,7 @@
  * Visual da tela de hoje (features/romaneio/Fase2Views.tsx).
  */
 import { type FiltrosRomaneio, type LinhaPerformancePessoa } from "@erp/shared/contratos/romaneio";
-import { formatarData } from "@erp/shared/formatacao";
+import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, EyeOff, Lock, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -33,7 +33,7 @@ import {
   textoDoPrejuizo,
 } from "./componentes";
 import { Distribuicao } from "./Distribuicao";
-import { fmtDiaCurto, fmtMoedaInteira, fmtPeso, nfInt, nfPct, nfPct2 } from "./formatos";
+import { fmtDiaCurto, fmtMoedaInteira, fmtPeso, nfInt } from "./formatos";
 
 interface PropsDaAba {
   filtros: FiltrosRomaneio;
@@ -265,7 +265,7 @@ export function AbaPerformanceRomaneio({
   const k = q.data;
   const base = k?.romaneado ?? 0;
   const pctBase = (n: number) =>
-    base > 0 ? `${nfPct.format((n / base) * 100)}% da base desta aba` : "—";
+    base > 0 ? `${formatarPercentual((n / base) * 100, { escala: "cem" })} da base desta aba` : "—";
   const positiva = k ? pctDe(k.entregue, base) : null;
   const pPrejuizo = k ? pctDe(k.prejudicada, base) : null;
   const codigos = filtros.codigos;
@@ -312,7 +312,7 @@ export function AbaPerformanceRomaneio({
           valor={k ? fmtMoedaInteira(k.fretePerdido) : "—"}
           dica={
             k && k.freteRomaneado > 0
-              ? `${nfPct.format((k.fretePerdido / k.freteRomaneado) * 100)}% do frete da base desta aba`
+              ? `${formatarPercentual((k.fretePerdido / k.freteRomaneado) * 100, { escala: "cem" })} do frete da base desta aba`
               : undefined
           }
           tom={k && k.fretePerdido > 0 ? "ruim" : undefined}
@@ -324,7 +324,7 @@ export function AbaPerformanceRomaneio({
         <CardAba
           rotulo="Prejuízo (%)"
           sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={pPrejuizo !== null ? `${nfPct.format(pPrejuizo)}%` : "—"}
+          valor={pPrejuizo !== null ? formatarPercentual(pPrejuizo, { escala: "cem" }) : "—"}
           dica={
             k && pPrejuizo !== null
               ? `${nfInt.format(k.prejudicada)} de ${nfInt.format(base)} CTRC prejudicados`
@@ -339,7 +339,9 @@ export function AbaPerformanceRomaneio({
         <CardAba
           rotulo="Entregas no horário (%)"
           sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={pPrejuizo !== null ? `${nfPct.format(100 - pPrejuizo)}%` : "—"}
+          valor={
+            pPrejuizo !== null ? formatarPercentual(100 - pPrejuizo, { escala: "cem" }) : "—"
+          }
           dica={
             k && pPrejuizo !== null
               ? `${nfInt.format(base - k.prejudicada)} de ${nfInt.format(base)} CTRC no horário`
@@ -365,7 +367,7 @@ export function AbaPerformanceRomaneio({
           destaque
           rotulo="Performance positiva"
           tom="ok"
-          valor={positiva !== null ? `${nfPct.format(positiva)}%` : "—"}
+          valor={positiva !== null ? formatarPercentual(positiva, { escala: "cem" }) : "—"}
           dica={
             k && positiva !== null
               ? `${nfInt.format(k.entregue)} de ${nfInt.format(base)} entregues`
@@ -377,7 +379,9 @@ export function AbaPerformanceRomaneio({
           destaque
           rotulo="Performance negativa"
           tom="ruim"
-          valor={positiva !== null ? `${nfPct.format(100 - positiva)}%` : "—"}
+          valor={
+            positiva !== null ? formatarPercentual(100 - positiva, { escala: "cem" }) : "—"
+          }
           dica={
             k && positiva !== null
               ? `${nfInt.format(base - k.entregue)} de ${nfInt.format(base)} não entregues`
@@ -577,7 +581,9 @@ function TabelaPorViagem({ filtros, aoAbrir }: PropsDaAba) {
                     {nfInt.format(r.naoEntregues)}
                   </td>
                   <td className="px-3 py-1 text-right font-medium tabular-nums">
-                    {r.performance !== null ? `${nfPct.format(r.performance)}%` : "—"}
+                    {r.performance !== null
+                      ? formatarPercentual(r.performance, { escala: "cem" })
+                      : "—"}
                   </td>
                   <td className="px-3 py-1 text-right tabular-nums">
                     {r.fretePerdido > 0 ? fmtMoedaInteira(r.fretePerdido) : "—"}
@@ -617,7 +623,7 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
       <div className="grid grid-cols-2 gap-2">
         <CardAba
           rotulo="Produtividade"
-          valor={pct !== null ? `${nfPct.format(pct)}%` : "—"}
+          valor={pct !== null ? formatarPercentual(pct, { escala: "cem" }) : "—"}
           dica={
             pct !== null
               ? `${nfInt.format(entregues)} de ${nfInt.format(total)} CTRC entregues`
@@ -628,7 +634,7 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
         />
         <CardAba
           rotulo="Taxa de retorno"
-          valor={pctRetorno !== null ? `${nfPct.format(pctRetorno)}%` : "—"}
+          valor={pctRetorno !== null ? formatarPercentual(pctRetorno, { escala: "cem" }) : "—"}
           dica={
             pctRetorno !== null
               ? `${nfInt.format(retornos)} CTRC sem entrega · de ${nfInt.format(total)} da aba`
@@ -816,7 +822,9 @@ function TabelaDePessoas({
                   className="px-3 py-1 text-right font-medium tabular-nums"
                   title={`${nfInt.format(r.romaneados)} levados − ${nfInt.format(r.prejudicadas13)} prejudicados (cód. 13)`}
                 >
-                  {r.romaneados > 0 ? `${nfPct2.format(r.performance)}%` : "—"}
+                  {r.romaneados > 0
+                    ? formatarPercentual(r.performance, { escala: "cem", casas: 2 })
+                    : "—"}
                 </td>
               </tr>
             ))}

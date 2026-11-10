@@ -5,17 +5,6 @@ import { cn } from "@/lib/utils";
 import { type Periodo, PERIODOS } from "./busca";
 
 export const nfInt = new Intl.NumberFormat("pt-BR");
-export const nfPct = new Intl.NumberFormat("pt-BR", {
-  style: "percent",
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
-export const nfPct0 = new Intl.NumberFormat("pt-BR", {
-  style: "percent",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
-
 /** Diferença em pontos percentuais, com sinal ("+2,3 pp"). Entrada em fração. */
 export function fmtPP(n: number | null | undefined): string {
   if (n === null || n === undefined || Number.isNaN(n)) return "—";

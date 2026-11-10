@@ -4,6 +4,7 @@ import {
   type RelatorioPeriodo,
 } from "@erp/shared/contratos/performance";
 import { hojeNoFuso } from "@erp/shared/datas";
+import { formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import {
   FileBarChart,
@@ -33,7 +34,7 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaRelatorio } from "../api";
-import { fmtInt, fmtPct100 } from "../formato";
+import { fmtInt } from "../formato";
 import { type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "../relatorio";
 import { DistribuicaoPontualidade } from "./Kpis";
 
@@ -529,7 +530,7 @@ function TabelaSlaPorUnidade({ r, meta }: { r: RelatorioPeriodo; meta: number })
   return (
     <div className="rounded-lg border border-border/70">
       <div className="border-b border-border/70 px-3 py-2 text-[12px] font-medium">
-        SLA por unidade · meta {meta.toFixed(1).replace(".", ",")}%
+        SLA por unidade · meta {formatarPercentual(meta, { escala: "cem" })}
         {cmp && (
           <span className="ml-2 text-[10px] font-normal text-muted-foreground">
             (P = principal · C = comparativo)
@@ -580,14 +581,16 @@ function TabelaSlaPorUnidade({ r, meta }: { r: RelatorioPeriodo; meta: number })
                   {comp(fmtInt(c?.total ?? 0))}
                   <td className={td}>{fmtInt(u.entregues)}</td>
                   {comp(fmtInt(c?.entregues ?? 0))}
-                  <td className={td}>{fmtPct100(u.producaoPct)}</td>
-                  {comp(fmtPct100(c?.producaoPct ?? null))}
+                  <td className={td}>{formatarPercentual(u.producaoPct, { escala: "cem" })}</td>
+                  {comp(formatarPercentual(c?.producaoPct ?? null, { escala: "cem" }))}
                   <td className={`${td} ${corDoSla(u.slaOperacionalPct)}`}>
-                    {fmtPct100(u.slaOperacionalPct)}
+                    {formatarPercentual(u.slaOperacionalPct, { escala: "cem" })}
                   </td>
-                  {comp(fmtPct100(c?.slaOperacionalPct ?? null))}
-                  <td className={td}>{fmtPct100(u.slaPontualidadePct)}</td>
-                  {comp(fmtPct100(c?.slaPontualidadePct ?? null))}
+                  {comp(formatarPercentual(c?.slaOperacionalPct ?? null, { escala: "cem" }))}
+                  <td className={td}>
+                    {formatarPercentual(u.slaPontualidadePct, { escala: "cem" })}
+                  </td>
+                  {comp(formatarPercentual(c?.slaPontualidadePct ?? null, { escala: "cem" }))}
                 </tr>
               );
             })}
@@ -601,7 +604,7 @@ function TabelaSlaPorUnidade({ r, meta }: { r: RelatorioPeriodo; meta: number })
 function TabelaDeImpacto({ r }: { r: RelatorioPeriodo }) {
   const cmp = r.comparativo;
   const doComparativo = new Map((cmp?.impactoCodigos ?? []).map((i) => [i.codigo, i]));
-  const pct = (v: number) => `${v.toFixed(1).replace(".", ",")}%`;
+  const pct = (v: number) => formatarPercentual(v, { escala: "cem" });
   return (
     <div className="rounded-lg border border-border/70">
       <div className="flex items-baseline justify-between border-b border-border/70 px-3 py-2 text-[12px] font-medium">

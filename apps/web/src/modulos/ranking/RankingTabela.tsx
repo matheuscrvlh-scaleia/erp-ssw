@@ -4,7 +4,7 @@ import { type PontoSerie as PontoDaSerie } from "@erp/shared/contratos/performan
 import { type FiltroDoRanking, type LinhaDoRanking } from "@erp/shared/contratos/ranking";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
-import { formatarCnpj } from "@erp/shared/formatacao";
+import { formatarCnpj, formatarPercentual } from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, ChevronRight, Eye, EyeOff } from "lucide-react";
@@ -41,7 +41,6 @@ import {
   COR_DO_NIVEL,
   filtrarPorCard,
   type FiltroDoCard,
-  formatarPct,
   kpisDoRanking,
   limiaresDoSla,
   nivelDoSla,
@@ -372,7 +371,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground">
-            meta {formatarPct(meta)} · {periodo.rotulo}
+            meta {formatarPercentual(meta)} · {periodo.rotulo}
           </span>
           <ExportMenu
             arquivo={`ranking-${grupo === "pagador" ? "parceiro" : "cidade"}`}
@@ -413,11 +412,11 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
         <KpiCard
           rotulo="SLA médio"
-          valor={formatarPct(kpis.slaMedio)}
+          valor={formatarPercentual(kpis.slaMedio)}
           status={statusDoSlaMedio ?? "bom"}
           neutro={statusDoSlaMedio === null}
           progresso={kpis.slaMedio ?? undefined}
-          detalhe={`meta ${formatarPct(meta)} · ver os que atingem`}
+          detalhe={`meta ${formatarPercentual(meta)} · ver os que atingem`}
           aoClicar={() => {
             alternarCard("na_meta");
           }}
@@ -464,8 +463,10 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           eixoX="mes"
           series={[{ chave: "sla", nome: "SLA" }]}
           formato="percentual"
-          meta={{ valor: meta, rotulo: `meta ${formatarPct(meta)}` }}
-          dica={(p) => `${p.mes}: SLA ${formatarPct(p.sla)} · ${nfInt.format(p.totalCtes)} CT-e`}
+          meta={{ valor: meta, rotulo: `meta ${formatarPercentual(meta)}` }}
+          dica={(p) =>
+            `${p.mes}: SLA ${formatarPercentual(p.sla)} · ${nfInt.format(p.totalCtes)} CT-e`
+          }
           carregando={serie.isLoading}
           erro={serie.error}
         />
@@ -613,7 +614,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
                     className="px-2 py-1.5 text-right font-bold tabular-nums"
                     style={nivel ? { color: COR_DO_NIVEL[nivel].texto } : undefined}
                   >
-                    {formatarPct(r.slaPct)}
+                    {formatarPercentual(r.slaPct)}
                   </td>
                   {celula(r, r.aEntregar, "previstos_por_status", "CT-e a entregar (em aberto)")}
                   {celula(r, r.atrasadas, "em_atraso", "CT-e em aberto com prazo vencido")}

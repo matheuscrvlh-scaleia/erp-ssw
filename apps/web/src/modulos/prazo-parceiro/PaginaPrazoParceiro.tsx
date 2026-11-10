@@ -8,7 +8,7 @@ import {
   TAMANHOS_DA_LISTA,
 } from "@erp/shared/contratos/prazo-parceiro";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { formatarData } from "@erp/shared/formatacao";
+import { formatarData, formatarPercentual } from "@erp/shared/formatacao";
 import { useIsFetching, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -64,8 +64,6 @@ import {
   fmtPP,
   LinhasCarregando,
   nfInt,
-  nfPct,
-  nfPct0,
   tomDoSla,
 } from "./componentes";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
@@ -275,8 +273,8 @@ export function PaginaPrazoParceiro() {
           <span>
             Atenção: o parceiro <strong>{parceiroProblema.nome}</strong> está enviando muitas cargas
             com menos de 48 horas de prazo (
-            <strong>{nfPct0.format(parceiroProblema.pctNascidos)}</strong> neste período). Vale uma
-            conversa comercial.
+            <strong>{formatarPercentual(parceiroProblema.pctNascidos, { casas: 0 })}</strong> neste
+            período). Vale uma conversa comercial.
           </span>
         </div>
       )}
@@ -298,7 +296,7 @@ export function PaginaPrazoParceiro() {
         <CartaoMetrica
           rotulo="Performance total"
           selo="como o SSW mostra"
-          valor={t ? nfPct.format(t.performanceTotal) : "—"}
+          valor={t ? formatarPercentual(t.performanceTotal) : "—"}
           tom={t && tomDoSla(t.performanceTotal, sla)}
           dica="considerando todos os CTRCs"
           carregando={visao.isLoading}
@@ -307,7 +305,7 @@ export function PaginaPrazoParceiro() {
           rotulo="Performance própria"
           selo="responsabilidade real"
           seloDaMarca
-          valor={t ? nfPct.format(t.performancePropria) : "—"}
+          valor={t ? formatarPercentual(t.performancePropria) : "—"}
           tom={t && tomDoSla(t.performancePropria, sla)}
           dica="apenas CTRCs com prazo próprio"
           carregando={visao.isLoading}
@@ -349,7 +347,7 @@ export function PaginaPrazoParceiro() {
                   <div className="mt-0.5 text-[18px] font-medium tabular-nums">
                     {nfInt.format(t.totalProprio)}{" "}
                     <span className="text-[11px] text-muted-foreground">
-                      ({nfPct0.format(t.pctPrazoProprio)})
+                      ({formatarPercentual(t.pctPrazoProprio, { casas: 0 })})
                     </span>
                   </div>
                 </div>
@@ -360,7 +358,7 @@ export function PaginaPrazoParceiro() {
                   <div className="mt-0.5 text-[18px] font-medium tabular-nums">
                     {nfInt.format(t.totalParceiro)}{" "}
                     <span className="text-[11px] text-muted-foreground">
-                      ({nfPct0.format(t.pctPrazoParceiro)})
+                      ({formatarPercentual(t.pctPrazoParceiro, { casas: 0 })})
                     </span>
                   </div>
                 </div>
@@ -411,7 +409,7 @@ export function PaginaPrazoParceiro() {
               <div className="text-[11px] text-muted-foreground">
                 CTRC(s) no período
                 {t?.pctNascidos != null && (
-                  <> · {nfPct0.format(t.pctNascidos)} dos CTRCs avaliados</>
+                  <> · {formatarPercentual(t.pctNascidos, { casas: 0 })} dos CTRCs avaliados</>
                 )}
                 {a && a.deltaNascidos !== 0 && (
                   <span
@@ -487,7 +485,9 @@ export function PaginaPrazoParceiro() {
                   <td className="px-3 py-1.5 text-right tabular-nums">{nfInt.format(p.total)}</td>
                   <td className="px-3 py-1.5 text-right tabular-nums">
                     {nfInt.format(p.qtdParceiro)}{" "}
-                    <span className="text-muted-foreground">({nfPct0.format(p.pctParceiro)})</span>
+                    <span className="text-muted-foreground">
+                      ({formatarPercentual(p.pctParceiro, { casas: 0 })})
+                    </span>
                   </td>
                   <td
                     className={cn(
@@ -496,7 +496,9 @@ export function PaginaPrazoParceiro() {
                     )}
                   >
                     {nfInt.format(p.nascidosAtrasados)}{" "}
-                    <span className="opacity-75">({nfPct0.format(p.pctNascidos)})</span>
+                    <span className="opacity-75">
+                      ({formatarPercentual(p.pctNascidos, { casas: 0 })})
+                    </span>
                   </td>
                   <td
                     className={cn(
@@ -504,7 +506,7 @@ export function PaginaPrazoParceiro() {
                       classeDoSla(p.performanceComParceiro, sla),
                     )}
                   >
-                    {nfPct.format(p.performanceComParceiro)}
+                    {formatarPercentual(p.performanceComParceiro)}
                   </td>
                   <td className="px-3 py-1.5 text-right">
                     <ChevronRight className="inline h-3.5 w-3.5 text-muted-foreground" />

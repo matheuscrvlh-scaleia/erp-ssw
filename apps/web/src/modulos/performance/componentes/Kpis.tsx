@@ -10,11 +10,12 @@ import {
   type Pontualidade,
   type ResumoPerformance,
 } from "@erp/shared/contratos/performance";
+import { formatarPercentual } from "@erp/shared/formatacao";
 import { type KeyboardEvent, type ReactNode } from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 
-import { corDoStatus, fmtInt, fmtPct, fundoDoStatus, textoDoStatus } from "../formato";
+import { corDoStatus, fmtInt, fundoDoStatus, textoDoStatus } from "../formato";
 
 /** Props de um bloco clicável por mouse e teclado (Enter/Espaço). */
 export function clicavel(acao: (() => void) | undefined, pararPropagacao = false) {
@@ -106,7 +107,7 @@ export function KpiBox({
   );
 }
 
-const pct1 = (v: number) => `${v.toFixed(1).replace(".", ",")}%`;
+const pct1 = (v: number) => formatarPercentual(v, { escala: "cem" });
 
 /** Distribuição da pontualidade (barra empilhada + linhas). origem: PontualidadeBreakdown.tsx */
 export function DistribuicaoPontualidade({
@@ -289,7 +290,7 @@ export function LinhaDeKpis({
       <KpiBox
         rotulo="SLA Operacional"
         titulo="CT-e emitidos menos os entregues fora do prazo, sobre os CT-e emitidos. Fora do prazo exclui responsabilidade do cliente."
-        valor={slaOp != null ? fmtPct(slaOp) : "—"}
+        valor={slaOp != null ? formatarPercentual(slaOp, { separador: "." }) : "—"}
         status={slaOp != null ? statusDoSla(slaOp, meta, alerta) : "bom"}
         neutro={slaOp == null}
         progresso={slaOp}
@@ -310,7 +311,7 @@ export function LinhaDeKpis({
       <KpiBox
         rotulo="Nascidos em atraso"
         titulo={`CTRCs emitidos a menos de 48 horas da previsão de entrega (horas corridas: fim de semana e feriado contam). Ex.: emitido na terça com previsão para quarta. Nesses casos a ${nomeCurto} não tinha como cumprir: o atraso é do parceiro. CTRCs da TROCA ficam fora da conta. Só compara prazos — ocorrências, inclusive as de responsabilidade do cliente, não entram.`}
-        valor={nascPct != null ? fmtPct(nascPct) : "—"}
+        valor={nascPct != null ? formatarPercentual(nascPct, { separador: "." }) : "—"}
         status="bom"
         neutro
         progresso={nascPct}
@@ -321,7 +322,7 @@ export function LinhaDeKpis({
         <KpiBox
           rotulo="OTIF"
           titulo="De cada 100 CTRCs do período, quantos tiveram algum problema no percurso — pendência do cliente ou da operação — mesmo que tenham sido entregues no fim. Quanto menor, melhor. Mesma leitura do OTIF do Romaneio, que usa só as cargas que já saíram para entrega."
-          valor={otifPct == null ? "—" : fmtPct(otifPct)}
+          valor={otifPct == null ? "—" : formatarPercentual(otifPct, { separador: "." })}
           status={otifStatus}
           neutro={otifPct == null}
           progresso={otifPct}
@@ -337,11 +338,11 @@ export function LinhaDeKpis({
       )}
       <KpiBox
         rotulo="Taxa de retorno"
-        valor={fmtPct(taxa)}
+        valor={formatarPercentual(taxa, { separador: "." })}
         status={statusDoRetorno(taxa, metaTaxa)}
         selo={acimaDaMeta ? "acima" : metaTaxa != null ? "ok" : undefined}
         statusDoSelo={acimaDaMeta ? "ruim" : "bom"}
-        sub={`${metaTaxa != null ? `meta ≤ ${fmtPct(metaTaxa)}` : "sem meta definida"} · base: ${fmtInt(resumo.totais.ctrcsConcluidos)} CT-e concluídos`}
+        sub={`${metaTaxa != null ? `meta ≤ ${formatarPercentual(metaTaxa, { separador: "." })}` : "sem meta definida"} · base: ${fmtInt(resumo.totais.ctrcsConcluidos)} CT-e concluídos`}
         titulo="CTRCs com ocorrência 13 (Entrega prejudicada pelo horário) sobre os CT-e concluídos no período (entregues + finalizados sem entrega). CT-e em aberto não entram na conta."
       />
       <CaixaEmAtraso resumo={resumo} nomeCurto={nomeCurto} acoes={acoes} />
