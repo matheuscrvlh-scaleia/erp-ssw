@@ -105,6 +105,10 @@ primeira importação".
 <SeloAtualizacao atualizadoEm={dados?.atualizadoEm ?? null} xmlAguardando={orfaos} />
 ```
 
+O horário vem de `consultaAtualizacaoDosDados(empresaId)` (`@/modulos/ingestao-ssw/api`, já busca a
+cada 60 s): `{ atualizadoEm, xmlAguardando }` (`xmlAguardando` só para a Plataforma; `null` nos
+demais — passe `?? undefined`).
+
 ## `TabelaDados`
 
 ```tsx
