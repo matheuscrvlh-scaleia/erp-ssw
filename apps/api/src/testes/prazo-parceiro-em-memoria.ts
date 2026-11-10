@@ -16,6 +16,7 @@ export class PrazoParceiroEmMemoria {
   configuracoes = new Map<string, string>();
   cadastros: CadastroDeParceiro[] = [];
   unidades: { id: string; nome: string }[] = [];
+  tipos: string[] = [];
   ctes: FatoDoPrazo[] = [];
   consultas: ConsultaPrazo[] = [];
 
@@ -49,6 +50,7 @@ export class PrazoParceiroEmMemoria {
         Promise.resolve(new Map([...this.configuracoes].filter(([k]) => chaves.includes(k)))),
       parceiros: () => Promise.resolve(this.cadastros),
       unidadesAtivas: () => Promise.resolve(this.unidades),
+      tiposDeDocumento: () => Promise.resolve(this.tipos),
       fatos: (c) => Promise.resolve(this.filtrar(c)),
       lista: (c, filtro, p) =>
         Promise.resolve(daLista(c, filtro).slice(p.inicio, p.inicio + p.quantos)),

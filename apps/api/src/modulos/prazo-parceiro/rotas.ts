@@ -24,8 +24,11 @@ export const rotasPrazoParceiro: FastifyPluginCallbackZod = (app, _opcoes, pront
   );
   app.get(
     c.opcoes.caminho,
-    { schema: { response: { 200: c.opcoes.saida } }, preHandler: ler },
-    (request) => obterOpcoes(request.db),
+    {
+      schema: { querystring: c.opcoes.entrada, response: { 200: c.opcoes.saida } },
+      preHandler: ler,
+    },
+    (request) => obterOpcoes(request.db, request.query),
   );
   app.post(
     c.lista.caminho,

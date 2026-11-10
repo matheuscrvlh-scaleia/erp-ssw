@@ -15,13 +15,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/componentes/ui/sheet";
+import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 
 import { consultaCtesDoDia, consultaHoje, consultaOpcoes } from "./api";
 import { type Abertura } from "./busca";
 import { CardAba, FaixaChip, GradeCards, InfoTip, PrejuizoSubtitulo } from "./componentes";
 import { fmtMoedaInteira, nfInt, nfPct } from "./formatos";
-import { useAbrirCte } from "./navegacao";
 
 const SEM_TIPO = "__SEM_TIPO__";
 

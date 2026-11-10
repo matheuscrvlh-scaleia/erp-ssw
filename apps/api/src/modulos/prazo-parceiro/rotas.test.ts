@@ -118,6 +118,27 @@ describe("POST /api/v1/prazo-parceiro/lista", () => {
   });
 });
 
+describe("GET /api/v1/prazo-parceiro/opcoes", () => {
+  it("unidades, parceiros ativos por nome e tipos de documento do período", async () => {
+    const banco = cenario.banco.prazoParceiro;
+    banco.unidades = [{ id: "00000000-0000-4000-8000-0000000000aa", nome: "SAO PAULO" }];
+    banco.tipos = ["CTE", "__SEM_TIPO__"];
+    const r = await app.inject({
+      method: "GET",
+      url: "/api/v1/prazo-parceiro/opcoes?inicio=2026-11-01&fim=2026-11-10",
+      headers: await comoPapel("operador"),
+    });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ tipos: ["CTE", "__SEM_TIPO__"], unidades: banco.unidades });
+    const semPeriodo = await app.inject({
+      method: "GET",
+      url: "/api/v1/prazo-parceiro/opcoes",
+      headers: await comoPapel("operador"),
+    });
+    expect(semPeriodo.statusCode).toBe(422);
+  });
+});
+
 describe("POST /api/v1/prazo-parceiro/parceiros/:id", () => {
   it("detalhe pelo CNPJ de parceiro sem cadastro (Q08) e 404 para cadastro inexistente", async () => {
     const headers = await comoPapel("operador");

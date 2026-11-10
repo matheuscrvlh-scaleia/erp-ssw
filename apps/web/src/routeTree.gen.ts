@@ -15,8 +15,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
+import { Route as AutenticadoPrazoParceiroRouteImport } from './routes/_autenticado/prazo-parceiro'
 import { Route as AutenticadoRomaneioRouteImport } from './routes/_autenticado/romaneio'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoPrazoParceiroIdRouteImport } from './routes/_autenticado/prazo-parceiro_.$id'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -47,6 +49,12 @@ const AutenticadoCalendarioRoute = AutenticadoCalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoPrazoParceiroRoute =
+  AutenticadoPrazoParceiroRouteImport.update({
+    id: '/prazo-parceiro',
+    path: '/prazo-parceiro',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoRomaneioRoute = AutenticadoRomaneioRouteImport.update({
   id: '/romaneio',
   path: '/romaneio',
@@ -57,6 +65,12 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoPrazoParceiroIdRoute =
+  AutenticadoPrazoParceiroIdRouteImport.update({
+    id: '/prazo-parceiro_/$id',
+    path: '/prazo-parceiro/$id',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -64,17 +78,21 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
   '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
   '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -83,9 +101,11 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
+  '/_autenticado/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
   '/_autenticado/romaneio': typeof AutenticadoRomaneioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/prazo-parceiro_/$id': typeof AutenticadoPrazoParceiroIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,17 +115,21 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/prazo-parceiro'
     | '/romaneio'
     | '/sem-acesso'
+    | '/prazo-parceiro/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/prazo-parceiro'
     | '/romaneio'
     | '/sem-acesso'
     | '/'
+    | '/prazo-parceiro/$id'
   id:
     | '__root__'
     | '/_autenticado'
@@ -113,9 +137,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/_autenticado/calendario'
+    | '/_autenticado/prazo-parceiro'
     | '/_autenticado/romaneio'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/prazo-parceiro_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -169,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoCalendarioRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/prazo-parceiro': {
+      id: '/_autenticado/prazo-parceiro'
+      path: '/prazo-parceiro'
+      fullPath: '/prazo-parceiro'
+      preLoaderRoute: typeof AutenticadoPrazoParceiroRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/romaneio': {
       id: '/_autenticado/romaneio'
       path: '/romaneio'
@@ -183,21 +216,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/prazo-parceiro_/$id': {
+      id: '/_autenticado/prazo-parceiro_/$id'
+      path: '/prazo-parceiro/$id'
+      fullPath: '/prazo-parceiro/$id'
+      preLoaderRoute: typeof AutenticadoPrazoParceiroIdRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
 interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
+  AutenticadoPrazoParceiroRoute: typeof AutenticadoPrazoParceiroRoute
   AutenticadoRomaneioRoute: typeof AutenticadoRomaneioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoPrazoParceiroIdRoute: typeof AutenticadoPrazoParceiroIdRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
+  AutenticadoPrazoParceiroRoute: AutenticadoPrazoParceiroRoute,
   AutenticadoRomaneioRoute: AutenticadoRomaneioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoPrazoParceiroIdRoute: AutenticadoPrazoParceiroIdRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(

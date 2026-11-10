@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/componentes/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
+import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
@@ -74,7 +75,6 @@ import {
   selecaoInicial,
   situacaoDe,
 } from "./lista";
-import { useAbrirCte } from "./navegacao";
 
 /** Total de colunas da tabela; as 18 primeiras vêm antes de Peso (subtotal do grupo). */
 const COLUNAS_DA_TABELA = 24;

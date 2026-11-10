@@ -41,6 +41,8 @@ const linhaDaLista = z.object({
   sigla: z.string(),
   numero: z.string(),
   parceiroNome: z.string().nullable(),
+  /** Para o link do CT-e no SSW. */
+  dataEmissao: z.string(),
   dataEmbarque: z.string().nullable(),
   dataPrevista: z.string().nullable(),
   prazoPadraoData: z.string().nullable(),
@@ -111,9 +113,13 @@ export const contratosPrazoParceiro = {
   opcoes: contrato({
     metodo: "GET",
     caminho: "/api/v1/prazo-parceiro/opcoes",
+    /** Período da tela: os tipos de documento são os que aparecem nele. */
+    entrada: z.object({ inicio: dataIso, fim: dataIso }),
     saida: z.object({
       unidades: z.array(z.object({ id: z.uuid(), nome: z.string() })),
       parceiros: z.array(z.object({ id: z.uuid(), nome: z.string() })),
+      /** Em maiúsculas; `__SEM_TIPO__` = sem tipo. */
+      tipos: z.array(z.string()),
     }),
   }),
   lista: contrato({

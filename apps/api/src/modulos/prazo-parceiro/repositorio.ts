@@ -144,6 +144,15 @@ export function criarRepositorioPrazoParceiro(tx: Transacao): RepositorioPrazoPa
         .where(eq(unidades.ativo, true))
         .orderBy(asc(unidades.nome)),
 
+    tiposDeDocumento: async (c) => {
+      const linhas = await tx
+        .selectDistinct({ tipo: sql<string>`${tipoEfetivo}` })
+        .from(ctes)
+        .where(and(...condicoes(c)))
+        .orderBy(sql`1`);
+      return linhas.map((l) => l.tipo);
+    },
+
     fatos: async (c) => {
       const linhas: FatoDoPrazo[] = await consultar()
         .where(and(...condicoes(c)))

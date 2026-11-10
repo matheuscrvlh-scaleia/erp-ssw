@@ -19,7 +19,7 @@ import {
   rankingDoPrazo,
   totaisDoPrazo,
 } from "@erp/dominio/prazo-parceiro/prazo-parceiro";
-import { type SaidaDe } from "@erp/shared/contrato";
+import { type EntradaDe, type SaidaDe } from "@erp/shared/contrato";
 import {
   type contratosPrazoParceiro,
   type FiltroDaLista,
@@ -32,6 +32,9 @@ import {
 import { type Executor } from "../../repositorios";
 
 type Saida<K extends keyof typeof contratosPrazoParceiro> = SaidaDe<
+  (typeof contratosPrazoParceiro)[K]
+>;
+type Entrada<K extends keyof typeof contratosPrazoParceiro> = EntradaDe<
   (typeof contratosPrazoParceiro)[K]
 >;
 
@@ -77,6 +80,8 @@ export interface RepositorioPrazoParceiro {
   configuracoes(chaves: readonly string[]): Promise<Map<string, string>>;
   parceiros(): Promise<CadastroDeParceiro[]>;
   unidadesAtivas(): Promise<{ id: string; nome: string }[]>;
+  /** Tipos de documento presentes no universo da consulta, em ordem alfabética. */
+  tiposDeDocumento(consulta: ConsultaPrazo): Promise<string[]>;
   fatos(consulta: ConsultaPrazo): Promise<FatoDoPrazo[]>;
   /** Página da lista, filtrada e ordenada no banco (embarque mais recente primeiro). */
   lista(
@@ -156,11 +161,17 @@ export async function obterVisaoGeral(db: Db, f: FiltrosPrazo): Promise<Saida<"v
   });
 }
 
-/** Opções dos filtros: unidades e parceiros ativos, por nome. */
-export async function obterOpcoes(db: Db): Promise<Saida<"opcoes">> {
+/** Opções dos filtros: unidades e parceiros ativos, por nome; tipos de documento do período. */
+export async function obterOpcoes(db: Db, periodo: Entrada<"opcoes">): Promise<Saida<"opcoes">> {
   return db(async ({ prazoParceiro: repo }) => {
-    const [unidades, parceiros] = await Promise.all([repo.unidadesAtivas(), repo.parceiros()]);
+    const consulta = consultaDe(periodo, await repo.filiaisProprias());
+    const [unidades, parceiros, tipos] = await Promise.all([
+      repo.unidadesAtivas(),
+      repo.parceiros(),
+      consulta ? repo.tiposDeDocumento(consulta) : Promise.resolve([]),
+    ]);
     return {
+      tipos,
       unidades,
       parceiros: parceiros
         .filter((p) => p.ativo)
@@ -176,6 +187,7 @@ function linhaDaLista(c: FatoDoPrazo): LinhaPrazo {
     sigla: c.sigla,
     numero: c.numero,
     parceiroNome: c.parceiroNome,
+    dataEmissao: c.dataEmissao,
     dataEmbarque: c.dataEmbarque,
     dataPrevista: c.dataPrevista,
     prazoPadraoData: c.prazoPadraoData,
