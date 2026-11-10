@@ -55,6 +55,9 @@ function paraQuery(entrada: unknown): string {
   for (const [chave, valor] of Object.entries(entrada)) {
     if (typeof valor === "string" || typeof valor === "number" || typeof valor === "boolean") {
       busca.append(chave, String(valor));
+    } else if (Array.isArray(valor)) {
+      // Lista vira a chave repetida (`?x=a&x=b`).
+      for (const item of valor) busca.append(chave, String(item));
     }
   }
   const texto = busca.toString();
