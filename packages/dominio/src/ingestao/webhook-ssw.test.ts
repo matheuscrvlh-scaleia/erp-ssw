@@ -151,9 +151,11 @@ describe("casamento do CT-e", () => {
     expect(podeCriarCteDoWebhook(evento({ cte: { numeroCTe: "CAP5501" } }))).toBe(false);
   });
 
-  it("emissão do CT-e criado = dia UTC do evento (fiel)", () => {
+  it("emissão do CT-e criado = dia de Brasília do evento, mesmo depois das 21h (Q11)", () => {
     const tarde = evento({ ocorrencia: { dataHoraEvento: "05-11-2026 22:30:00" } });
-    expect(emissaoDoCteDoWebhook(tarde)).toBe("2026-11-06");
+    expect(emissaoDoCteDoWebhook(tarde)).toBe("2026-11-05");
+    const madrugada = evento({ ocorrencia: { dataHoraEvento: "06-11-2026 00:10:00" } });
+    expect(emissaoDoCteDoWebhook(madrugada)).toBe("2026-11-06");
   });
 
   it("sem sigla vale a série de emissão mais recente", () => {

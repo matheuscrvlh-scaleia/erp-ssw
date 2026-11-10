@@ -4,7 +4,7 @@
  * Puro: a API usa na recepção e o worker no processamento (e no reprocesso da tela).
  * Especificação: docs/regras/06-ingestao.md §3.17.
  */
-import { type DataIso } from "../nucleo/tempo";
+import { type DataIso, diaSp } from "../nucleo/tempo";
 import { somenteDigitos } from "../nucleo/texto";
 
 // --- Autorização ------------------------------------------------------------------------------
@@ -293,9 +293,12 @@ export function podeCriarCteDoWebhook(evento: EventoSsw2181): boolean {
   return !(evento.numeroNfe > 0 && Number(evento.numero) === evento.numeroNfe);
 }
 
-/** Emissão do CT-e criado pelo webhook: o dia (UTC) do evento, como hoje (`dataHora.slice(0,10)`). */
+/**
+ * Emissão do CT-e criado pelo webhook: o dia de Brasília do evento (Q11 do dono). Hoje era o dia
+ * UTC (`dataHora.slice(0,10)`), que depois das 21h já caía no dia seguinte.
+ */
 export function emissaoDoCteDoWebhook(evento: EventoSsw2181): DataIso {
-  return evento.dataHora.toISOString().slice(0, 10);
+  return diaSp(evento.dataHora);
 }
 
 /**
