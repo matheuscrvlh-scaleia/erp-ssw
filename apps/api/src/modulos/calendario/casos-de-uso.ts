@@ -1,0 +1,225 @@
+import {
+  anosAte,
+  AVISO_FERIADO_NACIONAL,
+  chaveDoFeriado,
+  contarPorTipo,
+  datasDaRecorrencia,
+  feriadosNacionaisDoAno,
+  normalizarLocal,
+} from "@erp/dominio/calendario";
+import { type SaidaDe } from "@erp/shared/contrato";
+import {
+  type contratosCalendario,
+  type DadosDoFeriado,
+  type Feriado,
+  type TipoFeriado,
+  type UnidadeDoCalendario,
+} from "@erp/shared/contratos/calendario";
+import { hojeNoFuso } from "@erp/shared/datas";
+
+import { naoEncontrado, semPermissao } from "../../http/erros";
+import { type Executor } from "../../repositorios";
+import { type Ator } from "../auditoria/auditoria";
+
+export interface FeriadoGravado extends Feriado {
+  empresaId: string | null;
+}
+
+export interface NovoFeriado {
+  empresaId: string | null;
+  data: string;
+  tipo: TipoFeriado;
+  cidade: string | null;
+  uf: string | null;
+  descricao: string;
+  geradoAutomaticamente: boolean;
+}
+
+export interface RepositorioCalendario {
+  /** Feriados nacionais (empresa nula) e os da empresa, em ordem de data. */
+  feriados(empresaId: string, de: string, ate: string): Promise<FeriadoGravado[]>;
+  proximo(empresaId: string, aPartirDe: string): Promise<FeriadoGravado | null>;
+  unidadesAtivas(empresaId: string): Promise<UnidadeDoCalendario[]>;
+  feriado(empresaId: string, id: string): Promise<FeriadoGravado | null>;
+  /** Chaves (`chaveDoFeriado`) que já existem para as datas e o tipo, entre os visíveis. */
+  chavesExistentes(empresaId: string, datas: string[], tipo: TipoFeriado): Promise<Set<string>>;
+  /** Insere ignorando os que já existem; devolve quantos entraram. */
+  inserir(feriados: NovoFeriado[]): Promise<number>;
+  alterar(id: string, dados: Omit<NovoFeriado, "empresaId">): Promise<void>;
+  excluir(id: string): Promise<void>;
+}
+
+/** Empresa e permissões de quem pede, já validadas pela rota. */
+export interface ContextoCalendario {
+  empresaId: string;
+  fuso: string;
+  plataforma: boolean;
+}
+
+type Db = Executor<"calendario" | "auditoria">;
+
+function semEmpresaNaSaida({ empresaId: _empresaId, ...feriado }: FeriadoGravado): Feriado {
+  return feriado;
+}
+
+/**
+ * Feriados do ano, unidades ativas (para "unidades impactadas"), contagem por tipo e o próximo.
+ * origem: getCalendario (src/features/calendario, sistema atual)
+ */
+export async function obterCalendario(
+  db: Executor<"calendario">,
+  ctx: ContextoCalendario,
+  ano: number,
+  agora: Date,
+): Promise<SaidaDe<typeof contratosCalendario.obter>> {
+  return db(async ({ calendario }) => {
+    const feriados = await calendario.feriados(ctx.empresaId, `${ano}-01-01`, `${ano}-12-31`);
+    const proximo = await calendario.proximo(ctx.empresaId, hojeNoFuso(ctx.fuso, agora));
+    return {
+      ano,
+      feriados: feriados.map(semEmpresaNaSaida),
+      unidades: await calendario.unidadesAtivas(ctx.empresaId),
+      contagens: contarPorTipo(feriados),
+      proximo: proximo ? semEmpresaNaSaida(proximo) : null,
+    };
+  });
+}
+
+/**
+ * Feriado novo da empresa; recorrente repete o mesmo dia nos anos seguintes. Datas que já têm
+ * o mesmo feriado são puladas.
+ * origem: upsertFeriadoCal (src/features/calendario, sistema atual)
+ */
+export async function criarFeriado(
+  db: Db,
+  ctx: ContextoCalendario,
+  ator: Ator,
+  entrada: DadosDoFeriado & { recorrente: boolean; anosAFrente: number },
+): Promise<{ inseridos: number; atualizados: number }> {
+  const local = normalizarLocal(entrada.tipo, entrada.cidade, entrada.uf);
+  const datas = datasDaRecorrencia(entrada.data, entrada.recorrente ? entrada.anosAFrente : 0);
+  return db(async ({ calendario, auditoria }) => {
+    const existentes = await calendario.chavesExistentes(ctx.empresaId, datas, entrada.tipo);
+    const novos = datas
+      .map((data) => ({ data, tipo: entrada.tipo, ...local }))
+      .filter((f) => !existentes.has(chaveDoFeriado(f)))
+      .map((f) => ({
+        ...f,
+        empresaId: ctx.empresaId,
+        descricao: entrada.descricao,
+        geradoAutomaticamente: false,
+      }));
+    if (novos.length === 0) return { inseridos: 0, atualizados: 0 };
+    const inseridos = await calendario.inserir(novos);
+    await auditoria.registrar(ator, {
+      empresaId: ctx.empresaId,
+      acao: "criar",
+      entidade: "feriado",
+      entidadeId: null,
+      resumo: `${inseridos} feriado(s) inserido(s): ${entrada.descricao}`,
+      antes: null,
+      depois: { datas: novos.map((n) => n.data), tipo: entrada.tipo, ...local },
+    });
+    return { inseridos, atualizados: 0 };
+  });
+}
+
+/** Feriado nacional (empresa nula) vale para todas as empresas: só a Plataforma mexe. */
+async function feriadoEditavel(
+  calendario: RepositorioCalendario,
+  ctx: ContextoCalendario,
+  id: string,
+): Promise<FeriadoGravado> {
+  const feriado = await calendario.feriado(ctx.empresaId, id);
+  if (!feriado) throw naoEncontrado("Feriado não encontrado.");
+  if (feriado.empresaId === null && !ctx.plataforma) throw semPermissao(AVISO_FERIADO_NACIONAL);
+  return feriado;
+}
+
+export async function alterarFeriado(
+  db: Db,
+  ctx: ContextoCalendario,
+  ator: Ator,
+  id: string,
+  dados: DadosDoFeriado,
+): Promise<{ inseridos: number; atualizados: number }> {
+  const local = normalizarLocal(dados.tipo, dados.cidade, dados.uf);
+  return db(async ({ calendario, auditoria }) => {
+    const antes = await feriadoEditavel(calendario, ctx, id);
+    const depois = {
+      data: dados.data,
+      tipo: dados.tipo,
+      ...local,
+      descricao: dados.descricao,
+      geradoAutomaticamente: false,
+    };
+    await calendario.alterar(id, depois);
+    await auditoria.registrar(ator, {
+      empresaId: ctx.empresaId,
+      acao: "alterar",
+      entidade: "feriado",
+      entidadeId: id,
+      resumo: dados.descricao,
+      antes: semEmpresaNaSaida(antes),
+      depois,
+    });
+    return { inseridos: 0, atualizados: 1 };
+  });
+}
+
+export async function excluirFeriado(
+  db: Db,
+  ctx: ContextoCalendario,
+  ator: Ator,
+  id: string,
+): Promise<void> {
+  await db(async ({ calendario, auditoria }) => {
+    const antes = await feriadoEditavel(calendario, ctx, id);
+    await calendario.excluir(id);
+    await auditoria.registrar(ator, {
+      empresaId: ctx.empresaId,
+      acao: "excluir",
+      entidade: "feriado",
+      entidadeId: id,
+      resumo: antes.descricao,
+      antes: semEmpresaNaSaida(antes),
+      depois: null,
+    });
+  });
+}
+
+/**
+ * Gera os feriados nacionais do ano e dos seguintes (empresa nula: valem para todas). Os que já
+ * existem ficam como estão.
+ * origem: gerarNacionaisLote + gerar_feriados_nacionais (sistema atual)
+ */
+export async function gerarNacionais(
+  db: Db,
+  ctx: ContextoCalendario,
+  ator: Ator,
+  ano: number,
+  anosAFrente: number,
+): Promise<{ inseridos: number; existiam: number; anos: number[] }> {
+  const anos = anosAte(ano, anosAFrente);
+  const feriados = anos.flatMap(feriadosNacionaisDoAno).map((f) => ({
+    ...f,
+    empresaId: null,
+    tipo: "nacional" as const,
+    cidade: null,
+    uf: null,
+    geradoAutomaticamente: true,
+  }));
+  return db(async ({ calendario, auditoria }) => {
+    const inseridos = await calendario.inserir(feriados);
+    await auditoria.registrar(ator, {
+      empresaId: ctx.empresaId,
+      acao: "gerar_nacionais",
+      entidade: "feriado",
+      entidadeId: null,
+      resumo: `${inseridos} feriado(s) nacional(is) gerado(s) para ${anos.join(", ")}`,
+      antes: null,
+      depois: null,
+    });
+    return { inseridos, existiam: feriados.length - inseridos, anos };
+  });
+}

@@ -1,0 +1,140 @@
+import { type Transacao } from "@erp/db";
+import {
+  cargos,
+  cargoTelas,
+  departamentoTelas,
+  empresaModulos,
+  empresas,
+  empresaUsuarios,
+  plataformaAdmins,
+  sessoes,
+  usuarios,
+  usuarioTelas,
+} from "@erp/db/schema";
+import { and, asc, eq, gt, isNull } from "drizzle-orm";
+
+import { type RepositorioAcesso } from "./casos-de-uso";
+
+export function criarRepositorioAcesso(tx: Transacao): RepositorioAcesso {
+  return {
+    usuario: async (usuarioId) => {
+      const [linha] = await tx
+        .select({
+          id: usuarios.id,
+          email: usuarios.email,
+          nome: usuarios.nome,
+          ativo: usuarios.ativo,
+          empresaPreferidaId: usuarios.empresaPreferidaId,
+        })
+        .from(usuarios)
+        .where(eq(usuarios.id, usuarioId));
+      return linha ?? null;
+    },
+
+    ehAdminPlataforma: async (usuarioId) => {
+      const linhas = await tx
+        .select({ id: plataformaAdmins.usuarioId })
+        .from(plataformaAdmins)
+        .where(eq(plataformaAdmins.usuarioId, usuarioId));
+      return linhas.length > 0;
+    },
+
+    vinculos: (usuarioId) =>
+      tx
+        .select({
+          empresaId: empresaUsuarios.empresaId,
+          empresaNome: empresas.nome,
+          empresaStatus: empresas.status,
+          papel: empresaUsuarios.papel,
+          departamento: empresaUsuarios.departamentoChave,
+          setor: empresaUsuarios.setor,
+          ativo: empresaUsuarios.ativo,
+          criadoEm: empresaUsuarios.criadoEm,
+        })
+        .from(empresaUsuarios)
+        .innerJoin(empresas, eq(empresas.id, empresaUsuarios.empresaId))
+        .where(eq(empresaUsuarios.usuarioId, usuarioId)),
+
+    familiaAtiva: async (familiaId, agora) => {
+      const linhas = await tx
+        .select({ id: sessoes.id })
+        .from(sessoes)
+        .where(
+          and(
+            eq(sessoes.familiaId, familiaId),
+            isNull(sessoes.revogadaEm),
+            gt(sessoes.expiraEm, agora),
+          ),
+        )
+        .limit(1);
+      return linhas.length > 0;
+    },
+
+    empresa: async (empresaId) => {
+      const [linha] = await tx
+        .select({
+          id: empresas.id,
+          nome: empresas.nome,
+          nomeCurto: empresas.nomeCurto,
+          logoCaminho: empresas.logoCaminho,
+          corPrimaria: empresas.corPrimaria,
+          corDestaque: empresas.corDestaque,
+          slogan: empresas.slogan,
+          fuso: empresas.fuso,
+          status: empresas.status,
+        })
+        .from(empresas)
+        .where(eq(empresas.id, empresaId));
+      return linha ?? null;
+    },
+
+    todasAsEmpresas: () =>
+      tx
+        .select({ id: empresas.id, nome: empresas.nome })
+        .from(empresas)
+        .orderBy(asc(empresas.nome)),
+
+    cargo: async (papel) => {
+      const [linha] = await tx
+        .select({ rotulo: cargos.rotulo })
+        .from(cargos)
+        .where(eq(cargos.chave, papel));
+      if (!linha) return null;
+      const telas = await tx
+        .select({ tela: cargoTelas.telaChave })
+        .from(cargoTelas)
+        .where(eq(cargoTelas.cargoChave, papel));
+      return { rotulo: linha.rotulo, telas: telas.map((t) => t.tela) };
+    },
+
+    telasDoDepartamento: async (empresaId, departamento) => {
+      const linhas = await tx
+        .select({ tela: departamentoTelas.telaChave })
+        .from(departamentoTelas)
+        .where(
+          and(
+            eq(departamentoTelas.empresaId, empresaId),
+            eq(departamentoTelas.departamentoChave, departamento),
+          ),
+        );
+      return linhas.map((l) => l.tela);
+    },
+
+    excecoes: (empresaId, usuarioId) =>
+      tx
+        .select({ tela: usuarioTelas.telaChave, permitido: usuarioTelas.permitido })
+        .from(usuarioTelas)
+        .where(and(eq(usuarioTelas.empresaId, empresaId), eq(usuarioTelas.usuarioId, usuarioId))),
+
+    liberacoes: (empresaId) =>
+      tx
+        .select({
+          modulo: empresaModulos.moduloChave,
+          ativo: empresaModulos.ativo,
+          inicio: empresaModulos.inicio,
+          fim: empresaModulos.fim,
+        })
+        .from(empresaModulos)
+        .where(eq(empresaModulos.empresaId, empresaId)),
+  };
+}
