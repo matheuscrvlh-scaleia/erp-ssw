@@ -11,6 +11,10 @@ import { type Ator, type EventoDeAuditoria } from "../modulos/auditoria/auditori
 import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-uso";
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
+import {
+  criarRepositoriosDeAdministracao,
+  EstadoDeAdministracao,
+} from "./administracao-em-memoria";
 import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
 import { DadosDoRanking } from "./falsos-ranking";
 import { IngestaoEmMemoria } from "./ingestao-em-memoria";
@@ -33,7 +37,7 @@ export interface UsuarioFalso {
   empresaPreferidaId: string | null;
 }
 
-interface VinculoFalso {
+export interface VinculoFalso {
   empresaId: string;
   usuarioId: string;
   papel: string | null;
@@ -59,12 +63,40 @@ interface TokenSenhaFalso {
   usadoEm: Date | null;
 }
 
+/** Dado que o `structuredClone` copia sem perder nada: valor simples, lista, Map, Set, objeto literal. */
+function ehDadoSimples(valor: unknown): boolean {
+  if (typeof valor === "function") return false;
+  if (typeof valor !== "object" || valor === null) return true;
+  if (Array.isArray(valor) || valor instanceof Map || valor instanceof Set) return true;
+  // Objeto literal com métodos (falso de leitura de outro módulo) também fica de fora.
+  return (
+    Object.getPrototypeOf(valor) === Object.prototype && Object.values(valor).every(ehDadoSimples)
+  );
+}
+
+/**
+ * Foto dos dados simples de um objeto, para desfazer uma "transação" que falhou. Funções e objetos
+ * de classe (os falsos de outros módulos, com contadores de controle do teste) ficam de fora.
+ */
+function fotografar(alvo: object, ignorar: readonly string[] = []): () => void {
+  const copia: unknown = structuredClone(
+    Object.fromEntries(
+      Object.entries(alvo).filter(
+        ([chave, valor]) => !ignorar.includes(chave) && ehDadoSimples(valor),
+      ),
+    ),
+  );
+  return () => {
+    Object.assign(alvo, copia);
+  };
+}
+
 export class BancoEmMemoria {
   usuarios: UsuarioFalso[] = [];
   plataformaAdmins = new Set<string>();
   empresas: EmpresaGravada[] = [];
   vinculos: VinculoFalso[] = [];
-  private cargos = new Map<string, { rotulo: string; telas: string[] }>();
+  cargos = new Map<string, { rotulo: string; telas: string[]; protegido?: boolean }>();
   departamentoTelas: { empresaId: string; departamento: string; tela: string }[] = [];
   excecoes: { empresaId: string; usuarioId: string; tela: string; permitido: boolean }[] = [];
   liberacoes: {
@@ -90,16 +122,29 @@ export class BancoEmMemoria {
   performance = criarPerformanceFalsa();
   /** Ranking, bonificação de entrega e Ahgora (`falsos-ranking.ts`). */
   ranking = new DadosDoRanking();
+  /** Estado de Admin, Plataforma e Logs (`administracao-em-memoria.ts`). */
+  adm = new EstadoDeAdministracao();
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
   falharCom: Error | null = null;
 
   readonly executar: ExecutorComContexto = async (contexto, fn) => {
     this.contextos.push(contexto);
     if (this.falharCom !== null) throw this.falharCom;
-    return fn(this.repositorios());
+    // Transação: se o caso de uso falhar no meio, nada do que ele gravou fica.
+    const desfazer = [fotografar(this, ["contextos"]), fotografar(this.adm)];
+    try {
+      return await fn(this.repositorios(contexto));
+    } catch (erro) {
+      for (const d of desfazer) d();
+      throw erro;
+    }
   };
 
-  definirCargo(empresaId: string, chave: string, cargo: { rotulo: string; telas: string[] }) {
+  definirCargo(
+    empresaId: string,
+    chave: string,
+    cargo: { rotulo: string; telas: string[]; protegido?: boolean },
+  ) {
     this.cargos.set(`${empresaId}:${chave}`, cargo);
   }
 
@@ -153,19 +198,20 @@ export class BancoEmMemoria {
     this.liberacoes.push({ empresaId, modulo, ativo: true, inicio: null, fim: null });
   }
 
-  private usuario(id: string): UsuarioFalso {
+  usuario(id: string): UsuarioFalso {
     const usuario = this.usuarios.find((u) => u.id === id);
     if (!usuario) throw new Error(`usuário ${id} não existe no banco falso`);
     return usuario;
   }
 
-  private repositorios(): Repositorios {
+  private repositorios(contexto: ContextoBanco): Repositorios {
     return {
       ctrc: this.ctrc,
       filtros: this.filtros,
       listagem: this.listagem,
       performance: this.performance,
       ...this.ranking.repositorios(),
+      ...criarRepositoriosDeAdministracao(this, contexto),
       acesso: {
         usuario: (id) => Promise.resolve(this.usuarios.find((u) => u.id === id) ?? null),
         ehAdminPlataforma: (id) => Promise.resolve(this.plataformaAdmins.has(id)),

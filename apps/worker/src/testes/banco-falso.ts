@@ -92,6 +92,12 @@ export class BancoFalso {
         candidatos: () => Promise.resolve([]),
         gravar: () => Promise.resolve(),
       },
+      prazos: {
+        regras: () => Promise.resolve([]),
+        candidatos: () => Promise.resolve([]),
+        chegadas: () => Promise.resolve(new Map()),
+        gravar: () => Promise.resolve(),
+      },
       integracoes: {
         ler: (_empresa, tipo) => Promise.resolve(this.integracoes.get(tipo) ?? null),
         registrarVerificacao: (_empresa, tipo, v) => {

@@ -36,6 +36,8 @@ import { criarRepositorioWebhook } from "./fontes/webhook/repositorio";
 import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparIngestaoSsw, limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
+import { recalcularPrazos } from "./jobs/prazos/job";
+import { criarRepositorioPrazosDoWorker } from "./jobs/prazos/repositorio";
 import {
   type DefinicaoDeJob,
   type ExecutorDoWorker,
@@ -79,6 +81,7 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     ingestao: (id) => criarRepositorioIngestao(tx, id, null),
     retencaoDaIngestao: criarRepositorioDeRetencao(tx),
     slaArquivos: criarRepositorioSlaArquivos(tx),
+    prazos: criarRepositorioPrazosDoWorker(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
@@ -129,6 +132,7 @@ const JOBS: readonly DefinicaoDeJob[] = [
     sftpDoAmbiente: ambiente,
     esperar: (ms) => esperar(ms),
   }),
+  recalcularPrazos,
 ];
 
 const processar = criarProcessador({ jobs: JOBS, executar, log, agora: () => new Date() });

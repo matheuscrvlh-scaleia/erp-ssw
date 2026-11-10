@@ -13,7 +13,9 @@ import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
 import { carregarAmbiente } from "./config/env";
+import { criarArmazenamentoS3 } from "./infra/armazenamento";
 import { criarCorreioSmtp } from "./infra/correio";
+import { criarFilaBullmq, filaDesligada } from "./infra/fila";
 import { criarFilasDeIngestao } from "./infra/filas-ingestao";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
@@ -40,7 +42,9 @@ const redis = ambiente.REDIS_URL
 // Só produz e consulta (não consome): pode dividir a conexão com o limite de taxa.
 const filasDeIngestao = redis ? criarFilasDeIngestao(redis, (ms) => esperar(ms)) : null;
 
-const chaves = ambiente.SEGREDOS_CHAVES
+const fila = redis ? criarFilaBullmq(redis) : null;
+
+const chavesDeSegredo = ambiente.SEGREDOS_CHAVES
   ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
   : null;
 
@@ -110,10 +114,22 @@ const app = await construirApp({
         })
       : null,
   filasDeIngestao,
-  chavesDeSegredo: chaves,
+  fila: fila ?? filaDesligada,
+  armazenamento:
+    ambiente.S3_BUCKET && ambiente.S3_CHAVE_ACESSO && ambiente.S3_SEGREDO
+      ? criarArmazenamentoS3({
+          endpoint: ambiente.S3_ENDPOINT,
+          regiao: ambiente.S3_REGIAO,
+          bucket: ambiente.S3_BUCKET,
+          chaveDeAcesso: ambiente.S3_CHAVE_ACESSO,
+          segredo: ambiente.S3_SEGREDO,
+          caminhoNoEstilo: ambiente.S3_CAMINHO_NO_ESTILO,
+        })
+      : null,
+  chavesDeSegredo,
   agora: () => new Date(),
   ahgora: {
-    segredos: chaves,
+    segredos: chavesDeSegredo,
     ambiente: { usuario: ambiente.AHGORA_API_USUARIO, senha: ambiente.AHGORA_API_SENHA },
     http: fetch,
   },
@@ -122,6 +138,7 @@ const app = await construirApp({
 app.addHook("onClose", async () => {
   await enfileirador?.fechar();
   await filasDeIngestao?.fechar();
+  await fila?.fechar();
   await conexao.encerrar();
   await redis?.quit();
 });

@@ -1,10 +1,14 @@
-import { generateKeyPairSync, randomUUID } from "node:crypto";
+import { generateKeyPairSync, randomBytes, randomUUID } from "node:crypto";
 
+import { type ChavesDeSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
+import { type JobEnfileiravel } from "@erp/shared/jobs";
 import { type FastifyInstance } from "fastify";
 
 import { construirApp, type Dependencias } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
+import type { Armazenamento } from "../infra/armazenamento";
 import { type Correio, type Mensagem } from "../infra/correio";
+import type { FilaDeJobs } from "../infra/fila";
 import { type ProvedorGoogle } from "../infra/google";
 import { criarLimitadorEmMemoria } from "../infra/limitador";
 import { criarServicoDeSenhas } from "../infra/senhas";
@@ -38,6 +42,26 @@ export class CorreioFalso implements Correio {
   }
 }
 
+export class FilaFalsa implements FilaDeJobs {
+  jobs: { nome: string; fila: string; dados: { empresaId: string } }[] = [];
+  enfileirar(job: JobEnfileiravel, dados: { empresaId: string }) {
+    this.jobs.push({ ...job, dados });
+    return Promise.resolve(true);
+  }
+}
+
+export class ArmazenamentoFalso implements Armazenamento {
+  arquivos = new Map<string, { conteudo: Uint8Array; tipo: string }>();
+  enviar(caminho: string, conteudo: Uint8Array, tipo: string) {
+    this.arquivos.set(caminho, { conteudo, tipo });
+    return Promise.resolve();
+  }
+  apagar(caminho: string) {
+    this.arquivos.delete(caminho);
+    return Promise.resolve();
+  }
+}
+
 /** Relógio controlável: os testes avançam o tempo sem esperar. */
 export class Relogio {
   constructor(public atual = new Date("2026-11-10T12:00:00Z")) {}
@@ -54,6 +78,9 @@ export interface Cenario {
   relogio: Relogio;
   ambiente: Ambiente;
   deps: DependenciasAuth;
+  fila: FilaFalsa;
+  armazenamento: ArmazenamentoFalso;
+  chavesDeSegredo: ChavesDeSegredo;
 }
 
 export function criarCenario(): Cenario {
@@ -80,7 +107,17 @@ export function criarCenario(): Cenario {
     webUrl: ambiente.WEB_URL,
     urlDoLogo: () => null,
   };
-  return { banco, tokens, correio, relogio, ambiente, deps };
+  return {
+    banco,
+    tokens,
+    correio,
+    relogio,
+    ambiente,
+    deps,
+    fila: new FilaFalsa(),
+    armazenamento: new ArmazenamentoFalso(),
+    chavesDeSegredo: lerChavesDeSegredo(`1:${randomBytes(32).toString("base64")}`, 1),
+  };
 }
 
 export async function construirAppDeTeste(
@@ -101,7 +138,9 @@ export async function construirAppDeTeste(
     correio: cenario.correio,
     google,
     filasDeIngestao: null,
-    chavesDeSegredo: null,
+    fila: cenario.fila,
+    armazenamento: cenario.armazenamento,
+    chavesDeSegredo: cenario.chavesDeSegredo,
     agora: deps.agora,
     ...extras,
   });
