@@ -1,0 +1,28 @@
+{
+  "name": "@erp/migrador",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Linha de comando que copia os dados do schema public (sistema atual) para o schema erp, seguindo docs/dados/de-para.md.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "migrar": "node --env-file-if-exists=.env --import tsx src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@erp/db": "workspace:*",
+    "@erp/dominio": "workspace:*",
+    "@erp/shared": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.16.3",
+    "pino": "^9.11.0"
+  },
+  "devDependencies": {
+    "@erp/config": "workspace:*",
+    "@types/pg": "^8.15.5",
+    "tsx": "^4.20.5"
+  }
+}
