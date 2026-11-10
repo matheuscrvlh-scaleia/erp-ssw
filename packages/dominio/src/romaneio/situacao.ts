@@ -7,6 +7,8 @@
  * Q14 (prejuízo na janela do período em todas as abas), Q15 (prejuízo só de quem saiu), Q22
  * (baixa pelo cadastro da empresa).
  */
+import { type CampoData, type Recorte } from "@erp/shared/contratos/romaneio";
+
 import {
   diaSp,
   estaEntregue,
@@ -16,9 +18,6 @@ import {
   TIPOS_PENDENCIA,
 } from "./nucleo-local";
 import { CODIGO_RETORNO, CODIGO_SAIDA, CODIGOS_ROTA } from "./normalizacao";
-
-/** Base de data do período. */
-export type CampoData = "emissao" | "embarque" | "prevista" | "saida" | "conclusao";
 
 export interface Periodo {
   inicio: string;
@@ -243,24 +242,6 @@ export function estaSemMovimento(c: FatoCte, a: AnaliseCte, dias: number, agora:
 
 // ---------------------------------------------------------------------------------------------
 // Recortes (card clicado / select "Situação")
-
-export const RECORTES = [
-  "todos",
-  "entregues",
-  "em_rota",
-  "devolvido",
-  "travado",
-  "parado",
-  "romaneados",
-  "otif",
-  "prejuizo",
-  "em_rota_vencida",
-  "em_rota_hoje",
-  "em_rota_futuro",
-  "em_rota_sem_prev",
-  "tde_romaneado",
-] as const;
-export type Recorte = (typeof RECORTES)[number];
 
 /**
  * Recorte da lista com a MESMA regra do card (Q13): em rota/travado/baixado de §3.2.

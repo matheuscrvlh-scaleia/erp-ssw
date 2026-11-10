@@ -13,6 +13,7 @@ import { type EmissorDeTokens } from "./infra/tokens";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { rotasRomaneio } from "./modulos/romaneio/rotas";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -92,6 +93,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+  await app.register(rotasRomaneio, { agora: deps.agora });
 
   return app;
 }

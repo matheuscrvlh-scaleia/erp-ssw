@@ -11,6 +11,7 @@ import { type Ator, type EventoDeAuditoria } from "../modulos/auditoria/auditori
 import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-uso";
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
+import { RomaneioEmMemoria } from "./romaneio-em-memoria";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -76,6 +77,7 @@ export class BancoEmMemoria {
   auditoria: (EventoDeAuditoria & { ator: Ator })[] = [];
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
+  romaneio = new RomaneioEmMemoria();
   contextos: ContextoBanco[] = [];
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
   falharCom: Error | null = null;
@@ -354,6 +356,7 @@ export class BancoEmMemoria {
           return Promise.resolve();
         },
       },
+      romaneio: this.romaneio.repositorio(),
     };
   }
 

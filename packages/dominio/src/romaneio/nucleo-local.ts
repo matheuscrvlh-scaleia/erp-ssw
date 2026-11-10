@@ -95,3 +95,17 @@ export function horaSp(instante: Date): number {
 export function inicioDoDiaSp(dia: string): Date {
   return new Date(`${dia}T00:00:00-03:00`);
 }
+
+// TODO(nucleo): trocar por nucleo/unidadeResponsavel
+/**
+ * Unidade que responde pelo CT-e: destino, senão a atual, quando são filiais próprias; senão a
+ * filial de emissão. origem: _unidade_responsavel
+ */
+export function unidadeResponsavel(
+  filiaisProprias: ReadonlySet<string>,
+  c: { unidadeDestino: string | null; unidadeAtual: string | null; filial: string | null },
+): string | null {
+  if (c.unidadeDestino !== null && filiaisProprias.has(c.unidadeDestino)) return c.unidadeDestino;
+  if (c.unidadeAtual !== null && filiaisProprias.has(c.unidadeAtual)) return c.unidadeAtual;
+  return c.filial;
+}

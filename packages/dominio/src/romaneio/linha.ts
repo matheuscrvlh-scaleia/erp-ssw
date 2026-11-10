@@ -91,3 +91,40 @@ export function atrasoParaExportar(l: LinhaSituacao, atraso: Atraso): string {
   if (entregueDaLinha(l) && l.performanceDias !== null) return "No prazo";
   return "";
 }
+
+export type Agrupamento = "parceiro" | "unidade" | "cidade" | "setor";
+
+export interface CamposDoGrupo {
+  parceiroId: string | null;
+  parceiroNome: string | null;
+  unidadeId: string | null;
+  filial: string | null;
+  setor: string | null;
+  cidadeDestino: string | null;
+  ufDestino: string | null;
+}
+
+/**
+ * Chave e rótulo do grupo da lista. A tela agrupa a página com esta função e acha o subtotal do
+ * servidor pela mesma chave (hoje setor vazio ficava sem subtotal por usar outra chave).
+ */
+export function grupoDaLinha(
+  agrupar: Agrupamento,
+  l: CamposDoGrupo,
+): { chave: string; rotulo: string } {
+  switch (agrupar) {
+    case "parceiro":
+      return { chave: l.parceiroId ?? "__null__", rotulo: l.parceiroNome ?? "—" };
+    case "unidade":
+      return { chave: l.unidadeId ?? "__null__", rotulo: l.filial ?? "—" };
+    case "setor": {
+      const setor = l.setor?.trim() || "—";
+      return { chave: setor, rotulo: setor };
+    }
+    case "cidade": {
+      const cidade = `${l.cidadeDestino ?? ""}/${l.ufDestino ?? ""}`.trim();
+      const chave = cidade === "/" ? "—" : cidade;
+      return { chave, rotulo: chave };
+    }
+  }
+}
