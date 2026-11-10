@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ErroDaApi } from "@/lib/api";
-import { type ColunaExportacao,exportarCsv, exportarExcel } from "@/lib/exportacao";
+import { type ColunaExportacao, exportarCsv, exportarExcel } from "@/lib/exportacao";
 
 import { ExportMenu } from "./ExportMenu";
 import { ordenarPorPlaca } from "./ordenar-por-placa";
