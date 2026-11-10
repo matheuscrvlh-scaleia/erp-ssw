@@ -16,6 +16,8 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoAdminIngestaoRouteImport } from './routes/_autenticado/admin/ingestao'
+import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_autenticado/admin/ssw-diagnostico'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -51,6 +53,18 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoAdminIngestaoRoute =
+  AutenticadoAdminIngestaoRouteImport.update({
+    id: '/admin/ingestao',
+    path: '/admin/ingestao',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminSswDiagnosticoRoute =
+  AutenticadoAdminSswDiagnosticoRouteImport.update({
+    id: '/admin/ssw-diagnostico',
+    path: '/admin/ssw-diagnostico',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -59,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -67,6 +83,8 @@ export interface FileRoutesByTo {
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +95,8 @@ export interface FileRoutesById {
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
+  '/_autenticado/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +107,8 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/calendario'
     | '/sem-acesso'
+    | '/admin/ingestao'
+    | '/admin/ssw-diagnostico'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -95,6 +117,8 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/sem-acesso'
     | '/'
+    | '/admin/ingestao'
+    | '/admin/ssw-diagnostico'
   id:
     | '__root__'
     | '/_autenticado'
@@ -104,6 +128,8 @@ export interface FileRouteTypes {
     | '/_autenticado/calendario'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/admin/ingestao'
+    | '/_autenticado/admin/ssw-diagnostico'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +190,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/ingestao': {
+      id: '/_autenticado/admin/ingestao'
+      path: '/admin/ingestao'
+      fullPath: '/admin/ingestao'
+      preLoaderRoute: typeof AutenticadoAdminIngestaoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/ssw-diagnostico': {
+      id: '/_autenticado/admin/ssw-diagnostico'
+      path: '/admin/ssw-diagnostico'
+      fullPath: '/admin/ssw-diagnostico'
+      preLoaderRoute: typeof AutenticadoAdminSswDiagnosticoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
@@ -171,12 +211,16 @@ interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoAdminIngestaoRoute: typeof AutenticadoAdminIngestaoRoute
+  AutenticadoAdminSswDiagnosticoRoute: typeof AutenticadoAdminSswDiagnosticoRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoAdminIngestaoRoute: AutenticadoAdminIngestaoRoute,
+  AutenticadoAdminSswDiagnosticoRoute: AutenticadoAdminSswDiagnosticoRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
