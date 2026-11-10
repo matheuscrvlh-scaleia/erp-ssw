@@ -5,7 +5,7 @@ import {
   type Setor,
   SETORES,
 } from "@erp/shared/acesso/papeis";
-import { LOGO_MAXIMO_BYTES } from "@erp/shared/plataforma";
+import { CHAVE_COM_CARA_DE_SEGREDO, LOGO_MAXIMO_BYTES } from "@erp/shared/plataforma";
 
 import { ErroDeNegocio } from "./erros";
 
@@ -121,11 +121,9 @@ export function escolherEmpresaModelo<E extends { id: string; criadoEm: Date }>(
   );
 }
 
-const PARECE_SEGREDO = /(senha|token|secret|segredo|apikey|api_key|password)/i;
-
 /** Senha e token não ficam nos parâmetros (que voltam para a tela): vão cifrados à parte. */
 export function validarParametrosDeIntegracao(parametros: Record<string, unknown>): void {
-  const suspeitas = Object.keys(parametros).filter((k) => PARECE_SEGREDO.test(k));
+  const suspeitas = Object.keys(parametros).filter((k) => CHAVE_COM_CARA_DE_SEGREDO.test(k));
   if (suspeitas.length > 0) {
     throw invalido(
       `Senha e token não ficam nos parâmetros (${suspeitas.join(", ")}). Use o campo de senha/token da integração (cofre).`,
