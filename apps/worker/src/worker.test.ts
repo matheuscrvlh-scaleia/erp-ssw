@@ -11,9 +11,9 @@ import {
   type FilaAgendavel,
   sincronizarAgendamentos,
 } from "./agendamentos/agendamentos";
+import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparSessoes } from "./jobs/manutencao/job";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
-import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { criarProcessador } from "./processador";
 
 const log = pino({ level: "silent" });

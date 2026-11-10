@@ -76,7 +76,7 @@ export function ler036(conteudo: string): Analise<Registro036> {
       cabecalho ??= c
         .slice(1)
         .join(";")
-        .replace(/[\s ]+$/g, "");
+        .replace(/[\s\u00A0]+$/g, "");
       return;
     }
     if (marcador !== "2") {

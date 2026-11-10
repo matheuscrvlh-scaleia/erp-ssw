@@ -5,7 +5,7 @@
 
 /** Trim que também tira o espaço não-quebrável (U+00A0), comum nos arquivos do SSW. */
 export function limpa(v: string | undefined): string {
-  return (v ?? "").replace(/^[\s ]+|[\s ]+$/g, "");
+  return (v ?? "").replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, "");
 }
 
 /** Texto limpo ou `null` quando vazio. */
@@ -99,7 +99,10 @@ export function splitCsv(linha: string): string[] {
 
 /** Linhas do arquivo sem BOM, com CRLF/CR normalizados. */
 export function linhasDoArquivo(conteudo: string): string[] {
-  return conteudo.replace(/^﻿/, "").replace(/\r\n?/g, "\n").split("\n");
+  return conteudo
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n");
 }
 
 /** Compara nomes de coluna ignorando acento, caixa e espaços extras (455 CSV). */
@@ -107,7 +110,7 @@ export function normalizaCabecalho(h: string): string {
   return h
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
-    .replace(/[\s ]+/g, " ")
+    .replace(/[\s\u00A0]+/g, " ")
     .trim()
     .toLowerCase();
 }

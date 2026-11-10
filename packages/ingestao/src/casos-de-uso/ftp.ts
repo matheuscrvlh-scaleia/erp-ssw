@@ -10,9 +10,9 @@ import { dividirCsv, MAX_PARTE_BYTES, nomeParte } from "../relatorios";
 import { type DependenciasDoCiclo, rodarCiclos } from "./ciclo";
 import { sha256 } from "./linhas";
 import {
+  type ClienteSftp,
   type ConexaoSftp,
   type CredenciaisDaEmpresa,
-  type ClienteSftp,
   type EntradaSftp,
   type Progressos,
   type Relogio,

@@ -19,8 +19,8 @@ import {
   statusDoArquivoXml,
   type StatusDoItemXml,
   type TipoXml,
-  xmlsDoZip,
   type XmlDoArquivo,
+  xmlsDoZip,
 } from "../xml-cte";
 import { regravarCte } from "./gravar-cte";
 import { sha256 } from "./linhas";

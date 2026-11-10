@@ -259,8 +259,10 @@ describe("FTP", () => {
           }),
       },
       progressos: {
-        gravar: (_e: string, p: { fase?: string }) =>
-          Promise.resolve(void (p.fase && progresso.push(p.fase))),
+        gravar: (_e: string, p: { fase?: string }) => {
+          if (p.fase) progresso.push(p.fase);
+          return Promise.resolve();
+        },
         ler: () => Promise.resolve(null),
         limpar: () => Promise.resolve(),
       },

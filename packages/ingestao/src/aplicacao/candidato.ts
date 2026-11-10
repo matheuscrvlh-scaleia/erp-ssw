@@ -11,11 +11,11 @@ import { CODIGOS_ENTREGA, diaSp, ehFonteDeRegra, inicioDoDiaSp } from "@erp/domi
 
 import {
   codigoOcorrencia,
+  numero455,
   type Registro038,
   type Registro455Csv,
   type Registro930,
   texto455,
-  numero455,
   unidadeDeLocalizacao,
 } from "../relatorios";
 import {

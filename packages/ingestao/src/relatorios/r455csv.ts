@@ -49,7 +49,8 @@ export function ler455Csv(conteudo: string): Analise455Csv {
   const registros: LinhaLida<Registro455Csv>[] = [];
   const erros: ErroDeLeitura[] = [];
   const desconhecidas: string[] = [];
-  let temCabecalho = false;
+  // `as`: o forEach muda a variável; sem ele o TS a estreita para o valor inicial.
+  let temCabecalho = false as boolean;
   let mapa: { idx: number; coluna: Coluna455; tipo: Tipo455 }[] = [];
   let ignoradas = 0;
 

@@ -42,7 +42,7 @@ const cabecalho = (request: FastifyRequest, nome: string) => {
 
 const corpoComEmpresa = z
   .object({ empresa: z.string().optional(), empresa_id: z.string().optional() })
-  .passthrough();
+  .loose();
 
 function empresaPedida(
   request: FastifyRequest,

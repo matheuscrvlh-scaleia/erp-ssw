@@ -56,7 +56,8 @@ function texto(v: string | undefined): string | null {
 export function ler038(conteudo: string): Analise<Registro038> {
   const registros: LinhaLida<Registro038>[] = [];
   const erros: ErroDeLeitura[] = [];
-  let cabecalho: string[] | null = null;
+  // `as`: o forEach muda a variável; sem ele o TS a estreita para o valor inicial.
+  let cabecalho = null as string[] | null;
 
   linhasDoArquivo(conteudo).forEach((linha, idx) => {
     if (!linha.trim()) return;

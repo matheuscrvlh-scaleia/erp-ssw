@@ -62,7 +62,8 @@ export interface Registro930 {
 export function ler930(conteudo: string): Analise<Registro930> {
   const registros: LinhaLida<Registro930>[] = [];
   const erros: ErroDeLeitura[] = [];
-  let cabecalho: string[] | null = null;
+  // `as`: o forEach muda a variável; sem ele o TS a estreita para o valor inicial.
+  let cabecalho = null as string[] | null;
 
   linhasDoArquivo(conteudo).forEach((linha, idx) => {
     if (linha.trim() === "") return;

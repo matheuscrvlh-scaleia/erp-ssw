@@ -8,15 +8,15 @@ import { ErroDeNegocio } from "@erp/dominio/erros";
 
 import {
   avaliarCiclo,
+  camposDo036,
   type CamposDoCte,
-  chaveDoCte,
   type ChaveCte,
+  chaveDoCte,
   type CteDaIngestao,
   JANELA_PARTES_455_MS,
-  type LinhaGuardada,
   linha036QueVale,
+  type LinhaGuardada,
   partesDo455,
-  camposDo036,
 } from "../aplicacao";
 import { type Registro036, type Registro455Csv } from "../relatorios";
 import {

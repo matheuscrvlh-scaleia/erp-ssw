@@ -126,7 +126,7 @@ export function camposQueMudaram(antigo: CteDaIngestao, novo: CteDaIngestao): Ca
     if (campo === "id" || campo === "empresaId" || campo === "criadoEm") continue;
     if (!igual(antigo[campo as keyof CteDaIngestao], valor)) saida[campo] = valor;
   }
-  return saida as CamposDoCte;
+  return saida;
 }
 
 export type ResultadoDaGravacao = "gravado" | "igual" | `descartado:${string}`;

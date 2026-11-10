@@ -14,9 +14,9 @@ import { criarCorreioSmtp } from "./infra/correio";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
+import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
 import { criarRepositorioDaIngestaoPublica } from "./modulos/ingestao/repositorio";
 import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
-import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
 import { criarRepositorios } from "./repositorios";
 
 /** Tempo para terminar as requisições em andamento depois do SIGTERM. */

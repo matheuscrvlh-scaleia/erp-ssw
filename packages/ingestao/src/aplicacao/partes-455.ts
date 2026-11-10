@@ -4,7 +4,8 @@
  */
 import { formatarCnpjCpf, somenteDigitos } from "@erp/dominio/nucleo";
 
-import { type Registro455Csv, texto455, numero455 } from "../relatorios";
+import { numero455, type Registro455Csv, texto455 } from "../relatorios";
+import { semCodigo, uniaoOrdenada } from "./candidato";
 import {
   aparado,
   type CamposDoCte,
@@ -16,7 +17,6 @@ import {
   numericIgual,
   paraNumeric,
 } from "./comum";
-import { semCodigo, uniaoOrdenada } from "./candidato";
 
 /** Janela do 455 lida a cada ciclo. */
 export const JANELA_PARTES_455_MS = 2 * 24 * 3_600_000;

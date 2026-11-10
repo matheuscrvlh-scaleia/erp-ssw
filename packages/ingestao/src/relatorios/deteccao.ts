@@ -131,5 +131,7 @@ export function detectarRelatorioBytes(
  */
 export function pareceRelatorio050(conteudo: string): boolean {
   const inicio = conteudo.slice(0, 2000);
-  return /^ssw0157\s+RELACAO DAS COLETAS/m.test(inicio) || /^﻿?UNIDADE;COLETA;TIPO;/.test(inicio);
+  return (
+    /^ssw0157\s+RELACAO DAS COLETAS/m.test(inicio) || /^\uFEFF?UNIDADE;COLETA;TIPO;/.test(inicio)
+  );
 }

@@ -41,7 +41,7 @@ export function ler306(conteudo: string): Analise<Registro306> {
   linhasDoArquivo(conteudo).forEach((linha, idx) => {
     if (linha.trim() === "") return;
     if (cabecalho === null) {
-      cabecalho = linha.replace(/[\s ]+$/g, "");
+      cabecalho = linha.replace(/[\s\u00A0]+$/g, "");
       return;
     }
     const c = linha.split(";");

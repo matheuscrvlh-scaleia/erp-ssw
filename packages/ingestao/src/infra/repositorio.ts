@@ -33,7 +33,7 @@ import {
 } from "@erp/dominio/nucleo";
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
-import { chaveDoCte, type ChaveCte, type CteDaIngestao, STATUS_CICLO_ABERTO } from "../aplicacao";
+import { type ChaveCte, chaveDoCte, type CteDaIngestao, STATUS_CICLO_ABERTO } from "../aplicacao";
 import {
   type ArquivoRegistrado,
   type CicloRegistrado,
@@ -119,8 +119,7 @@ export function criarRepositorioIngestao(
   empresaId: string,
   ator: AtorDaIngestao | null,
 ): RepositorioIngestao {
-  const daEmpresa = <T extends { empresaId: Parameters<typeof eq>[0] }>(t: T) =>
-    eq(t.empresaId, empresaId);
+  const daEmpresa = (t: { empresaId: Parameters<typeof eq>[0] }) => eq(t.empresaId, empresaId);
 
   const repo: RepositorioIngestao = {
     async empresa() {

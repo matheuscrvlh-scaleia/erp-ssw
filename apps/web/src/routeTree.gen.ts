@@ -16,6 +16,8 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoAdminImportacaoSswRouteImport } from './routes/_autenticado/admin.importacao-ssw'
+import { Route as AutenticadoAdminXmlCteRouteImport } from './routes/_autenticado/admin.xml-cte'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -51,6 +53,17 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoAdminImportacaoSswRoute =
+  AutenticadoAdminImportacaoSswRouteImport.update({
+    id: '/admin/importacao-ssw',
+    path: '/admin/importacao-ssw',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminXmlCteRoute = AutenticadoAdminXmlCteRouteImport.update({
+  id: '/admin/xml-cte',
+  path: '/admin/xml-cte',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -59,6 +72,8 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
+  '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -67,6 +82,8 @@ export interface FileRoutesByTo {
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
+  '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +94,8 @@ export interface FileRoutesById {
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
+  '/_autenticado/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +106,8 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/calendario'
     | '/sem-acesso'
+    | '/admin/importacao-ssw'
+    | '/admin/xml-cte'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -95,6 +116,8 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/sem-acesso'
     | '/'
+    | '/admin/importacao-ssw'
+    | '/admin/xml-cte'
   id:
     | '__root__'
     | '/_autenticado'
@@ -104,6 +127,8 @@ export interface FileRouteTypes {
     | '/_autenticado/calendario'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/admin/importacao-ssw'
+    | '/_autenticado/admin/xml-cte'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +189,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/importacao-ssw': {
+      id: '/_autenticado/admin/importacao-ssw'
+      path: '/admin/importacao-ssw'
+      fullPath: '/admin/importacao-ssw'
+      preLoaderRoute: typeof AutenticadoAdminImportacaoSswRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/xml-cte': {
+      id: '/_autenticado/admin/xml-cte'
+      path: '/admin/xml-cte'
+      fullPath: '/admin/xml-cte'
+      preLoaderRoute: typeof AutenticadoAdminXmlCteRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
@@ -171,12 +210,16 @@ interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoAdminImportacaoSswRoute: typeof AutenticadoAdminImportacaoSswRoute
+  AutenticadoAdminXmlCteRoute: typeof AutenticadoAdminXmlCteRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoAdminImportacaoSswRoute: AutenticadoAdminImportacaoSswRoute,
+  AutenticadoAdminXmlCteRoute: AutenticadoAdminXmlCteRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
