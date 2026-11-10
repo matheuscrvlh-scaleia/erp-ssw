@@ -310,10 +310,6 @@ export type FotoDoPeriodo = z.infer<typeof fotoDoPeriodo>;
 
 export const relatorioPeriodo = fotoDoPeriodo.extend({
   comparativo: fotoDoPeriodo.nullable(),
-  filtrosAplicados: z.object({
-    parceirosRotulos: z.array(z.string()),
-    codigos: z.array(z.string()),
-  }),
   limites: z.object({ slaMetaPct: z.number(), taxaRetornoMetaPct: z.number() }),
 });
 export type RelatorioPeriodo = z.infer<typeof relatorioPeriodo>;

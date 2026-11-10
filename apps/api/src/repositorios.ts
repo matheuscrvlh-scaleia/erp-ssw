@@ -8,6 +8,10 @@ import { type RepositorioAuth } from "./modulos/auth/casos-de-uso";
 import { criarRepositorioAuth } from "./modulos/auth/repositorio";
 import { type RepositorioCalendario } from "./modulos/calendario/casos-de-uso";
 import { criarRepositorioCalendario } from "./modulos/calendario/repositorio";
+import { type RepositorioFiltrosCtrc } from "./modulos/filtros-ctrc/casos-de-uso";
+import { criarRepositorioFiltrosCtrc } from "./modulos/filtros-ctrc/repositorio";
+import { type RepositorioPerformance } from "./modulos/performance/casos-de-uso";
+import { criarRepositorioPerformance } from "./modulos/performance/repositorio";
 
 /**
  * Repositórios de todos os módulos, presos a uma transação com contexto. Módulo novo entra aqui
@@ -18,6 +22,8 @@ export interface Repositorios {
   auditoria: RepositorioAuditoria;
   auth: RepositorioAuth;
   calendario: RepositorioCalendario;
+  filtrosCtrc: RepositorioFiltrosCtrc;
+  performance: RepositorioPerformance;
 }
 
 export function criarRepositorios(tx: Transacao): Repositorios {
@@ -26,6 +32,8 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     auditoria: criarRepositorioAuditoria(tx),
     auth: criarRepositorioAuth(tx),
     calendario: criarRepositorioCalendario(tx),
+    filtrosCtrc: criarRepositorioFiltrosCtrc(tx),
+    performance: criarRepositorioPerformance(tx),
   };
 }
 
