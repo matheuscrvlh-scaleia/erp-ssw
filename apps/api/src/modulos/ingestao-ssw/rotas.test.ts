@@ -264,6 +264,17 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
     ]);
   });
 
+  it("IP do evento é o request.ip: cabeçalho cf-connecting-ip forjado é ignorado", async () => {
+    cadastrarWebhook();
+    await app.inject({
+      method: "POST",
+      url: `${URL}?empresa=fr&secret=errado`,
+      headers: { "cf-connecting-ip": "203.0.113.9" },
+      payload: EVENTO,
+    });
+    expect(cenario.banco.ingestao.eventos[0]?.ip).toBe("127.0.0.1");
+  });
+
   it("limite próprio e baixo para falhas: depois dele, 429 sem gravar nada", async () => {
     cadastrarWebhook();
     const tentar = () =>

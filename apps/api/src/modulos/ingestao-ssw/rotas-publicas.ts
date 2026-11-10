@@ -44,14 +44,10 @@ function cabecalhosDe(request: FastifyRequest): CabecalhosDoWebhook {
     authorization: request.headers.authorization ?? "",
     segredoNaQuery: textoDe(Reflect.get(query, "secret")),
     empresaNaQuery: textoDe(Reflect.get(query, "empresa")),
-    ip: ipDa(request),
+    // A borda é o Caddy: o IP vem do X-Forwarded-For só dos proxies confiáveis (`trustProxy`).
+    ip: request.ip,
     userAgent: request.headers["user-agent"] ?? null,
   };
-}
-
-function ipDa(request: FastifyRequest): string {
-  const cf = request.headers["cf-connecting-ip"];
-  return (typeof cf === "string" && cf) || request.ip;
 }
 
 /**
