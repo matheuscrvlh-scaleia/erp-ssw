@@ -13,6 +13,9 @@ import { type EmissorDeTokens } from "./infra/tokens";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { rotasAdminDaIngestao } from "./modulos/ingestao/rotas-admin";
+import { rotasPublicasDaIngestao } from "./modulos/ingestao/rotas-publicas";
+import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -34,6 +37,8 @@ export interface Dependencias {
   /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
   correio: Correio | null;
   google: ProvedorGoogle | null;
+  /** Ingestão SSW (precisa de Redis); sem ela as rotas da ingestão não existem. */
+  ingestao?: ServicosDaIngestao | null;
   agora: () => Date;
 }
 
@@ -92,6 +97,10 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+  if (deps.ingestao) {
+    await app.register(rotasPublicasDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
+    await app.register(rotasAdminDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
+  }
 
   return app;
 }

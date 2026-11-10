@@ -9,7 +9,8 @@
     "./aplicacao": "./src/aplicacao/index.ts",
     "./xml-cte": "./src/xml-cte/index.ts",
     "./casos-de-uso": "./src/casos-de-uso/index.ts",
-    "./infra": "./src/infra/index.ts"
+    "./infra": "./src/infra/index.ts",
+    "./testes": "./src/testes/index.ts"
   },
   "scripts": {
     "test": "vitest run",

@@ -49,6 +49,8 @@ const esquema = z
     LOGO_URL_BASE: z.url().optional(),
     /** Token de leitura de /metrics; sem ele a rota não existe. */
     METRICAS_TOKEN: z.string().min(16).optional(),
+    /** Segredo `x-ftp-ingest-secret` das rotas públicas da ingestão; sem ele, 503. */
+    FTP_INGEST_SECRET: z.string().min(16).optional(),
   })
   .superRefine((env, ctx) => {
     const google = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI];

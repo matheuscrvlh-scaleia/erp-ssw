@@ -10,6 +10,7 @@ import { criarLimitadorEmMemoria } from "../infra/limitador";
 import { criarServicoDeSenhas } from "../infra/senhas";
 import { criarEmissorDeTokens, type EmissorDeTokens } from "../infra/tokens";
 import { type DependenciasAuth } from "../modulos/auth/casos-de-uso";
+import { type ServicosDaIngestao } from "../modulos/ingestao/servicos";
 import { BancoEmMemoria, type UsuarioFalso } from "./banco-em-memoria";
 
 export function gerarChavePem(): string {
@@ -85,6 +86,7 @@ export function criarCenario(): Cenario {
 export async function construirAppDeTeste(
   cenario: Cenario,
   google: ProvedorGoogle | null = null,
+  ingestao: ServicosDaIngestao | null = null,
 ): Promise<FastifyInstance> {
   const { deps } = cenario;
   return construirApp({
@@ -98,6 +100,7 @@ export async function construirAppDeTeste(
     limitador: deps.limitador,
     correio: cenario.correio,
     google,
+    ingestao,
     agora: deps.agora,
   });
 }

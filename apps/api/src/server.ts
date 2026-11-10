@@ -1,4 +1,11 @@
 import { comContexto, conectarBanco } from "@erp/db";
+import {
+  criarEnfileirador,
+  criarFilaDeAplicacao,
+  criarProgressos,
+  criarRepositorioIngestao,
+  criarTravas,
+} from "@erp/ingestao/infra";
 import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
@@ -7,6 +14,8 @@ import { criarCorreioSmtp } from "./infra/correio";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
+import { criarRepositorioDaIngestaoPublica } from "./modulos/ingestao/repositorio";
+import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
 import { criarRepositorios } from "./repositorios";
 
@@ -25,7 +34,39 @@ const redis = ambiente.REDIS_URL
   ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
   : null;
 
+const PLATAFORMA = { empresaId: null, usuarioId: null, plataforma: true } as const;
+const enfileirador = redis ? criarEnfileirador(redis) : null;
+const ingestao: ServicosDaIngestao | null =
+  redis && enfileirador
+    ? {
+        executarNaEmpresa: (empresaId, ator) => (fn) =>
+          comContexto(
+            conexao.banco,
+            {
+              empresaId,
+              usuarioId: ator?.usuarioId ?? null,
+              plataforma: ator?.plataforma ?? false,
+            },
+            (tx) => fn(criarRepositorioIngestao(tx, empresaId, ator)),
+          ),
+        empresasParaIngestao: () =>
+          comContexto(conexao.banco, PLATAFORMA, (tx) =>
+            criarRepositorioDaIngestaoPublica(tx).empresasParaIngestao(),
+          ),
+        tokenDoCron: () =>
+          comContexto(conexao.banco, PLATAFORMA, (tx) =>
+            criarRepositorioDaIngestaoPublica(tx).tokenDoCron(),
+          ),
+        fila: criarFilaDeAplicacao(redis),
+        travas: criarTravas(redis),
+        progressos: criarProgressos(redis),
+        enfileirador,
+        segredoDoFtp: ambiente.FTP_INGEST_SECRET ?? null,
+      }
+    : null;
+
 const app = await construirApp({
+  ingestao,
   ambiente,
   executar: (contexto, fn) =>
     comContexto(conexao.banco, contexto, (tx) => fn(criarRepositorios(tx))),
@@ -62,6 +103,7 @@ const app = await construirApp({
 });
 
 app.addHook("onClose", async () => {
+  await enfileirador?.fechar();
   await conexao.encerrar();
   await redis?.quit();
 });
