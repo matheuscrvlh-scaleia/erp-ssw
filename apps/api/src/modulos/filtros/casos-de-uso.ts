@@ -62,11 +62,14 @@ export interface RepositorioFiltros {
     inicio: string,
     fim: string,
     campo: CampoDataTipoDocumento,
+    fuso: string,
   ): Promise<TipoDocumentoOpcao[]>;
 }
 
 export interface ContextoFiltros {
   empresaId: string;
+  /** Fuso da empresa: dia da entrega nos tipos do período (Q11). */
+  fuso: string;
 }
 
 type Db = Executor<"ctrc" | "filtros">;
@@ -241,6 +244,12 @@ export async function listarTiposDocumentoNoPeriodo(
   entrada: EntradaDe<"tiposDocumentoNoPeriodo">,
 ): Promise<TipoDocumentoOpcao[] | null> {
   return db(({ filtros }) =>
-    filtros.tiposDocumentoNoPeriodo(ctx.empresaId, entrada.inicio, entrada.fim, entrada.campoData),
+    filtros.tiposDocumentoNoPeriodo(
+      ctx.empresaId,
+      entrada.inicio,
+      entrada.fim,
+      entrada.campoData,
+      ctx.fuso,
+    ),
   ).catch(() => null);
 }

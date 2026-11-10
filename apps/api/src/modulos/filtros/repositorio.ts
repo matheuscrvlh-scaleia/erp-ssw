@@ -6,11 +6,17 @@ import {
   romaneioViagensCte,
   unidades,
 } from "@erp/db/schema";
-import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/filtros";
 import { z } from "@erp/shared/zod";
 import { and, asc, eq, inArray, type SQL, sql } from "drizzle-orm";
 
-import { dentroDoUniverso, diaNoFuso, inteiros, textos, tipoDocumentoEfetivo } from "../ctrc/sql";
+import {
+  casaAlgumPadrao,
+  dentroDoUniverso,
+  diaNoFuso,
+  inteiros,
+  textos,
+  tipoDocumentoDoFiltro,
+} from "../../compartilhado/sql-cte";
 import {
   type CampoDataPagador,
   type ContextoDeOpcoes,
@@ -21,7 +27,7 @@ import {
 const LIMITE_DE_SIGLAS = 1000;
 const LIMITE_DE_TIPOS = 500;
 
-const tipoOuSemTipo = sql<string>`coalesce(${tipoDocumentoEfetivo}, ${SEM_TIPO_DOCUMENTO})`;
+const tipoOuSemTipo = sql<string>`${tipoDocumentoDoFiltro()}`;
 const qtd = sql<number>`count(*)::int`;
 
 /** Moda do nome do pagador; empate fica com o menor (mode() pega o primeiro na ordem). */
@@ -37,8 +43,8 @@ function condicoesDeOpcoes(f: Partial<ContextoDeOpcoes>): (SQL | undefined)[] {
     f.inicio ? sql`${ctes.dataEmissao} >= ${f.inicio}` : undefined,
     f.fim ? sql`${ctes.dataEmissao} <= ${f.fim}` : undefined,
     f.pagadores ? sql`${ctes.pagadorCnpjDigitos} = any(${textos(f.pagadores)})` : undefined,
-    f.remetente ? sql`${ctes.remetente} ilike any(${textos(f.remetente)})` : undefined,
-    f.destino ? sql`${ctes.cidadeDestino} ilike any(${textos(f.destino)})` : undefined,
+    f.remetente ? casaAlgumPadrao(ctes.remetente, f.remetente) : undefined,
+    f.destino ? casaAlgumPadrao(ctes.cidadeDestino, f.destino) : undefined,
     f.siglas ? sql`${ctes.filialEfetiva} = any(${textos(f.siglas)})` : undefined,
     f.codigos ? sql`${ctes.ocorrEfetivaCodigoNum} = any(${inteiros(f.codigos)})` : undefined,
   ];
@@ -176,13 +182,13 @@ export function criarRepositorioFiltros(tx: Transacao): RepositorioFiltros {
         .orderBy(sql`2 desc`, sql`1 asc`)
         .limit(LIMITE_DE_TIPOS),
 
-    tiposDocumentoNoPeriodo: async (empresaId, inicio, fim, campo) => {
+    tiposDocumentoNoPeriodo: async (empresaId, inicio, fim, campo, fuso) => {
       if (campo === "romaneio_dia" || campo === "saida") {
         // CT-e que saíram em romaneio no período, ligados pela série + número (Q02).
         const projecao = campo === "saida" ? romaneioSaidasCte : romaneioViagensCte;
         const universo = campo === "saida" ? sql`and not ${ctes.foraUniverso}` : sql``;
         const resultado = await tx.execute(sql`
-          select coalesce(${tipoDocumentoEfetivo}, ${SEM_TIPO_DOCUMENTO}) as tipo, count(*)::int as qtd
+          select ${tipoOuSemTipo} as tipo, count(*)::int as qtd
           from (
             select distinct ${projecao.sigla} as sigla, ${projecao.numero} as numero
             from ${projecao}
@@ -202,7 +208,10 @@ export function criarRepositorioFiltros(tx: Transacao): RepositorioFiltros {
         embarque: sql`${ctes.dataEmbarque}`,
         prevista: sql`${ctes.dataPrevistaEntrega}`,
         conclusao: sql`${ctes.dataConclusaoEfetiva}`,
-        entrega: diaNoFuso(sql`coalesce(${ctes.dataEntregaRealizada}, ${ctes.ocorrEfetivaData})`),
+        entrega: diaNoFuso(
+          sql`coalesce(${ctes.dataEntregaRealizada}, ${ctes.ocorrEfetivaData})`,
+          fuso,
+        ),
       }[campo];
       return tx
         .select({ tipo: tipoOuSemTipo, qtd })

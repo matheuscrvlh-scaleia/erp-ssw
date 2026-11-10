@@ -16,6 +16,7 @@ import { type FiltroDaLista } from "@erp/shared/contratos/prazo-parceiro";
 import { MENSAGEM_TEMPO_ESGOTADO } from "@erp/shared/erros";
 import { and, asc, desc, eq, type SQL, sql } from "drizzle-orm";
 
+import { lista, tipoDocumentoDoFiltro } from "../../compartilhado/sql-cte";
 import {
   type ConsultaPrazo,
   type FatoDoPrazo,
@@ -25,15 +26,13 @@ import {
 /** Teto de CT-e numa consulta: acima disso, pedir para filtrar mais (nunca cortar calado). */
 const LIMITE_DE_CTES = 200_000;
 
-const lista = (valores: readonly string[]) => sql.param(valores);
-
 /** Dígitos do CNPJ do expedidor no CT-e. */
 const cnpjDoCte = sql<
   string | null
 >`nullif(regexp_replace(coalesce(${ctes.parceiroCnpj}, ''), '\\D', '', 'g'), '')`;
 
 /** Tipo efetivo do documento (455 vence o BI2), maiúsculo; sem tipo = `__SEM_TIPO__`. */
-const tipoEfetivo = sql`coalesce(upper(coalesce(nullif(btrim(${ctes.tipoDocumento455}), ''), nullif(btrim(${ctes.tipoDocumento}), ''))), '__SEM_TIPO__')`;
+const tipoEfetivo = tipoDocumentoDoFiltro();
 
 /** Universo do Prazo do parceiro (§2: coalesce simples, diferente do Romaneio) + filtros. */
 function condicoes(c: ConsultaPrazo): SQL[] {

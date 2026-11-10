@@ -5,7 +5,7 @@ import { CODIGO_SAIDA_PARA_ENTREGA } from "@erp/dominio/nucleo";
 import { z } from "@erp/shared/zod";
 import { and, type AnyColumn, eq, sql } from "drizzle-orm";
 
-import { diaNoFuso, tipoDocumentoEfetivo } from "../ctrc/sql";
+import { diaNoFuso, tipoDocumentoEfetivo } from "../../compartilhado/sql-cte";
 import { type Agregados, type RepositorioListagem } from "./casos-de-uso";
 import { expressoesDoCtrc, ordemDaLista, whereDaLista } from "./consulta";
 
@@ -90,12 +90,12 @@ export function criarRepositorioListagem(tx: Transacao): RepositorioListagem {
           dataEmissao: ctes.dataEmissao,
           dataPrevista: ctes.dataPrevistaEntrega,
           // Dia da entrega em Brasília (Q11; hoje sai o dia UTC).
-          dataEntrega: sql<string | null>`${diaNoFuso(ctes.dataEntregaRealizada)}::text`,
+          dataEntrega: sql<string | null>`${diaNoFuso(ctes.dataEntregaRealizada, f.fuso)}::text`,
           dataEmbarque: ctes.dataEmbarque,
           parceiroNome: ctes.parceiroNome,
           pagadorNome: ctes.pagadorNome,
           remetente: ctes.remetente,
-          tipoDocumento: sql<string | null>`${tipoDocumentoEfetivo}`,
+          tipoDocumento: sql<string | null>`${tipoDocumentoEfetivo()}`,
           peso: real(ctes.peso),
           valorFrete: real(ctes.valorFrete),
           volumes: ctes.volumes,

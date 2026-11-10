@@ -3,16 +3,15 @@ import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
 import { type CodigoDoCatalogo } from "@erp/dominio/performance/catalogo";
 import { type SQL, sql } from "drizzle-orm";
 
+import { diaNoFuso, lista } from "../../compartilhado/sql-cte";
 import { type RepositorioPerformance } from "./casos-de-uso";
 import {
   atraso,
   casaCodigos,
   colunaDaBase,
-  diaNoFuso,
   DO_CLIENTE,
   ENTREGUE,
   finalizado,
-  lista,
   ondeDoFiltro,
   TIPO_EFETIVO,
 } from "./consultas";

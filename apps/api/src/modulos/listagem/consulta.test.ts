@@ -15,7 +15,10 @@ const render = (consulta: SQL | undefined) => {
   return { sql: sql.replaceAll('"erp".', ""), params };
 };
 
-function filtro(entrada: Record<string, unknown>) {
+function filtro(
+  entrada: Record<string, unknown>,
+  relogio = { agora: new Date("2026-11-10T15:00:00Z"), fuso: "America/Sao_Paulo" },
+) {
   const f = montarFiltroLista(filtroLista.parse(entrada), {
     filiaisProprias: ["CAP", "CAS"],
     catalogo: [
@@ -24,7 +27,7 @@ function filtro(entrada: Record<string, unknown>) {
     ],
     codigosForaDaTela: [],
     limiteSemMovimento: 3,
-    agora: new Date("2026-11-10T15:00:00Z"),
+    ...relogio,
   });
   if (!f) throw new Error("filtro vazio");
   return f;
@@ -92,6 +95,16 @@ describe("WHERE da Listagem", () => {
     const { params } = render(whereDaLista(EMPRESA, filtro({ tipo: "sem_atualizacao" })));
     expect(params).toContain("2026-11-10");
     expect(params).toContain("America/Sao_Paulo");
+  });
+
+  it("atraso e hoje no fuso da empresa, o mesmo da Performance (Q11)", () => {
+    // 00:30 de 11/11 em Brasília é 23:30 de 10/11 em Manaus.
+    const relogio = { agora: new Date("2026-11-11T03:30:00Z"), fuso: "America/Manaus" };
+    const { sql, params } = render(whereDaLista(EMPRESA, filtro({ atrasoMin: 1 }, relogio)));
+    expect(sql).toContain("AT TIME ZONE $");
+    expect(params).toContain("America/Manaus");
+    expect(params).toContain("2026-11-10");
+    expect(params).not.toContain("America/Sao_Paulo");
   });
 });
 

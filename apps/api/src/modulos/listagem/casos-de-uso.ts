@@ -50,6 +50,8 @@ export interface RepositorioListagem {
 
 export interface ContextoListagem {
   empresaId: string;
+  /** Fuso da empresa: o "hoje" e o dia da entrega (Q11). */
+  fuso: string;
 }
 
 type Db = Executor<"ctrc" | "listagem">;
@@ -80,6 +82,7 @@ async function prepararFiltro(
     catalogo,
     ...configuracao,
     agora,
+    fuso: ctx.fuso,
   });
   return { filtro, catalogo };
 }

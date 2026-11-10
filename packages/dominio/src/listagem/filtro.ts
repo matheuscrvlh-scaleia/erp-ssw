@@ -12,8 +12,8 @@ import {
   type StatusPrevisto,
   type TipoRecorte,
 } from "@erp/shared/contratos/listagem";
+import { hojeNoFuso } from "@erp/shared/datas";
 
-import { diaSp, hojeSp } from "../nucleo";
 import { type CtrcProcurado, lerCtrcProcurado, lerNotaProcurada, padroesDeTexto } from "./texto";
 
 /** Horas à frente do recorte "Vencendo em 24-48h". origem: p_vencendo_horas DEFAULT 48 */
@@ -40,6 +40,8 @@ export interface ContextoDoFiltro {
   /** Configuração `alerta_dias_sem_movimento`. */
   limiteSemMovimento: number;
   agora: Date;
+  /** Fuso da empresa: o "hoje" e os dias das contas (Brasília na FR, Q11). */
+  fuso: string;
 }
 
 /** Códigos do catálogo da empresa que os recortes usam. */
@@ -84,9 +86,11 @@ export interface FiltroLista {
   faixaMax: number | null;
   statusPrevisto: StatusPrevisto | null;
   faixaPrev: FaixaPrevisto | null;
-  /** Hoje em Brasília (Q11). */
+  /** Fuso da empresa (Q11: Brasília na FR). */
+  fuso: string;
+  /** Hoje no fuso da empresa. */
   hoje: string;
-  /** Último dia do recorte "Vencendo": dia (Brasília) de agora + 48 h. */
+  /** Último dia do recorte "Vencendo": dia (fuso da empresa) de agora + 48 h. */
   ultimoDiaDeVencimento: string;
   limiteSemMovimento: number;
   diasSemAtualizacao: number;
@@ -178,8 +182,10 @@ export function montarFiltroLista(
     faixaMax: entrada.faixaMax ?? null,
     statusPrevisto: entrada.statusPrevisto ?? null,
     faixaPrev: entrada.faixaPrev ?? null,
-    hoje: hojeSp(ctx.agora),
-    ultimoDiaDeVencimento: diaSp(
+    fuso: ctx.fuso,
+    hoje: hojeNoFuso(ctx.fuso, ctx.agora),
+    ultimoDiaDeVencimento: hojeNoFuso(
+      ctx.fuso,
       new Date(ctx.agora.getTime() + Math.max(HORAS_DE_VENCIMENTO, 1) * 3_600_000),
     ),
     limiteSemMovimento: ctx.limiteSemMovimento,

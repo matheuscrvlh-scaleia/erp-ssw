@@ -120,6 +120,7 @@ const contexto: ContextoDoFiltro = {
   codigosForaDaTela: [40],
   limiteSemMovimento: 3,
   agora: new Date("2026-11-11T01:30:00Z"), // 10/11 22:30 em Brasília
+  fuso: "America/Sao_Paulo",
 };
 
 const filtro = (entrada: Record<string, unknown>) =>

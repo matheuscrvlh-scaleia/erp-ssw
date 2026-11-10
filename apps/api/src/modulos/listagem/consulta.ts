@@ -11,48 +11,40 @@ import {
 } from "@erp/dominio/listagem/faixas";
 import { type FiltroLista } from "@erp/dominio/listagem/filtro";
 import { type CtrcProcurado } from "@erp/dominio/listagem/texto";
-import { CODIGO_SAIDA_PARA_ENTREGA, CODIGOS_ENTREGA } from "@erp/dominio/nucleo";
-import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/filtros";
+import { CODIGO_SAIDA_PARA_ENTREGA } from "@erp/dominio/nucleo";
 import { type OrdemLista, type TipoRecorte } from "@erp/shared/contratos/listagem";
 import { and, type SQL, sql } from "drizzle-orm";
 
 import {
+  aberto,
+  atraso,
+  casaAlgumPadrao,
+  COLUNAS_DO_CTE,
   dentroDoUniverso,
   diaNoFuso,
+  entregue,
+  finalizado,
   inicioDoDia,
   inteiros,
   textos,
-  tipoDocumentoEfetivo,
+  tipoDocumentoDoFiltro,
   uuids,
-} from "../ctrc/sql";
+} from "../../compartilhado/sql-cte";
 
 const MAIOR_INTEIRO = 2_147_483_647;
 
 /** Expressões por CT-e que dependem do filtro (hoje, catálogo). */
 export function expressoesDoCtrc(f: FiltroLista) {
-  const codigo = sql`${ctes.ocorrEfetivaCodigoNum}`;
-  const entrega = inteiros([...CODIGOS_ENTREGA]);
-  const baixas = inteiros(f.codigosDoCatalogo.baixas);
-  const temEntrega = sql`${ctes.dataEntregaRealizada} is not null`;
-  const codigoDeEntrega = sql`coalesce(${codigo} = any(${entrega}), false)`;
-
-  /** origem: _is_entregue */
-  const entregue = sql`(${temEntrega} or ${codigoDeEntrega})`;
-  /** origem: _is_finalizado_sem_entrega (baixas do cadastro, Q22) */
-  const finalizado = sql`(${ctes.dataEntregaRealizada} is null and ${codigo} is not null and ${codigo} <> 1 and ${codigo} = any(${baixas}))`;
-  /** Nem entregue nem baixado. A 1ª condição deixa o plano usar os índices de CT-e em aberto. */
-  const aberto = sql`(${ctes.dataEntregaRealizada} is null and not ${codigoDeEntrega} and not coalesce(${codigo} = any(${baixas}), false))`;
-
-  /** origem: atraso_lista_dias, com o dia de Brasília (Q11) e as baixas do cadastro (Q22) */
-  const atraso = sql<number | null>`(case
-    when ${ctes.dataPrevistaEntrega} is null then null
-    when ${temEntrega} then ${diaNoFuso(ctes.dataEntregaRealizada)} - ${ctes.dataPrevistaEntrega}
-    when ${codigoDeEntrega} then ${ctes.performanceDias}
-    when coalesce(${codigo} = any(${baixas}), false) then null
-    else ${f.hoje}::date - ${ctes.dataPrevistaEntrega}
-  end)`;
-
-  return { codigo, entregue, finalizado, aberto, atraso };
+  const c = COLUNAS_DO_CTE;
+  const baixas = f.codigosDoCatalogo.baixas;
+  return {
+    codigo: sql`${ctes.ocorrEfetivaCodigoNum}`,
+    entregue: entregue(c),
+    finalizado: finalizado(c, baixas),
+    aberto: aberto(c, baixas),
+    /** Dia e hoje no fuso da empresa (Q11), baixas do cadastro (Q22). */
+    atraso: atraso(c, { baixas, hoje: f.hoje, fuso: f.fuso }),
+  };
 }
 
 const respTransportadora = sql`coalesce(${ctes.responsabilidadeCliente}, false) = false`;
@@ -72,7 +64,7 @@ function predicadosDosRecortes(
   const { codigo, entregue, finalizado, aberto, atraso } = expressoesDoCtrc(f);
   const k = f.codigosDoCatalogo;
   const prev = sql`${ctes.dataPrevistaEntrega}`;
-  const diaDoUltimoMovimento = sql`coalesce(${diaNoFuso(ctes.ocorrEfetivaData)}, ${ctes.dataEmissao})`;
+  const diaDoUltimoMovimento = sql`coalesce(${diaNoFuso(ctes.ocorrEfetivaData, f.fuso)}, ${ctes.dataEmissao})`;
   const comOcorrenciaDaTela = existeOcorrencia(
     sql`${ocorrencias.codigo} = any(${inteiros(k.daTela)})`,
   );
@@ -86,7 +78,7 @@ function predicadosDosRecortes(
   const emRota = sql`(${codigoTextoIgual(sql`${ctes.ocorrEfetivaCodigo}`, saida)} and (
     not ${existeOcorrencia(sql`${ocorrencias.codigo} = ${saida}`)}
     or ${existeOcorrencia(
-      sql`${ocorrencias.codigo} = ${saida} and ${ocorrencias.dataHora} >= ${inicioDoDia(ctes.dataEmissao)} and ${ocorrencias.criadoEm} >= ${ctes.criadoEm}`,
+      sql`${ocorrencias.codigo} = ${saida} and ${ocorrencias.dataHora} >= ${inicioDoDia(ctes.dataEmissao, f.fuso)} and ${ocorrencias.criadoEm} >= ${ctes.criadoEm}`,
     )}))`;
   /** origem: _ctrc_travado — pendência (fora a 85) depois da última saída para entrega. */
   const ultima = (condicao: SQL) =>
@@ -138,7 +130,7 @@ function predicadosDosRecortes(
     vencimento_proximo: () =>
       sql`${aberto} and ${respTransportadora} and ${prev} between ${f.hoje}::date and ${f.ultimoDiaDeVencimento}::date`,
     nascido_atrasado: () =>
-      sql`${prev} is not null and (select min(${diaNoFuso(ocorrencias.dataHora)}) from ${ocorrencias} where ${ocorrencias.cteId} = ${ctes.id} and not ${ocorrencias.quarentena} and ${ocorrencias.codigo} = ${saida}) > ${prev}`,
+      sql`${prev} is not null and (select min(${diaNoFuso(ocorrencias.dataHora, f.fuso)}) from ${ocorrencias} where ${ocorrencias.cteId} = ${ctes.id} and not ${ocorrencias.quarentena} and ${ocorrencias.codigo} = ${saida}) > ${prev}`,
     nascido_em_atraso: () => sql`${prev} < ${ctes.prazoPadraoData}`,
     otif: () =>
       existeOcorrencia(
@@ -203,13 +195,11 @@ export function whereDaLista(
     coluna && f.periodo?.fim ? sql`${coluna} <= ${f.periodo.fim}` : undefined,
     f.unidadesIds ? sql`${ctes.unidadeId} = any(${uuids(f.unidadesIds)})` : undefined,
     f.pagadores ? sql`${ctes.pagadorCnpjDigitos} = any(${textos(f.pagadores)})` : undefined,
-    f.remetente ? sql`${ctes.remetente} ilike any(${textos(f.remetente)})` : undefined,
-    f.destino ? sql`${ctes.cidadeDestino} ilike any(${textos(f.destino)})` : undefined,
-    f.cidade ? sql`${ctes.cidadeDestino} ilike any(${textos(f.cidade)})` : undefined,
+    f.remetente ? casaAlgumPadrao(ctes.remetente, f.remetente) : undefined,
+    f.destino ? casaAlgumPadrao(ctes.cidadeDestino, f.destino) : undefined,
+    f.cidade ? casaAlgumPadrao(ctes.cidadeDestino, f.cidade) : undefined,
     f.codigos && !opcoes.semCodigos ? sql`${codigo} = any(${inteiros(f.codigos)})` : undefined,
-    f.tipos
-      ? sql`coalesce(${tipoDocumentoEfetivo}, ${SEM_TIPO_DOCUMENTO}) = any(${textos(f.tipos)})`
-      : undefined,
+    f.tipos ? sql`${tipoDocumentoDoFiltro()} = any(${textos(f.tipos)})` : undefined,
     f.pesoMin !== null ? sql`${ctes.peso} >= ${f.pesoMin}` : undefined,
     f.pesoMax !== null ? sql`${ctes.peso} <= ${f.pesoMax}` : undefined,
     f.atrasoMin !== null ? sql`${atraso} >= ${f.atrasoMin}` : undefined,

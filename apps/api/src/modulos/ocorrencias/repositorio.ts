@@ -3,7 +3,6 @@ import {
   codigosOcorrencia,
   configuracoes,
   ctes,
-  filiais,
   ocorrencias,
   parceiros,
   romaneioConferenteCte,
@@ -15,7 +14,6 @@ import {
   between,
   eq,
   exists,
-  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -26,28 +24,11 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { casaAlgumPadrao, filiaisProprias, nfIgual } from "../../compartilhado/sql-cte";
 import { type FiltroDeCtes, type RepositorioOcorrencias } from "./casos-de-uso";
 
 /** `numeric` chega do driver como texto. */
 const numero = (valor: string | null) => (valor === null ? null : Number(valor));
-
-/** Siglas das filiais próprias da empresa: o universo das telas. */
-export function filiaisProprias(tx: Transacao, empresaId: string) {
-  return tx
-    .select({ sigla: filiais.sigla })
-    .from(filiais)
-    .where(and(eq(filiais.empresaId, empresaId), eq(filiais.propria, true)));
-}
-
-/** Padrões ILIKE: casa se qualquer um casar. */
-export function casaAlgum(coluna: Parameters<typeof ilike>[0], padroes: string[]): SQL | undefined {
-  return or(...padroes.map((p) => ilike(coluna, p)));
-}
-
-/** NF digitada → igualdade com o número gravado (inteiro); número grande demais não casa. */
-export function nfIgual(termo: string): SQL {
-  return termo.length <= 9 ? eq(ctes.numeroNf, Number(termo)) : sql`false`;
-}
 
 /**
  * Universo (não fora e filial própria) + filtros de CT-e. Nenhuma regra além de comparar as
@@ -78,8 +59,8 @@ function ondeCtes(tx: Transacao, f: FiltroDeCtes): SQL | undefined {
       : undefined,
     f.parceiros.length > 0 ? inArray(ctes.pagadorCnpjDigitos, f.parceiros) : undefined,
     f.filiais.length > 0 ? inArray(ctes.filialEfetiva, f.filiais) : undefined,
-    f.remetente ? casaAlgum(ctes.remetente, f.remetente) : undefined,
-    f.destino ? casaAlgum(ctes.cidadeDestino, f.destino) : undefined,
+    f.remetente ? casaAlgumPadrao(ctes.remetente, f.remetente) : undefined,
+    f.destino ? casaAlgumPadrao(ctes.cidadeDestino, f.destino) : undefined,
     f.ctrc ? eq(ctes.numero, f.ctrc) : undefined,
     f.nf ? nfIgual(f.nf) : undefined,
   );

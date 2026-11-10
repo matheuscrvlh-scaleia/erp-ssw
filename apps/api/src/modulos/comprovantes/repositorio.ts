@@ -16,7 +16,7 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { casaAlgum, filiaisProprias, nfIgual } from "../ocorrencias/repositorio";
+import { casaAlgumPadrao, filiaisProprias, nfIgual } from "../../compartilhado/sql-cte";
 import { type FiltroDeEntregues, type RepositorioComprovantes } from "./casos-de-uso";
 
 /** Ocorrência que marca o comprovante de entrega digitalizado. */
@@ -48,8 +48,8 @@ function ondeEntregues(tx: Transacao, f: FiltroDeEntregues): SQL | undefined {
     f.unidades.length > 0 ? inArray(ctes.filialEfetiva, f.unidades) : undefined,
     f.filiais.length > 0 ? inArray(ctes.filialEfetiva, f.filiais) : undefined,
     f.pagadores.length > 0 ? inArray(ctes.pagadorCnpjDigitos, f.pagadores) : undefined,
-    f.remetente ? casaAlgum(ctes.remetente, f.remetente) : undefined,
-    f.destino ? casaAlgum(ctes.cidadeDestino, f.destino) : undefined,
+    f.remetente ? casaAlgumPadrao(ctes.remetente, f.remetente) : undefined,
+    f.destino ? casaAlgumPadrao(ctes.cidadeDestino, f.destino) : undefined,
     f.ctrc !== null ? buscaDeCtrc(f.ctrc) : undefined,
     f.nf !== null ? buscaDeNf(f.nf) : undefined,
   );

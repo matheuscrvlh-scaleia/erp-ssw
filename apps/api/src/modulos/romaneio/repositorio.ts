@@ -29,13 +29,16 @@ import { MENSAGEM_TEMPO_ESGOTADO } from "@erp/shared/erros";
 import { and, asc, eq, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm";
 import { type AnyPgColumn } from "drizzle-orm/pg-core";
 
+import {
+  casaAlgumPadrao,
+  lista,
+  tipoDocumentoDoFiltro,
+  tipoDocumentoEfetivo,
+} from "../../compartilhado/sql-cte";
 import { type ConsultaDeCtes, type RepositorioRomaneio } from "./casos-de-uso";
 
 /** Teto de CT-e numa consulta: acima disso, pedir para filtrar mais (nunca cortar calado). */
 const LIMITE_DE_CTES = 200_000;
-
-/** Lista JS como um único parâmetro de array do Postgres. */
-const lista = (valores: readonly (string | number)[]) => sql.param(valores);
 
 const numeroOuNulo = (v: string | null) => (v === null ? null : Number(v));
 const numeroOuZero = (v: string | null) => (v === null ? 0 : Number(v));
@@ -53,7 +56,7 @@ function unidadeResponsavelSql(fp: readonly string[]): SQL {
 }
 
 /** Tipo efetivo do documento (455 vence o BI2), maiúsculo; sem tipo = `__SEM_TIPO__`. */
-const tipoEfetivoSql = sql`coalesce(upper(coalesce(nullif(btrim(${ctes.tipoDocumento455}), ''), nullif(btrim(${ctes.tipoDocumento}), ''))), '__SEM_TIPO__')`;
+const tipoEfetivoSql = tipoDocumentoDoFiltro();
 
 /** Busca literal: `\`, `%` e `_` digitados valem como texto (Q10). */
 const padraoLiteral = (texto: string) => `%${texto.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
@@ -120,8 +123,8 @@ function condicoes(c: ConsultaDeCtes): SQL[] {
       ? sql`${unidadeResponsavelSql(f.filiaisProprias)} = any(${lista(f.filiais)}::text[])`
       : undefined,
     f.unidadeAtual ? sql`${ctes.unidadeAtual} = any(${lista(f.unidadeAtual)}::text[])` : undefined,
-    f.remetente ? sql`${ctes.remetente} ilike any(${lista(f.remetente)}::text[])` : undefined,
-    f.destino ? sql`${ctes.cidadeDestino} ilike any(${lista(f.destino)}::text[])` : undefined,
+    f.remetente ? casaAlgumPadrao(ctes.remetente, f.remetente) : undefined,
+    f.destino ? casaAlgumPadrao(ctes.cidadeDestino, f.destino) : undefined,
     f.tipos ? sql`${tipoEfetivoSql} = any(${lista(f.tipos)}::text[])` : undefined,
     f.previsao ? eq(ctes.dataPrevistaEntrega, f.previsao) : undefined,
     f.codigos
@@ -445,9 +448,7 @@ export function criarRepositorioRomaneio(tx: Transacao): RepositorioRomaneio {
           criadoEm: ctes.criadoEm,
           ocorrEfetivaCodigo: ctes.ocorrEfetivaCodigo,
           valorFrete: ctes.valorFrete,
-          tipoDocumento: sql<
-            string | null
-          >`coalesce(nullif(btrim(${ctes.tipoDocumento455}), ''), nullif(btrim(${ctes.tipoDocumento}), ''))`,
+          tipoDocumento: sql<string | null>`${tipoDocumentoEfetivo()}`,
           unidadeDestino: ctes.unidadeDestino,
           unidadeAtual: ctes.unidadeAtual,
           filial: ctes.filial,

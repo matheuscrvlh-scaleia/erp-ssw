@@ -1,7 +1,16 @@
-import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
 import { type FiltroCtrc } from "@erp/dominio/performance/filtro";
-import { type BaseDeData, SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/performance";
+import { type BaseDeData } from "@erp/shared/contratos/performance";
 import { type SQL, sql } from "drizzle-orm";
+
+import {
+  atraso as atrasoDoCte,
+  casaAlgumPadrao,
+  colunasDoApelido,
+  entregue,
+  finalizado as finalizadoDoCte,
+  lista,
+  tipoDocumentoDoFiltro,
+} from "../../compartilhado/sql-cte";
 
 /*
  * Pedaços de SQL das consultas da Performance (alias `c` = `erp.ctes`). A regra está escrita aqui,
@@ -18,9 +27,8 @@ export interface ContextoDaConsulta {
   filiaisProprias: readonly string[];
 }
 
-/** Lista como um parâmetro só (`= any($1::text[])`), não como `($1, $2…)`. */
-export const lista = (valores: readonly (string | number)[]): SQL =>
-  sql`${sql.param([...valores])}`;
+/** Colunas do CT-e pelo apelido `c` das consultas da Performance. */
+const C = colunasDoApelido("c");
 
 const COLUNA_DA_BASE: Record<BaseDeData, SQL> = {
   emissao: sql`c.data_emissao`,
@@ -30,39 +38,21 @@ const COLUNA_DA_BASE: Record<BaseDeData, SQL> = {
 
 export const colunaDaBase = (base: BaseDeData): SQL => COLUNA_DA_BASE[base];
 
-/** Código da ocorrência efetiva; -1 quando não há (deixa as negações sem `NULL`). */
-const codigo = sql`coalesce(c.ocorr_efetiva_codigo_num, -1)`;
-
 /** Entregue: data de entrega ou efetiva de entrega (1/18/67). origem: _is_entregue */
-export const ENTREGUE = sql`(c.data_entrega_realizada is not null or ${codigo} = any(${lista([...CODIGOS_ENTREGA])}::int[]))`;
+export const ENTREGUE = entregue(C);
 
 /** Baixado sem entrega pelo cadastro da empresa. origem: _is_finalizado_sem_entrega */
-export const finalizado = (baixas: readonly number[]): SQL =>
-  sql`(c.data_entrega_realizada is null and ${codigo} <> 1 and ${codigo} = any(${lista(baixas)}::int[]))`;
+export const finalizado = (baixas: readonly number[]): SQL => finalizadoDoCte(C, baixas);
 
 /** Responsabilidade do cliente; nula conta como da transportadora. */
 export const DO_CLIENTE = sql`coalesce(c.responsabilidade_cliente, false)`;
 
 /** Tipo de documento do 455, senão o do BI2, em maiúsculas. origem: tipo_documento_efetivo */
-export const TIPO_EFETIVO = sql`coalesce(upper(coalesce(nullif(btrim(c.tipo_documento_455), ''), nullif(btrim(c.tipo_documento), ''))), ${SEM_TIPO_DOCUMENTO})`;
+export const TIPO_EFETIVO = tipoDocumentoDoFiltro(C);
 
-/** Dia de um instante no fuso da empresa. */
-export const diaNoFuso = (coluna: SQL, fuso: string): SQL =>
-  sql`(${coluna} at time zone ${fuso})::date`;
-
-/**
- * Atraso em dias como na lista: previsão nula → nulo; entregue → dia da entrega − previsão;
- * efetiva de entrega → `performance_dias`; baixa → nulo; senão hoje − previsão.
- * origem: atraso_lista_dias (sistema atual; baixa pelo cadastro, decisão Q22)
- */
-export const atraso = (ctx: ContextoDaConsulta, baixas: readonly number[]): SQL => sql`(case
-  when c.data_prevista_entrega is null then null
-  when c.data_entrega_realizada is not null
-    then ${diaNoFuso(sql`c.data_entrega_realizada`, ctx.fuso)} - c.data_prevista_entrega
-  when ${codigo} = any(${lista([...CODIGOS_ENTREGA])}::int[]) then c.performance_dias
-  when ${codigo} = any(${lista(baixas)}::int[]) then null
-  else ${ctx.hoje}::date - c.data_prevista_entrega
-end)`;
+/** Atraso em dias como na lista, no hoje e no fuso da empresa (Q11). origem: atraso_lista_dias */
+export const atraso = (ctx: ContextoDaConsulta, baixas: readonly number[]): SQL =>
+  atrasoDoCte(C, { baixas, hoje: ctx.hoje, fuso: ctx.fuso });
 
 /** Partes do filtro que cada chamada pode deixar de fora. */
 export interface Opcoes {
@@ -89,8 +79,8 @@ export function ondeDoFiltro(f: FiltroCtrc, ctx: ContextoDaConsulta, opcoes: Opc
   if (f.unidades) partes.push(sql`c.unidade_id = any(${lista(f.unidades)}::uuid[])`);
   if (f.parceiros) partes.push(sql`c.pagador_cnpj_digitos = any(${lista(f.parceiros)}::text[])`);
   if (f.filiais) partes.push(sql`c.filial_efetiva = any(${lista(f.filiais)}::text[])`);
-  if (f.remetente) partes.push(sql`c.remetente ilike any(${lista(f.remetente)}::text[])`);
-  if (f.destino) partes.push(sql`c.cidade_destino ilike any(${lista(f.destino)}::text[])`);
+  if (f.remetente) partes.push(casaAlgumPadrao(sql`c.remetente`, f.remetente));
+  if (f.destino) partes.push(casaAlgumPadrao(sql`c.cidade_destino`, f.destino));
   if (f.codigos && !opcoes.semCodigos) {
     partes.push(sql`c.ocorr_efetiva_codigo_num = any(${lista(f.codigos)}::int[])`);
   }

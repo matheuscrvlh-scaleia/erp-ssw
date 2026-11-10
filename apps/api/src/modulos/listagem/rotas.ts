@@ -16,7 +16,7 @@ const ler = [exigirModulo("performance"), exigirTela("performance")];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoListagem> {
   const { empresa } = await empresaDaRequisicao(request);
-  return { empresaId: empresa.id };
+  return { empresaId: empresa.id, fuso: empresa.fuso };
 }
 
 export const rotasListagem: FastifyPluginCallbackZod<{ agora: () => Date }> = (
