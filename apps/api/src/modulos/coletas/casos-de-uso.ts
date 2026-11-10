@@ -1,8 +1,8 @@
 import {
   calcularPainelDeColetas,
   type ColetaDaTela,
-  listarColetas,
   statusDoPrazo,
+  termosDaBusca,
 } from "@erp/dominio/coletas/coletas";
 import {
   importarRelatorio050 as importarColetas050,
@@ -16,7 +16,10 @@ import {
   eventoDeColeta,
   type FiltrosDeColetas,
   type LinhaDeColeta,
+  type StatusDaLista,
+  type StatusDePrazo,
 } from "@erp/shared/contratos/coletas";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
 
 import { consultaAmplaDemais, naoEncontrado } from "../../http/erros";
@@ -83,8 +86,32 @@ export interface DetalheDaColeta {
   historico: unknown;
 }
 
+/** O que a lista de um card pede além dos filtros do painel. */
+export interface PedidoDaLista {
+  status: StatusDaLista;
+  /** Termos de `termosDaBusca`; nulo = sem busca. */
+  busca: { numero: string; cte: string; texto: string } | null;
+  agora: Date;
+  /** Hoje no fuso da empresa (vence hoje). */
+  hoje: string;
+  fuso: string;
+}
+
+/** Coleta da lista: com o prazo e o tipo do CT-e como a tela mostra. */
+export type ColetaDaLista = ColetaLida & { statusPrazo: StatusDePrazo; tipoDaTela: string | null };
+
 export interface RepositorioColetas extends RepositorioGravacao050 {
   coletas(empresaId: string, filtros: FiltrosDeColetas, limite: number): Promise<ColetaLida[]>;
+  /**
+   * Lista de um card filtrada (status e busca), ordenada (abertas pela que vence antes, depois as
+   * mais recentes, unidade e número) e paginada no banco, com o total da lista inteira.
+   */
+  lista(
+    empresaId: string,
+    filtros: FiltrosDeColetas,
+    pedido: PedidoDaLista,
+    pagina: { limite: number; deslocamento: number },
+  ): Promise<{ linhas: ColetaDaLista[]; total: number }>;
   resumo(empresaId: string, inicio: string, fim: string): Promise<ResumoDasColetas>;
   detalhe(empresaId: string, unidade: string, numero: number): Promise<DetalheDaColeta | null>;
 }
@@ -143,8 +170,64 @@ export async function obterPainelDeColetas(
   });
 }
 
+function paraALinha(c: ColetaDaLista): LinhaDeColeta {
+  return {
+    unidade: c.unidade,
+    numero: c.numero,
+    tipo: c.tipo,
+    etapa: c.etapa,
+    statusPrazo: c.statusPrazo,
+    cadastradaEm: iso(c.cadastradaEm),
+    limiteEm: iso(c.limiteEm),
+    coletadaEm: iso(c.coletadaEm),
+    canceladaEm: iso(c.canceladaEm),
+    solicitante: c.solicitante,
+    remetenteCnpj: c.remetenteCnpj,
+    remetenteNome: c.remetenteNome,
+    remetenteCidade: c.remetenteCidade,
+    destinatarioNome: c.destinatarioNome,
+    destinoCidade: c.destinoCidade,
+    motorista: c.motorista,
+    placa: c.placa,
+    volumes: c.volumes,
+    pesoKg: c.pesoKg,
+    valorMercadoria: c.valorMercadoria,
+    tipoFrete: c.tipoFrete,
+    notasFiscais: c.notasFiscais,
+    cteSigla: c.cteSigla,
+    cteNumero: c.cteNumero,
+    cteTipoDocumento: c.tipoDaTela,
+    cteEmissao: c.cteEmissao,
+    prejudicadaHorario: c.prejudicadaHorario,
+    ultimoEvento: c.ultimoEvento,
+  };
+}
+
+type EntradaDaLista = z.output<typeof contratosColetas.exportar.entrada>;
+
+function lerLista(
+  repo: RepositorioColetas,
+  ctx: ContextoColetas,
+  entrada: EntradaDaLista,
+  agora: Date,
+  pagina: { limite: number; deslocamento: number },
+) {
+  return repo.lista(
+    ctx.empresaId,
+    entrada,
+    {
+      status: entrada.status,
+      busca: termosDaBusca(entrada.busca),
+      agora,
+      hoje: hojeNoFuso(ctx.fuso, agora),
+      fuso: ctx.fuso,
+    },
+    pagina,
+  );
+}
+
 /**
- * Lista de coletas de um card, com busca.
+ * Lista de coletas de um card, com busca, paginada no banco.
  * origem: coletas_lista (sistema atual)
  */
 export async function obterListaDeColetas(
@@ -154,45 +237,28 @@ export async function obterListaDeColetas(
   agora: Date,
 ): Promise<SaidaDe<typeof contratosColetas.lista>> {
   return db(async ({ coletas }) => {
-    const { linhas, total } = listarColetas(await coletasDaTela(coletas, ctx, entrada, agora), {
-      status: entrada.status,
-      busca: entrada.busca,
-      pagina: entrada.pagina,
-      tamanho: entrada.tamanho,
+    const { linhas, total } = await lerLista(coletas, ctx, entrada, agora, {
+      limite: entrada.tamanho,
+      deslocamento: (entrada.pagina - 1) * entrada.tamanho,
     });
-    return {
-      total,
-      linhas: linhas.map((c): LinhaDeColeta => ({
-        unidade: c.unidade,
-        numero: c.numero,
-        tipo: c.tipo,
-        etapa: c.etapa,
-        statusPrazo: c.statusPrazo,
-        cadastradaEm: iso(c.cadastradaEm),
-        limiteEm: iso(c.limiteEm),
-        coletadaEm: iso(c.coletadaEm),
-        canceladaEm: iso(c.canceladaEm),
-        solicitante: c.solicitante,
-        remetenteCnpj: c.remetenteCnpj,
-        remetenteNome: c.remetenteNome,
-        remetenteCidade: c.remetenteCidade,
-        destinatarioNome: c.destinatarioNome,
-        destinoCidade: c.destinoCidade,
-        motorista: c.motorista,
-        placa: c.placa,
-        volumes: c.volumes,
-        pesoKg: c.pesoKg,
-        valorMercadoria: c.valorMercadoria,
-        tipoFrete: c.tipoFrete,
-        notasFiscais: c.notasFiscais,
-        cteSigla: c.cteSigla,
-        cteNumero: c.cteNumero,
-        cteTipoDocumento: c.cteTipoDocumento,
-        cteEmissao: c.cteEmissao,
-        prejudicadaHorario: c.prejudicadaHorario,
-        ultimoEvento: c.ultimoEvento,
-      })),
-    };
+    return { total, linhas: linhas.map(paraALinha) };
+  });
+}
+
+/** Lista inteira de um card, numa leitura só, na ordem da tela (exportação). */
+export async function exportarListaDeColetas(
+  db: Db,
+  ctx: ContextoColetas,
+  entrada: EntradaDaLista,
+  agora: Date,
+): Promise<SaidaDe<typeof contratosColetas.exportar>> {
+  return db(async ({ coletas }) => {
+    const { linhas } = await lerLista(coletas, ctx, entrada, agora, {
+      limite: LIMITE_DE_COLETAS + 1,
+      deslocamento: 0,
+    });
+    if (linhas.length > LIMITE_DE_COLETAS) throw consultaAmplaDemais();
+    return { linhas: linhas.map(paraALinha) };
   });
 }
 

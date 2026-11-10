@@ -170,21 +170,40 @@ export function calcularPainelDeColetas(
  * origem: coletas_lista (sistema atual)
  */
 export function casaBusca(c: ColetaDaTela, busca: string): boolean {
-  const b = btrim(busca);
-  if (b === "") return true;
-  const minusculo = b.toLowerCase();
-  const contem = (valor: string | null) => valor?.toLowerCase().includes(minusculo) ?? false;
+  const t = termosDaBusca(busca);
+  if (t === null) return true;
+  const contem = (valor: string | null) => valor?.toLowerCase().includes(t.texto) ?? false;
   return (
-    String(c.numero) === b.replace(/^0+/, "") ||
-    c.cteNumero === b.replace(/\D/g, "").replace(/^0+/, "") ||
-    c.placa?.toLowerCase() === minusculo ||
+    String(c.numero) === t.numero ||
+    c.cteNumero === t.cte ||
+    c.placa?.toLowerCase() === t.texto ||
     [c.remetenteNome, c.destinatarioNome, c.notasFiscais, c.observacao].some(contem)
   );
 }
 
+/**
+ * Termos da busca: número da coleta sem zeros à esquerda, CT-e só com dígitos e sem zeros, e o
+ * texto em minúsculas (placa igual; remetente, destinatário, notas e observação contêm). Vazia =
+ * sem busca. A lista da API usa os mesmos termos no SQL.
+ */
+export function termosDaBusca(
+  busca: string,
+): { numero: string; cte: string; texto: string } | null {
+  const b = btrim(busca);
+  if (b === "") return null;
+  return {
+    numero: b.replace(/^0+/, ""),
+    cte: b.replace(/\D/g, "").replace(/^0+/, ""),
+    texto: b.toLowerCase(),
+  };
+}
+
 const tempo = (d: Date | null) => d?.getTime() ?? null;
 
-/** Abertas primeiro, pela que vence antes; depois as mais recentes. */
+/**
+ * Abertas primeiro, pela que vence antes; depois as mais recentes; empate por unidade e número
+ * (a chave da coleta). A lista da API ordena igual no SQL.
+ */
 function compararColetas(a: ColetaDaTela, b: ColetaDaTela): number {
   return (
     Number(aberta(b)) - Number(aberta(a)) ||
@@ -201,7 +220,8 @@ function compararColetas(a: ColetaDaTela, b: ColetaDaTela): number {
 }
 
 /**
- * Lista do card: status, busca, ordem e paginação.
+ * Lista do card: status, busca, ordem e paginação. A API pagina esta mesma regra no banco
+ * (coletas/repositorio.ts); aqui fica a forma em TypeScript, que os testes usam como referência.
  * origem: coletas_lista (sistema atual)
  */
 export function listarColetas<C extends ColetaDaTela>(

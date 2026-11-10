@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 
-import { etapaDaSituacao } from "@erp/dominio/coletas/coletas";
+import { etapaDaSituacao, listarColetas, statusDoPrazo } from "@erp/dominio/coletas/coletas";
 import {
   classificarComprovantes,
   type CteEntregue,
   listarComprovantes,
 } from "@erp/dominio/comprovantes/comprovantes";
+import { tipoDocumentoEfetivo } from "@erp/dominio/nucleo";
 
 import { type CodigoGravado } from "../modulos/codigos-ocorrencia/casos-de-uso";
 import { type ColetaLida } from "../modulos/coletas/casos-de-uso";
@@ -170,6 +171,30 @@ export class DadosDeOcorrencias {
             .filter((c) => c.diaCadastro >= f.inicio && c.diaCadastro <= f.fim)
             .slice(0, limite),
         ),
+      // Mesma regra do SQL do repositório, pelo domínio (a busca já vem em termos).
+      lista: (empresaId, f, pedido, pagina) => {
+        const daTela = daEmpresa(empresaId)
+          .filter((c) => c.diaCadastro >= f.inicio && c.diaCadastro <= f.fim)
+          .map((c) => {
+            const tipoDaTela =
+              c.cteEmissao === null
+                ? null
+                : tipoDocumentoEfetivo(c.cteTipoDocumento455, c.cteTipoDocumento);
+            return {
+              ...c,
+              statusPrazo: statusDoPrazo(c, pedido.agora, pedido.fuso),
+              cteTipoDocumento: tipoDaTela,
+              tipoDaTela,
+            };
+          });
+        const { linhas, total } = listarColetas(daTela, {
+          status: pedido.status,
+          busca: pedido.busca?.texto ?? "",
+          pagina: Math.floor(pagina.deslocamento / pagina.limite) + 1,
+          tamanho: pagina.limite,
+        });
+        return Promise.resolve({ total, linhas });
+      },
       resumo: (empresaId, inicio, fim) => {
         const todas = daEmpresa(empresaId);
         const dias = todas.map((c) => c.diaCadastro).sort();

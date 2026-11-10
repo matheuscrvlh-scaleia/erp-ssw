@@ -7,6 +7,7 @@ import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
 import {
   type ContextoColetas,
+  exportarListaDeColetas,
   importarRelatorio050,
   obterDetalheDaColeta,
   obterListaDeColetas,
@@ -46,6 +47,16 @@ export const rotasColetas: FastifyPluginCallbackZod<{ agora: () => Date }> = (
     { schema: { body: c.lista.entrada, response: { 200: c.lista.saida } }, preHandler: ler },
     async (request) =>
       obterListaDeColetas(request.db, await contextoDe(request), request.body, agora()),
+  );
+
+  app.post(
+    c.exportar.caminho,
+    {
+      schema: { body: c.exportar.entrada, response: { 200: c.exportar.saida } },
+      preHandler: ler,
+    },
+    async (request) =>
+      exportarListaDeColetas(request.db, await contextoDe(request), request.body, agora()),
   );
 
   app.get(

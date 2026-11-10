@@ -174,6 +174,11 @@ export type ResultadoDaImportacao050 = z.infer<typeof resultadoDaImportacao050>;
 /** Teto do arquivo enviado (caracteres, já decodificado em ISO-8859-1 no navegador). */
 export const TAMANHO_MAXIMO_DO_050 = 30_000_000;
 
+const filtrosDaLista = filtrosDeColetas.extend({
+  status: z.enum(STATUS_DA_LISTA).default("todas"),
+  busca: z.string().max(100).default(""),
+});
+
 export const contratosColetas = {
   painel: contrato({
     metodo: "POST",
@@ -184,13 +189,18 @@ export const contratosColetas = {
   lista: contrato({
     metodo: "POST",
     caminho: "/api/v1/coletas/lista",
-    entrada: filtrosDeColetas.extend({
-      status: z.enum(STATUS_DA_LISTA).default("todas"),
-      busca: z.string().max(100).default(""),
+    entrada: filtrosDaLista.extend({
       pagina: z.number().int().min(1).default(1),
       tamanho: z.number().int().min(1).max(1000).default(50),
     }),
     saida: z.object({ linhas: z.array(linhaDeColeta), total: z.number().int() }),
+  }),
+  /** A lista inteira de um card numa leitura só, na ordem da tela (até 100 mil coletas). */
+  exportar: contrato({
+    metodo: "POST",
+    caminho: "/api/v1/coletas/lista/exportacao",
+    entrada: filtrosDaLista,
+    saida: z.object({ linhas: z.array(linhaDeColeta) }),
   }),
   detalhe: contrato({
     metodo: "GET",

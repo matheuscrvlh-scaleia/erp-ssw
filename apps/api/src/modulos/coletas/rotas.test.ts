@@ -95,6 +95,13 @@ describe("importação do 050", () => {
       payload: { ...filtro, status: "canceladas" },
     });
     expect(lista.json()).toMatchObject({ total: 1, linhas: [{ unidade: "ARA", numero: 56205 }] });
+    const exportada = await app.inject({
+      method: "POST",
+      url: "/api/v1/coletas/lista/exportacao",
+      headers,
+      payload: filtro,
+    });
+    expect(exportada.json<{ linhas: unknown[] }>().linhas).toHaveLength(4);
     const detalhe = await app.inject({ url: "/api/v1/coletas/ARA/56168", headers });
     expect(detalhe.statusCode).toBe(200);
     expect(detalhe.json<{ historico: unknown[] }>().historico.length).toBeGreaterThan(0);
