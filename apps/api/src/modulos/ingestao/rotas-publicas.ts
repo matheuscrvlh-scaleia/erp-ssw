@@ -179,7 +179,12 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
         );
       } catch (e) {
         request.log.error({ err: e }, "ftp-relatorio-import");
-        return erro(reply, 500, "excecao_no_pipeline", e instanceof Error ? e.message : String(e));
+        return erro(
+          reply,
+          500,
+          "excecao_no_pipeline",
+          "Falha ao processar o arquivo. Tente de novo; se persistir, avise o suporte.",
+        );
       }
     },
   );

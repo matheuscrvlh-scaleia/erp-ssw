@@ -1,6 +1,8 @@
+import { erroParaLog } from "@erp/db";
 import { describe, expect, it } from "vitest";
 
-import { mascararUrl } from "./log";
+import { ambienteDeTeste } from "../testes/cenario";
+import { mascararUrl, opcoesDeLog } from "./log";
 
 describe("mascararUrl", () => {
   it("esconde o segredo do webhook do SSW e o code do OAuth", () => {
@@ -19,5 +21,13 @@ describe("mascararUrl", () => {
 
   it("ignora caixa no nome do parâmetro", () => {
     expect(mascararUrl("/x?Secret=1")).toBe("/x?Secret=[oculto]");
+  });
+});
+
+describe("opcoesDeLog", () => {
+  it("erro passa pelo serializador que tira SQL e parâmetros", () => {
+    const opcoes = opcoesDeLog({ ...ambienteDeTeste(), NODE_ENV: "production" });
+    const serializadores = typeof opcoes === "object" ? opcoes.serializers : undefined;
+    expect(serializadores?.err).toBe(erroParaLog);
   });
 });

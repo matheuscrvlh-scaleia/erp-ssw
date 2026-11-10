@@ -1,3 +1,4 @@
+import { erroParaLog } from "@erp/db";
 import { type FastifyRequest, type FastifyServerOptions } from "fastify";
 
 import { type Ambiente } from "../config/env";
@@ -56,6 +57,8 @@ export function opcoesDeLog(ambiente: Ambiente): NonNullable<FastifyServerOption
     redact: { paths: CAMINHOS_SENSIVEIS, censor: "[oculto]" },
     base: { servico: "erp-api" },
     serializers: {
+      // Erro do Drizzle leva SQL e parâmetros na mensagem: sai sem eles.
+      err: erroParaLog,
       req: (req: FastifyRequest) => ({
         method: req.method,
         url: mascararUrl(req.url),

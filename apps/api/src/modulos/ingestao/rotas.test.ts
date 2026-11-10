@@ -27,6 +27,7 @@ let estado: ReturnType<typeof estadoFalso>;
 let enfileirador: ReturnType<typeof enfileiradorFalso>;
 let integracoes: string[];
 let segredos: SegredoDaIngestao[];
+let falharGravacao: boolean;
 const OUTRA = "00000000-0000-4000-8000-000000000002";
 const SEGREDO_DA_OUTRA = "segredo-da-outra-empresa";
 
@@ -37,12 +38,16 @@ beforeEach(async () => {
   estado = estadoFalso();
   enfileirador = enfileiradorFalso();
   integracoes = ["sftp"];
+  falharGravacao = false;
   segredos = [
     { empresaId, segredo: SEGREDO },
     { empresaId: OUTRA, segredo: SEGREDO_DA_OUTRA },
   ];
   const servicos: ServicosDaIngestao = {
-    executarNaEmpresa: () => executarFalso(estado),
+    executarNaEmpresa: () =>
+      falharGravacao
+        ? () => Promise.reject(new Error("Failed query: insert ... params: dado-sensivel"))
+        : executarFalso(estado),
     empresasParaIngestao: () =>
       Promise.resolve([
         { id: empresaId, slug: "fr", nome: "FR", status: "ativa", integracoesAtivas: integracoes },
@@ -148,6 +153,15 @@ describe("rotas públicas", () => {
     const r = await importar({ "x-ftp-ingest-secret": SEGREDO });
     expect(r.statusCode).toBe(503);
     expect(r.json()).toMatchObject({ motivo: "ingest_secret_nao_configurado" });
+  });
+
+  it("exceção no pipeline responde mensagem genérica (sem o erro interno)", async () => {
+    falharGravacao = true;
+    const r = await importar({ "x-ftp-ingest-secret": SEGREDO });
+    expect(r.statusCode).toBe(500);
+    expect(r.json()).toMatchObject({ motivo: "excecao_no_pipeline" });
+    expect(r.body).not.toContain("dado-sensivel");
+    expect(r.body).not.toContain("Failed query");
   });
 
   it("rotas 410 do sistema antigo não existem (Q46)", async () => {
