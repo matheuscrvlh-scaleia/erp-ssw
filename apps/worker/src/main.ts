@@ -15,11 +15,13 @@ import {
   OPCOES_PADRAO_DO_JOB,
   type RepositoriosDoWorker,
 } from "./jobs/registro";
+import { slaPelosArquivos } from "./jobs/sla-arquivos/job";
+import { criarRepositorioSlaArquivos } from "./jobs/sla-arquivos/repositorio";
 import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
 
 /** Todos os jobs do sistema. Job novo entra aqui. */
-const JOBS: readonly DefinicaoDeJob[] = [limparSessoes];
+const JOBS: readonly DefinicaoDeJob[] = [limparSessoes, slaPelosArquivos];
 
 const PRAZO_DE_DESLIGAMENTO_MS = 30_000;
 
@@ -43,6 +45,7 @@ function repositorios(tx: Transacao): RepositoriosDoWorker {
   return {
     agendamentos: criarRepositorioAgendamentos(tx),
     manutencao: criarRepositorioManutencao(tx),
+    slaArquivos: criarRepositorioSlaArquivos(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>

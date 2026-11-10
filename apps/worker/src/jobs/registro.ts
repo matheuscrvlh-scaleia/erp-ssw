@@ -4,11 +4,13 @@ import { type Logger } from "pino";
 
 import { type RepositorioAgendamentos } from "../agendamentos/agendamentos";
 import { type RepositorioManutencao } from "./manutencao/job";
+import { type RepositorioSlaArquivos } from "./sla-arquivos/job";
 
 /** Repositórios dos jobs presos a uma transação com contexto (mesmo padrão da API). */
 export interface RepositoriosDoWorker {
   agendamentos: RepositorioAgendamentos;
   manutencao: RepositorioManutencao;
+  slaArquivos: RepositorioSlaArquivos;
 }
 
 export type ExecutorDoWorker = <T>(
@@ -20,7 +22,10 @@ export type ExecutorDoWorker = <T>(
  * Filas e a concorrência de cada uma. Fila separada por natureza de trabalho: ingestão pesada não
  * pode atrasar manutenção, e vice-versa.
  */
-export const FILAS = [{ nome: "manutencao", concorrencia: 1 }] as const;
+export const FILAS = [
+  { nome: "manutencao", concorrencia: 1 },
+  { nome: "projecoes", concorrencia: 2 },
+] as const;
 export type NomeDaFila = (typeof FILAS)[number]["nome"];
 
 /** `plataforma`: um job para o sistema todo. `empresa`: um por empresa ativa, no contexto dela. */

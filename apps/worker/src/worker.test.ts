@@ -30,6 +30,11 @@ function bancoFalso() {
       },
       apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
     },
+    slaArquivos: {
+      feriados: () => Promise.resolve([]),
+      candidatos: () => Promise.resolve([]),
+      gravar: () => Promise.resolve(),
+    },
   };
   const executar: ExecutorDoWorker = (contexto, fn) => {
     contextos.push(contexto);
