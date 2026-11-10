@@ -16,6 +16,11 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoAdminConfiguracoesRouteImport } from './routes/_autenticado/admin/configuracoes'
+import { Route as AutenticadoAdminDepartamentosRouteImport } from './routes/_autenticado/admin/departamentos'
+import { Route as AutenticadoAdminLogsRouteImport } from './routes/_autenticado/admin/logs'
+import { Route as AutenticadoAdminRolesRouteImport } from './routes/_autenticado/admin/roles'
+import { Route as AutenticadoAdminUsuariosRouteImport } from './routes/_autenticado/admin/usuarios'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -51,6 +56,34 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoAdminConfiguracoesRoute =
+  AutenticadoAdminConfiguracoesRouteImport.update({
+    id: '/admin/configuracoes',
+    path: '/admin/configuracoes',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminDepartamentosRoute =
+  AutenticadoAdminDepartamentosRouteImport.update({
+    id: '/admin/departamentos',
+    path: '/admin/departamentos',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoAdminLogsRoute = AutenticadoAdminLogsRouteImport.update({
+  id: '/admin/logs',
+  path: '/admin/logs',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoAdminRolesRoute = AutenticadoAdminRolesRouteImport.update({
+  id: '/admin/roles',
+  path: '/admin/roles',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoAdminUsuariosRoute =
+  AutenticadoAdminUsuariosRouteImport.update({
+    id: '/admin/usuarios',
+    path: '/admin/usuarios',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -59,6 +92,11 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
+  '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
+  '/admin/logs': typeof AutenticadoAdminLogsRoute
+  '/admin/roles': typeof AutenticadoAdminRolesRoute
+  '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -67,6 +105,11 @@ export interface FileRoutesByTo {
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
+  '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
+  '/admin/logs': typeof AutenticadoAdminLogsRoute
+  '/admin/roles': typeof AutenticadoAdminRolesRoute
+  '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +120,11 @@ export interface FileRoutesById {
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
+  '/_autenticado/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
+  '/_autenticado/admin/logs': typeof AutenticadoAdminLogsRoute
+  '/_autenticado/admin/roles': typeof AutenticadoAdminRolesRoute
+  '/_autenticado/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +135,11 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/calendario'
     | '/sem-acesso'
+    | '/admin/configuracoes'
+    | '/admin/departamentos'
+    | '/admin/logs'
+    | '/admin/roles'
+    | '/admin/usuarios'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -95,6 +148,11 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/sem-acesso'
     | '/'
+    | '/admin/configuracoes'
+    | '/admin/departamentos'
+    | '/admin/logs'
+    | '/admin/roles'
+    | '/admin/usuarios'
   id:
     | '__root__'
     | '/_autenticado'
@@ -104,6 +162,11 @@ export interface FileRouteTypes {
     | '/_autenticado/calendario'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/admin/configuracoes'
+    | '/_autenticado/admin/departamentos'
+    | '/_autenticado/admin/logs'
+    | '/_autenticado/admin/roles'
+    | '/_autenticado/admin/usuarios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +227,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/configuracoes': {
+      id: '/_autenticado/admin/configuracoes'
+      path: '/admin/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AutenticadoAdminConfiguracoesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/departamentos': {
+      id: '/_autenticado/admin/departamentos'
+      path: '/admin/departamentos'
+      fullPath: '/admin/departamentos'
+      preLoaderRoute: typeof AutenticadoAdminDepartamentosRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/logs': {
+      id: '/_autenticado/admin/logs'
+      path: '/admin/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AutenticadoAdminLogsRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/roles': {
+      id: '/_autenticado/admin/roles'
+      path: '/admin/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AutenticadoAdminRolesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/usuarios': {
+      id: '/_autenticado/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AutenticadoAdminUsuariosRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
@@ -171,12 +269,22 @@ interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoAdminConfiguracoesRoute: typeof AutenticadoAdminConfiguracoesRoute
+  AutenticadoAdminDepartamentosRoute: typeof AutenticadoAdminDepartamentosRoute
+  AutenticadoAdminLogsRoute: typeof AutenticadoAdminLogsRoute
+  AutenticadoAdminRolesRoute: typeof AutenticadoAdminRolesRoute
+  AutenticadoAdminUsuariosRoute: typeof AutenticadoAdminUsuariosRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoAdminConfiguracoesRoute: AutenticadoAdminConfiguracoesRoute,
+  AutenticadoAdminDepartamentosRoute: AutenticadoAdminDepartamentosRoute,
+  AutenticadoAdminLogsRoute: AutenticadoAdminLogsRoute,
+  AutenticadoAdminRolesRoute: AutenticadoAdminRolesRoute,
+  AutenticadoAdminUsuariosRoute: AutenticadoAdminUsuariosRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
