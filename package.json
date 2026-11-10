@@ -17,6 +17,7 @@
     "typecheck": "bun run --filter \"*\" typecheck",
     "lint": "eslint . && prettier --check .",
     "test": "vitest run",
+    "test:cobertura": "vitest run --coverage",
     "format": "prettier --write .",
     "db:gerar": "bun run --cwd packages/db gerar",
     "db:migrar": "bun run --cwd packages/db migrar"

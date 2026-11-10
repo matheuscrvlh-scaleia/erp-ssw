@@ -9,7 +9,7 @@ import {
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { mascararSegredoDaUrl } from "../../infra/log";
+import { mascararUrl } from "../../infra/log";
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
 import { type FilasDeIngestao, type ResultadoDaExecucao } from "./casos-de-uso";
 
@@ -255,7 +255,7 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
 
 describe("log", () => {
   it("mascara o segredo da URL", () => {
-    expect(mascararSegredoDaUrl("/api/public/ssw-ocorrencias?empresa=fr&secret=abc123&x=1")).toBe(
+    expect(mascararUrl("/api/public/ssw-ocorrencias?empresa=fr&secret=abc123&x=1")).toBe(
       "/api/public/ssw-ocorrencias?empresa=fr&secret=[oculto]&x=1",
     );
   });
