@@ -199,3 +199,36 @@ export const cteDadosRelatorios = erp.table(
     ...politicasDeEmpresa("cte_dados_relatorios", t.empresaId),
   ],
 );
+
+/**
+ * Conferente e romaneio do CT-e pela linha 036 que vale para a tela Ocorrências (filtro e coluna
+ * "Conferente"/"Romaneio" da lista e seletor de conferentes).
+ *
+ * Mantida assim: para cada CT-e (sigla + número), entre as linhas 036 com romaneio e situação
+ * diferente de CANCELADO (situação nula passa), vale a primeira por data_ocorr_ctrc DESC NULLS
+ * LAST, hora_ocorr_ctrc DESC NULLS LAST, (situação = BAIXADO) DESC com situação nula antes,
+ * data_emissao DESC NULLS LAST, importado_em DESC. `conferente` = btrim, vazio → nulo.
+ * A ordem é diferente da de `romaneio_cte_atual`, por isso é outra projeção.
+ *
+ * Substitui: _ocorrencias_conferente_romaneio e ocorrencias_conferentes_opcoes (sistema atual),
+ * que liam a staging 036 (que agora tem retenção de 60 dias e não pode ser a fonte).
+ */
+export const romaneioConferenteCte = erp.table(
+  "romaneio_conferente_cte",
+  {
+    empresaId: empresaId(),
+    sigla: text("sigla").notNull(),
+    numero: text("numero").notNull(),
+    conferente: text("conferente"),
+    romaneio: text("romaneio").notNull(),
+    atualizadoEm: atualizadoEm(),
+  },
+  (t) => [
+    primaryKey({ name: "romaneio_conferente_cte_pk", columns: [t.empresaId, t.sigla, t.numero] }),
+    // Filtro "Conferente" da tela Ocorrências e lista distinta de conferentes do seletor.
+    index("romaneio_conferente_cte_conferente_idx")
+      .on(t.empresaId, t.conferente)
+      .where(sql`${t.conferente} is not null`),
+    ...politicasDeEmpresa("romaneio_conferente_cte", t.empresaId),
+  ],
+);

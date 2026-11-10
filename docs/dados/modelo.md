@@ -180,6 +180,7 @@ Tabelas de leitura mantidas pelo worker. Substituem as 5 matviews e as views de 
 | `romaneio_saidas_cte`  | empresa, sigla, número, data_saida | `romaneio_saida_ctrc` (gatilho) + view `mv_ctrc_saida_romaneio`                                                          | filtro "saída para entrega", performance por carro/ajudante                                                      |
 | `romaneio_cte_atual`   | empresa, sigla, número             | `mv_romaneio_036_ctrc`, `mv_romaneio_ctrc_motorista` e as views `romaneio_036_ctrc`, `romaneio_ctrc_motorista(_v2/_306)` | Listagem detalhada, Romaneio (Hoje/detalhe), motivos de não entrega, apuração de bônus, aplicação do 036 no CT-e |
 | `cte_dados_relatorios` | empresa, sigla, número             | `mv_ctrc_staging_enriquecido` + view                                                                                     | detalhe do Romaneio                                                                                              |
+| `romaneio_conferente_cte` | empresa, sigla, número | `_ocorrencias_conferente_romaneio` e `ocorrencias_conferentes_opcoes` (liam a staging 036) | Ocorrências (filtro e colunas Conferente/Romaneio, seletor de conferentes) |
 
 `mv_romaneio_placa_motorista_dia` não tem leitor (só o refresh) e não vira projeção.
 `vw_performance_dia` (Dashboard) e `vw_coletas` viram consulta do backend; `v_ssw_*` não têm
