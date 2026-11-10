@@ -6,15 +6,8 @@
  */
 import { ErroDeNegocio } from "./erros";
 
-const CRITERIOS = [
-  "entregas_prazo",
-  "penalizante",
-  "meta_produtividade",
-  "piso_performance",
-  "livre",
-] as const;
-
-type Criterio = (typeof CRITERIOS)[number];
+type Criterio =
+  "entregas_prazo" | "penalizante" | "meta_produtividade" | "piso_performance" | "livre";
 
 /** Parâmetros como o editor grava: número quando o texto digitado é número, senão texto. */
 type Parametros = Record<string, string | number>;

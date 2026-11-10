@@ -75,8 +75,7 @@ export function estaSemMovimento(
   return difDias(hojeSp(agora), ultimoMovimento) > limite;
 }
 
-const FAIXAS_PREVISAO = ["sem_prev", "vencido", "hoje", "d1", "d2", "d3_mais"] as const;
-type FaixaPrevisao = (typeof FAIXAS_PREVISAO)[number];
+type FaixaPrevisao = "sem_prev" | "vencido" | "hoje" | "d1" | "d2" | "d3_mais";
 
 /**
  * Faixa de vencimento do bloco "Previstos". "Hoje" é o dia de Brasília (Q11 do dono; hoje o SQL
