@@ -252,5 +252,22 @@ describe("Google", () => {
 
     const semCookie = await app.inject({ url: "/api/v1/auth/google/retorno?code=abc" });
     expect(semCookie.headers.location).toBe("/login?erro=falhou");
+
+    // Tab entre as barras: o navegador descarta e "/<tab>/site" viraria "//site".
+    for (const redirect of [
+      "%2F%09%2Fevil.example",
+      "%2F%20%2Fevil.example",
+      "%2Fpainel%3Fa%3D1",
+    ]) {
+      const outraIda = await app.inject({ url: `/api/v1/auth/google?redirect=${redirect}` });
+      const outroDesafio = outraIda.cookies.find((c) => c.name === "erp_google")?.value ?? "";
+      const outraVolta = await app.inject({
+        url: "/api/v1/auth/google/retorno?code=abc&state=e",
+        cookies: { erp_google: outroDesafio },
+      });
+      expect(outraVolta.headers.location).toBe(
+        redirect.startsWith("%2Fpainel") ? "/painel?a=1" : "/",
+      );
+    }
   });
 });

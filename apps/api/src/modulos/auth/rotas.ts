@@ -1,4 +1,5 @@
 import { ErroDeNegocio } from "@erp/dominio/erros";
+import { destinoInterno } from "@erp/shared/acesso/destino";
 import { CAMINHOS_GOOGLE, contratosAuth as c } from "@erp/shared/contratos/auth";
 import { z } from "@erp/shared/zod";
 import { type FastifyReply, type FastifyRequest } from "fastify";
@@ -51,11 +52,6 @@ function gravarRefresh(reply: FastifyReply, sessao: SessaoEmitida) {
 
 function apagarRefresh(reply: FastifyReply) {
   reply.clearCookie(COOKIE_REFRESH, { path: CAMINHO_DO_COOKIE });
-}
-
-/** Volta do Google só para caminho interno (evita redirecionamento aberto). */
-function destinoSeguro(destino: string | undefined): string {
-  return destino && /^\/(?![/\\])/.test(destino) ? destino : "/";
 }
 
 const desafioGuardado = z.object({
@@ -219,7 +215,10 @@ function registrarGoogle(
     },
     async (request, reply) => {
       const { url, desafio } = await google.iniciar();
-      const guardado = { ...desafio, destino: destinoSeguro(request.query.redirect) };
+      const guardado = {
+        ...desafio, // Volta do Google só para caminho interno da mesma origem (evita redirecionamento aberto).
+        destino: destinoInterno(request.query.redirect, deps.webUrl),
+      };
       // SameSite=Lax: a volta do Google é navegação de outro site e precisa trazer o cookie.
       reply.setCookie(COOKIE_GOOGLE, JSON.stringify(guardado), {
         httpOnly: true,

@@ -1,3 +1,4 @@
+import { destinoInterno } from "@erp/shared/acesso/destino";
 import { CAMINHO_DA_TELA, telaDoCaminho } from "@erp/shared/acesso/telas";
 import { type Acesso } from "@erp/shared/contratos/auth";
 
@@ -27,7 +28,10 @@ export function decidirAcesso(
   return { tipo: "redirecionar", para: primeira ? CAMINHO_DA_TELA[primeira] : "/sem-acesso" };
 }
 
-/** Só caminho interno: `//outro.site` ou URL absoluta no `?redirect=` viraria open redirect. */
+/**
+ * Só caminho interno da mesma origem: `//outro.site`, `/\t/outro.site` ou URL absoluta no
+ * `?redirect=` viraria open redirect.
+ */
 export function destinoSeguro(destino: string | undefined): string {
-  return destino && /^\/(?![/\\])/.test(destino) ? destino : "/";
+  return destinoInterno(destino, window.location.origin);
 }

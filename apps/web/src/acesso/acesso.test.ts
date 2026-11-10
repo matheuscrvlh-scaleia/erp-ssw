@@ -55,6 +55,8 @@ describe("destinoSeguro", () => {
     expect(destinoSeguro("/\\evil.com")).toBe("/");
     expect(destinoSeguro("https://evil.com")).toBe("/");
     expect(destinoSeguro(undefined)).toBe("/");
+    expect(destinoSeguro("/\t/evil.example")).toBe("/");
+    expect(destinoSeguro("/ /evil.example")).toBe("/");
   });
 });
 
