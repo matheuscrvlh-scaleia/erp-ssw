@@ -19,6 +19,15 @@ describe("mascararUrl", () => {
     expect(mascararUrl("/api/v1/calendario?ano=2026")).toBe("/api/v1/calendario?ano=2026");
   });
 
+  it("esconde o token do link público do ranking, que vai no caminho", () => {
+    const token = "a".repeat(48);
+    expect(mascararUrl(`/api/public/ranking/${token}?inicio=2026-11-01`)).toBe(
+      "/api/public/ranking/[oculto]?inicio=2026-11-01",
+    );
+    expect(mascararUrl(`/ranking/publico/${token}`)).toBe("/ranking/publico/[oculto]");
+    expect(mascararUrl("/api/v1/ranking/equipes")).toBe("/api/v1/ranking/equipes");
+  });
+
   it("ignora caixa no nome do parâmetro", () => {
     expect(mascararUrl("/x?Secret=1")).toBe("/x?Secret=[oculto]");
   });

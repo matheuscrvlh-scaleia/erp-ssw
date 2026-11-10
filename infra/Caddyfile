@@ -107,8 +107,8 @@
 	encode zstd gzip
 
 	# Log de acesso em JSON. Authorization e Cookie o Caddy já omite; aqui saem também os
-	# cabeçalhos de segredo das rotas públicas e os parâmetros sensíveis da query (o webhook do
-	# SSW pode mandar ?secret=).
+	# cabeçalhos de segredo das rotas públicas, os parâmetros sensíveis da query (o webhook do
+	# SSW pode mandar ?secret=) e o token do link público do ranking, que vai no caminho.
 	log {
 		output stdout
 		format filter {
@@ -118,15 +118,20 @@
 				request>headers>X-Ingest-Secret delete
 				request>headers>X-Cron-Token delete
 				request>headers>Apikey delete
-				request>uri query {
-					replace secret ***
-					replace segredo ***
-					replace token ***
-					replace apikey ***
-					replace senha ***
-					replace password ***
-					replace code ***
-					replace state ***
+				# `multiple` (Caddy 2.8+): a query e o token do link público do ranking, que vai no
+				# caminho (`/ranking/publico/<token>` e `/api/public/ranking/<token>`).
+				request>uri multiple {
+					query {
+						replace secret ***
+						replace segredo ***
+						replace token ***
+						replace apikey ***
+						replace senha ***
+						replace password ***
+						replace code ***
+						replace state ***
+					}
+					regexp "^(/(?:api/public/ranking|ranking/publico)/)[^/?#]+" "$1***"
 				}
 			}
 		}
