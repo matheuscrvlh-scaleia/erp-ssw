@@ -11,26 +11,28 @@ import {
 } from "./ingestao";
 
 const log = pino({ level: "silent" });
-const bi2 = JOBS_DE_INGESTAO.find((j) => j.job === "bi2_0017");
-const ftp = JOBS_DE_INGESTAO.find((j) => j.job === "ftp");
+const bi2 = JOBS_DE_INGESTAO.find((j) => j.job === "bi2-0017");
+const ftp = JOBS_DE_INGESTAO.find((j) => j.job === "sincronizar-ftp");
 
 describe("agendador da ingestão", () => {
   it("agenda só o que está ligado no ambiente e tem handler, no horário UTC de hoje", () => {
-    const registrados = new Set(["bi2_0017", "ssw_token_check", "ssw_webhook"]);
-    expect(agendamentosDeIngestao(["bi2_0017", "ftp", "ssw_webhook"], registrados)).toEqual([
+    const registrados = new Set(["bi2-0017", "verificar-token-ssw", "processar-webhook-ssw"]);
+    expect(
+      agendamentosDeIngestao(["bi2-0017", "sincronizar-ftp", "processar-webhook-ssw"], registrados),
+    ).toEqual([
       {
-        id: "ingestao:bi2_0017",
+        id: "ingestao:bi2-0017",
         job: "despachar_ingestao",
         padrao: "12,42 * * * *",
         fuso: "UTC",
-        dados: { job: "bi2_0017" },
+        dados: { job: "bi2-0017" },
       },
     ]);
     expect(agendamentosDeIngestao([], registrados)).toEqual([]);
   });
 
   it("BI2 em rodízio: uma empresa por disparo, pela posição do minuto", () => {
-    if (!bi2 || !ftp) throw new Error("catálogo sem bi2_0017/ftp");
+    if (!bi2 || !ftp) throw new Error("catálogo sem bi2-0017/ftp");
     const empresas = ["a", "b", "c"];
     const minuto = (m: number) => new Date(m * 60_000);
     expect(empresasDoDisparo(bi2, empresas, minuto(12))).toEqual(["a"]);
@@ -62,18 +64,18 @@ describe("agendador da ingestão", () => {
         log,
         agora: () => new Date("2026-11-10T12:25:00Z"),
       },
-      { job: "ftp_retroativo" },
+      { job: "sincronizar-ftp-retroativo" },
     );
     expect(enfileirados).toEqual([
       {
-        job: "ftp_retroativo",
+        job: "sincronizar-ftp-retroativo",
         dados: { retroativo: true, empresaId: "e1" },
-        opcoes: { deduplicar: "ftp_retroativo__e1" },
+        opcoes: { deduplicar: "sincronizar-ftp-retroativo__e1" },
       },
       {
-        job: "ftp_retroativo",
+        job: "sincronizar-ftp-retroativo",
         dados: { retroativo: true, empresaId: "e3" },
-        opcoes: { deduplicar: "ftp_retroativo__e3" },
+        opcoes: { deduplicar: "sincronizar-ftp-retroativo__e3" },
       },
     ]);
     expect(banco.contextos).toEqual([{ empresaId: null, usuarioId: null, plataforma: true }]);

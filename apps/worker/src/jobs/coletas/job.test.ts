@@ -26,7 +26,7 @@ describe("050 de coletas pelo FTP", () => {
   it("grava as coletas no contexto da empresa com o caso de uso da tela", async () => {
     const { banco, processar } = montar();
     const r = await processar({
-      name: "coletas.importar-050",
+      name: "importar-coletas-050",
       data: {
         empresaId: EMPRESA,
         nome: "050_coletas_2026-11-05_1330.csv",
@@ -51,7 +51,7 @@ describe("050 de coletas pelo FTP", () => {
     const { processar } = montar();
     await expect(
       processar({
-        name: "coletas.importar-050",
+        name: "importar-coletas-050",
         data: { empresaId: EMPRESA, nome: "x.csv", conteudo: "UNIDADE;COLETA;TIPO\nCAP;1;NORMAL" },
       }),
     ).rejects.toThrow(/x\.csv/);

@@ -26,7 +26,7 @@ export interface JobDeIngestao {
 
 export const JOBS_DE_INGESTAO = [
   {
-    job: "bi2_0017",
+    job: "bi2-0017",
     descricao: "BI2 0017 — entregues (entrega e previsão de CT-e encerrado)",
     integracao: "ssw_bi2",
     cron: "12,42 * * * *",
@@ -34,7 +34,7 @@ export const JOBS_DE_INGESTAO = [
     dados: { modo: "cron_continuo", lookback: 2 },
   },
   {
-    job: "ssw_token_check",
+    job: "verificar-token-ssw",
     descricao: "Token da SSW API (renovação e verificação)",
     integracao: "ssw_api",
     cron: "25 * * * *",
@@ -42,7 +42,7 @@ export const JOBS_DE_INGESTAO = [
     dados: {},
   },
   {
-    job: "ssw_webhook",
+    job: "processar-webhook-ssw",
     descricao: "Ocorrências recebidas pelo webhook SSW2181",
     integracao: "ssw_webhook",
     cron: null,
@@ -50,7 +50,7 @@ export const JOBS_DE_INGESTAO = [
     dados: {},
   },
   {
-    job: "ftp",
+    job: "sincronizar-ftp",
     descricao: "Relatórios SSW do SFTP (036/038/050/306/455/930)",
     integracao: "sftp",
     // Todo minuto menos :00 e :30, um horário só para todas as empresas (Q37 do dono).
@@ -59,7 +59,7 @@ export const JOBS_DE_INGESTAO = [
     dados: {},
   },
   {
-    job: "ftp_retroativo",
+    job: "sincronizar-ftp-retroativo",
     descricao: "Revarredura dos importados do SFTP (03:10 de Brasília)",
     integracao: "sftp",
     cron: "10 6 * * *",
@@ -67,7 +67,7 @@ export const JOBS_DE_INGESTAO = [
     dados: { retroativo: true },
   },
   {
-    job: "ssw_ciclo_aplicar",
+    job: "aplicar-ciclos",
     descricao: "Aplicação dos ciclos de relatórios em CT-e e ocorrências",
     integracao: "sftp",
     cron: "* * * * *",
@@ -75,7 +75,7 @@ export const JOBS_DE_INGESTAO = [
     dados: {},
   },
   {
-    job: "sla_arquivos",
+    job: "sla-arquivos",
     descricao: "Unidade pelo 455 e SLA pelos arquivos",
     integracao: "sftp",
     cron: "8,38 * * * *",
@@ -83,7 +83,7 @@ export const JOBS_DE_INGESTAO = [
     dados: {},
   },
   {
-    job: "limpar_staging_038",
+    job: "limpar-ingestao-arquivos",
     descricao: "Limpeza das linhas superadas do 038 (03:40 de Brasília)",
     integracao: "sftp",
     cron: "40 6 * * *",
@@ -91,7 +91,7 @@ export const JOBS_DE_INGESTAO = [
     dados: {},
   },
   {
-    job: "xml_orfaos_retry",
+    job: "reprocessar-xml-orfaos",
     descricao: "Nova tentativa dos XML de CT-e órfãos",
     integracao: "xml_cte",
     cron: null,
@@ -153,4 +153,4 @@ export const JOB_PROJECOES_ROMANEIO = {
 } as const;
 
 /** Relatório 050 de coletas que chega pelo FTP (o mesmo caso de uso da importação da tela). */
-export const JOB_COLETAS_050 = { fila: "coletas", nome: "coletas.importar-050" } as const;
+export const JOB_COLETAS_050 = { fila: "coletas", nome: "importar-coletas-050" } as const;

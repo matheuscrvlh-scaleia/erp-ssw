@@ -96,7 +96,7 @@ describe("generateToken", () => {
   });
 });
 
-describe("job ssw_token_check", () => {
+describe("job verificar-token-ssw", () => {
   const chaves = lerChavesDeSegredo(`1:${randomBytes(32).toString("base64")}`, 1);
   const cofre: Cofre = { decifrar: () => "s3nha" };
   let banco: BancoFalso;

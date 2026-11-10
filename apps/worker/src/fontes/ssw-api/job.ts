@@ -1,5 +1,5 @@
 /**
- * Job `ssw_token_check`: de hora em hora mantém o token da SSW API válido (renova quando faltam
+ * Job `verificar-token-ssw`: de hora em hora mantém o token da SSW API válido (renova quando faltam
  * 90 min ou menos) e registra a verificação, que acende ou apaga a faixa "Integração SSW
  * indisponível". O "Testar conexão" da tela roda o mesmo job, forçando a renovação.
  * Especificação: docs/regras/06-ingestao.md §3.18.
@@ -43,8 +43,8 @@ export interface DependenciasDoTokenSsw {
 
 export function criarJobTokenSsw(deps: DependenciasDoTokenSsw) {
   return definirJob({
-    nome: "ssw_token_check",
-    fila: filaDoJob("ssw_token_check"),
+    nome: "verificar-token-ssw",
+    fila: filaDoJob("verificar-token-ssw"),
     // A verificação grava em `empresa_integracoes`, que só a Plataforma altera (RLS).
     escopo: "plataforma",
     dados: dadosDoTokenSsw,

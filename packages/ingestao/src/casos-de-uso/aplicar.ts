@@ -367,7 +367,7 @@ export async function aplicarChaves(
     ignorados: ignorados.length,
   };
   await r.auditar({
-    acao: "ingestao.aplicar_bloco",
+    acao: "aplicar",
     entidade: "ctes",
     entidadeId: null,
     resumo: `Aplicação SSW: ${totais.inserir} CT-e novos, ${totais.atualizar} atualizados, ${totais.ocorrencias} ocorrências`,

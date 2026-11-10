@@ -33,7 +33,7 @@ const iso = (d: Date | null) => (d ? d.toISOString() : null);
 const isoObrigatorio = (d: Date) => d.toISOString();
 
 /** Horário do FTP em português (Q37: o de produção, igual para todas as empresas). */
-const CRON_DO_FTP = JOBS_DE_INGESTAO.find((j) => j.job === "ftp")?.cron ?? "";
+const CRON_DO_FTP = JOBS_DE_INGESTAO.find((j) => j.job === "sincronizar-ftp")?.cron ?? "";
 const DESCRICAO_DA_AGENDA = `A cada minuto, exceto :00 e :30 (${CRON_DO_FTP} UTC)`;
 
 export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
@@ -211,14 +211,14 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
       const { empresaId, deps } = await daEmpresa(request);
       // "Rodar agora" ignora a pausa; singleton por empresa (disparo repetido é descartado).
       await servicos.enfileirador.enfileirar(
-        filaDoJob("ftp"),
-        "ftp",
+        filaDoJob("sincronizar-ftp"),
+        "sincronizar-ftp",
         { empresaId, manual: true },
-        { deduplicacao: idDeExecucao("ftp", empresaId) },
+        { deduplicacao: idDeExecucao("sincronizar-ftp", empresaId) },
       );
       await deps.executar((r) =>
         r.auditar({
-          acao: "ingestao.ftp_rodar",
+          acao: "executar",
           entidade: "empresa_integracoes",
           entidadeId: "sftp",
           resumo: "Sincronização do FTP disparada",
@@ -241,7 +241,7 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
       await deps.executar(async (r) => {
         await r.gravarConfiguracao("ftp_sync_ativo", String(ativo));
         await r.auditar({
-          acao: ativo ? "ingestao.ftp_retomar" : "ingestao.ftp_pausar",
+          acao: ativo ? "retomar" : "pausar",
           entidade: "configuracoes",
           entidadeId: "ftp_sync_ativo",
           resumo: ativo ? "Sincronização do FTP retomada" : "Sincronização do FTP pausada",
@@ -261,7 +261,7 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
       await servicos.progressos.limpar(empresaId);
       await deps.executar((r) =>
         r.auditar({
-          acao: "ingestao.ftp_liberar_trava",
+          acao: "liberar_trava",
           entidade: "empresa_integracoes",
           entidadeId: "sftp",
           resumo: "Trava do FTP liberada à mão",

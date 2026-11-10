@@ -243,7 +243,7 @@ export async function receberWebhook(
   try {
     if (portas.filas === null) throw new Error("fila de processamento indisponível");
     await portas.filas.enfileirar(
-      "ssw_webhook",
+      "processar-webhook-ssw",
       { empresaId: empresa.id, eventoId, protocolo },
       { deduplicar: `ssw_webhook__${eventoId}` },
     );

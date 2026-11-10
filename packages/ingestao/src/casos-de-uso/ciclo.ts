@@ -1,5 +1,5 @@
 /**
- * Ciclo automático de aplicação (job `ssw_ciclo_aplicar`, todo minuto), romaneio do CT-e pelo 036,
+ * Ciclo automático de aplicação (job `aplicar-ciclos`, todo minuto), romaneio do CT-e pelo 036,
  * partes do CT-e pelo 455 e descarte/retomada do ciclo pela tela. Spec 06 §3.6.2, §3.9 e §3.13;
  * Q38 b (036 direto da staging), Q51 b (descartar apaga todas as linhas do ciclo, 455 CSV junto).
  * origem: ciclo.server.ts, aplicar_036_romaneio, aplicar_partes_455 (sistema atual)
@@ -280,7 +280,7 @@ export async function aplicarCiclo(
   }
 }
 
-/** Job `ssw_ciclo_aplicar`: aplica os ciclos abertos com arquivo importado, dentro do orçamento. */
+/** Job `aplicar-ciclos`: aplica os ciclos abertos com arquivo importado, dentro do orçamento. */
 export async function rodarCiclos(deps: DependenciasDoCiclo): Promise<{
   status: "ok" | "ja_rodando";
   resultados: Awaited<ReturnType<typeof aplicarCiclo>>[];
@@ -408,7 +408,7 @@ export async function descartarCiclo(
       motivo: `${motivo} — removidas ${total} linhas de staging: linhas ${contagem.linhas}, erros ${contagem.erros}`,
     });
     await r.auditar({
-      acao: "ingestao.descartar_ciclo",
+      acao: "descartar",
       entidade: "ingestao_ciclos",
       entidadeId: cicloChave,
       resumo: `Ciclo ${cicloChave} descartado (${total} linhas removidas)`,

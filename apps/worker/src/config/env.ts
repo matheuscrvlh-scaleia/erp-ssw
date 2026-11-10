@@ -14,7 +14,7 @@ const esquema = z.object({
     .default("false")
     .transform((v) => v === "true"),
   /**
-   * Jobs de ingestão que o agendador dispara (separados por vírgula, ex.: `bi2_0017,ssw_token_check`).
+   * Jobs de ingestão que o agendador dispara (separados por vírgula, ex.: `bi2-0017,verificar-token-ssw`).
    * Vazio = nenhum: cada job é ligado de propósito, no ambiente que deve rodar.
    */
   INGESTAO_JOBS_LIGADOS: z

@@ -51,8 +51,8 @@ export async function calcularSlaArquivos(
 
 /** Por empresa, logo depois da unidade pelo 455 (mesmo horário do cron de hoje). */
 export const slaPelosArquivos = definirJob({
-  nome: "sla_arquivos",
-  fila: filaDoJob("sla_arquivos"),
+  nome: "sla-arquivos",
+  fila: filaDoJob("sla-arquivos"),
   escopo: "empresa",
   dados: z.object({
     empresaId: z.uuid(),

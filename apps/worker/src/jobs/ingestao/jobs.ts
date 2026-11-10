@@ -71,8 +71,8 @@ function dependencias(
 
 export function criarJobsDaIngestao(s: ServicosDaIngestao) {
   const ftp = definirJob({
-    nome: "ftp",
-    fila: filaDoJob("ftp"),
+    nome: "sincronizar-ftp",
+    fila: filaDoJob("sincronizar-ftp"),
     escopo: "empresa",
     dados: porEmpresa.extend({ manual: z.boolean().default(false) }),
     agendamento: null,
@@ -87,8 +87,8 @@ export function criarJobsDaIngestao(s: ServicosDaIngestao) {
   });
 
   const ftpRetroativo = definirJob({
-    nome: "ftp_retroativo",
-    fila: filaDoJob("ftp_retroativo"),
+    nome: "sincronizar-ftp-retroativo",
+    fila: filaDoJob("sincronizar-ftp-retroativo"),
     escopo: "empresa",
     dados: porEmpresa,
     agendamento: null,
@@ -103,8 +103,8 @@ export function criarJobsDaIngestao(s: ServicosDaIngestao) {
   });
 
   const ciclo = definirJob({
-    nome: "ssw_ciclo_aplicar",
-    fila: filaDoJob("ssw_ciclo_aplicar"),
+    nome: "aplicar-ciclos",
+    fila: filaDoJob("aplicar-ciclos"),
     escopo: "empresa",
     dados: porEmpresa,
     agendamento: null,
@@ -128,8 +128,8 @@ export function criarJobsDaIngestao(s: ServicosDaIngestao) {
   // Retenção da ingestão por arquivo (Q49): 038 superado, linhas, erros, arquivos/ciclos, XML,
   // órfãos e sincronizações. No contexto da empresa: o RLS limita à dela.
   const limpeza = definirJob({
-    nome: "limpar_staging_038",
-    fila: filaDoJob("limpar_staging_038"),
+    nome: "limpar-ingestao-arquivos",
+    fila: filaDoJob("limpar-ingestao-arquivos"),
     escopo: "empresa",
     dados: porEmpresa,
     agendamento: null,
@@ -141,8 +141,8 @@ export function criarJobsDaIngestao(s: ServicosDaIngestao) {
   });
 
   const xmlOrfaos = definirJob({
-    nome: "xml_orfaos_retry",
-    fila: filaDoJob("xml_orfaos_retry"),
+    nome: "reprocessar-xml-orfaos",
+    fila: filaDoJob("reprocessar-xml-orfaos"),
     escopo: "empresa",
     dados: porEmpresa.extend({ limite: z.number().int().min(1).max(1000).optional() }),
     agendamento: null,

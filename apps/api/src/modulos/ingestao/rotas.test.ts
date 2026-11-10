@@ -101,7 +101,7 @@ describe("rotas públicas", () => {
       payload: {},
     });
     expect(r.json()).toMatchObject({ ok: true, status: "enfileirado" });
-    expect(enfileirador.jobs).toEqual([{ nome: "ssw_ciclo_aplicar", dados: { empresaId } }]);
+    expect(enfileirador.jobs).toEqual([{ nome: "aplicar-ciclos", dados: { empresaId } }]);
   });
 
   it("rotas 410 do sistema antigo não existem (Q46)", async () => {
@@ -130,7 +130,7 @@ describe("telas (só Plataforma)", () => {
     });
     expect(rodar.json()).toEqual({ ok: true });
     expect(enfileirador.jobs[0]).toEqual({
-      nome: "ftp",
+      nome: "sincronizar-ftp",
       dados: { empresaId, manual: true },
     });
   });

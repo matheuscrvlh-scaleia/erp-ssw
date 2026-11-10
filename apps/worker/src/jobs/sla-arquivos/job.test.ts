@@ -92,10 +92,10 @@ describe("job sla-pelos-arquivos", () => {
   it("por empresa, disparado pelo catálogo de ingestão, no contexto da empresa", async () => {
     expect(slaPelosArquivos).toMatchObject({
       escopo: "empresa",
-      fila: "ingestao.sla_arquivos",
+      fila: "ingestao.sla-arquivos",
       agendamento: null,
     });
-    expect(JOBS_DE_INGESTAO.find((j) => j.job === "sla_arquivos")?.cron).toBe("8,38 * * * *");
+    expect(JOBS_DE_INGESTAO.find((j) => j.job === "sla-arquivos")?.cron).toBe("8,38 * * * *");
     const { repo, pedidos } = repositorioFalso([]);
     const contextos: unknown[] = [];
     const processar = criarProcessador({
@@ -110,7 +110,7 @@ describe("job sla-pelos-arquivos", () => {
       agora: () => AGORA,
     });
     await processar({
-      name: "sla_arquivos",
+      name: "sla-arquivos",
       data: { empresaId: EMPRESA, desde: "2026-10-01" },
     });
     expect(contextos).toEqual([{ empresaId: EMPRESA, usuarioId: null, plataforma: false }]);

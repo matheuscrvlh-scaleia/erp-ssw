@@ -64,7 +64,10 @@ export interface DefinicaoDeFila {
  * Uma execução por vez em todos os processos: o BI2 é pesado e o SSW limita (era a lease
  * `bi2_pesado`); o webhook em ordem para duas ocorrências do mesmo CT-e não se cruzarem.
  */
-const UMA_POR_VEZ: ReadonlySet<NomeDoJobDeIngestao> = new Set(["bi2_0017", "ssw_webhook"]);
+const UMA_POR_VEZ: ReadonlySet<NomeDoJobDeIngestao> = new Set([
+  "bi2-0017",
+  "processar-webhook-ssw",
+]);
 
 /**
  * Filas e a concorrência de cada uma. Fila separada por natureza de trabalho: ingestão pesada não

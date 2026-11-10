@@ -1,5 +1,5 @@
 /**
- * Sincronização do SFTP da empresa (job `ftp` e `ftp_retroativo`, botão "Rodar agora").
+ * Sincronização do SFTP da empresa (jobs `sincronizar-ftp` e `sincronizar-ftp-retroativo`, botão "Rodar agora").
  * Spec 06 §3.1; Q37 a (horário global de produção). O ramo de XML do FTP não é portado (§9).
  * origem: supabase/functions/processar-ftp-xmls/index.ts (sistema atual)
  */

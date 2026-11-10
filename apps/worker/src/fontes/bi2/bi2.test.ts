@@ -67,7 +67,7 @@ describe("cliente e CSV do BI2", () => {
   });
 });
 
-describe("job bi2_0017", () => {
+describe("job bi2-0017", () => {
   let banco: BancoFalso;
   const agora = () => new Date("2026-11-10T15:00:00Z");
 

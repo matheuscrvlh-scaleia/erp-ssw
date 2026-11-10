@@ -26,12 +26,12 @@ gatilho.
   num hash do Redis (some em 7 dias).
 - **Disparo manual e rota pública** enfileiram o job com deduplicação por empresa + tipo
   (singleton). O 050 e as projeções do romaneio são jobs de outros domínios
-  (`coletas.importar-050`, `projecoes-romaneio`, que o Romaneio já consome).
+  (`importar-coletas-050`, `projecoes-romaneio`, que o Romaneio já consome).
 
 ## Consequências
 - Sem Redis a API não registra as rotas da ingestão (desenvolvimento sem Redis segue funcionando).
-- Os jobs (`ftp`, `ftp_retroativo`, `ssw_ciclo_aplicar`, `sla_arquivos`, `limpar_staging_038`,
-  `xml_orfaos_retry`) usam os nomes, filas e horários do catálogo `@erp/shared/ingestao`; quem
+- Os jobs (`sincronizar-ftp`, `sincronizar-ftp-retroativo`, `aplicar-ciclos`, `sla-arquivos`,
+  `limpar-ingestao-arquivos`, `reprocessar-xml-orfaos`) usam os nomes, filas e horários do catálogo `@erp/shared/ingestao`; quem
   agenda é o despachante do worker, uma execução por empresa com a integração ligada. Nascem
   desligados: `AGENDAMENTOS_LIGADOS=true` e o job listado em `INGESTAO_JOBS_LIGADOS`.
 - A senha do SFTP vem do cofre do worker (`SEGREDOS_CHAVES`/`SEGREDOS_CHAVE_ATUAL`, contexto

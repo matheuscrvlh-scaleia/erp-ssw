@@ -122,12 +122,12 @@ describe("Admin › Ingestão SSW", () => {
     expect(r.json()).toEqual({ enfileirado: true, pendente: true, resultado: null });
     expect(filas.enfileirados).toEqual([
       {
-        job: "bi2_0017",
+        job: "bi2-0017",
         dados: { empresaId, modo: "manual", data: "2026-11-09", lookback: 0 },
         deduplicar: null,
       },
     ]);
-    expect(cenario.banco.auditoria.at(-1)).toMatchObject({ entidade: "bi2_0017", empresaId });
+    expect(cenario.banco.auditoria.at(-1)).toMatchObject({ entidade: "bi2-0017", empresaId });
   });
 
   it("salvar credenciais cifra a senha com o contexto da empresa e invalida o token", async () => {
@@ -231,7 +231,7 @@ describe("Webhook SSW2181 (/api/public/ssw-ocorrencias)", () => {
     expect(evento).toMatchObject({ empresaId, autenticado: true, statusHttp: 200 });
     expect(filas.enfileirados).toEqual([
       {
-        job: "ssw_webhook",
+        job: "processar-webhook-ssw",
         dados: expect.objectContaining({ empresaId, eventoId: evento?.id }) as unknown,
         deduplicar: `ssw_webhook__${evento?.id ?? ""}`,
       },

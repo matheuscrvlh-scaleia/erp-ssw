@@ -1,5 +1,5 @@
 /**
- * Job `bi2_0017`: baixa o 0017 de cada data do ciclo, completa entrega e previsão dos CT-e
+ * Job `bi2-0017`: baixa o 0017 de cada data do ciclo, completa entrega e previsão dos CT-e
  * encerrados (pelo núcleo), guarda o bruto e registra a sincronização. O BI2 só fica com o 0017
  * (Q41 do dono: os pausados e o backfill não foram portados).
  * Especificação: docs/regras/06-ingestao.md §3.14, §3.15.
@@ -70,8 +70,8 @@ type Executar = <T>(fn: (r: RepositoriosDoWorker) => Promise<T>) => Promise<T>;
 
 export function criarJobBi2_0017(deps: DependenciasDoBi2) {
   return definirJob({
-    nome: "bi2_0017",
-    fila: filaDoJob("bi2_0017"),
+    nome: "bi2-0017",
+    fila: filaDoJob("bi2-0017"),
     escopo: "empresa",
     dados: dadosDoBi2_0017,
     agendamento: null,

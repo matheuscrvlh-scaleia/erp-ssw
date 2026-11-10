@@ -80,8 +80,8 @@ export const dadosDoWebhook = z.object({
 export const SEM_VINCULO = "ctrc_desconhecido";
 
 export const jobWebhookSsw = definirJob({
-  nome: "ssw_webhook",
-  fila: filaDoJob("ssw_webhook"),
+  nome: "processar-webhook-ssw",
+  fila: filaDoJob("processar-webhook-ssw"),
   escopo: "empresa",
   dados: dadosDoWebhook,
   agendamento: null,

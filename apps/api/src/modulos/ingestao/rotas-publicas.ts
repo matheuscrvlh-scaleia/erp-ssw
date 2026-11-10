@@ -165,10 +165,10 @@ export const rotasPublicasDaIngestao: FastifyPluginCallbackZod<{
       if (!empresaId) return reply;
       // O ciclo roda no worker (singleton por empresa); a rota só pede a rodada.
       await servicos.enfileirador.enfileirar(
-        filaDoJob("ssw_ciclo_aplicar"),
-        "ssw_ciclo_aplicar",
+        filaDoJob("aplicar-ciclos"),
+        "aplicar-ciclos",
         { empresaId },
-        { deduplicacao: idDeExecucao("ssw_ciclo_aplicar", empresaId) },
+        { deduplicacao: idDeExecucao("aplicar-ciclos", empresaId) },
       );
       return { ok: true, status: "enfileirado", resultados: [] };
     },

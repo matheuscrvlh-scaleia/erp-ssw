@@ -79,7 +79,7 @@ describe("recepção de arquivo", () => {
       "050_coletas_2026-11-05_1000.csv",
     );
     expect(r).toMatchObject({ ok: true, status: "coletas" });
-    expect(enfileirador.jobs[0]?.nome).toBe("coletas.importar-050");
+    expect(enfileirador.jobs[0]?.nome).toBe("importar-coletas-050");
     expect(s.arquivos.get("050_coletas_2026-11-05_1000.csv")?.relatorio).toBe("050");
   });
 });
@@ -104,7 +104,7 @@ describe("aplicação em blocos", () => {
     expect(fila.itens).toEqual([]);
     expect(enfileirador.jobs.some((j) => j.nome === "projecoes-romaneio")).toBe(true);
     expect(s.aplicacoes[0]?.status).toBe("concluido");
-    expect(s.auditoria).toContain("ingestao.aplicar_bloco");
+    expect(s.auditoria).toContain("aplicar");
   });
 
   it("simulação não grava nada", async () => {

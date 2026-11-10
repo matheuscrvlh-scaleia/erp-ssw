@@ -208,7 +208,7 @@ describe("jobs da ingestão por arquivo", () => {
     );
   });
 
-  it("limpar_staging_038 aplica a retenção no contexto da empresa", async () => {
+  it("limpar-ingestao-arquivos aplica a retenção no contexto da empresa", async () => {
     const banco = new BancoFalso();
     const processar = criarProcessador({
       jobs,
@@ -216,14 +216,14 @@ describe("jobs da ingestão por arquivo", () => {
       log,
       agora: () => new Date("2026-11-10T06:40:00Z"),
     });
-    await processar({ name: "limpar_staging_038", data: { empresaId: EMPRESA_DO_BANCO } });
+    await processar({ name: "limpar-ingestao-arquivos", data: { empresaId: EMPRESA_DO_BANCO } });
     expect(banco.contextos).toEqual([
       { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },
     ]);
     expect(banco.retencoes).toContainEqual(new Date("2026-09-11T06:40:00Z"));
   });
 
-  it("sla_arquivos passa a unidade pelo 455 antes do SLA, tudo no contexto da empresa", async () => {
+  it("sla-arquivos passa a unidade pelo 455 antes do SLA, tudo no contexto da empresa", async () => {
     const banco = new BancoFalso();
     const processar = criarProcessador({
       jobs,
@@ -231,7 +231,7 @@ describe("jobs da ingestão por arquivo", () => {
       log,
       agora: () => new Date(),
     });
-    await processar({ name: "sla_arquivos", data: { empresaId: EMPRESA_DO_BANCO } });
+    await processar({ name: "sla-arquivos", data: { empresaId: EMPRESA_DO_BANCO } });
     // Uma transação da unidade pelo 455 (sem 455 recente) e uma do SLA.
     expect(banco.contextos).toEqual([
       { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },

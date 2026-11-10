@@ -205,7 +205,7 @@ export async function rodarBi2(
 ): Promise<SaidaDe<typeof contratosIngestaoSsw.rodarBi2>> {
   const filas = filasOuErro(deps.filas);
   const jobId = await filas.enfileirar(
-    "bi2_0017",
+    "bi2-0017",
     { empresaId, modo: "manual", data, lookback: 0 },
     { deduplicar: null },
   );
@@ -213,14 +213,14 @@ export async function rodarBi2(
     auditoria.registrar(ator, {
       empresaId,
       acao: "executar",
-      entidade: "bi2_0017",
+      entidade: "bi2-0017",
       entidadeId: data,
       resumo: `Rodou o BI2 0017 da data ${data}`,
       antes: null,
       depois: null,
     }),
   );
-  const fim = await filas.aguardar("bi2_0017", jobId, PRAZO_DO_BI2_MS);
+  const fim = await filas.aguardar("bi2-0017", jobId, PRAZO_DO_BI2_MS);
   if (fim.tipo === "falhou") throw conflito(`O BI2 0017 falhou: ${fim.erro}`);
   if (fim.tipo === "pendente") return { enfileirado: true, pendente: true, resultado: null };
   const ultima = (await db(({ ingestaoSsw }) => ingestaoSsw.sincronizacoesBi2("17", 1)))[0];
@@ -342,11 +342,11 @@ export async function testarConexaoSsw(
 ): Promise<ResultadoDoTesteSsw> {
   const filas = filasOuErro(deps.filas);
   const jobId = await filas.enfileirar(
-    "ssw_token_check",
+    "verificar-token-ssw",
     { empresaId, manual: true },
     { deduplicar: null },
   );
-  const fim = await filas.aguardar("ssw_token_check", jobId, PRAZO_DO_TESTE_MS);
+  const fim = await filas.aguardar("verificar-token-ssw", jobId, PRAZO_DO_TESTE_MS);
   if (fim.tipo === "pendente") {
     return {
       ok: false,
@@ -449,7 +449,7 @@ export async function enfileirarEvento(
 ) {
   const protocolo = `r${Date.now().toString(36)}`.slice(0, 16);
   await filas.enfileirar(
-    "ssw_webhook",
+    "processar-webhook-ssw",
     { empresaId, eventoId, protocolo },
     { deduplicar: `ssw_webhook__${eventoId}` },
   );
