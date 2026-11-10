@@ -18,7 +18,7 @@ internet ──80/443 tcp, 443 udp──▶ caddy (borda: TLS automático, HTTP/
                                    │                                                             │ rede "dados" (sem saída)
                                    │                                                             ├──▶ redis:6379 (senha, AOF)
                                    │  rede externa "erp-interna" (§1.4)                          │ rede "saida"
-                                   └──▶ worker-ssw:3100 (/api/public/*; outro compose)           ├──▶ Postgres (Supabase),
+                                   └──▶ worker-ssw:3003 (/api/public/*; outro compose)           ├──▶ Postgres (Supabase),
                                         ▲ api ──▶ /interno/v1/* (WORKER_SSW_URL)                 │    SMTP, Google, Ahgora
                                        migrador (execução única) ────────────────────────────────┘
 ```
@@ -46,7 +46,8 @@ o cabeçalho da resposta até 60 s → corpo de upload pode levar até 5 min (`r
 5 min (`write`). Desligamento: a API termina as requisições e os jobs do ERP em andamento em até
 25 s (`server.ts`; `stop_grace_period` 30 s); o job que não terminar volta para a fila do BullMQ.
 Ações das telas de ingestão esperam o worker-ssw por 5 s (mais o `aguardarMs` de quem espera o
-resultado: BI2 60 s, testar SSW 30 s); sem resposta, "O worker do SSW não respondeu".
+resultado: BI2 60 s, testar SSW 30 s; importar, aplicar e retomar/descartar ciclo, 55 s, abaixo dos
+60 s da borda); sem resposta, "O worker do SSW não respondeu".
 
 ### 1.3 O que foi validado localmente (Docker Desktop, 10/11/2026)
 
@@ -72,18 +73,19 @@ uma vez na VPS antes do primeiro `up` de qualquer um deles (o `deploy.sh` recusa
 docker network create erp-interna
 ```
 
-Nela ficam o caddy e a api do ERP e o worker-ssw (contêiner `worker-ssw`, porta 3100):
+Nela ficam o caddy e a api do ERP e o worker-ssw (contêiner `worker-ssw`, porta 3003):
 
 - borda → worker-ssw: `/api/public/*` (webhook SSW2181, `ftp-relatorio-import`,
-  `ssw-ciclo-aplicar`, `xml-orfaos-retry`), em `WORKER_SSW_PUBLICO` (padrão `worker-ssw:3100`);
-- api → worker-ssw: HTTP interno `/interno/v1/*` em `WORKER_SSW_URL` (ex.
-  `http://worker-ssw:3100`), com `Authorization: Bearer <WORKER_SSW_TOKEN>`. O token é um dos
+  `ssw-ciclo-aplicar`, `xml-orfaos-retry`), em `WORKER_SSW_PUBLICO` (padrão `worker-ssw:3003`);
+- api → worker-ssw: HTTP interno `/interno/v1/*` (execuções, situação e as operações manuais da
+  Importação SSW) em `WORKER_SSW_URL` (ex.
+  `http://worker-ssw:3003`), com `Authorization: Bearer <WORKER_SSW_TOKEN>`. O token é um dos
   `INTERNO_TOKENS` do worker-ssw: para girar, pôr o novo lá como `atual,anterior`, trocar aqui
   (`./deploy.sh <tag atual>`) e só depois tirar o antigo de lá.
 
 Sem `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` a API sobe e as telas de ingestão leem o banco; as ações
-(rodar FTP/BI2, testar SSW, reprocessar) respondem 503 "Integração com o worker do SSW não
-configurada". Com o worker-ssw fora do ar, as mesmas ações respondem 503 "O worker do SSW não
+(rodar FTP/BI2, testar SSW, reprocessar, retomar/descartar ciclo, importar, aplicar, pausar o
+FTP, liberar a trava) respondem 503 "Integração com o worker do SSW não configurada". Com o worker-ssw fora do ar, as mesmas ações respondem 503 "O worker do SSW não
 respondeu" e o resto do ERP segue. Worker-ssw em VPS separada: a `erp-interna` vira uma rede
 privada entre as VPS (WireGuard ou a rede privada do provedor), nunca porta publicada.
 

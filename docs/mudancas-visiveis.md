@@ -184,20 +184,18 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
 Só telas da Plataforma mudam; operação, números e URLs das integrações ficam iguais (a borda repassa
 `/api/public/*` ao worker-ssw).
 
-- **Ações sem pedido no contrato do worker-ssw** respondem "Esta ação agora é feita pelo worker do
-  SSW e ainda não pode ser pedida por esta tela. Fale com o suporte.": em Importação SSW, retomar
-  ciclo, importar relatório e aplicar à mão; em XML CT-e, liberar a trava do FTP e importar XML à
-  mão. Voltam quando o contrato do HTTP interno ganhar esses pedidos.
-- **Worker-ssw fora do ar ou não configurado:** as telas continuam com o que está no banco; rodar
-  FTP/BI2, testar a SSW API e reprocessar respondem "O worker do SSW não respondeu..." ou
-  "Integração com o worker do SSW não configurada.".
-- **Importação SSW:** "Na fila" fica sempre 0 e o FTP não mostra mais o progresso arquivo a
-  arquivo (os dois ficam no Redis do worker-ssw, fora do contrato); "aplicando" e "trava ativa"
-  vêm da situação dos jobs.
-- **Diagnóstico SSW:** a situação dos jobs vem do worker-ssw (rodando ou não, última e próxima
-  execução); somem as contagens de atrasados e a lista das últimas falhas.
+- **Worker-ssw fora do ar ou não configurado:** as telas continuam com o que está no banco; as
+  ações (rodar FTP/BI2, testar a SSW API, reprocessar, retomar/descartar ciclo, importar relatório
+  ou XML, aplicar, pausar o FTP, liberar a trava) respondem "O worker do SSW não respondeu..." ou
+  "Integração com o worker do SSW não configurada.", e o FTP aparece sem trava nem progresso.
+- **Importação SSW:** "Na fila" fica sempre 0 (a fila vive no Redis do worker-ssw, fora do
+  contrato); "aplicando" vem da situação dos jobs.
+- **Diagnóstico SSW:** a situação dos jobs vem do worker-ssw (estado, última e próxima execução);
+  some a contagem de atrasados e "últimas falhas" mostra só a falha da última execução.
 - **Credenciais da SSW API:** salvar credenciais novas pede ao worker-ssw uma verificação do token
   (antes só apagava o token guardado).
+- **Auditoria:** retomar ciclo, importar relatório ou XML e aplicar/simular à mão passam a ficar no
+  log de auditoria (antes só descartar, pausar, rodar o FTP e liberar a trava).
 
 ## Performance e relatório de período (`/performance`, spec 02)
 

@@ -84,12 +84,15 @@ SLA pelos arquivos, coletas do 050 pelo FTP) é um sistema separado, o **worker-
 compose e deploy próprios, que grava no mesmo schema `erp` com o papel `erp_worker` (GRANT mínimo,
 RLS valendo). O ERP:
 
-- **lê** o estado da ingestão direto do banco nas telas de Plataforma (Importação SSW, XML CT-e,
-  Diagnóstico SSW, integrações) e em `GET /api/v1/ssw/atualizacao`/`saude`;
-- **pede ações** ao worker-ssw pelo HTTP interno (`/interno/v1/*`, `WORKER_SSW_URL` +
-  `WORKER_SSW_TOKEN`): rodar FTP/BI2, testar a SSW API, reprocessar webhook e XML órfãos,
-  projeções depois de descartar um ciclo, situação dos jobs. A auditoria de quem pediu é gravada
-  **antes** do pedido. Sem a configuração, as ações respondem 503 e as leituras seguem;
+- **lê** direto do banco as leituras puras das telas de Plataforma (pipeline, aplicações, arquivos
+  XML, histórico do FTP, Diagnóstico SSW, integrações) e `GET /api/v1/ssw/atualizacao`/`saude`;
+- **pede ao worker-ssw** pelo HTTP interno (`/interno/v1/*`, `WORKER_SSW_URL` +
+  `WORKER_SSW_TOKEN`; contrato em `packages/shared/src/contratos/worker-ssw.ts`, cópia do dele):
+  execuções (rodar FTP/BI2, testar a SSW API, reprocessar webhook e XML órfãos), a situação dos
+  jobs e as operações manuais da Importação SSW (retomar/descartar ciclo, importar relatório ou
+  XML, aplicar/simular, estado/pausa/trava do FTP). O ERP valida a entrada pelo contrato da tela e
+  grava a auditoria **antes** de chamar; quem grava e decide é o worker-ssw. Sem a configuração, as
+  ações respondem 503 e as leituras seguem;
 - cadastra as integrações (`empresa_integracoes`, cifradas): o ERP grava, o worker-ssw lê, com as
   mesmas `SEGREDOS_CHAVES`.
 
