@@ -7,6 +7,7 @@ import {
   papelNaEmpresa,
   type VinculoComEmpresa,
 } from "@erp/dominio/acesso";
+import { empresaEmOperacao } from "@erp/dominio/empresas";
 import { MODULOS } from "@erp/shared/acesso/modulos";
 import { type Acesso, type EmpresaAtiva } from "@erp/shared/contratos/auth";
 import { hojeNoFuso } from "@erp/shared/datas";
@@ -56,10 +57,8 @@ export interface RepositorioAcesso {
   liberacoes(empresaId: string): Promise<LiberacaoDeModulo[]>;
 }
 
-const STATUS_QUE_DAO_ACESSO = ["ativa", "implantacao"];
-
 export function vinculoVale(v: VinculoDetalhado): boolean {
-  return v.ativo && STATUS_QUE_DAO_ACESSO.includes(v.empresaStatus);
+  return v.ativo && empresaEmOperacao(v.empresaStatus);
 }
 
 export interface DependenciasAcesso {
@@ -92,7 +91,7 @@ export function empresaDaSessao(
     vinculos: vinculos.map((v) => ({
       empresaId: v.empresaId,
       ativo: v.ativo,
-      empresaAtiva: STATUS_QUE_DAO_ACESSO.includes(v.empresaStatus),
+      empresaAtiva: empresaEmOperacao(v.empresaStatus),
       criadoEm: v.criadoEm,
     })),
   });

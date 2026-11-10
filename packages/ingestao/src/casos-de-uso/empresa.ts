@@ -1,3 +1,5 @@
+import { empresaEmOperacao } from "@erp/dominio/empresas";
+
 /**
  * Empresa de uma execução da ingestão (rota pública, job): `?empresa=`, `x-empresa` ou corpo.
  * Spec 06 §0.1.
@@ -5,7 +7,6 @@
  */
 export type TipoIntegracao = "sftp" | "ssw_api" | "ssw_bi2" | "ssw_webhook" | "ahgora" | "xml_cte";
 
-const STATUS_QUE_INGERE: ReadonlySet<string> = new Set(["ativa", "implantacao"]);
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface EmpresaParaIngestao {
@@ -41,7 +42,7 @@ export function decidirEmpresa(
         erro: `Empresa "${texto}" não encontrada.`,
       };
     }
-    if (!STATUS_QUE_INGERE.has(e.status)) {
+    if (!empresaEmOperacao(e.status)) {
       return {
         ok: false,
         status: 403,
@@ -59,7 +60,7 @@ export function decidirEmpresa(
     }
     return { ok: true, empresa: e };
   }
-  const elegiveis = empresas.filter((e) => STATUS_QUE_INGERE.has(e.status) && ligada(e));
+  const elegiveis = empresas.filter((e) => empresaEmOperacao(e.status) && ligada(e));
   const [unica] = elegiveis;
   if (!unica) {
     return {
@@ -85,7 +86,5 @@ export function empresasQueIngerem(
   empresas: readonly EmpresaParaIngestao[],
   tipo: TipoIntegracao,
 ): EmpresaParaIngestao[] {
-  return empresas.filter(
-    (e) => STATUS_QUE_INGERE.has(e.status) && e.integracoesAtivas.includes(tipo),
-  );
+  return empresas.filter((e) => empresaEmOperacao(e.status) && e.integracoesAtivas.includes(tipo));
 }
