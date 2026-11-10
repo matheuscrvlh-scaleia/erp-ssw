@@ -2,7 +2,7 @@ import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/performance";
 import { describe, expect, it } from "vitest";
 
 import { padroesTextoFiltro } from "../nucleo/texto";
-import { type CodigoDoCatalogo,codigosDePrejuizo, conjuntosDoCatalogo } from "./catalogo";
+import { type CodigoDoCatalogo, codigosDePrejuizo, conjuntosDoCatalogo } from "./catalogo";
 import { normalizarFiltro } from "./filtro";
 import { arredondar, arredondarRazao, centavos } from "./numeros";
 import { montarPontualidade } from "./pontualidade";
