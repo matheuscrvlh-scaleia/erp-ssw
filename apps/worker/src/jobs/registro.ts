@@ -1,4 +1,5 @@
 import { type ContextoBanco } from "@erp/db";
+import { type RepositorioProjecoesRomaneio } from "@erp/dominio/romaneio/projecoes";
 import { filaDoJob, JOBS_DE_INGESTAO, type NomeDoJobDeIngestao } from "@erp/shared/ingestao";
 import { type z } from "@erp/shared/zod";
 import { type Logger } from "pino";
@@ -22,6 +23,7 @@ export interface RepositoriosDoWorker {
   webhook: RepositorioWebhook;
   slaArquivos: RepositorioSlaArquivos;
   prazos: RepositorioPrazosDoWorker;
+  projecoesRomaneio: RepositorioProjecoesRomaneio;
 }
 
 export type ExecutorDoWorker = <T>(
@@ -53,6 +55,8 @@ const UMA_POR_VEZ: ReadonlySet<NomeDoJobDeIngestao> = new Set(["bi2_0017", "ssw_
 export const FILAS: readonly DefinicaoDeFila[] = [
   { nome: "manutencao", concorrencia: 1 },
   { nome: "agendador", concorrencia: 1 },
+  // Recalcular projeções do Romaneio é leve e por lote de CT-e: dois ao mesmo tempo.
+  { nome: "projecoes", concorrencia: 2 },
   ...JOBS_DE_INGESTAO.map(({ job }) => ({
     nome: filaDoJob(job),
     concorrencia: 1,

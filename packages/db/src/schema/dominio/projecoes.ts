@@ -12,7 +12,7 @@
  * estado acumulado; antes, apagar staging 036 apagava `romaneio_saida_ctrc` por gatilho.
  */
 import { sql } from "drizzle-orm";
-import { boolean, date, index, integer, numeric, primaryKey, text } from "drizzle-orm/pg-core";
+import { boolean, date, index, numeric, primaryKey, text } from "drizzle-orm/pg-core";
 
 import { erp, politicasDeEmpresa } from "../base";
 import { atualizadoEm, empresaId, instante } from "./_comum";
@@ -109,10 +109,13 @@ export const romaneioSaidasCte = erp.table(
 /**
  * Situação atual de romaneio do CT-e: a linha 036 mais recente (por importação, romaneio,
  * BAIXADO primeiro, data/hora da ocorrência, emissão) somada à linha 306 (SSW Mobile) mais
- * recente. Placa e motorista: do 036; sem 036, do 306.
+ * recente. Placa e motorista que as telas mostram: do 036; sem 036 (ou 036 sem placa), do 306.
  *
- * Usada pela Listagem detalhada, Romaneio (aba Hoje / detalhe), motivos de não entrega,
- * apuração de bonificação e pela aplicação do 036 no CT-e (`ctes.ocorr_036_*`).
+ * As duas partes ficam guardadas separadas porque as linhas de relatório expiram (60 dias): o
+ * recálculo de um CT-e com 306 novo e 036 já expirado reaproveita a parte 036 gravada.
+ *
+ * Usada pela lista do Romaneio (placa/motorista e busca), Listagem detalhada, motivos de não
+ * entrega (ajudantes) e pela aplicação do 036 no CT-e (`ctes.ocorr_036_*`).
  *
  * Substitui: public.mv_romaneio_036_ctrc + view romaneio_036_ctrc,
  * public.mv_romaneio_ctrc_motorista + views romaneio_ctrc_motorista(_v2/_306).
@@ -123,18 +126,18 @@ export const romaneioCteAtual = erp.table(
     empresaId: empresaId(),
     sigla: text("sigla").notNull(),
     numero: text("numero").notNull(),
-    /** true = existe linha 036 para o CT-e (senão a linha veio só do 306). */
-    tem036: boolean("tem_036").notNull(),
-    /** Placa normalizada: 036, senão 306. */
+    /** Placa normalizada que as telas mostram: 036, senão 306. */
     placa: text("placa"),
-    /** Motorista: 036, senão 306. */
+    /** Motorista que as telas mostram: 036, senão 306. */
     motorista: text("motorista"),
-    /** Dia de referência: emissão do romaneio (036), senão dia do 306. */
-    data: dia("data"),
 
     // Do 036 mais recente
+    /** true = existe linha 036 para o CT-e. */
+    tem036: boolean("tem_036").notNull(),
     romaneio: text("romaneio"),
     situacao: text("situacao"),
+    placa036: text("placa_036"),
+    motorista036: text("motorista_036"),
     ajudante: text("ajudante"),
     ajudante2: text("ajudante_2"),
     ajudante3: text("ajudante_3"),
@@ -143,13 +146,12 @@ export const romaneioCteAtual = erp.table(
     /** Data + hora da ocorrência do CT-e no 036, em America/Sao_Paulo (hora vazia = 12:00). */
     dataOcorr036: instante("data_ocorr_036"),
     dataEmissao036: dia("data_emissao_036"),
-    frete036: numeric("frete_036", { precision: 14, scale: 2 }),
 
     // Do 306 mais recente
-    unidadeDestino306: text("unidade_destino_306"),
-    setorDestino306: text("setor_destino_306"),
-    ocorrenciaMobile306: text("ocorrencia_mobile_306"),
-    ocorrenciaAtual306: text("ocorrencia_atual_306"),
+    /** true = existe linha 306 para o CT-e. */
+    tem306: boolean("tem_306").notNull(),
+    placa306: text("placa_306"),
+    motorista306: text("motorista_306"),
     data306: dia("data_306"),
 
     atualizadoEm: atualizadoEm(),
@@ -159,15 +161,15 @@ export const romaneioCteAtual = erp.table(
     index("romaneio_cte_atual_romaneio_idx")
       .on(t.empresaId, t.romaneio)
       .where(sql`${t.romaneio} is not null`),
-    index("romaneio_cte_atual_data_idx").on(t.empresaId, t.data),
     ...politicasDeEmpresa("romaneio_cte_atual", t.empresaId),
   ],
 );
 
 /**
- * Dados do CT-e pelos relatórios de pendentes (038) e expedidos (455) mais recentes: endereço,
- * setor e localização do 038; frete, peso, previsão e pagador do 455. Usada pelo detalhe do
- * Romaneio.
+ * Dados do CT-e pelos relatórios de pendentes (038) e expedidos (455) mais recentes: setor,
+ * bairro, endereço e CEP do 038; valor da mercadoria do 038, senão do 455. Usada pela lista do
+ * Romaneio (colunas, agrupamento por setor e exportação). As partes 038/455 ficam guardadas pelo
+ * mesmo motivo de `romaneio_cte_atual`.
  *
  * Substitui: public.mv_ctrc_staging_enriquecido + view ctrc_staging_enriquecido.
  */
@@ -177,21 +179,18 @@ export const cteDadosRelatorios = erp.table(
     empresaId: empresaId(),
     sigla: text("sigla").notNull(),
     numero: text("numero").notNull(),
+    /** Valor da mercadoria que as telas mostram: 038, senão 455. */
+    valorMercadoria: numeric("valor_mercadoria", { precision: 14, scale: 2 }),
     // Do 038 mais recente
+    /** true = existe linha 038 para o CT-e. */
+    tem038: boolean("tem_038").notNull(),
     setor: text("setor"),
     bairro: text("bairro"),
     endereco: text("endereco"),
     cep: text("cep"),
-    prazoEntrega038: dia("prazo_entrega_038"),
-    atraso038: integer("atraso_038"),
-    localizacao: text("localizacao"),
-    /** Valor da mercadoria: 038, senão 455. */
-    valorMercadoria: numeric("valor_mercadoria", { precision: 14, scale: 2 }),
+    valorMercadoria038: numeric("valor_mercadoria_038", { precision: 14, scale: 2 }),
     // Do 455 mais recente
-    frete455: numeric("frete_455", { precision: 14, scale: 2 }),
-    peso455: numeric("peso_455", { precision: 12, scale: 3 }),
-    previsao455: dia("previsao_455"),
-    pagador455: text("pagador_455"),
+    valorMercadoria455: numeric("valor_mercadoria_455", { precision: 14, scale: 2 }),
     atualizadoEm: atualizadoEm(),
   },
   (t) => [

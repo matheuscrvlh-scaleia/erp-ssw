@@ -19,6 +19,7 @@ import { type ContextoDaEmpresa, type CteGravado, cteVazio } from "../fontes/com
 import { type IntegracaoGravada, type VerificacaoDaIntegracao } from "../fontes/comum/integracao";
 import { type OcorrenciaDoWebhook, type ResultadoDoEvento } from "../fontes/webhook/job";
 import { type ExecutorDoWorker, type RepositoriosDoWorker } from "../jobs/registro";
+import { ProjecoesFalsas } from "./projecoes-falsas";
 
 export const EMPRESA = "0b9a2c3e-1d4f-4a5b-8c6d-7e8f9a0b1c2d";
 
@@ -55,6 +56,7 @@ export class BancoFalso {
     config: CONFIGURACAO_PADRAO,
     dominioSsw: "FRT",
   };
+  projecoes = new ProjecoesFalsas();
   /** Faz a próxima transação falhar com este erro. */
   falharCom: Error | null = null;
 
@@ -166,6 +168,7 @@ export class BancoFalso {
           return Promise.resolve(id);
         },
       },
+      projecoesRomaneio: this.projecoes,
     };
   }
 }
