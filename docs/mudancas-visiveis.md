@@ -287,3 +287,5 @@ Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP
   servidor" (SHA256:…), obrigatório: sem ele, ou com a chave do servidor diferente, a sincronização
   do FTP falha com a mensagem do que cadastrar (antes conectava em qualquer servidor que
   respondesse no endereço). Na transição com `usar_env`, vale `SFTP_IMPRESSAO_DIGITAL`.
+- **CSV sem fórmula.** Texto que começa com `=`, `+`, `-`, `@`, tab ou CR sai com `'` na frente no
+  CSV exportado (a planilha mostra o texto em vez de executar uma fórmula). Números não mudam.
