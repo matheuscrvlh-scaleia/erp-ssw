@@ -13,6 +13,7 @@ import { type EmissorDeTokens } from "./infra/tokens";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { rotasPrazoParceiro } from "./modulos/prazo-parceiro/rotas";
 import { rotasRomaneio } from "./modulos/romaneio/rotas";
 import {
   registrarDocumentacao,
@@ -94,6 +95,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   });
   await app.register(rotasCalendario, { agora: deps.agora });
   await app.register(rotasRomaneio, { agora: deps.agora });
+  await app.register(rotasPrazoParceiro);
 
   return app;
 }

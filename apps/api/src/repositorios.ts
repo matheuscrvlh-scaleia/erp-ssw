@@ -8,6 +8,8 @@ import { type RepositorioAuth } from "./modulos/auth/casos-de-uso";
 import { criarRepositorioAuth } from "./modulos/auth/repositorio";
 import { type RepositorioCalendario } from "./modulos/calendario/casos-de-uso";
 import { criarRepositorioCalendario } from "./modulos/calendario/repositorio";
+import { type RepositorioPrazoParceiro } from "./modulos/prazo-parceiro/casos-de-uso";
+import { criarRepositorioPrazoParceiro } from "./modulos/prazo-parceiro/repositorio";
 import { type RepositorioRomaneio } from "./modulos/romaneio/casos-de-uso";
 import { criarRepositorioRomaneio } from "./modulos/romaneio/repositorio";
 
@@ -20,6 +22,7 @@ export interface Repositorios {
   auditoria: RepositorioAuditoria;
   auth: RepositorioAuth;
   calendario: RepositorioCalendario;
+  prazoParceiro: RepositorioPrazoParceiro;
   romaneio: RepositorioRomaneio;
 }
 
@@ -29,6 +32,7 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     auditoria: criarRepositorioAuditoria(tx),
     auth: criarRepositorioAuth(tx),
     calendario: criarRepositorioCalendario(tx),
+    prazoParceiro: criarRepositorioPrazoParceiro(tx),
     romaneio: criarRepositorioRomaneio(tx),
   };
 }

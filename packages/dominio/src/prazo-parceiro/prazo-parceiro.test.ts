@@ -4,6 +4,7 @@ import {
   comparacaoComAnterior,
   diasAbaixoDoPadrao,
   type FatoPrazo,
+  fatosDoParceiro,
   histogramaDeAtraso,
   periodoAnterior,
   rankingDoPrazo,
@@ -90,5 +91,27 @@ describe("prazo do parceiro", () => {
       ["p2", "Novo", 2, 1],
       ["cnpj:99888777000166", "SEM CADASTRO", 1, 0],
     ]);
+  });
+
+  it("detalhe abre os CT-e da linha do ranking: pelo cadastro ou pelo CNPJ sem cadastro", () => {
+    const cadastros = [
+      {
+        id: "p1",
+        nome: "Um",
+        cnpj: "11222333000144",
+        usaSsw: false,
+        criadoEm: new Date("2026-01-01"),
+      },
+    ];
+    const doCadastroSemCnpjNoCte = fato({ parceiroId: "p1" });
+    const doCnpj = fato({ parceiroCnpj: "11222333000144" });
+    const semCadastro = fato({ parceiroCnpj: "99888777000166" });
+    const base = [doCadastroSemCnpjNoCte, doCnpj, semCadastro];
+
+    const p1 = fatosDoParceiro(base, cadastros, "p1");
+    expect(p1.cadastro?.nome).toBe("Um");
+    expect(p1.itens).toEqual([doCadastroSemCnpjNoCte, doCnpj]);
+    expect(fatosDoParceiro(base, cadastros, "cnpj:99888777000166").itens).toEqual([semCadastro]);
+    expect(fatosDoParceiro(base, cadastros, "p9").itens).toEqual([]);
   });
 });

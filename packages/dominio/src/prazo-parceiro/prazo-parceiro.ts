@@ -149,6 +149,49 @@ export interface LinhaRanking {
 
 export const PREFIXO_CNPJ = "cnpj:";
 
+const digitos = (cnpj: string | null | undefined) => cnpj?.replace(/\D/g, "") || null;
+
+interface GrupoDoRanking<F> {
+  /** uuid do cadastro, senão a chave do grupo (`cnpj:<dígitos>` ou o parceiro_id). */
+  id: string;
+  cadastro: ParceiroCadastrado | undefined;
+  cnpj: string | null;
+  itens: F[];
+}
+
+/**
+ * Grupos do ranking: um por CNPJ (o do CT-e, senão o do cadastro); sem CNPJ, pelo cadastro.
+ * Cadastro do grupo: o mais recente daquele CNPJ (Q08).
+ */
+function gruposDoRanking<F extends FatoPrazo>(
+  base: readonly F[],
+  cadastros: readonly ParceiroCadastrado[],
+): GrupoDoRanking<F>[] {
+  const porId = new Map(cadastros.map((p) => [p.id, p]));
+  const porCnpj = new Map<string, ParceiroCadastrado>();
+  for (const p of [...cadastros].sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime())) {
+    const cnpj = digitos(p.cnpj);
+    if (cnpj) porCnpj.set(cnpj, p);
+  }
+  const grupos = new Map<string, GrupoDoRanking<F>>();
+  for (const c of base) {
+    const cnpj =
+      digitos(c.parceiroCnpj) ?? (c.parceiroId ? digitos(porId.get(c.parceiroId)?.cnpj) : null);
+    const chave = cnpj ? `${PREFIXO_CNPJ}${cnpj}` : c.parceiroId;
+    if (!chave) continue;
+    let g = grupos.get(chave);
+    if (!g) {
+      const cadastro =
+        (cnpj ? porCnpj.get(cnpj) : undefined) ??
+        (c.parceiroId ? porId.get(c.parceiroId) : undefined);
+      g = { id: cadastro?.id ?? chave, cadastro, cnpj, itens: [] };
+      grupos.set(chave, g);
+    }
+    g.itens.push(c);
+  }
+  return [...grupos.values()];
+}
+
 /**
  * Ranking por parceiro: uma linha por CNPJ (sem CNPJ, pelo cadastro). Nome e "usa SSW" do
  * cadastro mais recente daquele CNPJ; sem cadastro, o menor nome do CT-e (fixo entre consultas).
@@ -158,41 +201,13 @@ export function rankingDoPrazo(
   base: readonly FatoPrazo[],
   cadastros: readonly ParceiroCadastrado[],
 ): LinhaRanking[] {
-  const porId = new Map(cadastros.map((p) => [p.id, p]));
-  const porCnpj = new Map<string, ParceiroCadastrado>();
-  for (const p of [...cadastros].sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime())) {
-    const cnpj = p.cnpj?.replace(/\D/g, "");
-    if (cnpj) porCnpj.set(cnpj, p);
-  }
-  const grupos = new Map<
-    string,
-    { itens: FatoPrazo[]; cnpj: string | null; parceiroId: string | null }
-  >();
-  for (const c of base) {
-    const cnpj =
-      c.parceiroCnpj ||
-      (c.parceiroId ? porId.get(c.parceiroId)?.cnpj?.replace(/\D/g, "") : null) ||
-      null;
-    const chave = cnpj ? `${PREFIXO_CNPJ}${cnpj}` : c.parceiroId;
-    if (!chave) continue;
-    const g = grupos.get(chave) ?? { itens: [], cnpj, parceiroId: c.parceiroId };
-    g.itens.push(c);
-    grupos.set(chave, g);
-  }
-  return [...grupos]
-    .map(([chave, g]): LinhaRanking => {
-      const cadastro =
-        (g.cnpj ? porCnpj.get(g.cnpj) : undefined) ??
-        (g.parceiroId ? porId.get(g.parceiroId) : undefined);
+  return gruposDoRanking(base, cadastros)
+    .map((g): LinhaRanking => {
       const c = contar(g.itens);
-      const nomeDoCte = g.itens
-        .map((x) => x.parceiroNome)
-        .filter((n): n is string => !!n)
-        .sort()[0];
       return {
-        id: cadastro?.id ?? chave,
-        nome: cadastro?.nome ?? nomeDoCte ?? g.cnpj ?? "— sem nome —",
-        usaSsw: cadastro?.usaSsw ?? null,
+        id: g.id,
+        nome: g.cadastro?.nome ?? nomeDoCte(g.itens) ?? g.cnpj ?? "— sem nome —",
+        usaSsw: g.cadastro?.usaSsw ?? null,
         total: c.total,
         qtdParceiro: c.parceiro,
         pctParceiro: c.total > 0 ? c.parceiro / c.total : 0,
@@ -208,6 +223,27 @@ export function rankingDoPrazo(
         b.total - a.total ||
         a.nome.localeCompare(b.nome),
     );
+}
+
+/** Menor nome do expedidor nos CT-e (fixo entre consultas). */
+export function nomeDoCte(itens: readonly Pick<FatoPrazo, "parceiroNome">[]): string | undefined {
+  return itens
+    .map((x) => x.parceiroNome)
+    .filter((n): n is string => !!n)
+    .sort()[0];
+}
+
+/**
+ * CT-e da linha do ranking com este id (o detalhe abre exatamente o que a linha contou).
+ * origem: calcular_prazo_parceiro_detalhe, com Q08
+ */
+export function fatosDoParceiro<F extends FatoPrazo>(
+  base: readonly F[],
+  cadastros: readonly ParceiroCadastrado[],
+  id: string,
+): { cadastro: ParceiroCadastrado | undefined; itens: F[] } {
+  const grupos = gruposDoRanking(base, cadastros).filter((g) => g.id === id);
+  return { cadastro: grupos[0]?.cadastro, itens: grupos.flatMap((g) => g.itens) };
 }
 
 /** Dias que o CT-e nasceu abaixo do padrão (positivo = atrasado); sem as datas, nulo. */

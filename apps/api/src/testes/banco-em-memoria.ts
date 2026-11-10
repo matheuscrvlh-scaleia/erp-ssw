@@ -11,6 +11,7 @@ import { type Ator, type EventoDeAuditoria } from "../modulos/auditoria/auditori
 import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-uso";
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
+import { PrazoParceiroEmMemoria } from "./prazo-parceiro-em-memoria";
 import { RomaneioEmMemoria } from "./romaneio-em-memoria";
 
 /*
@@ -78,6 +79,7 @@ export class BancoEmMemoria {
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
   romaneio = new RomaneioEmMemoria();
+  prazoParceiro = new PrazoParceiroEmMemoria();
   contextos: ContextoBanco[] = [];
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
   falharCom: Error | null = null;
@@ -356,6 +358,7 @@ export class BancoEmMemoria {
           return Promise.resolve();
         },
       },
+      prazoParceiro: this.prazoParceiro.repositorio(),
       romaneio: this.romaneio.repositorio(),
     };
   }
