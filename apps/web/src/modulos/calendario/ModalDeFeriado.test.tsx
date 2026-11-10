@@ -58,7 +58,7 @@ describe("ModalDeFeriado", () => {
   });
 
   it("nacional não leva cidade nem UF; erro na gravação deixa o modal aberto", async () => {
-    const aoGravar = vi.fn(() => Promise.resolve(false));
+    const aoGravar = vi.fn((_f: FeriadoParaGravar) => Promise.resolve(false));
     const { aoMudarAberto } = abrir(aoGravar);
     digitar("UF", "SP");
     fireEvent.click(screen.getByRole("button", { name: "nacional" }));
@@ -67,11 +67,11 @@ describe("ModalDeFeriado", () => {
     await waitFor(() => {
       expect(aoGravar).toHaveBeenCalled();
     });
-    expect(aoGravar.mock.calls[0]).toEqual([
-      expect.objectContaining({
-        dados: expect.objectContaining({ tipo: "nacional", cidade: null, uf: null }),
-      }),
-    ]);
+    expect(aoGravar.mock.calls[0]?.[0].dados).toMatchObject({
+      tipo: "nacional",
+      cidade: null,
+      uf: null,
+    });
     expect(aoMudarAberto).not.toHaveBeenCalledWith(false);
   });
 });

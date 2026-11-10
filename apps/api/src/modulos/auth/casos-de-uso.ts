@@ -466,5 +466,3 @@ export async function ajudaDeAcesso(deps: DependenciasAuth, sessao: SessaoDoToke
     admins,
   };
 }
-
-export { depsDoAcesso };
