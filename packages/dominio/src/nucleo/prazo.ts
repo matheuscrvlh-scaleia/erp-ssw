@@ -2,6 +2,9 @@
  * Prazo do CT-e: dias úteis, prazo padrão (mínimo 48 h corridas / nascido em atraso), prazos
  * configurados no Admin e histórico de previsão.
  */
+/** De onde veio a previsão gravada (`ctes.prazo_fonte`). */
+import type { FontePrazo } from "@erp/shared/dominio/prazo";
+
 import { CODIGO_CHEGADA_NA_UNIDADE } from "./codigos";
 import { foraDeQuarentena, type OcorrenciaDoCte } from "./ocorrencia";
 import {
@@ -14,21 +17,7 @@ import {
   somarHoras,
 } from "./tempo";
 import { somenteDigitos } from "./texto";
-
-/** De onde veio a previsão gravada (`ctes.prazo_fonte`). */
-export const FONTES_DE_PRAZO = [
-  "xml_dprog",
-  "consulta_prazo_oc80",
-  "consulta_prazo_emissao",
-  "regra_parceiro",
-  "regra_transbordo",
-  "regra_unidade",
-  "fora_malha",
-  "bi2",
-  "ssw_manual",
-  "ssw_038",
-] as const;
-export type FontePrazo = (typeof FONTES_DE_PRAZO)[number];
+export { type FontePrazo, FONTES_DE_PRAZO } from "@erp/shared/dominio/prazo";
 
 type FonteDeRegra = Extract<FontePrazo, `regra_${string}`>;
 
