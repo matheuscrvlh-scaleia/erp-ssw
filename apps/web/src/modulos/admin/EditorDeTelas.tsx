@@ -55,11 +55,11 @@ export function EditorDeExcecoes({
   aoMudar: (excecoes: MapaDeExcecoes) => void;
 }) {
   const definir = (telas: readonly Tela[], valor: boolean | undefined) => {
-    const proximas = { ...excecoes };
-    for (const t of telas) {
-      if (valor === undefined) delete proximas[t];
-      else proximas[t] = valor;
-    }
+    const fora = new Set<string>(telas);
+    const proximas: MapaDeExcecoes = Object.fromEntries(
+      Object.entries(excecoes).filter(([t]) => !fora.has(t)),
+    );
+    if (valor !== undefined) for (const t of telas) proximas[t] = valor;
     aoMudar(proximas);
   };
   return (

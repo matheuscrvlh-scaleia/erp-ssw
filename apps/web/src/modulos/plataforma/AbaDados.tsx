@@ -152,7 +152,8 @@ export function lerBase64(arquivo: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
     leitor.onload = () => {
-      resolve(String(leitor.result).replace(/^data:[^,]*,/, ""));
+      const texto = typeof leitor.result === "string" ? leitor.result : "";
+      resolve(texto.replace(/^data:[^,]*,/, ""));
     };
     leitor.onerror = () => {
       reject(new Error("Não foi possível ler o arquivo."));

@@ -1,10 +1,10 @@
+import { type SaidaDe } from "@erp/shared/contrato";
 import {
   contratosAdmin as c,
   type DadosDoPrazo,
   type PrazoConfigurado,
   type TipoDePrazo,
 } from "@erp/shared/contratos/admin";
-import { type SaidaDe } from "@erp/shared/contrato";
 import { useQuery } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";

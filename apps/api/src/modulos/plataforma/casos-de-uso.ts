@@ -33,8 +33,8 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import {
   INFO_DA_INTEGRACAO,
   type StatusEmpresa,
-  TIPOS_INTEGRACAO,
   type TipoIntegracao,
+  TIPOS_INTEGRACAO,
 } from "@erp/shared/plataforma";
 import { type FastifyBaseLogger } from "fastify";
 

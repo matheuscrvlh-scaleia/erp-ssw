@@ -447,7 +447,7 @@ export function criarRepositoriosDeAdministracao(
                 ? l.empresaId === null
                 : true,
           )
-          .filter((l) => !f.ator || (l.atorEmail ?? "").includes(f.ator))
+          .filter((l) => !f.ator || l.atorEmail.includes(f.ator))
           .filter((l) => !f.entidade || l.entidade === f.entidade)
           .filter((l) => !f.acao || l.acao === f.acao)
           .reverse()

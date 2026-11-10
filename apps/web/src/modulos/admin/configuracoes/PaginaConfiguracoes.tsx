@@ -1,8 +1,8 @@
 import {
   type Configuracao,
   contratosAdmin as c,
-  GRUPOS_DE_CONFIGURACAO,
   type GrupoDeConfiguracao,
+  GRUPOS_DE_CONFIGURACAO,
 } from "@erp/shared/contratos/admin";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";

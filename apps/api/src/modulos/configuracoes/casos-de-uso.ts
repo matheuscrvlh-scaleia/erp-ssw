@@ -3,8 +3,8 @@ import { CHAVES_PUBLICAS, validarValorDeConfiguracao } from "@erp/dominio/config
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import {
   type Configuracao,
-  GRUPOS_DE_CONFIGURACAO,
   type GrupoDeConfiguracao,
+  GRUPOS_DE_CONFIGURACAO,
 } from "@erp/shared/contratos/admin";
 
 import { type Executor } from "../../repositorios";

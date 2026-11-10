@@ -5,8 +5,8 @@ import {
   LIMITE_INTEGRACAO_POR_ORIGEM,
   type LinhaAuditoria,
   type LinhaIntegracao,
-  ORIGENS_INTEGRACAO,
   type OrigemIntegracao,
+  ORIGENS_INTEGRACAO,
 } from "@erp/shared/contratos/auditoria";
 
 import { type Executor } from "../../repositorios";

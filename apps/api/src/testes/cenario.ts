@@ -2,7 +2,6 @@ import { generateKeyPairSync, randomBytes, randomUUID } from "node:crypto";
 
 import { type ChavesDeSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
 import { type JobEnfileiravel } from "@erp/shared/jobs";
-
 import { type FastifyInstance } from "fastify";
 
 import { construirApp } from "../app";

@@ -1,8 +1,7 @@
+import { type ChavesDeSegredo } from "@erp/db/segredos";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
-
-import { type ChavesDeSegredo } from "@erp/db/segredos";
 
 import { type Ambiente } from "./config/env";
 import { registrarTratadorDeErros } from "./http/tratador-erros";

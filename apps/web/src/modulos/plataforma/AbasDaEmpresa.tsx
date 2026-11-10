@@ -358,11 +358,11 @@ export function parametrosEditados(
   campos: readonly { chave: string; lista?: boolean }[],
   digitados: Record<string, string>,
 ): Record<string, ValorDeParametro> {
-  const parametros = { ...atuais };
+  const editados = new Set(campos.map((c) => c.chave));
+  const parametros = Object.fromEntries(Object.entries(atuais).filter(([k]) => !editados.has(k)));
   for (const c of campos) {
     const bruto = (digitados[c.chave] ?? "").trim();
-    if (!bruto) delete parametros[c.chave];
-    else
+    if (bruto)
       parametros[c.chave] = c.lista
         ? bruto
             .split(",")

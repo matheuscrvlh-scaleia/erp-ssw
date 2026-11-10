@@ -1,6 +1,6 @@
 import { ROTULO_DA_TELA } from "@erp/shared/acesso/telas";
-import { contratosAdmin, type UsuarioDaEmpresa } from "@erp/shared/contratos/admin";
 import { type EntradaDe } from "@erp/shared/contrato";
+import { type contratosAdmin, type UsuarioDaEmpresa } from "@erp/shared/contratos/admin";
 import { ArrowRight, Check, Copy, KeyRound, Pencil, RefreshCw } from "lucide-react";
 import { useState } from "react";
 

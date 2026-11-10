@@ -30,63 +30,65 @@ describe("login de outra pessoa", () => {
     expect(podeAlterarLogin(alvo)).toBe(true);
     expect(podeAlterarLogin({ ...alvo, empresasDoAlvo: ["a", "b"] })).toBe(false);
     expect(podeAlterarLogin({ ...alvo, plataforma: true, empresasDoAlvo: ["a", "b"] })).toBe(true);
-    expect(() => exigirPodeAlterarLogin({ ...alvo, empresasDoAlvo: ["a", "b"] }, "senha")).toThrow(
-      "a senha só pode ser redefinida pela equipe da Plataforma",
-    );
+    expect(() => {
+      exigirPodeAlterarLogin({ ...alvo, empresasDoAlvo: ["a", "b"] }, "senha");
+    }).toThrow("a senha só pode ser redefinida pela equipe da Plataforma");
   });
 
   it("senha de Super Admin só outro Super Admin (a Plataforma sozinha não)", () => {
     const superAdmin = { ...alvo, papeisDoAlvo: ["super_admin"] };
-    expect(() => exigirPodeAlterarLogin(superAdmin, "senha")).toThrow(
-      "Apenas o Super Admin pode redefinir a senha de outro Super Admin",
-    );
-    expect(() =>
+    expect(() => {
+      exigirPodeAlterarLogin(superAdmin, "senha");
+    }).toThrow("Apenas o Super Admin pode redefinir a senha de outro Super Admin");
+    expect(() => {
       exigirPodeAlterarLogin(
         { ...superAdmin, plataforma: true, papelDeQuemPede: "admin" },
         "senha",
-      ),
-    ).toThrow();
-    expect(() =>
-      exigirPodeAlterarLogin({ ...superAdmin, papelDeQuemPede: "super_admin" }, "senha"),
-    ).not.toThrow();
-    expect(() => exigirPodeAlterarLogin(superAdmin, "e-mail")).toThrow(
-      "Apenas o Super Admin pode alterar o e-mail de outro Super Admin.",
-    );
-    expect(() => exigirPodeAlterarLogin(superAdmin, "nome e e-mail")).not.toThrow();
+      );
+    }).toThrow();
+    expect(() => {
+      exigirPodeAlterarLogin({ ...superAdmin, papelDeQuemPede: "super_admin" }, "senha");
+    }).not.toThrow();
+    expect(() => {
+      exigirPodeAlterarLogin(superAdmin, "e-mail");
+    }).toThrow("Apenas o Super Admin pode alterar o e-mail de outro Super Admin.");
+    expect(() => {
+      exigirPodeAlterarLogin(superAdmin, "nome e e-mail");
+    }).not.toThrow();
   });
 
   it("admin de empresa não mexe no login de quem é da Plataforma", () => {
-    expect(() => exigirPodeAlterarLogin({ ...alvo, alvoEhPlataforma: true }, "e-mail")).toThrow(
-      "Este usuário é da equipe da Plataforma",
-    );
-    expect(() =>
-      exigirPodeAlterarLogin({ ...alvo, alvoEhPlataforma: true, plataforma: true }, "senha"),
-    ).not.toThrow();
+    expect(() => {
+      exigirPodeAlterarLogin({ ...alvo, alvoEhPlataforma: true }, "e-mail");
+    }).toThrow("Este usuário é da equipe da Plataforma");
+    expect(() => {
+      exigirPodeAlterarLogin({ ...alvo, alvoEhPlataforma: true, plataforma: true }, "senha");
+    }).not.toThrow();
   });
 
   it("admin não se promove a Super Admin nem tira o papel de quem é", () => {
     const pede = { papelDeQuemPede: "admin", plataforma: false };
-    expect(() =>
-      exigirPodeMexerEmSuperAdmin({ ...pede, papelAntes: "admin", papelDepois: "super_admin" }),
-    ).toThrow("Apenas o Super Admin pode dar ou tirar o papel Super Admin.");
-    expect(() =>
-      exigirPodeMexerEmSuperAdmin({ ...pede, papelAntes: "super_admin", papelDepois: "admin" }),
-    ).toThrow();
-    expect(() =>
+    expect(() => {
+      exigirPodeMexerEmSuperAdmin({ ...pede, papelAntes: "admin", papelDepois: "super_admin" });
+    }).toThrow("Apenas o Super Admin pode dar ou tirar o papel Super Admin.");
+    expect(() => {
+      exigirPodeMexerEmSuperAdmin({ ...pede, papelAntes: "super_admin", papelDepois: "admin" });
+    }).toThrow();
+    expect(() => {
       exigirPodeMexerEmSuperAdmin({
         ...pede,
         papelAntes: "super_admin",
         papelDepois: "super_admin",
-      }),
-    ).not.toThrow();
-    expect(() =>
+      });
+    }).not.toThrow();
+    expect(() => {
       exigirPodeMexerEmSuperAdmin({
         papelDeQuemPede: "admin",
         plataforma: true,
         papelAntes: "admin",
         papelDepois: "super_admin",
-      }),
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 });
 
@@ -108,24 +110,30 @@ describe("cadastros", () => {
   });
 
   it("parâmetro com cara de segredo é recusado", () => {
-    expect(() => validarParametrosDeIntegracao({ host: "x", porta: 22 })).not.toThrow();
-    expect(() => validarParametrosDeIntegracao({ host: "x", Api_Key: "1", senha: "2" })).toThrow(
-      "Senha e token não ficam nos parâmetros (Api_Key, senha).",
-    );
+    expect(() => {
+      validarParametrosDeIntegracao({ host: "x", porta: 22 });
+    }).not.toThrow();
+    expect(() => {
+      validarParametrosDeIntegracao({ host: "x", Api_Key: "1", senha: "2" });
+    }).toThrow("Senha e token não ficam nos parâmetros (Api_Key, senha).");
   });
 
   it("vigência com fim antes do início é recusada", () => {
-    expect(() => validarVigencia("2026-12-01", "2026-11-01")).toThrow(
-      "O fim da liberação não pode ser antes do início.",
-    );
-    expect(() => validarVigencia("2026-11-01", null)).not.toThrow();
+    expect(() => {
+      validarVigencia("2026-12-01", "2026-11-01");
+    }).toThrow("O fim da liberação não pode ser antes do início.");
+    expect(() => {
+      validarVigencia("2026-11-01", null);
+    }).not.toThrow();
   });
 
   it("último admin da Plataforma não sai", () => {
-    expect(() => exigirPodeRemoverAdminPlataforma(1)).toThrow(
-      "Não dá para remover o último administrador da Plataforma.",
-    );
-    expect(() => exigirPodeRemoverAdminPlataforma(2)).not.toThrow();
+    expect(() => {
+      exigirPodeRemoverAdminPlataforma(1);
+    }).toThrow("Não dá para remover o último administrador da Plataforma.");
+    expect(() => {
+      exigirPodeRemoverAdminPlataforma(2);
+    }).not.toThrow();
   });
 });
 

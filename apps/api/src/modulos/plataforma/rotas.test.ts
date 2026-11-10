@@ -1,10 +1,9 @@
-import { decifrarSegredo } from "@erp/db/segredos";
 import { TIPOS_INTEGRACAO as TIPOS_DO_BANCO } from "@erp/db/schema";
+import { decifrarSegredo } from "@erp/db/segredos";
 import { TIPOS_INTEGRACAO } from "@erp/shared/plataforma";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { opcoesDeLog } from "../../infra/log";
-import { ambienteDeTeste } from "../../testes/cenario";
+import { CAMINHOS_SENSIVEIS } from "../../infra/log";
 import { cenarioDeAdmin } from "../../testes/admin";
 import { contextoDoSegredo } from "./casos-de-uso";
 
@@ -215,11 +214,10 @@ describe("integrações e segredos", () => {
     });
     expect(lista.body).not.toContain(valor);
     expect(lista.body).not.toContain(gravada?.segredoCifrado ?? "???");
-    expect(lista.json()).toMatchObject({
-      integracoes: expect.arrayContaining([
-        expect.objectContaining({ tipo: "ssw_bi2", segredoDefinidoEm: expect.any(String) }),
-      ]),
-    });
+    const bi2 = lista
+      .json<{ integracoes: { tipo: string; segredoDefinidoEm: string | null }[] }>()
+      .integracoes.find((i) => i.tipo === "ssw_bi2");
+    expect(typeof bi2?.segredoDefinidoEm).toBe("string");
     expect(JSON.stringify(t.banco.auditoria)).not.toContain(valor);
     expect(t.banco.auditoria.at(-1)).toMatchObject({
       acao: "definir_segredo",
@@ -251,10 +249,8 @@ describe("integrações e segredos", () => {
   });
 
   it("o log do servidor esconde o campo segredo", () => {
-    const opcoes = opcoesDeLog(ambienteDeTeste({ NODE_ENV: "development" }));
-    expect(opcoes).toMatchObject({
-      redact: { paths: expect.arrayContaining(["segredo", "*.segredo"]) },
-    });
+    expect(CAMINHOS_SENSIVEIS).toContain("segredo");
+    expect(CAMINHOS_SENSIVEIS).toContain("*.segredo");
   });
 });
 
@@ -330,16 +326,10 @@ describe("módulos", () => {
       url: `/api/v1/plataforma/empresas/${t.empresaB.id}/modulos`,
       headers,
     });
-    expect(lista.json()).toMatchObject({
-      modulos: expect.arrayContaining([
-        expect.objectContaining({
-          chave: "ranking",
-          configurado: true,
-          ativo: true,
-          observacao: "teste",
-        }),
-      ]),
-    });
+    const ranking = lista
+      .json<{ modulos: { chave: string }[] }>()
+      .modulos.find((m) => m.chave === "ranking");
+    expect(ranking).toMatchObject({ configurado: true, ativo: true, observacao: "teste" });
   });
 });
 

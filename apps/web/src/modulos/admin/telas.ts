@@ -1,6 +1,6 @@
 import {
-  CATEGORIAS_DE_TELA,
   type CategoriaDeTela,
+  CATEGORIAS_DE_TELA,
   chavesDoItem,
 } from "@erp/shared/acesso/editor-de-telas";
 import { type Tela } from "@erp/shared/acesso/telas";
