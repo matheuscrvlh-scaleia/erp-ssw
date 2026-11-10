@@ -22,10 +22,10 @@ import {
 } from "@erp/db/schema";
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import { linha036De, linha930De } from "@erp/dominio/romaneio/linhas-de-relatorio";
-import { type OcorrenciaDoCte } from "@erp/dominio/romaneio/situacao";
 import { COLLATOR } from "@erp/dominio/romaneio/normalizacao";
-import { MENSAGEM_TEMPO_ESGOTADO } from "@erp/shared/erros";
+import { type OcorrenciaDoCte } from "@erp/dominio/romaneio/situacao";
 import { somarDias } from "@erp/shared/datas";
+import { MENSAGEM_TEMPO_ESGOTADO } from "@erp/shared/erros";
 import { and, asc, eq, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm";
 import { type AnyPgColumn } from "drizzle-orm/pg-core";
 

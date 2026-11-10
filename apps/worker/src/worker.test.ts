@@ -12,9 +12,9 @@ import {
   sincronizarAgendamentos,
 } from "./agendamentos/agendamentos";
 import { limparSessoes } from "./jobs/manutencao/job";
-import { ProjecoesFalsas } from "./testes/projecoes-falsas";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
 import { criarProcessador } from "./processador";
+import { ProjecoesFalsas } from "./testes/projecoes-falsas";
 
 const log = pino({ level: "silent" });
 const EMPRESA = randomUUID();

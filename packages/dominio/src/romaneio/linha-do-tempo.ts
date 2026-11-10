@@ -4,7 +4,7 @@
  * Spec: docs/regras/03-romaneio-prazo-parceiro.md §3.11. Com Q02, casa por sigla + número.
  * origem: romaneio_timeline_ocorrencias
  */
-import { normCodigoOcorr } from "./nucleo-local";
+import { normCodigoOcorr } from "../nucleo";
 import { COLLATOR } from "./normalizacao";
 
 /** Linha do 930 (campos usados aqui). `ocorrenciaEm` já convertido de horário de SP. */

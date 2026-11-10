@@ -12,7 +12,7 @@ import {
   estaFinalizadoSemEntrega,
   inicioDoDiaSp,
   normCodigoOcorr,
-} from "./nucleo-local";
+} from "../nucleo";
 import {
   arredondar,
   CODIGO_SAIDA,
@@ -177,7 +177,7 @@ function casar(
         valorFrete: cte?.valorFrete ?? 0,
         entregue,
         finalizado,
-        emRota: ocorr85 && cte !== null && (ok85(cte) ?? true) && !entregue && !finalizado,
+        emRota: ocorr85 && (ok85(cte) ?? true) && !entregue && !finalizado,
         prejudicada:
           cte !== null &&
           cte.ocorrencias.some(

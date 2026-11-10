@@ -5,7 +5,7 @@
  */
 import { diferencaEmDias } from "@erp/shared/datas";
 
-import { CODIGOS_ENTREGA } from "./nucleo-local";
+import { ehCodigoEntrega } from "./nucleo-local";
 
 export interface LinhaSituacao {
   dataPrevista: string | null;
@@ -28,7 +28,7 @@ export type StatusLinha = "Entregue" | "Baixado" | "Em rota" | "Pendente";
 export function entregueDaLinha(l: LinhaSituacao): boolean {
   return (
     l.dataEntregaRealizada !== null ||
-    (l.ultimaOcorrenciaCodigo !== null && CODIGOS_ENTREGA.includes(l.ultimaOcorrenciaCodigo))
+    (l.ultimaOcorrenciaCodigo !== null && ehCodigoEntrega(l.ultimaOcorrenciaCodigo))
   );
 }
 

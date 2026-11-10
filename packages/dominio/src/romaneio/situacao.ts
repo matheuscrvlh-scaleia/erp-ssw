@@ -15,9 +15,9 @@ import {
   estaFinalizadoSemEntrega,
   inicioDoDiaSp,
   normCodigoOcorr,
-  TIPOS_PENDENCIA,
-} from "./nucleo-local";
+} from "../nucleo";
 import { CODIGO_RETORNO, CODIGO_SAIDA, CODIGOS_ROTA } from "./normalizacao";
+import { ehTipoPendencia } from "./nucleo-local";
 
 export interface Periodo {
   inicio: string;
@@ -109,7 +109,7 @@ export interface AnaliseCte {
 }
 
 const ehPendencia = (cadastro: Cadastro, codigo: number) =>
-  codigo !== CODIGO_SAIDA && TIPOS_PENDENCIA.includes(cadastro.codigo(codigo)?.tipoSsw ?? "");
+  codigo !== CODIGO_SAIDA && ehTipoPendencia(cadastro.codigo(codigo)?.tipoSsw ?? null);
 
 /**
  * Penalizante da FR pelo CADASTRO do código (não a coluna da ocorrência), fora a 85, entre os
@@ -485,7 +485,7 @@ export function distribuicaoDosNaoFinalizados(
       return {
         codigo,
         descricao: cad?.descricao ?? null,
-        pendencia: TIPOS_PENDENCIA.includes(cad?.tipoSsw ?? ""),
+        pendencia: ehTipoPendencia(cad?.tipoSsw ?? null),
         qtd,
       };
     })

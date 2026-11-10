@@ -6,6 +6,7 @@
  * Escopo por unidade/equipe (Q26): desligado até existir a tela que grava a unidade do usuário;
  * todos veem tudo da própria empresa (RLS).
  */
+import { normCodigoOcorr, padroesTextoFiltro } from "@erp/dominio/nucleo";
 import {
   type CteDoDia,
   ctesDaFaixa,
@@ -30,15 +31,10 @@ import {
   normNome,
   normPlaca,
 } from "@erp/dominio/romaneio/normalizacao";
+import { ehTipoPendencia, unidadeResponsavel } from "@erp/dominio/romaneio/nucleo-local";
 import {
-  normCodigoOcorr,
-  padroesTextoFiltro,
-  TIPOS_PENDENCIA,
-  unidadeResponsavel,
-} from "@erp/dominio/romaneio/nucleo-local";
-import {
-  type AnaliseCte,
   analisarCte,
+  type AnaliseCte,
   type Cadastro,
   casaRecorte,
   type CodigoCadastrado,
@@ -300,9 +296,7 @@ export function normalizarFiltros(
 
 /** Ocorrências que alguma regra do Romaneio consulta (o resto não precisa sair do banco). */
 function codigosQueContam(regras: Regras, filtros: FiltrosNormalizados): number[] {
-  const pendencias = regras.codigos
-    .filter((c) => TIPOS_PENDENCIA.includes(c.tipoSsw ?? ""))
-    .map((c) => c.codigo);
+  const pendencias = regras.codigos.filter((c) => ehTipoPendencia(c.tipoSsw)).map((c) => c.codigo);
   return [
     ...new Set([
       ...CODIGOS_ROTA,
