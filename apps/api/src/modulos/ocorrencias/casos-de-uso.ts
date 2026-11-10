@@ -11,7 +11,6 @@ import {
   type CodigoDoCatalogo,
   codigosDaTela,
   codigosDeBaixa,
-  CONFIG_CODIGOS_FORA_DA_TELA,
   lerListaDeInteiros,
 } from "@erp/dominio/ocorrencias/catalogo";
 import { calcularPainel, type CteDoPainel } from "@erp/dominio/ocorrencias/painel";
@@ -169,7 +168,7 @@ async function catalogoDaTela(
 ): Promise<CatalogoDaTela> {
   const catalogo = await ocorrencias.catalogo(empresaId);
   const foraDaTela = lerListaDeInteiros(
-    await ocorrencias.configuracao(empresaId, CONFIG_CODIGOS_FORA_DA_TELA),
+    await ocorrencias.configuracao(empresaId, "ocorrencias_codigos_fora_da_tela"),
   );
   return {
     porCodigo: new Map(catalogo.map((c) => [c.codigo, c])),
@@ -261,7 +260,7 @@ async function lerLista(
 ) {
   const catalogo = await ocorrencias.catalogo(ctx.empresaId);
   const foraDaTela = lerListaDeInteiros(
-    await ocorrencias.configuracao(ctx.empresaId, CONFIG_CODIGOS_FORA_DA_TELA),
+    await ocorrencias.configuracao(ctx.empresaId, "ocorrencias_codigos_fora_da_tela"),
   );
   return ocorrencias.lista(
     normalizarFiltro(ctx, entrada, [{ inicio: entrada.inicio, fim: entrada.fim }]),
