@@ -39,7 +39,7 @@ describe("rankingOperacional — tempo esgotado", () => {
   it("estourou duas vezes: lista vazia, sem erro", async () => {
     const { banco, executar } = cenario([TEMPO_ESGOTADO, TEMPO_ESGOTADO]);
     await expect(executar()).resolves.toEqual([]);
-    expect(banco.ranking.filtrosRecebidos).toHaveLength(2);
+    expect(banco.ranking.consultasRecebidas).toHaveLength(2);
   });
 
   it("outro erro sobe sem repetir", async () => {

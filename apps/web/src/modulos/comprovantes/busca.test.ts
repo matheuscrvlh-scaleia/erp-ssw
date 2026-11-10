@@ -27,4 +27,10 @@ describe("busca de /comprovantes", () => {
       ["Nota fiscal", "12"],
     ]);
   });
+
+  it("pagador aparece pelo nome quando as opções chegaram", () => {
+    const b = ler({ pagadores: ["123"] });
+    expect(etiquetasDaBusca(b).map((e) => e.valor)).toEqual(["123"]);
+    expect(etiquetasDaBusca(b, ["NATURA"]).map((e) => e.valor)).toEqual(["NATURA"]);
+  });
 });

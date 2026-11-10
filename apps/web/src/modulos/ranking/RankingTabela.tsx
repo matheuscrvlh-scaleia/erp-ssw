@@ -1,6 +1,9 @@
+import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/filtros";
+import { type TipoRecorte } from "@erp/shared/contratos/listagem";
 import { type PontoSerie as PontoDaSerie } from "@erp/shared/contratos/performance";
 import { type FiltroDoRanking, type LinhaDoRanking } from "@erp/shared/contratos/ranking";
 import { hojeNoFuso } from "@erp/shared/datas";
+import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { formatarCnpj } from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -9,26 +12,38 @@ import { useMemo, useState } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
-import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
-import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
+import {
+  type EtiquetaFiltroOpcional,
+  FiltrandoPor,
+  resumirNomes,
+} from "@/componentes/comum/FiltrosAvancados";
 import { GraficoLinha } from "@/componentes/comum/Graficos";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { type Periodo, resolverPeriodo, ROTULO_ATALHO } from "@/componentes/comum/periodo";
 import { type ColunaExportacao } from "@/lib/exportacao";
+import { consultaConfiguracoesPublicas } from "@/modulos/admin/api";
+import { consultaPagadores } from "@/modulos/filtros/api";
+import {
+  type ContextoDosFiltros,
+  SeletorDeFilial,
+  SeletorDePagador,
+  SeletorDeTexto,
+  SeletorDeTipoDocumento,
+} from "@/modulos/filtros/componentes";
+import { nomesDosPagadores } from "@/modulos/filtros/regras";
+import { caminhoDaLista } from "@/modulos/listagem/busca";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";
 import { diaCurto } from "./periodo";
 import {
-  ALERTA_PADRAO,
-  caminhoDaLista,
   type ChaveDeOrdem,
   COR_DO_NIVEL,
   filtrarPorCard,
   type FiltroDoCard,
   formatarPct,
   kpisDoRanking,
-  META_PADRAO,
+  limiaresDoSla,
   nivelDoSla,
   ordenarLinhas,
 } from "./ranking-tela";
@@ -64,26 +79,24 @@ const classeDoAlternador = (ativo: boolean) =>
   CLASSE_DO_BOTAO +
   (ativo ? "bg-[var(--brand)] text-white" : "text-muted-foreground hover:bg-muted");
 
-/** Recorte da Listagem detalhada aberto pelo clique em cada coluna. */
-type Recorte =
-  "emitidos" | "entregues" | "no_prazo" | "fora_prazo" | "previstos_por_status" | "em_atraso";
-
 export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
   // Q11: "hoje" é o dia da empresa (Brasília), não o do navegador.
   const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
   const navigate = useNavigate();
-  const meta = META_PADRAO;
-  const alerta = ALERTA_PADRAO;
+  const { data: configuracoes } = useQuery(consultaConfiguracoesPublicas);
+  const { meta, alerta } = limiaresDoSla(configuracoes?.valores);
 
   const [rapido, setRapido] = useState<Periodo>("30d");
   const [base, setBase] = useState<Base>("emissao");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
+  const [filiais, setFiliais] = useState<string[]>([]);
   const [parceiros, setParceiros] = useState<string[]>([]);
   const [destino, setDestino] = useState("");
   const [remetente, setRemetente] = useState("");
+  const [tipos, setTipos] = useState<string[]>([]);
   const [ordem, setOrdem] = useState<{ chave: ChaveDeOrdem; direcao: "asc" | "desc" }>({
     chave: "slaPct",
     direcao: "desc",
@@ -99,30 +112,32 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         ? `${diaCurto(intervalo.inicio)} → ${diaCurto(intervalo.fim)}`
         : ROTULO_ATALHO[rapido],
   };
-  // TODO(performance): seletores de Unidade responsável e Tipo de documento (FiltroMultiplo) e
-  // sugestões de Remetente/Destino quando a Performance publicar as consultas de opções; o
-  // contrato do ranking já aceita `filiais` e `tipos`.
   const filtro: FiltroDoRanking = {
     grupo,
     inicio: periodo.inicio,
     fim: periodo.fim,
     baseData: base,
+    filiais: filiais.length ? filiais : null,
     pagadores: parceiros.length ? parceiros : null,
     destino: destino.trim() || null,
     remetente: remetente.trim() || null,
+    tipos: tipos.length ? tipos : null,
   };
   const { data, isFetching } = useQuery(consultaRankingOperacional(filtro));
   const linhas = useMemo(() => data ?? [], [data]);
 
-  // Opções de Parceiros: os pagadores com CT-e no período (o ranking por parceiro, sem filtros).
-  const { data: pagadores } = useQuery(
-    consultaRankingOperacional({
-      grupo: "pagador",
-      inicio: periodo.inicio,
-      fim: periodo.fim,
-      baseData: base,
-    }),
+  // Opções de Parceiros: pagadores com CT-e no período e nas unidades escolhidas.
+  const pagadores = useQuery(
+    consultaPagadores({ inicio: periodo.inicio, fim: periodo.fim, filiais, campoData: base }),
   );
+  const contexto: ContextoDosFiltros = {
+    inicio: periodo.inicio,
+    fim: periodo.fim,
+    filiais,
+    parceiros,
+    remetente,
+    destino,
+  };
 
   const anoAtual = Number(hoje.slice(0, 4));
   const [ano, setAno] = useState(anoAtual);
@@ -134,9 +149,11 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
       inicio: `${ano}-01-01`,
       fim: fimSerie,
       baseData: base,
+      filiais: filiais.length ? filiais : undefined,
       parceiros: parceiros.length ? parceiros : undefined,
       destino: destino.trim() || undefined,
       remetente: remetente.trim() || undefined,
+      tipos: tipos.length ? tipos : undefined,
     }),
   );
 
@@ -171,8 +188,51 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
     setFiltroCard((atual) => (atual === f ? "todos" : f));
   };
 
+  const nomesParceiros = nomesDosPagadores(pagadores.data ?? [], parceiros);
+  const rotuloTipos = tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t)).join(", ");
+  const etiquetas: EtiquetaFiltroOpcional[] = [
+    nomesParceiros.length > 0 && {
+      rotulo: nomesParceiros.length === 1 ? "Parceiro" : "Parceiros",
+      ...resumirNomes(nomesParceiros),
+      limpar: () => {
+        setParceiros([]);
+      },
+    },
+    remetente.trim() !== "" && {
+      rotulo: "Remetente",
+      ...resumirNomes(lerFiltroTexto(remetente)),
+      limpar: () => {
+        setRemetente("");
+      },
+    },
+    destino.trim() !== "" && {
+      rotulo: "Destino",
+      ...resumirNomes(lerFiltroTexto(destino)),
+      limpar: () => {
+        setDestino("");
+      },
+    },
+    filiais.length > 0 && {
+      rotulo: "Unidade responsável",
+      valor: filiais.join(", "),
+      limpar: () => {
+        setFiliais([]);
+      },
+    },
+    tipos.length > 0 && {
+      rotulo: "Tipo",
+      valor: rotuloTipos,
+      limpar: () => {
+        setTipos([]);
+      },
+    },
+  ];
+  const descricaoDosFiltros = etiquetas
+    .flatMap((e) => (e ? [`${e.rotulo}: ${e.valor}`] : []))
+    .join(" · ");
+
   // Clique no número abre o recorte daquela coluna; no resto da linha, todos os CT-e dela.
-  const abrirCasos = (r: LinhaDoRanking, tipo: Recorte = "emitidos") => {
+  const abrirCasos = (r: LinhaDoRanking, tipo: TipoRecorte = "emitidos") => {
     void navigate({
       href: caminhoDaLista({
         tipo,
@@ -180,14 +240,17 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         de: periodo.inicio,
         ate: periodo.fim,
         base,
+        // Leva os filtros da tela: sem eles a lista abria com mais CT-e do que a linha clicada.
+        filiais,
         parceiros: grupo === "pagador" ? [r.chave] : parceiros,
         destino: grupo === "cidade" ? nomeDe(r) : destino.trim(),
         remetente: remetente.trim(),
+        tipos,
       }),
     });
   };
 
-  const celula = (r: LinhaDoRanking, valor: number, tipo: Recorte, dica: string) => (
+  const celula = (r: LinhaDoRanking, valor: number, tipo: TipoRecorte, dica: string) => (
     <td className="px-2 py-1.5 text-right tabular-nums">
       <button
         type="button"
@@ -281,19 +344,32 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
             </button>
           ))}
         </div>
-        <FiltroMultiplo
+        <SeletorDeFilial selecionadas={filiais} contexto={contexto} aoMudar={setFiliais} />
+        <SeletorDePagador
           rotulo="Parceiros"
-          opcoes={pagadores?.map((o) => ({
-            valor: o.chave,
-            rotulo: o.rotulo ?? formatarCnpj(o.chave),
-            detalhe: nfInt.format(o.totalCtes),
-          }))}
+          opcoes={pagadores.data}
           selecionados={parceiros}
           aoMudar={setParceiros}
-          textoVazio="Nenhum parceiro no período."
         />
-        <FiltroTexto rotulo="Remetente" valor={remetente} aoMudar={setRemetente} />
-        <FiltroTexto rotulo="Destino" valor={destino} aoMudar={setDestino} />
+        <SeletorDeTexto
+          rotulo="Remetente"
+          campo="remetente"
+          valor={remetente}
+          contexto={contexto}
+          aoMudar={setRemetente}
+        />
+        <SeletorDeTexto
+          rotulo="Destino"
+          campo="cidade_destino"
+          valor={destino}
+          contexto={contexto}
+          aoMudar={setDestino}
+        />
+        <SeletorDeTipoDocumento
+          selecionados={tipos}
+          escopo={{ inicio: periodo.inicio, fim: periodo.fim, campoData: base }}
+          aoMudar={setTipos}
+        />
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground">
             meta {formatarPct(meta)} · {periodo.rotulo}
@@ -301,12 +377,16 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           <ExportMenu
             arquivo={`ranking-${grupo === "pagador" ? "parceiro" : "cidade"}`}
             titulo={`Ranking por ${rotuloDoGrupo}`}
-            subtitulo={`${periodo.rotulo} · por ${ROTULO_DA_BASE[base]}`}
+            subtitulo={[`${periodo.rotulo} · por ${ROTULO_DA_BASE[base]}`, descricaoDosFiltros]
+              .filter(Boolean)
+              .join(" · ")}
             colunas={colunasExportacao}
             linhas={linhasExportacao}
           />
         </div>
       </div>
+
+      <FiltrandoPor etiquetas={etiquetas} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard

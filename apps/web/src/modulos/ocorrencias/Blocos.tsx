@@ -9,6 +9,7 @@ import { AlertTriangle, TrendingDown } from "lucide-react";
 import { type ReactNode } from "react";
 
 import { GraficoBarras } from "@/componentes/comum/Graficos";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import {
   decimal,
   diaMes,
@@ -16,7 +17,6 @@ import {
   participacao,
   percentual,
 } from "@/modulos/compartilhado/formatos";
-import { InfoTip } from "@/modulos/compartilhado/InfoTip";
 
 import { type RecorteFinalizacao, ROTULO_DA_FAIXA } from "./busca";
 import { classeDoResponsavel, rotulosDoResponsavel } from "./rotulos";

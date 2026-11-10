@@ -5,11 +5,12 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 
+import { Abas } from "@/componentes/comum/Abas";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
-import { Abas, CabecalhoDaPagina, Selo, useGravacao } from "@/modulos/admin/comum";
+import { CabecalhoDaPagina, Selo, useGravacao } from "@/modulos/admin/comum";
 import { LogsComAbas, PainelAlteracoes } from "@/modulos/admin/logs/Logs";
 
 import { AbaDados } from "./AbaDados";

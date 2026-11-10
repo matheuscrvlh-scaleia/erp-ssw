@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { Abas } from "@/componentes/comum/Abas";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { Checkbox } from "@/componentes/ui/checkbox";
@@ -18,7 +19,7 @@ import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DA_INGESTAO, consultaAplicacoes } from "./api";
-import { Abas, SeloStatus } from "./pecas";
+import { SeloStatus } from "./pecas";
 
 const LOTE = 4000;
 const MAX_LISTA = 500;
@@ -153,7 +154,13 @@ export function AplicarStaging() {
             {resultado.dryRun ? "Simulação" : "Aplicação"} em {resultado.blocos} bloco(s)
             {!resultado.dryRun && ` · ${resultado.pendentes} CT-e ainda na fila`}
           </p>
-          <Abas abas={abas} ativa={aba} aoMudar={setAba} />
+          <Abas
+            abas={abas}
+            valor={aba}
+            aoMudar={setAba}
+            className="h-auto flex-wrap"
+            classeDaAba="text-[12px]"
+          />
           {aba === "inserir" && (
             <TabelaDados
               colunas={[

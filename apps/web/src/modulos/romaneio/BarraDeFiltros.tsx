@@ -19,6 +19,7 @@ import {
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
 import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { type Intervalo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { Calendar } from "@/componentes/ui/calendar";
@@ -33,7 +34,7 @@ import { cn } from "@/lib/utils";
 
 import { consultaOpcoes, consultaPerformanceAjudantes } from "./api";
 import { baseAtual, type BuscaRomaneio, codigosDaBusca, comSingular, veTodos } from "./busca";
-import { CampoAdiado, InfoTip } from "./componentes";
+import { CampoAdiado } from "./componentes";
 
 const BASES_DATA: readonly { id: CampoData; rotulo: string }[] = [
   { id: "emissao", rotulo: "Emissão" },

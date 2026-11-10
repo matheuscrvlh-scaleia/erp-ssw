@@ -1,7 +1,5 @@
-// TODO(kit-ui): o kit comum (docs/kit-ui.md) ainda não tem abas nem o botão "Como funciona".
-// Mesmas classes do sistema atual; trocar pelos do kit quando chegarem e apagar este arquivo.
 import { Info } from "lucide-react";
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import {
   Dialog,
@@ -11,92 +9,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/componentes/ui/dialog";
-import { cn } from "@/lib/utils";
 
-/* ---------- Abas (Tabs do shadcn) ---------- */
-
-const AbaAtiva = createContext<{ valor: string; mudar: (v: string) => void }>({
-  valor: "",
-  mudar: () => undefined,
-});
-
-export function Abas({
-  padrao,
-  className,
-  children,
-}: {
-  padrao: string;
-  className?: string;
-  children: ReactNode;
-}) {
-  const [valor, mudar] = useState(padrao);
-  return (
-    <AbaAtiva.Provider value={{ valor, mudar }}>
-      <div className={className}>{children}</div>
-    </AbaAtiva.Provider>
-  );
-}
-
-export function ListaDeAbas({ children }: { children: ReactNode }) {
-  return (
-    <div
-      role="tablist"
-      className="inline-flex h-9 w-max items-center justify-center whitespace-nowrap rounded-lg bg-muted p-1 text-muted-foreground"
-    >
-      {children}
-    </div>
-  );
-}
-
-export function Aba({
-  valor,
-  className,
-  children,
-}: {
-  valor: string;
-  className?: string;
-  children: ReactNode;
-}) {
-  const atual = useContext(AbaAtiva);
-  const ativa = atual.valor === valor;
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={ativa}
-      onClick={() => {
-        atual.mudar(valor);
-      }}
-      className={cn(
-        "inline-flex items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-all",
-        ativa && "bg-background text-foreground shadow",
-        className,
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-export function ConteudoDaAba({
-  valor,
-  className,
-  children,
-}: {
-  valor: string;
-  className?: string;
-  children: ReactNode;
-}) {
-  const atual = useContext(AbaAtiva);
-  if (atual.valor !== valor) return null;
-  return (
-    <div role="tabpanel" className={cn("mt-2", className)}>
-      {children}
-    </div>
-  );
-}
-
-/* ---------- "Como funciona" ---------- */
+/*
+ * Botão "Como funciona" e o texto da explicação da página (seções e fórmulas), no desenho do
+ * sistema atual. O conteúdo é de cada tela.
+ */
 
 /** Botão "i" que abre a explicação da página; pulsa até a pessoa abrir pela primeira vez. */
 export function ComoFunciona({

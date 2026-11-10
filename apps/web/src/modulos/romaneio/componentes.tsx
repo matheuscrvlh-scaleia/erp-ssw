@@ -1,8 +1,8 @@
 /**
- * Peças visuais próprias do Romaneio (cards de totalizador, chips de faixa, dica). Visual da
- * tela de hoje (features/romaneio/TotCard.tsx, Fase2Views.tsx, InfoTip.tsx).
+ * Peças visuais próprias do Romaneio (cards de totalizador, chips de faixa). Visual da
+ * tela de hoje (features/romaneio/TotCard.tsx, Fase2Views.tsx).
  */
-import { Eye, EyeOff, Info } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import {
   Children,
   type CSSProperties,
@@ -12,35 +12,10 @@ import {
   useState,
 } from "react";
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { cn } from "@/lib/utils";
 
 import { nfInt } from "./formatos";
-
-/** Ícone de ajuda com a explicação do número. */
-export function InfoTip({ texto, className }: { texto: string; className?: string }) {
-  return (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            aria-label="Como este número é calculado"
-            className={cn(
-              "inline-flex shrink-0 text-muted-foreground/70 transition-colors hover:text-foreground",
-              className,
-            )}
-          >
-            <Info className="h-3 w-3" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[280px] text-[11px] leading-snug">
-          {texto}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
 
 /** Props de clique acessível (card que vira botão). */
 function clicavel(aoClicar: (() => void) | undefined) {

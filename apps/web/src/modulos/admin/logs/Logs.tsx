@@ -17,11 +17,12 @@ import { hojeNoFuso, somarDias } from "@erp/shared/datas";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { Abas } from "@/componentes/comum/Abas";
 import { ModalDetalhe } from "@/componentes/comum/Detalhe";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { chamar } from "@/lib/api";
 
-import { Abas, Selo } from "../comum";
+import { Selo } from "../comum";
 
 /**
  * Logs (decisão Q31: a aba Integrações segue o papel na empresa ativa). Sem `empresaId`: Admin ›

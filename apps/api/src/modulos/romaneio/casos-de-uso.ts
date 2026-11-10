@@ -6,7 +6,12 @@
  * Escopo por unidade/equipe (Q26): desligado até existir a tela que grava a unidade do usuário;
  * todos veem tudo da própria empresa (RLS).
  */
-import { normCodigoOcorr, padroesTextoFiltro } from "@erp/dominio/nucleo";
+import {
+  ehTipoPendencia,
+  normCodigoOcorr,
+  padroesTextoFiltro,
+  unidadeResponsavel,
+} from "@erp/dominio/nucleo";
 import {
   type CteDoDia,
   ctesDaFaixa,
@@ -31,7 +36,6 @@ import {
   normNome,
   normPlaca,
 } from "@erp/dominio/romaneio/normalizacao";
-import { ehTipoPendencia, unidadeResponsavel } from "@erp/dominio/romaneio/nucleo-local";
 import {
   analisarCte,
   type AnaliseCte,

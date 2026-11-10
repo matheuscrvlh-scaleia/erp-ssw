@@ -61,6 +61,13 @@ export const TIPOS_PENDENCIA: ReadonlySet<TipoSsw> = new Set([
   "PENDENCIA_TRANSPORTADORA",
 ]);
 
+/** Tipo SSW do cadastro (texto) é pendência ("teve problema", travado, motivos). */
+export const ehTipoPendencia = (tipo: string | null): boolean =>
+  [...TIPOS_PENDENCIA].some((t) => t === tipo);
+
+/** Código de entrega (1, 18, 67). */
+export const ehCodigoEntrega = (codigo: number): boolean => CODIGOS_ENTREGA.has(codigo);
+
 /** Linha do catálogo `codigos_ocorrencia` da empresa (o que o núcleo lê). */
 export interface CodigoCadastrado {
   codigo: number;

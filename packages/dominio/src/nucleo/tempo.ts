@@ -33,6 +33,11 @@ export function somarDiasCorridos(dia: DataIso, dias: number): DataIso {
   return somarDias(dia, dias);
 }
 
+/** Hora (0–23) do instante em Brasília. */
+export function horaSp(instante: Date): number {
+  return new Date(instante.getTime() - 3 * MS_POR_HORA).getUTCHours();
+}
+
 /** Meia-noite de Brasília do dia (Q11: substitui o `data::timestamptz` da sessão UTC). */
 export function inicioDoDiaSp(dia: DataIso): Date {
   return new Date(`${dia}T00:00:00${DESLOCAMENTO_SP}`);

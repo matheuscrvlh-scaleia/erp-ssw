@@ -6,11 +6,11 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { Abas } from "@/componentes/comum/Abas";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
-import { classeDoSegmento } from "@/modulos/compartilhado/CampoDeTexto";
 import { dataHora } from "@/modulos/compartilhado/formatos";
 
 import { consultaHistoricoDoCodigo } from "./api";
@@ -134,22 +134,15 @@ export function ModalDoCodigo({
           Classificação do código: responsável e se penaliza.
         </DialogDescription>
         {editando && (
-          <div role="tablist" className="flex w-fit rounded-md border border-border/70 p-0.5">
-            {(["dados", "historico"] as const).map((a) => (
-              <button
-                key={a}
-                type="button"
-                role="tab"
-                aria-selected={aba === a}
-                onClick={() => {
-                  setAba(a);
-                }}
-                className={classeDoSegmento(aba === a)}
-              >
-                {a === "dados" ? "Dados" : "Histórico"}
-              </button>
-            ))}
-          </div>
+          <Abas
+            abas={[
+              { valor: "dados", rotulo: "Dados" },
+              { valor: "historico", rotulo: "Histórico" },
+            ]}
+            valor={aba}
+            aoMudar={setAba}
+            className="w-fit"
+          />
         )}
         {aba === "historico" && editando ? (
           <HistoricoDoCodigo codigo={editando.codigo} fuso={fuso} />

@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { BotoesDePagina } from "@/componentes/comum/BotoesDePagina";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import {
@@ -650,28 +651,14 @@ export function PaginaPrazoParceiro() {
             <span className="text-muted-foreground">
               Página {b.page} de {totalDePaginas}
             </span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              disabled={b.page <= 1}
-              onClick={() => {
-                definir({ page: Math.max(1, b.page - 1) });
+            <BotoesDePagina
+              pagina={b.page}
+              totalDePaginas={totalDePaginas}
+              aoMudar={(page) => {
+                definir({ page });
               }}
-            >
-              Anterior
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               className="h-7"
-              disabled={b.page >= totalDePaginas}
-              onClick={() => {
-                definir({ page: Math.min(totalDePaginas, b.page + 1) });
-              }}
-            >
-              Próxima
-            </Button>
+            />
           </div>
         </div>
       </div>

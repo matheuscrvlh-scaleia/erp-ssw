@@ -18,8 +18,8 @@ import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { classeDoSegmento } from "@/modulos/compartilhado/CampoDeTexto";
 import { inteiro, percentual } from "@/modulos/compartilhado/formatos";
+import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
 
 import { CHAVE_DOS_CODIGOS, consultaCodigos } from "./api";
 import { type CodigoParaSalvar, ModalDoCodigo } from "./ModalDoCodigo";

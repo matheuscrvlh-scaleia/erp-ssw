@@ -44,6 +44,19 @@ export function filiaisProprias(filiais: readonly FilialCadastrada[]): string[] 
 }
 
 /**
+ * Unidade que responde pelo CT-e: destino, senão a atual, quando são filiais próprias; senão a
+ * filial de emissão. origem: _unidade_responsavel (sistema atual)
+ */
+export function unidadeResponsavel(
+  filiaisProprias: ReadonlySet<string>,
+  c: { unidadeDestino: string | null; unidadeAtual: string | null; filial: string | null },
+): string | null {
+  if (c.unidadeDestino !== null && filiaisProprias.has(c.unidadeDestino)) return c.unidadeDestino;
+  if (c.unidadeAtual !== null && filiaisProprias.has(c.unidadeAtual)) return c.unidadeAtual;
+  return c.filial;
+}
+
+/**
  * CNPJs da própria empresa (só dígitos, distintos, não vazios): o da empresa e os emitentes
  * cadastrados na integração de XML de CT-e. A ingestão do 455 deixa o parceiro vazio quando o
  * expedidor é um deles.

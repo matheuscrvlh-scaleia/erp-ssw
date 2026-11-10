@@ -13,9 +13,10 @@ import {
 import { decimalEmUnidades, type SituacaoPrevista } from "@erp/dominio/ranking";
 import { type Regra } from "@erp/shared/contratos/ranking";
 import { and, asc, desc, eq, gte, inArray, isNull, lte, not, type SQL, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
-import { type RepositorioRanking } from "./casos-de-uso";
-import { condicaoDoFiltro } from "./filtro-performance";
+import { ondeDoFiltro } from "../performance/consultas";
+import { type ConsultaDoRanking, type RepositorioRanking } from "./casos-de-uso";
 
 /** Teto da lista de CT-e para atribuir (igual a hoje). */
 const LIMITE_PARA_ATRIBUIR = 500;
@@ -39,10 +40,18 @@ const colunasDoMembro = {
   dataSaida: equipeMembros.dataSaida,
 };
 
+/** `erp.ctes` com o apelido `c`, o que o `WHERE` da Performance espera. */
+const c = alias(ctes, "c");
+
 function chaveDoGrupo(grupo: "pagador" | "cidade"): SQL<string> {
   return grupo === "cidade"
-    ? sql<string>`upper(btrim(coalesce(${ctes.cidadeDestino}, '')))`
-    : sql<string>`coalesce(${ctes.pagadorCnpjDigitos}, '')`;
+    ? sql<string>`upper(btrim(coalesce(${c.cidadeDestino}, '')))`
+    : sql<string>`coalesce(${c.pagadorCnpjDigitos}, '')`;
+}
+
+/** Universo e filtros da Performance, só os CT-e com chave do grupo. */
+function ondeDoRanking({ filtro, contexto }: ConsultaDoRanking, chave: SQL<string>): SQL {
+  return sql`${ondeDoFiltro(filtro, contexto)} and ${chave} <> ''`;
 }
 
 export function criarRepositorioRanking(tx: Transacao): RepositorioRanking {
@@ -100,26 +109,26 @@ export function criarRepositorioRanking(tx: Transacao): RepositorioRanking {
           )
       ).map((c) => c.codigo),
 
-    baldes: async (filtro, grupo, hoje) => {
+    baldes: async (consulta, grupo) => {
       const chave = chaveDoGrupo(grupo);
       const linhas = await tx
         .select({
           chave,
-          temDataEntrega: sql<boolean>`${ctes.dataEntregaRealizada} is not null`,
-          codigoEfetivo: ctes.ocorrEfetivaCodigoNum,
-          noPrazo: ctes.noPrazo,
-          responsabilidadeCliente: ctes.responsabilidadeCliente,
+          temDataEntrega: sql<boolean>`${c.dataEntregaRealizada} is not null`,
+          codigoEfetivo: c.ocorrEfetivaCodigoNum,
+          noPrazo: c.noPrazo,
+          responsabilidadeCliente: c.responsabilidadeCliente,
           prevista: sql<SituacaoPrevista>`case
-            when ${ctes.dataPrevistaEntrega} is null then 'sem_previsao'
-            when ${ctes.dataPrevistaEntrega} < ${hoje} then 'vencida'
+            when ${c.dataPrevistaEntrega} is null then 'sem_previsao'
+            when ${c.dataPrevistaEntrega} < ${consulta.contexto.hoje} then 'vencida'
             else 'no_prazo' end`,
           quantidade: sql<number>`count(*)::int`,
-          peso: sql<string | null>`sum(${ctes.peso})::text`,
-          volumes: sql<string | null>`sum(${ctes.volumes})::text`,
-          frete: sql<string | null>`sum(${ctes.valorFrete})::text`,
+          peso: sql<string | null>`sum(${c.peso})::text`,
+          volumes: sql<string | null>`sum(${c.volumes})::text`,
+          frete: sql<string | null>`sum(${c.valorFrete})::text`,
         })
-        .from(ctes)
-        .where(and(condicaoDoFiltro(filtro), sql`${chave} <> ''`))
+        .from(c)
+        .where(ondeDoRanking(consulta, chave))
         // Por posição: a mesma expressão com parâmetro ($n) no SELECT e no GROUP BY não casa.
         .groupBy(sql`1, 2, 3, 4, 5, 6`);
       return linhas.map((l) => ({
@@ -136,9 +145,9 @@ export function criarRepositorioRanking(tx: Transacao): RepositorioRanking {
       }));
     },
 
-    rotulos: (filtro, grupo) => {
+    rotulos: (consulta, grupo) => {
       const chave = chaveDoGrupo(grupo);
-      const origem = grupo === "cidade" ? ctes.cidadeDestino : ctes.pagadorNome;
+      const origem = grupo === "cidade" ? c.cidadeDestino : c.pagadorNome;
       return tx
         .select({
           chave,
@@ -146,10 +155,10 @@ export function criarRepositorioRanking(tx: Transacao): RepositorioRanking {
           rotulo: sql<
             string | null
           >`mode() within group (order by ${origem}) filter (where ${origem} is not null)`,
-          sub: grupo === "cidade" ? sql<string | null>`max(${ctes.ufDestino})` : sql<null>`null`,
+          sub: grupo === "cidade" ? sql<string | null>`max(${c.ufDestino})` : sql<null>`null`,
         })
-        .from(ctes)
-        .where(and(condicaoDoFiltro(filtro), sql`${chave} <> ''`))
+        .from(c)
+        .where(ondeDoRanking(consulta, chave))
         .groupBy(sql`1`);
     },
 

@@ -6,7 +6,7 @@
  * Decisões do dono: Q14 (prejuízo na janela do período em todas as abas, inclusive Prejuízo) e
  * Q15 (prejuízo só de CT-e que saiu para entrega, inclusive na Performance Motorista/Ajudante).
  */
-import { diaSp, normalizarNome } from "../nucleo";
+import { diaSp, horaSp, normalizarNome } from "../nucleo";
 import {
   arredondar,
   chaveAjudante,
@@ -15,7 +15,6 @@ import {
   maxTexto,
   normNome,
 } from "./normalizacao";
-import { horaSp } from "./nucleo-local";
 import {
   type Cadastro,
   type CteAnalisado,

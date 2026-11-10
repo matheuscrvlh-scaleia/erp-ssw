@@ -14,6 +14,7 @@ import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { BotoesDePagina } from "@/componentes/comum/BotoesDePagina";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import {
@@ -22,6 +23,7 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
@@ -29,7 +31,6 @@ import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
   type ContextoDosFiltros,
-  InfoDica,
   SeletorDeFilial,
   SeletorDePagador,
   SeletorDeTexto,
@@ -519,7 +520,7 @@ export function PaginaListagem() {
           }}
         />
         <span className="inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground">
-          <InfoDica texto={DICA_DA_BASE[busca.base]} />
+          <InfoTip texto={DICA_DA_BASE[busca.base]} />
           <span className="hidden sm:inline">{BASE_CURTA[busca.base]}</span>
         </span>
         <div className="flex rounded-md border border-border/70 p-0.5">
@@ -648,28 +649,15 @@ export function PaginaListagem() {
           Página {busca.page} de {totalDePaginas} · {total.toLocaleString("pt-BR")} CTRCs
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7"
-            disabled={busca.page <= 1 || lista.isLoading}
-            onClick={() => {
-              atualizarBusca({ page: Math.max(1, busca.page - 1) });
+          <BotoesDePagina
+            pagina={busca.page}
+            totalDePaginas={totalDePaginas}
+            aoMudar={(page) => {
+              atualizarBusca({ page });
             }}
-          >
-            Anterior
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
+            desabilitado={lista.isLoading}
             className="h-7"
-            disabled={busca.page >= totalDePaginas || lista.isLoading}
-            onClick={() => {
-              atualizarBusca({ page: Math.min(totalDePaginas, busca.page + 1) });
-            }}
-          >
-            Próxima
-          </Button>
+          />
         </div>
       </div>
     </div>

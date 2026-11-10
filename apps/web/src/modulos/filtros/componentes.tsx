@@ -4,19 +4,32 @@
  * dica, item marcável dos seletores próprios).
  * origem: FiltrosAvancados.tsx, PagadorPicker.tsx, BuscaDocumentoInput.tsx (sistema atual)
  */
+import { ordenarTiposDocumento } from "@erp/dominio/performance/tela";
 import { type EntradaDe } from "@erp/shared/contrato";
-import { contratosFiltros as c, type PagadorOpcao } from "@erp/shared/contratos/filtros";
+import {
+  contratosFiltros as c,
+  type PagadorOpcao,
+  SEM_TIPO_DOCUMENTO,
+  type TipoDocumentoOpcao,
+} from "@erp/shared/contratos/filtros";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Info, Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/componentes/ui/tooltip";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { chamar } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { inteiro } from "@/modulos/compartilhado/formatos";
 
-import { consultaFiliaisProprias, consultaOpcoesDeFiltro } from "./api";
+import {
+  consultaFiliaisProprias,
+  consultaOpcoesDeFiltro,
+  consultaTiposDocumento,
+  consultaTiposNoPeriodo,
+  type EscopoDoTipoDocumento,
+} from "./api";
 import { siglasDoSeletor } from "./regras";
 
 export type ContextoDosFiltros = EntradaDe<typeof c.opcoes>;
@@ -68,21 +81,6 @@ export function AvisoDaLista({ children, erro }: { children: ReactNode; erro?: b
     >
       {children}
     </li>
-  );
-}
-
-export function InfoDica({ texto }: { texto: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex cursor-help text-muted-foreground" aria-label={texto}>
-          <Info className="h-3 w-3" />
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
-        {texto}
-      </TooltipContent>
-    </Tooltip>
   );
 }
 
@@ -180,7 +178,7 @@ export function SeletorDeFilial({
         larguraClasse="w-48"
         monoespacado
       />
-      <InfoDica texto="Unidade responsável pelo CT-e: usa a unidade de destino; na falta dela, a unidade atual; e por último a filial emissora." />
+      <InfoTip texto="Unidade responsável pelo CT-e: usa a unidade de destino; na falta dela, a unidade atual; e por último a filial emissora." />
     </span>
   );
 }
@@ -237,6 +235,59 @@ export function SeletorDeTexto({
         chave: ["filtros", "sugestoes", campo, contexto],
         buscar: (q) => chamar(c.sugestoes, { entrada: { ...contexto, campo, q } }),
       }}
+    />
+  );
+}
+
+/**
+ * "Tipo documento": os tipos da base inteira, com quantos CT-e de cada há no período da tela; os
+ * sem CT-e no período ficam apagados, no fim. As duas listas só são buscadas com o seletor aberto.
+ * origem: TipoDocumentoPicker (FiltrosAvancados.tsx, sistema atual)
+ */
+export function SeletorDeTipoDocumento({
+  selecionados,
+  aoMudar,
+  escopo,
+  contagens,
+  aoAbrir,
+}: {
+  selecionados: readonly string[];
+  aoMudar: (tipos: string[]) => void;
+  /** Período e base de data da tela: a contagem vem do filtro compartilhado. */
+  escopo?: EscopoDoTipoDocumento | undefined;
+  /** Contagem já calculada pela tela, com os filtros dela; dispensa `escopo`. */
+  contagens?: readonly TipoDocumentoOpcao[] | undefined;
+  /** Avisa abrir/fechar (a tela que passa `contagens` pode buscá-las só aberto). */
+  aoAbrir?: ((aberto: boolean) => void) | undefined;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const tipos = useQuery({ ...consultaTiposDocumento, enabled: aberto });
+  const noPeriodo = useQuery({
+    ...consultaTiposNoPeriodo(escopo),
+    enabled: aberto && escopo !== undefined && contagens === undefined,
+  });
+  // Enquanto a contagem não chega (ou se não deu para contar), nenhum tipo fica apagado.
+  const contagem = contagens ?? noPeriodo.data ?? undefined;
+  return (
+    <FiltroMultiplo
+      rotulo="Tipo documento"
+      textoVazio="todos"
+      opcoes={
+        tipos.data
+          ? ordenarTiposDocumento(tipos.data, contagem).map((t) => ({
+              valor: t.tipo,
+              rotulo: t.tipo === SEM_TIPO_DOCUMENTO ? "Sem tipo" : t.tipo,
+              detalhe: contagem && t.qtd > 0 ? inteiro(t.qtd) : undefined,
+              apagada: contagem !== undefined && t.qtd === 0,
+            }))
+          : undefined
+      }
+      aoAbrir={(a) => {
+        setAberto(a);
+        aoAbrir?.(a);
+      }}
+      selecionados={selecionados}
+      aoMudar={aoMudar}
     />
   );
 }

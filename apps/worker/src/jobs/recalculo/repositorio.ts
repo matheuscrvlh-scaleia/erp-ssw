@@ -1,6 +1,7 @@
 import { type Transacao } from "@erp/db";
-import { codigosOcorrencia, ocorrencias } from "@erp/db/schema";
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { codigosOcorrencia, ctes, ocorrencias } from "@erp/db/schema";
+import { comoCte } from "@erp/ingestao/infra";
+import { and, asc, eq, exists, gt, inArray, or, sql } from "drizzle-orm";
 
 import { type RepositorioRecalculo } from "./job";
 
@@ -30,6 +31,32 @@ export function criarRepositorioRecalculo(tx: Transacao): RepositorioRecalculo {
         .from(codigosOcorrencia)
         .where(and(inArray(ocorrencias.id, lote), divergem));
       return resultado.rowCount ?? 0;
+    },
+
+    ctesDoCodigo: async (empresaId, codigo, aposId, limite) => {
+      const temOcorrencia = tx
+        .select({ um: sql`1` })
+        .from(ocorrencias)
+        .where(
+          and(
+            eq(ocorrencias.empresaId, empresaId),
+            eq(ocorrencias.cteId, ctes.id),
+            eq(ocorrencias.codigo, codigo),
+          ),
+        );
+      const linhas = await tx
+        .select()
+        .from(ctes)
+        .where(
+          and(
+            eq(ctes.empresaId, empresaId),
+            aposId ? gt(ctes.id, aposId) : undefined,
+            or(eq(ctes.ocorrEfetivaCodigoNum, codigo), exists(temOcorrencia)),
+          ),
+        )
+        .orderBy(asc(ctes.id))
+        .limit(limite);
+      return linhas.map(comoCte);
     },
   };
 }

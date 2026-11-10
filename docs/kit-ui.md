@@ -10,11 +10,15 @@ e leitor de tela. Componentes em `apps/web/src/componentes/comum/`, exportação
 | Card de indicador | `KpiCard` (+ `statusDaMeta`) |
 | "Dados atualizados em…" | `SeloAtualizacao` |
 | Tabela | `TabelaDados` |
+| "Anterior" / "Próxima" de lista paginada fora da `TabelaDados` | `BotoesDePagina` |
 | Barra de filtros | `FiltrosAvancados` + `FiltroPeriodo` / `FiltroMultiplo` / `FiltroTexto` + `FiltrandoPor` |
 | Filtros na URL | `useFiltrosNaUrl` + `campoFiltro` |
 | Detalhe | `DrawerDetalhe` / `ModalDetalhe` + `GradeDetalhe` / `CampoDetalhe` |
 | Gráfico | `GraficoLinha` / `GraficoBarras` |
 | Sem dados / erro | `EstadoVazio` / `MensagemErro` (`mensagemAmigavel` para toast) |
+| Abas | `Abas` + `ConteudoDaAba` |
+| "Como funciona" da página | `ComoFunciona` + `ComoFuncionaSecao` / `Formula` |
+| Ícone "i" com explicação | `InfoTip` |
 
 ---
 
@@ -276,3 +280,43 @@ toast.error("Não foi possível salvar", { description: mensagemAmigavel(erro) }
 
 `mensagemAmigavel` mostra só a mensagem da API (já fala com o operador, ex.: "reduza o período");
 erro técnico vira a mensagem genérica, e versão antiga do app vira "Recarregue a página (F5)".
+
+## Abas
+
+```tsx
+<Abas
+  abas={[
+    { valor: "parceiro", rotulo: "Parceiro" },
+    { valor: "cidade", rotulo: "Cidade" },
+  ]}
+  padrao="parceiro" // sozinha; ou valor={aba} aoMudar={setAba} (estado da tela ou da URL)
+  rotulo="Agrupar por" // opcional: nome da lista para o leitor de tela
+  classeDaAba="text-[12px]" // opcional; className = lista, classeDoGrupo = bloco todo
+>
+  <ConteudoDaAba valor="parceiro">...</ConteudoDaAba>
+  <ConteudoDaAba valor="cidade">...</ConteudoDaAba>
+</Abas>
+```
+
+Tabs do shadcn: setas do teclado trocam de aba; o conteúdo da aba fechada sai da tela (só consulta
+aberta). Sem `ConteudoDaAba`, quem usa mostra o conteúdo pelo `valor`. `aoMudar` recebe o valor já
+tipado. Nos testes, a aba troca com `fireEvent.mouseDown` (o Radix age no mousedown).
+
+## `ComoFunciona` e `InfoTip`
+
+```tsx
+<ComoFunciona
+  chave="bonificacao-entrega" // lembra no navegador quem já abriu (o botão para de pulsar)
+  titulo="Como funciona a bonificação de entrega"
+  resumo="O bônus é calculado por pessoa e por dia..."
+>
+  <ComoFuncionaSecao titulo="1. De onde vêm os dados">
+    <p>Dos <strong>romaneios do SSW</strong>...</p>
+    <Formula>horas do dia = (saída 1 − entrada 1) + …</Formula>
+  </ComoFuncionaSecao>
+</ComoFunciona>
+
+<InfoTip texto="O período filtra pelo dia da entrega concluída em Brasília." />
+```
+
+O clique no `InfoTip` não aciona o card em volta.

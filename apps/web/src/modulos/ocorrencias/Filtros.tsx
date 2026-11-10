@@ -1,23 +1,32 @@
-import { RESPONSAVEIS_DO_FILTRO, SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
+import { type PagadorOpcao } from "@erp/shared/contratos/filtros";
+import { RESPONSAVEIS_DO_FILTRO } from "@erp/shared/contratos/ocorrencias";
 
 import { FiltroMultiplo, type OpcaoFiltro } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
-import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
-import { CampoDeTexto, classeDoSegmento, listaDoTexto } from "@/modulos/compartilhado/CampoDeTexto";
-import { InfoTip } from "@/modulos/compartilhado/InfoTip";
+import { InfoTip } from "@/componentes/comum/InfoTip";
+import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
+import {
+  BuscaDocumento,
+  type ContextoDosFiltros,
+  SeletorDeFilial,
+  SeletorDePagador,
+  SeletorDeTexto,
+  SeletorDeTipoDocumento,
+} from "@/modulos/filtros/componentes";
 
 import { type BuscaOcorrencias } from "./busca";
 import { rotulosDoResponsavel } from "./rotulos";
 
 export interface OpcoesDosFiltros {
-  parceiros: readonly OpcaoFiltro[] | undefined;
+  parceiros: readonly PagadorOpcao[] | undefined;
   codigos: readonly OpcaoFiltro[] | undefined;
   conferentes: readonly OpcaoFiltro[] | undefined;
 }
 
 export function BarraDeFiltros({
   busca,
+  periodo,
   opcoes,
   codigosAcompanhados,
   nomeCurto,
@@ -26,6 +35,7 @@ export function BarraDeFiltros({
   aoLimpar,
 }: {
   busca: BuscaOcorrencias;
+  periodo: { inicio: string; fim: string };
   opcoes: OpcoesDosFiltros;
   codigosAcompanhados: number | null;
   nomeCurto: string;
@@ -35,6 +45,12 @@ export function BarraDeFiltros({
 }) {
   const rotulos = rotulosDoResponsavel(nomeCurto);
   const porEmissao = busca.campoData === "emissao";
+  const contexto: ContextoDosFiltros = {
+    ...periodo,
+    parceiros: busca.parceiros,
+    remetente: busca.remetente,
+    destino: busca.destino,
+  };
   return (
     <FiltrosAvancados ativos={filtrando} aoLimpar={aoLimpar}>
       <div
@@ -79,23 +95,23 @@ export function BarraDeFiltros({
           <InfoTip texto="Esta tela considera apenas os códigos de pendência marcados como acompanhados no cadastro de códigos, menos os que a empresa tirou da tela na configuração. É um recorte independente da classificação penaliza/responsável." />
         </span>
       )}
-      <CampoDeTexto
-        rotulo="CTRC"
-        placeholder="CTRC..."
+      <BuscaDocumento
         valor={busca.ctrc}
-        aoConfirmar={(ctrc) => {
+        placeholder="CTRC..."
+        className="w-[150px]"
+        aoMudar={(ctrc) => {
           mudar({ ctrc });
         }}
       />
-      <CampoDeTexto
-        rotulo="Nota fiscal"
-        placeholder="Nota fiscal..."
+      <BuscaDocumento
         valor={busca.nf}
-        aoConfirmar={(nf) => {
+        placeholder="Nota fiscal..."
+        className="w-[150px]"
+        aoMudar={(nf) => {
           mudar({ nf });
         }}
       />
-      <FiltroMultiplo
+      <SeletorDePagador
         rotulo="Parceiros"
         opcoes={opcoes.parceiros}
         selecionados={busca.parceiros}
@@ -103,26 +119,27 @@ export function BarraDeFiltros({
           mudar({ parceiros });
         }}
       />
-      {/* As opções de unidade, as sugestões e os tipos vêm dos filtros compartilhados da
-          Listagem (outra entrega); até lá, digitados. */}
-      <CampoDeTexto
-        rotulo="Unidade responsável"
-        placeholder="Unidade (RIO, SPO)"
-        valor={busca.filiais.join(", ")}
-        aoConfirmar={(texto) => {
-          mudar({ filiais: listaDoTexto(texto) });
+      <SeletorDeFilial
+        selecionadas={busca.filiais}
+        contexto={contexto}
+        aoMudar={(filiais) => {
+          mudar({ filiais });
         }}
       />
-      <FiltroTexto
+      <SeletorDeTexto
         rotulo="Remetente"
+        campo="remetente"
         valor={busca.remetente}
+        contexto={contexto}
         aoMudar={(remetente) => {
           mudar({ remetente });
         }}
       />
-      <FiltroTexto
+      <SeletorDeTexto
         rotulo="Destino"
+        campo="cidade_destino"
         valor={busca.destino}
+        contexto={contexto}
         aoMudar={(destino) => {
           mudar({ destino });
         }}
@@ -145,14 +162,11 @@ export function BarraDeFiltros({
           mudar({ responsaveis: RESPONSAVEIS_DO_FILTRO.filter((r) => rs.includes(r)) });
         }}
       />
-      <CampoDeTexto
-        rotulo="Tipo documento"
-        placeholder="Tipo documento"
-        valor={busca.tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t)).join(", ")}
-        aoConfirmar={(texto) => {
-          mudar({
-            tipos: listaDoTexto(texto).map((t) => (t === "SEM TIPO" ? SEM_TIPO_DOCUMENTO : t)),
-          });
+      <SeletorDeTipoDocumento
+        selecionados={busca.tipos}
+        escopo={{ ...periodo, campoData: busca.campoData }}
+        aoMudar={(tipos) => {
+          mudar({ tipos });
         }}
       />
       <FiltroMultiplo

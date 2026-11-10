@@ -4,10 +4,10 @@ import { ListTree, Loader2, Search } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
+import { InfoTip } from "@/componentes/comum/InfoTip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { inteiro, participacao } from "@/modulos/compartilhado/formatos";
-import { InfoTip } from "@/modulos/compartilhado/InfoTip";
 
 import { consultaCodigosDoCard } from "./api";
 

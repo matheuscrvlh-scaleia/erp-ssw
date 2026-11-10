@@ -101,9 +101,9 @@ describe("POST /api/v1/ranking/operacional", () => {
     expect(r.json()).toEqual([
       expect.objectContaining({ chave: "12345678000190", totalCtes: 4, slaPct: 1, frete: 123.45 }),
     ]);
-    expect(cenario.banco.ranking.filtrosRecebidos[0]).toMatchObject({
+    expect(cenario.banco.ranking.consultasRecebidas[0]?.filtro).toMatchObject({
       filiais: ["CAP"],
-      pagadores: ["12345678000190"],
+      parceiros: ["12345678000190"],
       tipos: ["NORMAL"],
       destino: null,
       baseData: "emissao",

@@ -1,20 +1,20 @@
-// TODO(kit-ui): Tabs do kit comum.
-import { Aba, Abas, ConteudoDaAba, ListaDeAbas } from "../ranking/kit-local";
+import { Abas, ConteudoDaAba } from "@/componentes/comum/Abas";
+
 import { ApuracaoPonto } from "./ApuracaoPonto";
 import { BatidasPorColaborador } from "./BatidasPorColaborador";
 
 /** origem: features/ahgora/components/AhgoraScreen.tsx (sistema atual) */
 export function PaginaAhgora() {
   return (
-    <Abas padrao="apuracao" className="space-y-4">
-      <ListaDeAbas>
-        <Aba valor="apuracao" className="text-[12px]">
-          Apuração do período
-        </Aba>
-        <Aba valor="colaborador" className="text-[12px]">
-          Batidas por colaborador
-        </Aba>
-      </ListaDeAbas>
+    <Abas
+      abas={[
+        { valor: "apuracao", rotulo: "Apuração do período" },
+        { valor: "colaborador", rotulo: "Batidas por colaborador" },
+      ]}
+      padrao="apuracao"
+      classeDoGrupo="space-y-4"
+      classeDaAba="text-[12px]"
+    >
       <ConteudoDaAba valor="apuracao">
         <ApuracaoPonto />
       </ConteudoDaAba>

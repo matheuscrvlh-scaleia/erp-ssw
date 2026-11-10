@@ -13,6 +13,7 @@ import {
 import { type ColunaExportacao, textoDaCelula } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
 
+import { BotoesDePagina } from "./BotoesDePagina";
 import { EstadoVazio } from "./EstadoVazio";
 import { ExportMenu, type ExportMenuProps } from "./ExportMenu";
 import { MensagemErro } from "./MensagemErro";
@@ -372,26 +373,7 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
         </span>
         {paginas > 1 && (
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={pagina.pagina <= 1}
-              onClick={() => {
-                irPara(pagina.pagina - 1);
-              }}
-            >
-              Anterior
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={pagina.pagina >= paginas}
-              onClick={() => {
-                irPara(pagina.pagina + 1);
-              }}
-            >
-              Próxima
-            </Button>
+            <BotoesDePagina pagina={pagina.pagina} totalDePaginas={paginas} aoMudar={irPara} />
           </div>
         )}
       </div>

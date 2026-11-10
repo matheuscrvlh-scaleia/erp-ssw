@@ -29,3 +29,13 @@ export const dadosDePropagarClassificacao = z.object({
   codigos: z.array(z.number().int().min(0).max(99)).min(1),
 });
 export type DadosDePropagarClassificacao = z.infer<typeof dadosDePropagarClassificacao>;
+
+/**
+ * Recalcula pelo núcleo os CT-e que têm o código (numa ocorrência ou como efetiva), depois que a
+ * descrição ou o tipo SSW dele mudou no catálogo (Q20). Lê o catálogo no processamento: repetir é
+ * seguro. Mesma fila da propagação, que roda antes (um job por vez, na ordem).
+ */
+export const JOB_RECALCULAR_CTES_DO_CODIGO = {
+  nome: "recalcular-ctes-do-codigo",
+  fila: "recalculo",
+} as const;

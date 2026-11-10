@@ -75,11 +75,7 @@ export function PaginaOcorrencias() {
 
   const opcoesDosFiltros = useMemo(
     () => ({
-      parceiros: opcoes.data?.parceiros.map((p) => ({
-        valor: p.id,
-        rotulo: p.nome,
-        detalhe: p.cnpjFormatado,
-      })),
+      parceiros: opcoes.data?.parceiros,
       codigos: opcoes.data?.codigos.map((c) => ({
         valor: String(c.codigo),
         rotulo: `#${String(c.codigo)} ${c.descricao}`,
@@ -167,6 +163,7 @@ export function PaginaOcorrencias() {
 
       <BarraDeFiltros
         busca={busca}
+        periodo={periodo}
         opcoes={opcoesDosFiltros}
         codigosAcompanhados={painel.data?.codigosAcompanhados ?? null}
         nomeCurto={nomeCurto}

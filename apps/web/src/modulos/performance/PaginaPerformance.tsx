@@ -2,7 +2,6 @@ import { montarBloco } from "@erp/dominio/performance/relatorio";
 import { janelaDaSerie } from "@erp/dominio/performance/serie";
 import {
   ordenarCodigosDisponiveis,
-  ordenarTiposDocumento,
   ordenarUnidades,
   resolverPeriodo,
 } from "@erp/dominio/performance/tela";
@@ -38,6 +37,7 @@ import {
   SeletorDeFilial,
   SeletorDePagador,
   SeletorDeTexto,
+  SeletorDeTipoDocumento,
 } from "@/modulos/filtros/componentes";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
@@ -53,7 +53,6 @@ import {
   consultaResumo,
   consultaSerie,
   consultaTde,
-  consultaTiposDocumento,
   consultaTiposNoPeriodo,
   entradaDoFiltro,
 } from "./api";
@@ -179,7 +178,6 @@ export function PaginaPerformance() {
     ...consultaCodigosDisponiveis(entrada),
     enabled: ocorrenciaAberta || busca.codigos.length > 0,
   });
-  const tiposOpcoes = useQuery({ ...consultaTiposDocumento, enabled: tipoAberto });
   const tiposNoPeriodo = useQuery({ ...consultaTiposNoPeriodo(entrada), enabled: tipoAberto });
 
   const janela = janelaDaSerie(periodo.inicio, periodo.fim);
@@ -457,18 +455,8 @@ export function PaginaPerformance() {
             }}
           />
         </span>
-        <FiltroMultiplo
-          rotulo="Tipo documento"
-          textoVazio="todos"
-          opcoes={
-            tiposOpcoes.data
-              ? ordenarTiposDocumento(tiposOpcoes.data, tiposNoPeriodo.data).map((t) => ({
-                  valor: t.tipo,
-                  rotulo: t.rotulo,
-                  detalhe: String(t.qtd),
-                }))
-              : undefined
-          }
+        <SeletorDeTipoDocumento
+          contagens={tiposNoPeriodo.data}
           aoAbrir={setTipoAberto}
           selecionados={busca.tipos}
           aoMudar={(ids) => {

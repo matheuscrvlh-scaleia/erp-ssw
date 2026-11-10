@@ -2,8 +2,8 @@ import { type ParametrosDeBonificacao } from "@erp/shared/contratos/bonificacao-
 import { formatarMoeda } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 
-// TODO(kit-ui): trocar pelo ComoFunciona do kit comum.
-import { ComoFunciona, ComoFuncionaSecao, Formula } from "../ranking/kit-local";
+import { ComoFunciona, ComoFuncionaSecao, Formula } from "@/componentes/comum/ComoFunciona";
+
 import { isoLocal } from "../ranking/periodo";
 import { consultaParametros } from "./api";
 

@@ -29,3 +29,20 @@ export const consultaPagadores = (entrada: EntradaDe<typeof c.pagadores>) =>
     queryFn: () => chamar(c.pagadores, { entrada }),
     staleTime: 15 * 60_000,
   });
+
+/** Tipos de documento da base inteira: muda muito pouco. */
+export const consultaTiposDocumento = queryOptions({
+  queryKey: ["filtros", "tipos-documento"],
+  queryFn: () => chamar(c.tiposDocumento),
+  staleTime: 60 * 60_000,
+});
+
+export type EscopoDoTipoDocumento = EntradaDe<typeof c.tiposDocumentoNoPeriodo>;
+
+/** Quantos CT-e de cada tipo há no período da tela (nulo = não deu para contar). */
+export const consultaTiposNoPeriodo = (escopo: EscopoDoTipoDocumento | undefined) =>
+  queryOptions({
+    queryKey: ["filtros", "tipos-documento-periodo", escopo],
+    queryFn: () =>
+      escopo ? chamar(c.tiposDocumentoNoPeriodo, { entrada: escopo }) : Promise.resolve(null),
+  });

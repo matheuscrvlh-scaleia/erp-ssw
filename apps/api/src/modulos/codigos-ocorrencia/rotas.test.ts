@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { JOB_PROPAGAR_CLASSIFICACAO } from "@erp/shared/jobs";
+import { JOB_PROPAGAR_CLASSIFICACAO, JOB_RECALCULAR_CTES_DO_CODIGO } from "@erp/shared/jobs";
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -185,5 +185,24 @@ describe("propagação grande vai para o worker", () => {
     expect(cenario.banco.ocorrencias.ocorrencias.some((o) => o.responsavel === "cliente")).toBe(
       false,
     );
+  });
+});
+
+describe("descrição nova recalcula os CT-e do código (Q20)", () => {
+  it("só a descrição mudou: nada a propagar, recálculo enfileirado depois da transação", async () => {
+    const fila = new FilaFalsa();
+    const usuarioId = randomUUID();
+    await salvarCodigo(
+      (fn) => cenario.banco.executar({ empresaId, usuarioId, plataforma: false }, fn),
+      { fila },
+      { empresaId, usuarioId },
+      { usuarioId, email: "a@fr.com.br", plataforma: false, ip: null, userAgent: null },
+      13,
+      { descricao: "Devolução total", letra: "F", penaliza: true, ativo: true, notas: null },
+      new Date(),
+    );
+    expect(fila.jobs).toEqual([
+      { ...JOB_RECALCULAR_CTES_DO_CODIGO, dados: { empresaId, codigos: [13] } },
+    ]);
   });
 });

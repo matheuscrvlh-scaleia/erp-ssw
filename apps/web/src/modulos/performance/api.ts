@@ -1,4 +1,3 @@
-import { contratosFiltros as cf } from "@erp/shared/contratos/filtros";
 import {
   type BaseDeData,
   contratosPerformance as c,
@@ -91,9 +90,3 @@ export const consultaRelatorio = (
     queryKey: chave("relatorio", entrada),
     queryFn: () => chamar(c.relatorio, { entrada }),
   });
-
-/** Tipos de documento da base inteira (opções do seletor; a contagem vem de consultaTiposNoPeriodo). */
-export const consultaTiposDocumento = queryOptions({
-  queryKey: ["filtros", "tipos-documento"],
-  queryFn: () => chamar(cf.tiposDocumento),
-});
