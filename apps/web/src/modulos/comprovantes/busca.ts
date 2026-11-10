@@ -55,8 +55,14 @@ export type EtiquetaDaBusca = Omit<EtiquetaFiltro, "limpar"> & {
   limpar: Partial<BuscaComprovantes>;
 };
 
-/** Faixa "Filtrando por" (o período fica de fora: já está nos botões). */
-export function etiquetasDaBusca(b: BuscaComprovantes): EtiquetaDaBusca[] {
+/**
+ * Faixa "Filtrando por" (o período fica de fora: já está nos botões). Pagador pelo nome, quando
+ * as opções já chegaram.
+ */
+export function etiquetasDaBusca(
+  b: BuscaComprovantes,
+  nomesDosPagadores: readonly string[] = b.pagadores,
+): EtiquetaDaBusca[] {
   const lista = (rotulo: string, valores: readonly string[], limpar: Partial<BuscaComprovantes>) =>
     valores.length > 0 ? [{ rotulo, ...resumirNomes(valores), limpar }] : [];
   const texto = (rotulo: string, valor: string, limpar: Partial<BuscaComprovantes>) =>
@@ -75,7 +81,7 @@ export function etiquetasDaBusca(b: BuscaComprovantes): EtiquetaDaBusca[] {
           },
         ]
       : []),
-    ...lista("Pagador", b.pagadores, { pagadores: [] }),
+    ...lista("Pagador", nomesDosPagadores, { pagadores: [] }),
     ...lista(
       "Tipo documento",
       b.tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t)),

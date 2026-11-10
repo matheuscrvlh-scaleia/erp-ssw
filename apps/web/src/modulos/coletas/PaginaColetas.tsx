@@ -25,8 +25,9 @@ import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
-import { CampoDeTexto, classeDoSegmento } from "@/modulos/compartilhado/CampoDeTexto";
 import { data, dataHora, diaMes, inteiro, participacao } from "@/modulos/compartilhado/formatos";
+import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
+import { BuscaDocumento } from "@/modulos/filtros/componentes";
 
 import { carregarListaInteira, consultaDetalhe, consultaLista, consultaPainel } from "./api";
 import {
@@ -576,12 +577,11 @@ export function PaginaColetas() {
                 </option>
               ))}
             </select>
-            <CampoDeTexto
-              rotulo="Buscar coleta"
-              placeholder="Coleta, CT-e, NF, remetente…"
-              largura="w-[220px]"
+            <BuscaDocumento
               valor={termo}
-              aoConfirmar={(t) => {
+              placeholder="Coleta, CT-e, NF, remetente…"
+              className="w-[240px]"
+              aoMudar={(t) => {
                 setPagina(1);
                 setTermo(t);
               }}

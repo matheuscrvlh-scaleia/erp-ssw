@@ -3,7 +3,6 @@ import {
   type PainelDeComprovantes,
   type StatusDeComprovante,
 } from "@erp/shared/contratos/comprovantes";
-import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
@@ -12,10 +11,8 @@ import { useState } from "react";
 import { consultaAcesso } from "@/acesso/sessao";
 import { DrawerDetalhe } from "@/componentes/comum/Detalhe";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
-import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrandoPor, FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
-import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard } from "@/componentes/comum/KpiCard";
@@ -26,8 +23,17 @@ import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
-import { CampoDeTexto, listaDoTexto } from "@/modulos/compartilhado/CampoDeTexto";
 import { data, diaMes, inteiro, percentual } from "@/modulos/compartilhado/formatos";
+import { consultaPagadores } from "@/modulos/filtros/api";
+import {
+  BuscaDocumento,
+  type ContextoDosFiltros,
+  SeletorDeFilial,
+  SeletorDePagador,
+  SeletorDeTexto,
+  SeletorDeTipoDocumento,
+} from "@/modulos/filtros/componentes";
+import { nomesDosPagadores } from "@/modulos/filtros/regras";
 
 import { carregarListaInteira, consultaLista, consultaPainel } from "./api";
 import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, temFiltro } from "./busca";
@@ -107,11 +113,16 @@ export function PaginaComprovantes() {
     setListaAberta(true);
   };
   const totais = painel.data?.totais ?? { entregues: 0, digitalizados: 0, pendentes: 0, pct: null };
-  const tipos = painel.data?.tiposContagem.map((t) => ({
-    valor: t.tipo,
-    rotulo: t.tipo === SEM_TIPO_DOCUMENTO ? "Sem tipo" : t.tipo,
-    detalhe: inteiro(t.qtd),
-  }));
+  const pagadores = useQuery(
+    consultaPagadores({ inicio: periodo.inicio, fim: periodo.fim, filiais: busca.filiais }),
+  );
+  const contexto: ContextoDosFiltros = {
+    inicio: periodo.inicio,
+    fim: periodo.fim,
+    parceiros: busca.pagadores,
+    remetente: busca.remetente,
+    destino: busca.destino,
+  };
 
   return (
     <div className="space-y-4">
@@ -173,55 +184,68 @@ export function PaginaComprovantes() {
           por data de entrega
           <InfoTip texto="O período filtra pelo dia da entrega concluída em Brasília (data de entrega realizada ou, na falta dela, a data da ocorrência de conclusão)." />
         </span>
-        <CampoDeTexto
-          rotulo="Unidade responsável"
-          placeholder="Unidade (RIO, SPO)"
-          valor={busca.filiais.join(", ")}
-          aoConfirmar={(texto) => {
-            mudar({ filiais: listaDoTexto(texto) });
+        <SeletorDeFilial
+          selecionadas={busca.filiais}
+          contexto={contexto}
+          aoMudar={(filiais) => {
+            mudar({ filiais });
           }}
         />
-        <FiltroTexto
+        <SeletorDePagador
+          rotulo="Pagador"
+          opcoes={pagadores.data}
+          selecionados={busca.pagadores}
+          aoMudar={(pagadores) => {
+            mudar({ pagadores });
+          }}
+        />
+        <SeletorDeTexto
           rotulo="Remetente"
+          campo="remetente"
           valor={busca.remetente}
+          contexto={contexto}
           aoMudar={(remetente) => {
             mudar({ remetente });
           }}
         />
-        <FiltroTexto
+        <SeletorDeTexto
           rotulo="Destino"
+          campo="cidade_destino"
           valor={busca.destino}
+          contexto={contexto}
           aoMudar={(destino) => {
             mudar({ destino });
           }}
         />
-        <FiltroMultiplo
-          rotulo="Tipo documento"
-          opcoes={tipos}
+        <SeletorDeTipoDocumento
           selecionados={busca.tipos}
-          aoMudar={(t) => {
-            mudar({ tipos: t });
+          contagens={painel.data?.tiposContagem}
+          aoMudar={(tipos) => {
+            mudar({ tipos });
           }}
         />
-        <CampoDeTexto
-          rotulo="CTRC"
-          placeholder="CTRC..."
+        <BuscaDocumento
           valor={busca.ctrc}
-          aoConfirmar={(ctrc) => {
+          placeholder="CTRC..."
+          className="w-[150px]"
+          aoMudar={(ctrc) => {
             mudar({ ctrc });
           }}
         />
-        <CampoDeTexto
-          rotulo="Nota fiscal"
-          placeholder="Nota fiscal..."
+        <BuscaDocumento
           valor={busca.nf}
-          aoConfirmar={(nf) => {
+          placeholder="Nota fiscal..."
+          className="w-[150px]"
+          aoMudar={(nf) => {
             mudar({ nf });
           }}
         />
       </FiltrosAvancados>
       <FiltrandoPor
-        etiquetas={etiquetasDaBusca(busca).map((e) => ({
+        etiquetas={etiquetasDaBusca(
+          busca,
+          nomesDosPagadores(pagadores.data ?? [], busca.pagadores),
+        ).map((e) => ({
           ...e,
           limpar: () => {
             mudar(e.limpar);
