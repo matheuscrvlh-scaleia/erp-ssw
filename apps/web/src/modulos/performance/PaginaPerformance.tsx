@@ -39,6 +39,7 @@ import {
   SeletorDePagador,
   SeletorDeTexto,
 } from "@/modulos/filtros/componentes";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { cartoesDeAlerta } from "./alertas";
 import {
@@ -308,6 +309,7 @@ export function PaginaPerformance() {
           <h1 className="truncate text-[24px] font-semibold">
             {busca.periodo === "hoje" ? "Performance do dia" : `Performance — ${periodo.rotulo}`}
           </h1>
+          <SeloDosDados />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button

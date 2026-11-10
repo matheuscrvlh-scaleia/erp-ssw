@@ -40,6 +40,7 @@ import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaCtrc } from "./api";
 import { COLUNAS_DO_PDF, linhasDoPdf } from "./exportacao";
@@ -171,7 +172,7 @@ function Titulo({ numero, ctrc }: { numero: string; ctrc: DetalheCtrc | null }) 
         )}
         <span className="font-mono text-brand">{id.principal}</span>
       </h1>
-      {/* TODO(ingestao): SeloAtualizacao quando houver a consulta da última carga do SSW. */}
+      <SeloDosDados />
       <p className="text-[12px] text-muted-foreground">
         {id.secundario ? `CTRC ${ctrc?.sigla ?? ""} ${id.secundario} · ` : ""}
         Detalhes do conhecimento de transporte

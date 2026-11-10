@@ -14,6 +14,7 @@ import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { cn } from "@/lib/utils";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { AbaHoje } from "./AbaHoje";
 import {
@@ -116,7 +117,10 @@ export function PaginaRomaneio() {
   return (
     <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-[24px] font-semibold">Romaneio</h1>
+        <div>
+          <h1 className="text-[24px] font-semibold">Romaneio</h1>
+          <SeloDosDados />
+        </div>
         <Button
           size="sm"
           variant="ghost"

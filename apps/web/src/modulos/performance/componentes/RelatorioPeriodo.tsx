@@ -30,6 +30,7 @@ import {
 import { Switch } from "@/componentes/ui/switch";
 import { exportarCsv, exportarExcel, imprimir } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaRelatorio } from "../api";
 import { fmtInt, fmtPct100 } from "../formato";
@@ -107,6 +108,7 @@ export function DialogoRelatorio({
             <FileBarChart className="h-4 w-4 text-muted-foreground" />
             Relatório de período
           </DialogTitle>
+          <SeloDosDados mostrarXml className="!text-[11px]" />
           <DialogDescription className="text-[11px]">
             Visão consolidada da operação no período selecionado.
           </DialogDescription>

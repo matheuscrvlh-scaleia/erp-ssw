@@ -40,6 +40,7 @@ import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import {
   CHAVE_DO_PRAZO,
@@ -191,6 +192,7 @@ export function PaginaPrazoParceiro() {
           <h1 className="flex items-center gap-2 text-[24px] font-medium tracking-tight">
             <Scale className="h-5 w-5" /> Prazo próprio × Prazo do parceiro
           </h1>
+          <SeloDosDados mostrarXml />
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             Entenda quanto do seu atraso veio de fora
           </p>

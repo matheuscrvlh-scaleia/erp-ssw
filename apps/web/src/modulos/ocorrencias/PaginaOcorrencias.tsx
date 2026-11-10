@@ -12,6 +12,7 @@ import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { data, inteiro, participacao } from "@/modulos/compartilhado/formatos";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import {
   carregarListaInteira,
@@ -146,6 +147,7 @@ export function PaginaOcorrencias() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-bold tracking-tight">Ocorrências</h1>
+          <SeloDosDados />
           <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">
             Investigue causas e identifique qual unidade precisa atuar
           </p>

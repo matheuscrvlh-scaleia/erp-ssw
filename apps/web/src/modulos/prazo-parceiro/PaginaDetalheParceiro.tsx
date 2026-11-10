@@ -24,6 +24,7 @@ import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaDetalhe, consultaOpcoes } from "./api";
 import { esquemaDetalhe, filtrosDaBusca, ROTULO_PERIODO } from "./busca";
@@ -123,6 +124,7 @@ export function PaginaDetalheParceiro() {
           <h1 className="text-[24px] font-medium tracking-tight">
             {d?.parceiro.nome ?? "Parceiro"}
           </h1>
+          <SeloDosDados />
           <p className="text-[12px] text-muted-foreground">
             Detalhe de prazo do parceiro · {ROTULO_PERIODO[b.periodo]}
             {d?.parceiro.prazoAcordoHoras != null && (

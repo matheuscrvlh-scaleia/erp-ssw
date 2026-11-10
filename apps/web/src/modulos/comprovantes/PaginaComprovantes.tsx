@@ -28,6 +28,7 @@ import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 import { CampoDeTexto, listaDoTexto } from "@/modulos/compartilhado/CampoDeTexto";
 import { data, diaMes, inteiro, percentual } from "@/modulos/compartilhado/formatos";
 import { InfoTip } from "@/modulos/compartilhado/InfoTip";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { carregarListaInteira, consultaLista, consultaPainel } from "./api";
 import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, temFiltro } from "./busca";
@@ -118,6 +119,7 @@ export function PaginaComprovantes() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[24px] font-medium tracking-tight">Comprovantes</h1>
+          <SeloDosDados />
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             Entre as entregas concluídas, quantas já têm comprovante digitalizado (ocorrência 88)
           </p>

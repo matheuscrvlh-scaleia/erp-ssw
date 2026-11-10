@@ -35,6 +35,7 @@ import {
   SeletorDeTexto,
 } from "@/modulos/filtros/componentes";
 import { nomesDosPagadores } from "@/modulos/filtros/regras";
+import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import {
   carregarTodasAsLinhas,
@@ -397,7 +398,7 @@ export function PaginaListagem() {
         </h1>
         <div className="hidden items-center gap-2 sm:flex">{acoes}</div>
       </div>
-      {/* TODO(ingestao): SeloAtualizacao quando houver a consulta da última carga do SSW. */}
+      <SeloDosDados className="-mt-2" />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
         <div className="rounded-lg border border-l-[5px] border-border/70 border-l-kpi-positive bg-card p-4">
