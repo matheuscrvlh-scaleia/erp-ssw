@@ -25,6 +25,7 @@ import { z } from "@erp/shared/zod";
 
 import { type Cofre, segredoDa } from "../../fontes/comum/integracao";
 import { type ContextoDoJob, definirJob } from "../registro";
+import { slaPelosArquivos } from "../sla-arquivos/job";
 
 /** O que os jobs da ingestão usam além do banco (Redis, SFTP, cofre, fila de jobs). */
 export interface ServicosDaIngestao {
@@ -114,17 +115,13 @@ export function criarJobsDaIngestao(s: ServicosDaIngestao) {
     },
   });
 
+  // Como hoje: a unidade pelo 455 primeiro, depois o SLA pelos arquivos (job da Performance).
   const slaArquivos = definirJob({
-    nome: "sla_arquivos",
-    fila: filaDoJob("sla_arquivos"),
-    escopo: "empresa",
-    dados: porEmpresa,
-    agendamento: null,
+    ...slaPelosArquivos,
     async processar(ctx, dados) {
       const alterados = await unidadePelo455Recente(dependencias(ctx, dados.empresaId, s));
       ctx.log.info({ alterados }, "unidade pelo 455");
-      // TODO(prazo): `calcular_sla_arquivos` roda depois deste passo (spec de prazo/SLA).
-      return { alterados };
+      return slaPelosArquivos.processar(ctx, dados);
     },
   });
 

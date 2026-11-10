@@ -224,7 +224,15 @@ export function repositorioFalso(s: EstadoFalso): RepositorioIngestao {
       return Promise.resolve();
     },
     linhasSemChave: () => Promise.resolve(0),
-    chavesDesde: naoUsado,
+    chavesDesde: (relatorio, desde) => {
+      const vistas = new Map<string, { sigla: string; numero: string }>();
+      for (const l of s.linhas) {
+        if (l.relatorio === relatorio && l.importadoEm >= desde && l.sigla && l.numero) {
+          vistas.set(`${l.sigla}|${l.numero}`, { sigla: l.sigla, numero: l.numero });
+        }
+      }
+      return Promise.resolve([...vistas.values()]);
+    },
     apagarLotes: (lotes) => {
       const antes = s.linhas.length;
       s.linhas = s.linhas.filter((l) => !lotes.includes(l.loteId));

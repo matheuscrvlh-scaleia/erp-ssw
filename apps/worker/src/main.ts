@@ -43,6 +43,7 @@ import {
   OPCOES_PADRAO_DO_JOB,
   type RepositoriosDoWorker,
 } from "./jobs/registro";
+import { criarRepositorioSlaArquivos } from "./jobs/sla-arquivos/repositorio";
 import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
 
@@ -77,6 +78,7 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     webhook: criarRepositorioWebhook(tx, empresaId),
     ingestao: (id) => criarRepositorioIngestao(tx, id, null),
     retencaoDaIngestao: criarRepositorioDeRetencao(tx),
+    slaArquivos: criarRepositorioSlaArquivos(tx),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>

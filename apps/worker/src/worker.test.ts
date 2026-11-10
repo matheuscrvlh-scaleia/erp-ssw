@@ -180,4 +180,20 @@ describe("jobs da ingestão por arquivo", () => {
     ]);
     expect(banco.retencoes).toContainEqual(new Date("2026-09-11T06:40:00Z"));
   });
+
+  it("sla_arquivos passa a unidade pelo 455 antes do SLA, tudo no contexto da empresa", async () => {
+    const banco = new BancoFalso();
+    const processar = criarProcessador({
+      jobs,
+      executar: banco.executar,
+      log,
+      agora: () => new Date(),
+    });
+    await processar({ name: "sla_arquivos", data: { empresaId: EMPRESA_DO_BANCO } });
+    // Uma transação da unidade pelo 455 (sem 455 recente) e uma do SLA.
+    expect(banco.contextos).toEqual([
+      { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },
+      { empresaId: EMPRESA_DO_BANCO, usuarioId: null, plataforma: false },
+    ]);
+  });
 });

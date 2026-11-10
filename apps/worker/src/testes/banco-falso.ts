@@ -87,6 +87,11 @@ export class BancoFalso {
         apagarTokensDeSenhaVencidos: () => Promise.resolve(0),
         apagarIngestaoSswAntiga: () => Promise.resolve({}),
       },
+      slaArquivos: {
+        feriados: () => Promise.resolve([]),
+        candidatos: () => Promise.resolve([]),
+        gravar: () => Promise.resolve(),
+      },
       integracoes: {
         ler: (_empresa, tipo) => Promise.resolve(this.integracoes.get(tipo) ?? null),
         registrarVerificacao: (_empresa, tipo, v) => {
