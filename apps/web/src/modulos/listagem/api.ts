@@ -23,7 +23,7 @@ export const consultaLista = (filtro: FiltroListaEntrada, ordenacao: Ordenacao, 
     queryKey: [...CHAVE_DA_LISTAGEM, "lista", filtro, ordenacao, pagina],
     queryFn: () =>
       chamar(c.listar, {
-        entrada: { ...filtro, ...ordenacao, pagina, porPagina: ITENS_POR_PAGINA },
+        entrada: { ...filtro, ...ordenacao, pagina, tamanho: ITENS_POR_PAGINA },
       }),
     staleTime: 30_000,
   });
@@ -55,7 +55,7 @@ export async function carregarTodasAsLinhas(
   const linhas: LinhaLista[] = [];
   for (let pagina = 1; ; pagina += 1) {
     const resposta = await chamar(c.exportar, {
-      entrada: { ...filtro, ...ordenacao, pagina, porPagina: ITENS_POR_PAGINA_EXPORTACAO },
+      entrada: { ...filtro, ...ordenacao, pagina, tamanho: ITENS_POR_PAGINA_EXPORTACAO },
     });
     linhas.push(...resposta.linhas);
     aoProgredir?.(linhas.length);

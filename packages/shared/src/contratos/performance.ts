@@ -1,5 +1,5 @@
+import { dataIso } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 
 /** Valor do filtro "Tipo documento" para CT-e sem tipo (nem 455 nem BI2). */
@@ -9,7 +9,6 @@ export const SEM_TIPO_DOCUMENTO = "__SEM_TIPO__";
 export const BASES_DE_DATA = ["emissao", "prevista", "concluido"] as const;
 export type BaseDeData = (typeof BASES_DE_DATA)[number];
 
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 const lista = z.array(z.string().max(200)).max(500);
 
 /**

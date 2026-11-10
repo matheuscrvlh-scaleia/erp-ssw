@@ -1,8 +1,8 @@
+import { dataIso } from "../consulta";
 import { contrato } from "../contrato";
 import { diferencaEmDias, ehDataIso } from "../datas";
 import { z } from "../zod";
 
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 const parametrosId = z.object({ id: z.uuid() });
 const ok = z.object({ ok: z.literal(true) });
 const textoOpcional = z.string().trim().max(500).nullish();

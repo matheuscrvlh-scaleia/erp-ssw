@@ -1,5 +1,5 @@
+import { dataIso, paginacao } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 
 export const ETAPAS_DE_COLETA = ["cadastrada", "comandada", "coletada", "cancelada"] as const;
@@ -34,8 +34,6 @@ export const STATUS_DA_LISTA = [
 export type StatusDaLista = (typeof STATUS_DA_LISTA)[number];
 
 export const TIPOS_DE_COLETA = ["NORMAL", "REVERSA"] as const;
-
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 
 export const filtrosDeColetas = z.object({
   inicio: dataIso,
@@ -190,8 +188,7 @@ export const contratosColetas = {
     metodo: "POST",
     caminho: "/api/v1/coletas/lista",
     entrada: filtrosDaLista.extend({
-      pagina: z.number().int().min(1).default(1),
-      tamanho: z.number().int().min(1).max(1000).default(50),
+      ...paginacao({ maximo: 1000 }),
     }),
     saida: z.object({ linhas: z.array(linhaDeColeta), total: z.number().int() }),
   }),

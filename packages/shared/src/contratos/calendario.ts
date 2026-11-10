@@ -1,5 +1,5 @@
+import { dataIso } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 
 export const TIPOS_FERIADO = ["nacional", "estadual", "municipal"] as const;
@@ -35,7 +35,6 @@ export const UFS = [
   "TO",
 ] as const;
 
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 const ano = z.coerce.number().int().min(2000).max(2100);
 
 export const feriado = z.object({

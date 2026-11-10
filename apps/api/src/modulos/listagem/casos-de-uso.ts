@@ -59,7 +59,7 @@ type EntradaListar = FiltroListaValidado & {
   ordem: OrdemLista;
   direcao: "asc" | "desc";
   pagina: number;
-  porPagina: number;
+  tamanho: number;
 };
 
 const TOP_CODIGOS = 10;
@@ -117,8 +117,8 @@ export async function listarCtrcs(
     const linhas = await listagem.linhas(ctx.empresaId, filtro, {
       ordem: entrada.ordem,
       direcao: entrada.direcao,
-      limite: entrada.porPagina,
-      deslocamento: (entrada.pagina - 1) * entrada.porPagina,
+      limite: entrada.tamanho,
+      deslocamento: (entrada.pagina - 1) * entrada.tamanho,
     });
     const agregados = await listagem.agregados(ctx.empresaId, filtro, {
       topCodigos: TOP_CODIGOS,
@@ -153,12 +153,12 @@ export async function exportarCtrcs(
     const linhas = await listagem.linhas(ctx.empresaId, filtro, {
       ordem: entrada.ordem,
       direcao: entrada.direcao,
-      limite: entrada.porPagina + 1,
-      deslocamento: (entrada.pagina - 1) * entrada.porPagina,
+      limite: entrada.tamanho + 1,
+      deslocamento: (entrada.pagina - 1) * entrada.tamanho,
     });
     return {
-      linhas: linhas.slice(0, entrada.porPagina),
-      temMais: linhas.length > entrada.porPagina,
+      linhas: linhas.slice(0, entrada.tamanho),
+      temMais: linhas.length > entrada.tamanho,
     };
   });
 }

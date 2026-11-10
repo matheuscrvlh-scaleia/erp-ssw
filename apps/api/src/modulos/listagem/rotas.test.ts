@@ -102,7 +102,7 @@ describe("GET /api/v1/performance/lista", () => {
 
   it("422 com recorte desconhecido, página zero ou página grande demais", async () => {
     const headers = await comoPapel("operador");
-    for (const query of ["tipo=xyz", "pagina=0", "porPagina=501", "inicio=2026-02-30"]) {
+    for (const query of ["tipo=xyz", "pagina=0", "tamanho=501", "inicio=2026-02-30"]) {
       const r = await app.inject({ url: `${LISTA}?${query}`, headers });
       expect(r.statusCode, query).toBe(422);
       expect(r.json()).toMatchObject({ erro: { codigo: "ENTRADA_INVALIDA" } });
@@ -185,7 +185,7 @@ describe("GET /api/v1/performance/lista/exportacao", () => {
     const headers = await comoPapel("operador");
     cenario.banco.listagem.paginaDeLinhas = [linha("1"), linha("2"), linha("3")];
     const r = await app.inject({
-      url: "/api/v1/performance/lista/exportacao?porPagina=2&pagina=2",
+      url: "/api/v1/performance/lista/exportacao?tamanho=2&pagina=2",
       headers,
     });
     expect(r.json()).toMatchObject({ temMais: true });
@@ -195,7 +195,7 @@ describe("GET /api/v1/performance/lista/exportacao", () => {
 
   it("422 acima de 5000 por página", async () => {
     const r = await app.inject({
-      url: "/api/v1/performance/lista/exportacao?porPagina=5001",
+      url: "/api/v1/performance/lista/exportacao?tamanho=5001",
       headers: await comoPapel("operador"),
     });
     expect(r.statusCode).toBe(422);

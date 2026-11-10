@@ -1,4 +1,4 @@
-import { dataIso, decimal, inteiro, lista, simNao, textoDeFiltro } from "../consulta";
+import { dataIso, decimal, inteiro, lista, paginacao, simNao, textoDeFiltro } from "../consulta";
 import { contrato } from "../contrato";
 import { z } from "../zod";
 
@@ -113,11 +113,10 @@ export const filtroLista = z.object({
 export type FiltroListaEntrada = z.input<typeof filtroLista>;
 export type FiltroListaValidado = z.output<typeof filtroLista>;
 
-const paginacao = (maximo: number) => ({
+const ordemEPagina = (maximo: number) => ({
   ordem: z.enum(ORDENS_LISTA).default("emissao"),
   direcao: z.enum(["asc", "desc"]).default("desc"),
-  pagina: inteiro.pipe(z.number().min(1)).default(1),
-  porPagina: inteiro.pipe(z.number().min(1).max(maximo)).default(ITENS_POR_PAGINA),
+  ...paginacao({ maximo, padrao: ITENS_POR_PAGINA }),
 });
 
 export const linhaLista = z.object({
@@ -190,7 +189,7 @@ export const contratosListagem = {
   listar: contrato({
     metodo: "GET",
     caminho: "/api/v1/performance/lista",
-    entrada: filtroLista.extend(paginacao(500)),
+    entrada: filtroLista.extend(ordemEPagina(500)),
     saida: z.object({
       linhas: z.array(linhaLista),
       total: z.number().int(),
@@ -204,7 +203,7 @@ export const contratosListagem = {
   exportar: contrato({
     metodo: "GET",
     caminho: "/api/v1/performance/lista/exportacao",
-    entrada: filtroLista.extend(paginacao(ITENS_POR_PAGINA_EXPORTACAO)),
+    entrada: filtroLista.extend(ordemEPagina(ITENS_POR_PAGINA_EXPORTACAO)),
     saida: z.object({ linhas: z.array(linhaLista), temMais: z.boolean() }),
   }),
   /** Opções do seletor "Ocorrência": códigos do recorte, ignorando o próprio filtro de códigos. */

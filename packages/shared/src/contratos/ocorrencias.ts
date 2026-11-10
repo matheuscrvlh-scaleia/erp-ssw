@@ -1,5 +1,5 @@
+import { dataIso, listaComTeto, paginacao } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 
 /** Responsável gravado no catálogo de códigos. */
@@ -54,31 +54,27 @@ export const TAMANHOS_DE_PAGINA = [50, 100, 200] as const;
 /** Rótulo do seletor de tipo para CT-e sem tipo de documento. */
 export const SEM_TIPO_DOCUMENTO = "__SEM_TIPO__";
 
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
-const lista = <T extends z.ZodType>(item: T, maximo: number) =>
-  z.array(item).max(maximo).default([]);
-
 /** Filtros que escolhem os CT-e (valem para o painel, a lista e o "ver códigos"). */
 export const filtrosDeCte = z.object({
   inicio: dataIso,
   fim: dataIso,
   campoData: z.enum(CAMPOS_DATA).default("emissao"),
-  unidades: lista(z.uuid(), 100),
-  conferentes: lista(z.string().trim().max(120), 500),
-  parceiros: lista(z.string().regex(/^\d{1,14}$/, "CNPJ só com dígitos."), 500),
-  filiais: lista(z.string().trim().toUpperCase().max(10), 100),
+  unidades: listaComTeto(z.uuid(), 100),
+  conferentes: listaComTeto(z.string().trim().max(120), 500),
+  parceiros: listaComTeto(z.string().regex(/^\d{1,14}$/, "CNPJ só com dígitos."), 500),
+  filiais: listaComTeto(z.string().trim().toUpperCase().max(10), 100),
   remetente: z.string().max(2000).default(""),
   destino: z.string().max(2000).default(""),
   ctrc: z.string().max(60).default(""),
   nf: z.string().max(60).default(""),
-  tipos: lista(z.string().max(80), 50),
+  tipos: listaComTeto(z.string().max(80), 50),
 });
 export type FiltrosDeCte = z.infer<typeof filtrosDeCte>;
 
 /** Recortes dos cards e blocos (valem para o painel e a lista, não para o "ver códigos"). */
 export const recortes = z.object({
-  codigos: lista(z.number().int().min(0).max(99), 100),
-  responsaveis: lista(z.enum(RESPONSAVEIS_DO_FILTRO), RESPONSAVEIS_DO_FILTRO.length),
+  codigos: listaComTeto(z.number().int().min(0).max(99), 100),
+  responsaveis: listaComTeto(z.enum(RESPONSAVEIS_DO_FILTRO), RESPONSAVEIS_DO_FILTRO.length),
   responsabilidade: z.enum(RESPONSABILIDADES).default("todas"),
   prazo: z.enum(PRAZOS).nullable().default(null),
   faixaAtraso: z.enum(FAIXAS_ATRASO).nullable().default(null),
@@ -214,8 +210,7 @@ export const contratosOcorrencias = {
     metodo: "POST",
     caminho: "/api/v1/ocorrencias/lista",
     entrada: filtrosDaLista.extend({
-      pagina: z.number().int().min(1).default(1),
-      tamanho: z.number().int().min(1).max(500).default(50),
+      ...paginacao({ maximo: 500 }),
     }),
     saida: z.object({ linhas: z.array(linhaDeOcorrencia), total: z.number().int() }),
   }),
@@ -238,8 +233,8 @@ export const contratosOcorrencias = {
     entrada: z.object({
       inicio: dataIso,
       fim: dataIso,
-      unidades: lista(z.uuid(), 100),
-      filiais: lista(z.string().trim().toUpperCase().max(10), 100),
+      unidades: listaComTeto(z.uuid(), 100),
+      filiais: listaComTeto(z.string().trim().toUpperCase().max(10), 100),
     }),
     saida: z.object({
       unidades: z.array(

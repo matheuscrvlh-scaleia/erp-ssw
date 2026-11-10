@@ -1,5 +1,5 @@
+import { dataIso } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 
 /**
@@ -8,7 +8,6 @@ import { z } from "../zod";
  */
 
 const instante = z.iso.datetime();
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 
 export const MOTIVOS_DA_SAUDE = ["ok", "sem_credenciais", "sem_token", "token_expirado"] as const;
 export type MotivoDaSaude = (typeof MOTIVOS_DA_SAUDE)[number];

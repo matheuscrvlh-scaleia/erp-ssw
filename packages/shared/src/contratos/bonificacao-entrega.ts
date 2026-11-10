@@ -1,8 +1,9 @@
+import { dataIsoComMensagem } from "../consulta";
 import { contrato } from "../contrato";
 import { diferencaEmDias, ehDataIso } from "../datas";
 import { z } from "../zod";
 
-const dataIso = z.string().refine(ehDataIso, "Data deve estar no formato YYYY-MM-DD");
+const dataIso = dataIsoComMensagem("Data deve estar no formato YYYY-MM-DD");
 
 const DATA_FINAL_ANTES = "Data final deve ser maior ou igual à data inicial";
 

@@ -2,11 +2,9 @@
  * Contratos da tela Prazo do parceiro (visão geral, lista e detalhe).
  * Spec: docs/regras/03-romaneio-prazo-parceiro.md §6.
  */
+import { dataIso, paginacao } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
-
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 
 export const filtrosPrazo = z
   .object({
@@ -128,8 +126,7 @@ export const contratosPrazoParceiro = {
     entrada: z.object({
       filtros: filtrosPrazo,
       filtro: z.enum(FILTROS_DA_LISTA).default("nascidos"),
-      pagina: z.number().int().min(1).max(100_000).default(1),
-      tamanho: z.literal(TAMANHOS_DA_LISTA).default(50),
+      ...paginacao({ opcoes: TAMANHOS_DA_LISTA }),
     }),
     saida: z.object({ linhas: z.array(linhaDaLista), total: z.number() }),
   }),

@@ -3,11 +3,10 @@
  * corpo (a query string não carrega listas); nenhuma delas grava nada.
  * Spec: docs/regras/03-romaneio-prazo-parceiro.md.
  */
+import { dataIso, paginacao } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 const textos = z.array(z.string().trim().min(1).max(200)).max(500);
 
 export const CAMPOS_DATA = ["emissao", "embarque", "prevista", "saida", "conclusao"] as const;
@@ -110,8 +109,7 @@ export const entradaLista = z.object({
   agrupar: z.enum(AGRUPAMENTOS).default("none"),
   ordem: z.enum(ORDENS).optional(),
   direcao: z.enum(["asc", "desc"]).default("asc"),
-  pagina: z.number().int().min(1).max(100_000).default(1),
-  tamanho: z.literal(TAMANHOS_DE_PAGINA).default(50),
+  ...paginacao({ opcoes: TAMANHOS_DE_PAGINA }),
 });
 export type EntradaLista = z.input<typeof entradaLista>;
 

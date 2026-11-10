@@ -35,7 +35,40 @@ export const simNao = z.union([
   z.enum(["1", "0", "true", "false"]).transform((v) => v === "1" || v === "true"),
 ]);
 
-export const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
+/** Data `AAAA-MM-DD`, com a mensagem que a tela mostra quando vem outra coisa. */
+export const dataIsoComMensagem = (mensagem: string) => z.string().refine(ehDataIso, mensagem);
+
+export const dataIso = dataIsoComMensagem("Data inválida (use AAAA-MM-DD).");
+
+/** Lista do corpo de um POST: no máximo `maximo` itens; ausente = vazia (sem filtro). */
+export function listaComTeto<T extends z.ZodType>(item: T, maximo: number) {
+  return z.array(item).max(maximo).default([]);
+}
+
+/** Maior página aceita (teto contra deslocamento absurdo no banco). */
+export const MAIOR_PAGINA = 100_000;
+
+/**
+ * Página pedida de toda lista paginada: `pagina` a partir de 1 e `tamanho` em linhas, até
+ * `maximo` ou só uma das `opcoes` do seletor da tela. Aceita número ou texto (query string).
+ */
+export function paginacao(
+  tamanho: ({ maximo: number } | { opcoes: readonly number[] }) & { padrao?: number },
+) {
+  const valido =
+    "opcoes" in tamanho
+      ? z
+          .number()
+          .refine(
+            (n) => tamanho.opcoes.includes(n),
+            `Tamanho de página: ${tamanho.opcoes.join(", ")}.`,
+          )
+      : z.number().min(1).max(tamanho.maximo);
+  return {
+    pagina: inteiro.pipe(z.number().min(1).max(MAIOR_PAGINA)).default(1),
+    tamanho: inteiro.pipe(valido).default(tamanho.padrao ?? 50),
+  };
+}
 
 /** Texto livre de filtro: tamanho limitado (vai para ILIKE). */
 export const textoDeFiltro = z.string().max(200);

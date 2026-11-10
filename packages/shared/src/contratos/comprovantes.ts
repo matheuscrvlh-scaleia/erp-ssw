@@ -1,5 +1,5 @@
+import { dataIso, listaComTeto, paginacao } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 
 export const STATUS_DE_COMPROVANTE = ["todos", "digitalizados", "pendentes"] as const;
@@ -8,21 +8,18 @@ export type StatusDeComprovante = (typeof STATUS_DE_COMPROVANTE)[number];
 /** Tipo de documento da tabela "Por tipo de documento" para CT-e sem tipo. */
 export const TIPO_NAO_INFORMADO = "NAO INFORMADO";
 
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
-const lista = <T extends z.ZodType>(item: T, maximo: number) =>
-  z.array(item).max(maximo).default([]);
 const sigla = z.string().trim().toUpperCase().max(10);
 
 export const filtrosDeComprovantes = z.object({
   inicio: dataIso,
   fim: dataIso,
   /** Siglas (só por URL). */
-  unidades: lista(sigla, 100),
-  filiais: lista(sigla, 100),
-  pagadores: lista(z.string().regex(/^\d{1,14}$/, "CNPJ só com dígitos."), 500),
+  unidades: listaComTeto(sigla, 100),
+  filiais: listaComTeto(sigla, 100),
+  pagadores: listaComTeto(z.string().regex(/^\d{1,14}$/, "CNPJ só com dígitos."), 500),
   ctrc: z.string().max(60).default(""),
   nf: z.string().max(60).default(""),
-  tipos: lista(z.string().max(80), 50),
+  tipos: listaComTeto(z.string().max(80), 50),
   remetente: z.string().max(2000).default(""),
   destino: z.string().max(2000).default(""),
 });
@@ -79,8 +76,7 @@ export const contratosComprovantes = {
     metodo: "POST",
     caminho: "/api/v1/comprovantes/lista",
     entrada: filtrosDaLista.extend({
-      pagina: z.number().int().min(1).default(1),
-      tamanho: z.number().int().min(1).max(500).default(50),
+      ...paginacao({ maximo: 500 }),
     }),
     saida: z.object({ linhas: z.array(linhaDeComprovante), total: z.number().int() }),
   }),

@@ -1,5 +1,5 @@
+import { dataIso } from "../consulta";
 import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
 import { z } from "../zod";
 import { contratosCalendario, feriado, UFS } from "./calendario";
 
@@ -16,8 +16,6 @@ export const ROTULO_DO_TIPO_DE_ANOTACAO: Record<TipoAnotacao, string> = {
 
 /** Teto de registros por consulta; acima disso a tela avisa que a lista foi cortada (Q04). */
 export const LIMITE_DO_HISTORICO = 5000;
-
-const dataIso = z.string().refine(ehDataIso, "Data inválida (use AAAA-MM-DD).");
 
 /** Lista de UUIDs na query string, separados por vírgula ("" = nenhum). */
 const uuidsNaQuery = z
