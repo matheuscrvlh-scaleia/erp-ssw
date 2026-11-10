@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
+import { Route as AutenticadoRomaneioRouteImport } from './routes/_autenticado/romaneio'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
@@ -46,6 +47,11 @@ const AutenticadoCalendarioRoute = AutenticadoCalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoRomaneioRoute = AutenticadoRomaneioRouteImport.update({
+  id: '/romaneio',
+  path: '/romaneio',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   id: '/sem-acesso',
   path: '/sem-acesso',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
 }
 export interface FileRoutesByTo {
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
 }
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
+  '/_autenticado/romaneio': typeof AutenticadoRomaneioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
 }
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/romaneio'
     | '/sem-acesso'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -93,6 +103,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/romaneio'
     | '/sem-acesso'
     | '/'
   id:
@@ -102,6 +113,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/_autenticado/calendario'
+    | '/_autenticado/romaneio'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
   fileRoutesById: FileRoutesById
@@ -157,6 +169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoCalendarioRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/romaneio': {
+      id: '/_autenticado/romaneio'
+      path: '/romaneio'
+      fullPath: '/romaneio'
+      preLoaderRoute: typeof AutenticadoRomaneioRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/sem-acesso': {
       id: '/_autenticado/sem-acesso'
       path: '/sem-acesso'
@@ -169,12 +188,14 @@ declare module '@tanstack/react-router' {
 
 interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
+  AutenticadoRomaneioRoute: typeof AutenticadoRomaneioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
+  AutenticadoRomaneioRoute: AutenticadoRomaneioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
 }
