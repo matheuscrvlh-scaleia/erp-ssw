@@ -58,7 +58,7 @@ services:
       LIMITE_CORPO_PUBLICO_MB: ${LIMITE_CORPO_PUBLICO_MB:-64}
       LIMITE_CORPO_API_MB: ${LIMITE_CORPO_API_MB:-1}
       # host:porta do HTTP público do worker-ssw na rede erp-interna.
-      WORKER_SSW_PUBLICO: ${WORKER_SSW_PUBLICO:-worker-ssw:3100}
+      WORKER_SSW_PUBLICO: ${WORKER_SSW_PUBLICO:-worker-ssw:3003}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # Certificados e chave da conta ACME: estado da VPS que vale backup (docs/deploy.md §7).
@@ -130,7 +130,7 @@ services:
       METRICAS_TOKEN:
       SEGREDOS_CHAVES:
       SEGREDOS_CHAVE_ATUAL:
-      # HTTP interno do worker-ssw (ex.: http://worker-ssw:3100) e o token de serviço; sem eles as
+      # HTTP interno do worker-ssw (ex.: http://worker-ssw:3003) e o token de serviço; sem eles as
       # ações das telas de ingestão respondem 503 e as leituras seguem.
       WORKER_SSW_URL:
       WORKER_SSW_TOKEN:

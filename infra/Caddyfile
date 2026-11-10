@@ -88,7 +88,7 @@
 # worker-ssw (outro compose, ADR 0012), pela rede externa erp-interna. Mesmos tempos da API:
 # reiniciar o worker-ssw não derruba a integração que reenvia em até 15 s.
 (upstream_worker_ssw) {
-	reverse_proxy {$WORKER_SSW_PUBLICO:worker-ssw:3100} {
+	reverse_proxy {$WORKER_SSW_PUBLICO:worker-ssw:3003} {
 		lb_try_duration 15s
 		lb_try_interval 250ms
 		fail_duration 10s
