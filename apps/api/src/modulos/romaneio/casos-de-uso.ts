@@ -12,7 +12,6 @@ import {
   padroesTextoFiltro,
   unidadeResponsavel,
 } from "@erp/dominio/nucleo";
-import { centavos, reais } from "@erp/dominio/performance/numeros";
 import {
   type CteDoDia,
   ctesDaFaixa,
@@ -20,12 +19,19 @@ import {
   romaneioDoDia,
   SEM_TIPO,
 } from "@erp/dominio/romaneio/hoje";
-import { grupoDaLinha } from "@erp/dominio/romaneio/linha";
 import {
   type Linha930,
   linhaDoTempo,
   type OcorrenciaGravada,
 } from "@erp/dominio/romaneio/linha-do-tempo";
+import {
+  casaFiltrosDaLista,
+  type FatoDaLista,
+  type ItemDaLista,
+  ordenarLista,
+  paginaDaLista,
+  resumirLista,
+} from "@erp/dominio/romaneio/lista";
 import {
   CODIGO_RETORNO,
   CODIGO_SAIDA,
@@ -39,9 +45,7 @@ import {
 } from "@erp/dominio/romaneio/normalizacao";
 import {
   analisarCte,
-  type AnaliseCte,
   type Cadastro,
-  casaRecorte,
   type CodigoCadastrado,
   criarCadastro,
   distribuicaoDosNaoFinalizados,
@@ -69,11 +73,9 @@ import {
   type CampoData,
   type contratosRomaneio,
   type FiltrosRomaneio,
-  LIMITE_AGRUPADO,
   LIMITE_EXPORTACAO,
   type LinhaExportada,
   type LinhaLista,
-  type OrdemLista,
 } from "@erp/shared/contratos/romaneio";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
@@ -126,20 +128,7 @@ export interface ConsultaDeCtes {
   codigosOcorrencia: readonly number[] | null;
 }
 
-/** CT-e da consulta-base, com o que a lista ordena e agrupa. */
-export interface FatoDaLista extends FatoCte {
-  numeroNf: number | null;
-  dataEmbarque: string | null;
-  parceiroId: string | null;
-  /** Nome do cadastro do parceiro, senão o do CT-e (expedidor). */
-  parceiroNome: string | null;
-  unidadeId: string | null;
-  filial: string | null;
-  remetente: string | null;
-  ufDestino: string | null;
-  setor: string | null;
-  statusAtual: string | null;
-}
+export { type FatoDaLista } from "@erp/dominio/romaneio/lista";
 
 /** Colunas só de exibição, lidas para a página (ou a exportação). */
 export interface DetalheDaLinha {
@@ -313,10 +302,7 @@ function codigosQueContam(regras: Regras, filtros: FiltrosNormalizados): number[
   ];
 }
 
-interface Item<F extends FatoCte = FatoDaLista> {
-  fato: F;
-  analise: AnaliseCte;
-}
+type Item<F extends FatoCte = FatoDaLista> = ItemDaLista<F>;
 
 interface Base {
   regras: Regras;
@@ -527,66 +513,10 @@ async function filtrarLista(
   if (!b) return null;
   const config = await romaneio.configuracoes([CONFIG.diasSemMovimento.chave]);
   const dias = numeroDaConfiguracao(config, CONFIG.diasSemMovimento);
-  const itens = b.itens.filter(
-    ({ fato, analise }) =>
-      (e.emRotaAgora === "todos" || (e.emRotaAgora === "sim") === analise.emRotaAgora) &&
-      (e.status !== "andamento" || (!analise.entregue && !analise.finalizado)) &&
-      (!e.semMovimento || estaSemMovimento(fato, analise, dias, agora)) &&
-      casaRecorte(fato, analise, e.recorte, hoje),
+  const itens = b.itens.filter((item) =>
+    casaFiltrosDaLista(item, e, { diasSemMovimento: dias, agora, hoje }),
   );
   return { itens, regras: b.regras };
-}
-
-type Comparavel = string | number | null;
-
-function valorDaOrdem(f: FatoDaLista, ordem: OrdemLista): Comparavel {
-  switch (ordem) {
-    case "numero_nf":
-      return f.numeroNf;
-    case "numero_ctrc":
-      return Number(f.numero);
-    case "data_emissao":
-      return f.dataEmissao;
-    case "data_embarque":
-      return f.dataEmbarque;
-    case "parceiro":
-      return f.parceiroNome;
-    case "unidade":
-      return f.filial;
-    case "remetente":
-      return f.remetente;
-    case "cidade_destino":
-      return f.cidadeDestino;
-    case "peso":
-      return f.peso;
-    case "volumes":
-      return f.volumes;
-    case "valor_frete":
-      return f.valorFrete;
-    case "status_atual":
-      return f.statusAtual;
-  }
-}
-
-/** Nulos por último nos dois sentidos; texto pela collation do banco atual. */
-function comparar(a: Comparavel, b: Comparavel, direcao: "asc" | "desc"): number {
-  if (a === b) return 0;
-  if (a === null) return 1;
-  if (b === null) return -1;
-  const r =
-    typeof a === "number" && typeof b === "number" ? a - b : COLLATOR.compare(String(a), String(b));
-  return direcao === "asc" ? r : -r;
-}
-
-/** Pela coluna clicada (Q03); sem coluna, previsão crescente (a ordem de hoje). Desempate: id. */
-function ordenar(itens: readonly Item[], ordem: OrdemLista | undefined, direcao: "asc" | "desc") {
-  return [...itens].sort(
-    (x, y) =>
-      (ordem
-        ? comparar(valorDaOrdem(x.fato, ordem), valorDaOrdem(y.fato, ordem), direcao)
-        : comparar(x.fato.dataPrevista, y.fato.dataPrevista, "asc")) ||
-      x.fato.id.localeCompare(y.fato.id),
-  );
 }
 
 const FONTES = ["bi2_0174", "bi2_0013", "webhook"] as const;
@@ -659,21 +589,6 @@ async function limitesDeCarga(romaneio: RepositorioRomaneio) {
   };
 }
 
-interface Soma {
-  ctes: number;
-  peso: number;
-  volumes: number;
-  /** Em centavos inteiros até a saída (como o `sum(numeric)` do banco). */
-  frete: number;
-}
-
-const somar = (s: Soma, f: FatoCte) => {
-  s.ctes += 1;
-  s.peso += f.peso;
-  s.volumes += f.volumes;
-  s.frete += centavos(f.valorFrete);
-};
-
 /**
  * Lista da aba Total: filtros, recorte (mesma regra do card — Q13), ordem pela coluna (Q03) e
  * página. Com agrupamento, até 2000 linhas sem paginação (Q04).
@@ -690,30 +605,16 @@ export async function obterLista(
     const limites = await limitesDeCarga(romaneio);
     const r = await filtrarLista(romaneio, e, hoje, agora, null);
     const itens = r?.itens ?? [];
-    const totais = { ctes: 0, peso: 0, volumes: 0, frete: 0, entregues: 0 };
-    const grupos = new Map<string, Soma & { chave: string; rotulo: string }>();
-    for (const { fato, analise } of itens) {
-      somar(totais, fato);
-      if (analise.entregue) totais.entregues += 1;
-      if (e.agrupar === "none") continue;
-      const g = grupoDaLinha(e.agrupar, fato);
-      const soma = grupos.get(g.chave) ?? { ...g, ctes: 0, peso: 0, volumes: 0, frete: 0 };
-      somar(soma, fato);
-      grupos.set(g.chave, soma);
-    }
-    const [inicio, quantos] =
-      e.agrupar === "none" ? [(e.pagina - 1) * e.tamanho, e.tamanho] : [0, LIMITE_AGRUPADO];
-    const pagina = ordenar(itens, e.ordem, e.direcao).slice(inicio, inicio + quantos);
+    const { totais, grupos } = resumirLista(itens, e.agrupar);
+    const pagina = paginaDaLista(itens, e);
     const detalhes = await romaneio.detalhes(pagina.map((i) => i.fato.id));
     const porId = new Map(detalhes.map((d) => [d.id, d]));
     const cadastro = r?.regras.cadastro ?? criarCadastro([]);
     return {
       linhas: pagina.map((i) => linhaDaLista(i, porId.get(i.fato.id), cadastro)),
       total: totais.ctes,
-      totais: { ...totais, frete: reais(totais.frete) },
-      grupos: [...grupos.values()]
-        .map((g) => ({ ...g, frete: reais(g.frete) }))
-        .sort((a, b) => b.ctes - a.ctes || COLLATOR.compare(a.rotulo, b.rotulo)),
+      totais,
+      grupos,
       limites,
       hoje,
     };
@@ -738,7 +639,7 @@ export async function exportarLista(
     if (somente && e.selecao.ids.length === 0) return { linhas: [], limites, hoje };
     const r = await filtrarLista(romaneio, e, hoje, agora, somente ? e.selecao.ids : null);
     const desmarcadas = new Set(somente ? [] : e.selecao.ids);
-    const itens = ordenar(r?.itens ?? [], "data_emissao", "desc")
+    const itens = ordenarLista(r?.itens ?? [], "data_emissao", "desc")
       .filter((i) => !desmarcadas.has(i.fato.id))
       .slice(0, LIMITE_EXPORTACAO);
     const detalhes = await romaneio.detalhes(itens.map((i) => i.fato.id));
