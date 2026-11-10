@@ -1,5 +1,5 @@
 /**
- * Job `ssw_webhook`: processa um evento do webhook SSW2181 já autenticado e gravado pela API
+ * Job `processar-webhook-ssw`: processa um evento do webhook SSW2181 já autenticado e gravado pela API
  * (`ssw_webhook_eventos`). Casa o CT-e por sigla + número (sem sigla, a série vigente — Q02 do
  * dono), cria o CT-e só nas condições do anti-fantasma, grava a ocorrência e recalcula o CT-e pelo
  * núcleo. O resultado volta para o evento (o que a tela Ingestão SSW mostra).

@@ -145,7 +145,7 @@ describe("rotas públicas", () => {
       payload: {},
     });
     expect(r.json()).toMatchObject({ ok: true });
-    expect(enfileirador.jobs).toEqual([{ nome: "ssw_ciclo_aplicar", dados: { empresaId: OUTRA } }]);
+    expect(enfileirador.jobs).toEqual([{ nome: "aplicar-ciclos", dados: { empresaId: OUTRA } }]);
   });
 
   it("sem segredo cadastrado em nenhuma empresa: 503 dizendo onde cadastrar", async () => {
