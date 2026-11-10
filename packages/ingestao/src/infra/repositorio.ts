@@ -52,11 +52,16 @@ function emBlocos<T>(itens: readonly T[], tamanho: number): T[][] {
   return blocos;
 }
 
-/** Quem age: usuário da tela (ou admin da Plataforma) ou o sistema (job, rota pública). */
+/**
+ * Quem age: usuário da tela (ou admin da Plataforma) ou o sistema (job, rota pública). Mesmo
+ * formato do `Ator` da auditoria da API: IP e navegador vão para a linha de auditoria.
+ */
 export interface AtorDaIngestao {
   usuarioId: string;
   email: string;
   plataforma: boolean;
+  ip: string | null;
+  userAgent: string | null;
 }
 
 const CHAVES_DO_NUCLEO = [
@@ -659,6 +664,8 @@ export function criarRepositorioIngestao(
         resumo: evento.resumo,
         antes: null,
         depois: evento.depois,
+        ip: ator?.ip ?? null,
+        userAgent: ator?.userAgent ?? null,
       });
     },
 
