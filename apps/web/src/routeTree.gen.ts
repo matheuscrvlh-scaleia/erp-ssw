@@ -17,8 +17,11 @@ import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/inde
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
 import { Route as AutenticadoColetasRouteImport } from './routes/_autenticado/coletas'
 import { Route as AutenticadoComprovantesRouteImport } from './routes/_autenticado/comprovantes'
+import { Route as AutenticadoHistoricoRouteImport } from './routes/_autenticado/historico'
 import { Route as AutenticadoOcorrenciasRouteImport } from './routes/_autenticado/ocorrencias'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoAdminCodigosRouteImport } from './routes/_autenticado/admin.codigos'
+import { Route as AutenticadoHistoricoFeriadosRouteImport } from './routes/_autenticado/historico_.feriados'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -59,6 +62,11 @@ const AutenticadoComprovantesRoute = AutenticadoComprovantesRouteImport.update({
   path: '/comprovantes',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoHistoricoRoute = AutenticadoHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoOcorrenciasRoute = AutenticadoOcorrenciasRouteImport.update({
   id: '/ocorrencias',
   path: '/ocorrencias',
@@ -69,6 +77,17 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoAdminCodigosRoute = AutenticadoAdminCodigosRouteImport.update({
+  id: '/admin/codigos',
+  path: '/admin/codigos',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoHistoricoFeriadosRoute =
+  AutenticadoHistoricoFeriadosRouteImport.update({
+    id: '/historico_/feriados',
+    path: '/historico/feriados',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -78,8 +97,11 @@ export interface FileRoutesByFullPath {
   '/calendario': typeof AutenticadoCalendarioRoute
   '/coletas': typeof AutenticadoColetasRoute
   '/comprovantes': typeof AutenticadoComprovantesRoute
+  '/historico': typeof AutenticadoHistoricoRoute
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/admin/codigos': typeof AutenticadoAdminCodigosRoute
+  '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -88,9 +110,12 @@ export interface FileRoutesByTo {
   '/calendario': typeof AutenticadoCalendarioRoute
   '/coletas': typeof AutenticadoColetasRoute
   '/comprovantes': typeof AutenticadoComprovantesRoute
+  '/historico': typeof AutenticadoHistoricoRoute
   '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/admin/codigos': typeof AutenticadoAdminCodigosRoute
+  '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,9 +126,12 @@ export interface FileRoutesById {
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
   '/_autenticado/coletas': typeof AutenticadoColetasRoute
   '/_autenticado/comprovantes': typeof AutenticadoComprovantesRoute
+  '/_autenticado/historico': typeof AutenticadoHistoricoRoute
   '/_autenticado/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/admin/codigos': typeof AutenticadoAdminCodigosRoute
+  '/_autenticado/historico_/feriados': typeof AutenticadoHistoricoFeriadosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,8 +143,11 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/coletas'
     | '/comprovantes'
+    | '/historico'
     | '/ocorrencias'
     | '/sem-acesso'
+    | '/admin/codigos'
+    | '/historico/feriados'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -125,9 +156,12 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/coletas'
     | '/comprovantes'
+    | '/historico'
     | '/ocorrencias'
     | '/sem-acesso'
     | '/'
+    | '/admin/codigos'
+    | '/historico/feriados'
   id:
     | '__root__'
     | '/_autenticado'
@@ -137,9 +171,12 @@ export interface FileRouteTypes {
     | '/_autenticado/calendario'
     | '/_autenticado/coletas'
     | '/_autenticado/comprovantes'
+    | '/_autenticado/historico'
     | '/_autenticado/ocorrencias'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/admin/codigos'
+    | '/_autenticado/historico_/feriados'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -207,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoComprovantesRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/historico': {
+      id: '/_autenticado/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AutenticadoHistoricoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/ocorrencias': {
       id: '/_autenticado/ocorrencias'
       path: '/ocorrencias'
@@ -221,6 +265,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/admin/codigos': {
+      id: '/_autenticado/admin/codigos'
+      path: '/admin/codigos'
+      fullPath: '/admin/codigos'
+      preLoaderRoute: typeof AutenticadoAdminCodigosRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/historico_/feriados': {
+      id: '/_autenticado/historico_/feriados'
+      path: '/historico/feriados'
+      fullPath: '/historico/feriados'
+      preLoaderRoute: typeof AutenticadoHistoricoFeriadosRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
@@ -228,18 +286,24 @@ interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
   AutenticadoColetasRoute: typeof AutenticadoColetasRoute
   AutenticadoComprovantesRoute: typeof AutenticadoComprovantesRoute
+  AutenticadoHistoricoRoute: typeof AutenticadoHistoricoRoute
   AutenticadoOcorrenciasRoute: typeof AutenticadoOcorrenciasRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoAdminCodigosRoute: typeof AutenticadoAdminCodigosRoute
+  AutenticadoHistoricoFeriadosRoute: typeof AutenticadoHistoricoFeriadosRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
   AutenticadoColetasRoute: AutenticadoColetasRoute,
   AutenticadoComprovantesRoute: AutenticadoComprovantesRoute,
+  AutenticadoHistoricoRoute: AutenticadoHistoricoRoute,
   AutenticadoOcorrenciasRoute: AutenticadoOcorrenciasRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoAdminCodigosRoute: AutenticadoAdminCodigosRoute,
+  AutenticadoHistoricoFeriadosRoute: AutenticadoHistoricoFeriadosRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(

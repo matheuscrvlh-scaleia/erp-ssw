@@ -84,6 +84,7 @@ export function ModalDeFeriado({
   editando,
   hoje,
   aoGravar,
+  semRecorrencia = false,
 }: {
   aberto: boolean;
   aoMudarAberto: (aberto: boolean) => void;
@@ -91,6 +92,8 @@ export function ModalDeFeriado({
   hoje: string;
   /** `false` quando não gravou (a página já avisou o operador): o modal fica aberto. */
   aoGravar: (feriado: FeriadoParaGravar) => Promise<boolean>;
+  /** Sem a opção "recorrente" (Histórico › Feriados grava um dia só). */
+  semRecorrencia?: boolean;
 }) {
   const formulario = useForm<Campos>({
     resolver: zodResolver(esquema),
@@ -176,7 +179,7 @@ export function ModalDeFeriado({
             <input autoFocus className={`w-full ${CAMPO}`} {...formulario.register("descricao")} />
           </label>
           <ErroDoCampo mensagem={errors.descricao?.message} />
-          {!editando && (
+          {!editando && !semRecorrencia && (
             <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-2 py-2">
               <span className="text-[12px] text-muted-foreground">
                 Recorrente todo ano (próximos 5 anos)
