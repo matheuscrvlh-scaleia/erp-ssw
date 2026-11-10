@@ -12,6 +12,7 @@ import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-u
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
 import { type ExecutorComContexto, type Repositorios } from "../repositorios";
 import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
+import { DadosDoRanking } from "./falsos-ranking";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -82,6 +83,8 @@ export class BancoEmMemoria {
   ctrc = new CtrcFalso();
   filtros = new FiltrosFalso();
   listagem = new ListagemFalsa();
+  /** Ranking, bonificação de entrega e Ahgora (`falsos-ranking.ts`). */
+  ranking = new DadosDoRanking();
   /** Faz a próxima transação falhar com este erro (para testar o tratador de erros). */
   falharCom: Error | null = null;
 
@@ -156,6 +159,7 @@ export class BancoEmMemoria {
       ctrc: this.ctrc,
       filtros: this.filtros,
       listagem: this.listagem,
+      ...this.ranking.repositorios(),
       acesso: {
         usuario: (id) => Promise.resolve(this.usuarios.find((u) => u.id === id) ?? null),
         ehAdminPlataforma: (id) => Promise.resolve(this.plataformaAdmins.has(id)),

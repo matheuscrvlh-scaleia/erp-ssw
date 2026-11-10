@@ -19,6 +19,14 @@ describe("contexto da transação", () => {
     );
     expect(params).toEqual(["", "", "off"]);
   });
+
+  it("rota pública do ranking: o hash do token vai como parâmetro a mais", () => {
+    const { sql, params } = new PgDialect().sqlToQuery(
+      sqlDoContexto({ empresaId: null, usuarioId: null, plataforma: false, tokenPublicoHash: "h" }),
+    );
+    expect(sql).toContain("set_config('app.token_publico_hash', $4, true)");
+    expect(params).toEqual(["", "", "off", "h"]);
+  });
 });
 
 describe("ehTempoEsgotado", () => {
