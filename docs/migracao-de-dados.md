@@ -84,12 +84,12 @@ Dependências primeiro (`src/tabelas/registro.ts`):
    `equipe_membros`, `codigos_ocorrencia`, `feriados`, `anotacoes`, `metas`, bonificação (5).
 3. **CT-e:** `ctes`, `cte_prazo_historico`.
 4. **Operação:** `ocorrencias`, `coletas`, `romaneio_saidas_cte` (cópia direta).
-5. **Ingestão e logs:** `bi2_bruto`, `bi2_sincronizacoes`, `ingestao_*` (inclusive as 6 stagings
+5. **Ingestão e logs:** `bi2_bruto`, `bi2_sincronizacoes`, `ingestao_*` (inclusive as 5 stagings
    → `ingestao_linhas`), `xml_*`, `ssw_webhook_eventos`, `ssw_sincronizacoes`.
 6. **Pós-migração:** `criado_por`/`atualizado_por` das empresas, `duplicado_de` dos CT-e,
    sequência de `auditoria.id`.
-7. **Passos finais:** `recalcular-projecoes` (pendente, ver abaixo) e
-   `conferir-colunas-calculadas` (recálculo pelo núcleo; não roda no `--dry-run`).
+7. **Passos finais:** `recalcular-projecoes` (ver abaixo) e `conferir-colunas-calculadas`
+   (recálculo pelo núcleo). Nenhum dos dois roda no `--dry-run`.
 8. **Conferência** de cada tabela.
 
 ### Usuários e senhas
@@ -156,10 +156,12 @@ O `public` nunca é escrito: o sistema atual continua igual, não há o que desf
 
 - **Logo das empresas:** `empresas.logo_caminho` guarda o mesmo caminho do Storage do Supabase;
   o arquivo precisa ser copiado para o S3 com a mesma chave.
-- **Projeções** (`romaneio_viagens_cte`, `romaneio_cte_atual`, `cte_dados_relatorios`): ficam
-  vazias até o caso de uso de recálculo do worker existir (`TODO(projecoes)` em
-  `apps/migrador/src/passos/finais.ts`). Quando existir, o passo `recalcular-projecoes` o chama e
-  compara com as matviews (fazer `REFRESH` delas antes).
+- **Projeções** (`romaneio_viagens_cte`, `romaneio_cte_atual`, `cte_dados_relatorios`,
+  `romaneio_conferente_cte`): o passo `recalcular-projecoes` roda o caso de uso do worker
+  (`reconstruirProjecoesDoRomaneio`) por empresa, lendo as linhas de **toda** a staging do
+  `public` (não só os 60 dias de `ingestao_linhas`: a projeção é o estado acumulado) e gravando
+  com o repositório do worker. O relatório traz, por empresa, os CT-e reconstruídos e a contagem
+  de cada projeção ao lado da matview de hoje (fazer `REFRESH` delas antes).
 - **Colunas calculadas** (`fora_universo`, `ocorr_efetiva_*`, `data_conclusao_efetiva`,
   `prazo_padrao_*`, `penaliza`, `quarentena`...): copiadas como estão, para o primeiro dia bater.
   As três colunas novas de `ctes` (`filial_efetiva`, `pagador_cnpj_digitos`,
@@ -181,4 +183,3 @@ O `public` nunca é escrito: o sistema atual continua igual, não há o que desf
 | Código de ocorrência que não está no catálogo da empresa                                  | Ocorrência descartada e listada (a FK do destino não aceitaria).                                                                       |
 | Sistema atual continua escrevendo durante a carga                                         | Rodar de novo antes da virada: o upsert traz o que mudou (linhas apagadas na origem não são apagadas no destino; na virada, `--recomecar` sobre um `erp` limpo). |
 | Chaves de segredo diferentes das da API                                                   | A API não decifra as integrações; usar exatamente `SEGREDOS_CHAVES`/`SEGREDOS_CHAVE_ATUAL` da API.                                     |
-| Projeções vazias até o recálculo existir                                                  | Pendência explícita no relatório (`recalcular-projecoes`).                                                                             |

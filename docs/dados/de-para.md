@@ -125,6 +125,7 @@ atual (ver `REFRESH` antes):
 | `erp.romaneio_saidas_cte`  | `public.romaneio_saida_ctrc` (cópia direta)                                 | linhas com `sigla_ctrc` nula ficam de fora (relatório)                                                      |
 | `erp.romaneio_cte_atual`   | `public.staging_036_romaneios` + `public.staging_306_ssw_mobile`            | chave passa a ter a sigla: a matview atual tem 1 linha por número, a nova pode ter mais (séries diferentes) |
 | `erp.cte_dados_relatorios` | `public.staging_038_ctrcs_pendentes` + `public.staging_455_ctrcs_expedidos` | idem (chave com sigla); `prazo_entrega` → `prazo_entrega_038`, `atraso` → `atraso_038`                      |
+| `erp.romaneio_conferente_cte` | `public.staging_036_romaneios` (regra de `_ocorrencias_conferente_romaneio`) | chave com sigla; sem matview equivalente (a contagem sai sozinha no relatório) |
 
 ## Ingestão
 
