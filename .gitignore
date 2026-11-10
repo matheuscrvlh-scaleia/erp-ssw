@@ -7,3 +7,8 @@ coverage/
 .worktrees/
 *.log
 .turbo/
+# VPS (infra/): estado local do deploy, CA do banco e variáveis do migrador.
+infra/.deploy-historico
+infra/migrador.env
+infra/certs/*
+!infra/certs/.gitkeep
