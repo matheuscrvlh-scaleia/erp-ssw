@@ -21,7 +21,7 @@ export const rotasLogs: FastifyPluginCallbackZod<{ executar: ExecutorComContexto
         querystring: c.alteracoesDaEmpresa.entrada,
         response: { 200: c.alteracoesDaEmpresa.saida },
       },
-      preHandler: adminDaEmpresa,
+      onRequest: adminDaEmpresa,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -40,7 +40,7 @@ export const rotasLogs: FastifyPluginCallbackZod<{ executar: ExecutorComContexto
         querystring: c.integracoesDaEmpresa.entrada,
         response: { 200: c.integracoesDaEmpresa.saida },
       },
-      preHandler: adminDaEmpresa,
+      onRequest: adminDaEmpresa,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -55,7 +55,7 @@ export const rotasLogs: FastifyPluginCallbackZod<{ executar: ExecutorComContexto
         querystring: c.alteracoesDaPlataforma.entrada,
         response: { 200: c.alteracoesDaPlataforma.saida },
       },
-      preHandler: exigirAdminPlataforma,
+      onRequest: exigirAdminPlataforma,
     },
     async (request) => {
       const { empresa, ...filtros } = request.query;
@@ -77,7 +77,7 @@ export const rotasLogs: FastifyPluginCallbackZod<{ executar: ExecutorComContexto
         querystring: c.integracoesDeEmpresaNaPlataforma.entrada,
         response: { 200: c.integracoesDeEmpresaNaPlataforma.saida },
       },
-      preHandler: exigirAdminPlataforma,
+      onRequest: exigirAdminPlataforma,
     },
     async (request) =>
       listarIntegracoes(

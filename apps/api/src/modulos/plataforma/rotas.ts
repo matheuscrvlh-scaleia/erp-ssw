@@ -51,11 +51,11 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
   const { executar } = opcoes;
   const naEmpresa = (request: FastifyRequest) => (empresaId: string | null) =>
     executorDePlataforma(executar, request, empresaId);
-  const preHandler = exigirAdminPlataforma;
+  const onRequest = exigirAdminPlataforma;
 
   app.get(
     c.listarEmpresas.caminho,
-    { schema: { response: { 200: c.listarEmpresas.saida } }, preHandler },
+    { schema: { response: { 200: c.listarEmpresas.saida } }, onRequest },
     async (request) => ({
       empresas: await listarEmpresas(naEmpresa(request)(null), opcoes.agora()),
     }),
@@ -65,7 +65,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
     c.criarEmpresa.caminho,
     {
       schema: { body: c.criarEmpresa.entrada, response: { 200: c.criarEmpresa.saida } },
-      preHandler,
+      onRequest,
     },
     async (request) => criarEmpresa(naEmpresa(request), await atorDa(request), request.body),
   );
@@ -74,7 +74,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
     c.obterEmpresa.caminho,
     {
       schema: { params: c.obterEmpresa.parametros, response: { 200: c.obterEmpresa.saida } },
-      preHandler,
+      onRequest,
     },
     async (request) =>
       obterEmpresa(naEmpresa(request)(request.params.id), opcoes.urlDoLogo, request.params.id),
@@ -88,7 +88,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         body: c.salvarEmpresa.entrada,
         response: { 200: c.salvarEmpresa.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id } = request.params;
@@ -113,7 +113,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         response: { 200: c.enviarLogo.saida },
       },
       bodyLimit: LIMITE_DO_CORPO_DO_LOGO,
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id } = request.params;
@@ -131,7 +131,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
     c.removerLogo.caminho,
     {
       schema: { params: c.removerLogo.parametros, response: { 200: c.removerLogo.saida } },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id } = request.params;
@@ -144,7 +144,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
     c.listarModulos.caminho,
     {
       schema: { params: c.listarModulos.parametros, response: { 200: c.listarModulos.saida } },
-      preHandler,
+      onRequest,
     },
     async (request) => ({
       modulos: await listarModulos(naEmpresa(request)(request.params.id), request.params.id),
@@ -159,7 +159,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         body: c.salvarModulo.entrada,
         response: { 200: c.salvarModulo.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id, modulo } = request.params;
@@ -172,7 +172,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
     c.listarUsuarios.caminho,
     {
       schema: { params: c.listarUsuarios.parametros, response: { 200: c.listarUsuarios.saida } },
-      preHandler,
+      onRequest,
     },
     async (request) => ({
       usuarios: await listarVinculos(naEmpresa(request)(request.params.id), request.params.id),
@@ -187,7 +187,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         body: c.convidarUsuario.entrada,
         response: { 200: c.convidarUsuario.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id } = request.params;
@@ -211,7 +211,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         body: c.salvarVinculo.entrada,
         response: { 200: c.salvarVinculo.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id, usuarioId } = request.params;
@@ -233,7 +233,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         params: c.cadastrosDaEmpresa.parametros,
         response: { 200: c.cadastrosDaEmpresa.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id } = request.params;
@@ -253,7 +253,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         params: c.listarIntegracoes.parametros,
         response: { 200: c.listarIntegracoes.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => ({
       integracoes: await listarIntegracoes(
@@ -271,7 +271,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         body: c.salvarIntegracao.entrada,
         response: { 200: c.salvarIntegracao.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id, tipo } = request.params;
@@ -288,7 +288,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         body: c.definirSegredo.entrada,
         response: { 200: c.definirSegredo.saida },
       },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       const { id, tipo } = request.params;
@@ -306,7 +306,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
 
   app.get(
     c.listarAdmins.caminho,
-    { schema: { response: { 200: c.listarAdmins.saida } }, preHandler },
+    { schema: { response: { 200: c.listarAdmins.saida } }, onRequest },
     async (request) => ({ admins: await listarAdmins(naEmpresa(request)(null)) }),
   );
 
@@ -314,7 +314,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
     c.adicionarAdmin.caminho,
     {
       schema: { body: c.adicionarAdmin.entrada, response: { 200: c.adicionarAdmin.saida } },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       await adicionarAdmin(naEmpresa(request)(null), await atorDa(request), request.body.email);
@@ -326,7 +326,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
     c.removerAdmin.caminho,
     {
       schema: { params: c.removerAdmin.parametros, response: { 200: c.removerAdmin.saida } },
-      preHandler,
+      onRequest,
     },
     async (request) => {
       await removerAdmin(naEmpresa(request)(null), await atorDa(request), request.params.usuarioId);

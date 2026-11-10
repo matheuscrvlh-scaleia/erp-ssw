@@ -17,7 +17,7 @@ export const rotasConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDeConfig
 ) => {
   app.get(
     c.listarConfiguracoes.caminho,
-    { schema: { response: { 200: c.listarConfiguracoes.saida } }, preHandler: admin },
+    { schema: { response: { 200: c.listarConfiguracoes.saida } }, onRequest: admin },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return { configuracoes: await listarConfiguracoes(request.db, empresa.id) };
@@ -32,7 +32,7 @@ export const rotasConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDeConfig
         body: c.salvarConfiguracoes.entrada,
         response: { 200: c.salvarConfiguracoes.saida },
       },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -52,7 +52,7 @@ export const rotasConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDeConfig
     contratosConfiguracoes.publicas.caminho,
     {
       schema: { response: { 200: contratosConfiguracoes.publicas.saida } },
-      preHandler: exigirAutenticacao,
+      onRequest: exigirAutenticacao,
     },
     async (request) => {
       const acesso = await request.acesso();

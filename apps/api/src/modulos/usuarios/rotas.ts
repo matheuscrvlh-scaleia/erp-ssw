@@ -41,7 +41,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
 ) => {
   app.get(
     c.listarUsuarios.caminho,
-    { schema: { response: { 200: c.listarUsuarios.saida } }, preHandler: admin },
+    { schema: { response: { 200: c.listarUsuarios.saida } }, onRequest: admin },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return { usuarios: await listarUsuarios(request.db, empresa.id) };
@@ -52,7 +52,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
     c.criarUsuario.caminho,
     {
       schema: { body: c.criarUsuario.entrada, response: { 200: c.criarUsuario.saida } },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) =>
       criarUsuario(
@@ -72,7 +72,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
         body: c.alterarUsuario.entrada,
         response: { 200: c.alterarUsuario.saida },
       },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       await alterarUsuario(
@@ -91,7 +91,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
     c.reenviarConvite.caminho,
     {
       schema: { params: c.reenviarConvite.parametros, response: { 200: c.reenviarConvite.saida } },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       await reenviarConvite(
@@ -113,7 +113,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
         body: c.definirSenha.entrada,
         response: { 200: c.definirSenha.saida },
       },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       await definirSenha(

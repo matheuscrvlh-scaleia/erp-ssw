@@ -30,7 +30,7 @@ const ok = { ok: true as const };
 export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) => {
   app.get(
     c.listarCargos.caminho,
-    { schema: { response: { 200: c.listarCargos.saida } }, preHandler: lerCadastro },
+    { schema: { response: { 200: c.listarCargos.saida } }, onRequest: lerCadastro },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return { cargos: await listarCargos(request.db, empresa.id) };
@@ -41,7 +41,7 @@ export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) =
     c.criarCargo.caminho,
     {
       schema: { body: c.criarCargo.entrada, response: { 200: c.criarCargo.saida } },
-      preHandler: gravarCargo,
+      onRequest: gravarCargo,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -58,7 +58,7 @@ export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) =
         body: c.alterarCargo.entrada,
         response: { 200: c.alterarCargo.saida },
       },
-      preHandler: gravarCargo,
+      onRequest: gravarCargo,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -77,7 +77,7 @@ export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) =
     c.excluirCargo.caminho,
     {
       schema: { params: c.excluirCargo.parametros, response: { 200: c.excluirCargo.saida } },
-      preHandler: gravarCargo,
+      onRequest: gravarCargo,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -88,7 +88,7 @@ export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) =
 
   app.get(
     c.listarDepartamentos.caminho,
-    { schema: { response: { 200: c.listarDepartamentos.saida } }, preHandler: lerCadastro },
+    { schema: { response: { 200: c.listarDepartamentos.saida } }, onRequest: lerCadastro },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return { departamentos: await listarDepartamentos(request.db, empresa.id) };
@@ -99,7 +99,7 @@ export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) =
     c.criarDepartamento.caminho,
     {
       schema: { body: c.criarDepartamento.entrada, response: { 200: c.criarDepartamento.saida } },
-      preHandler: gravarDepartamento,
+      onRequest: gravarDepartamento,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -116,7 +116,7 @@ export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) =
         body: c.alterarDepartamento.entrada,
         response: { 200: c.alterarDepartamento.saida },
       },
-      preHandler: gravarDepartamento,
+      onRequest: gravarDepartamento,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -138,7 +138,7 @@ export const rotasCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) =
         params: c.excluirDepartamento.parametros,
         response: { 200: c.excluirDepartamento.saida },
       },
-      preHandler: gravarDepartamento,
+      onRequest: gravarDepartamento,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);

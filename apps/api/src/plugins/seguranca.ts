@@ -37,7 +37,8 @@ export async function registrarSeguranca(app: FastifyInstance, opcoes: OpcoesSeg
     errorResponseBuilder: () => muitasTentativas(),
   });
   await app.register(underPressure, {
-    maxEventLoopDelay: 1_000,
+    // Nos testes, carregar os módulos atrasa o laço de eventos e dava 503 no primeiro pedido.
+    maxEventLoopDelay: opcoes.ambiente.NODE_ENV === "test" ? 0 : 1_000,
     customError: class SobreCarga extends ErroDeNegocio {
       constructor() {
         super("INDISPONIVEL", "O sistema está sobrecarregado. Tente de novo em instantes.");

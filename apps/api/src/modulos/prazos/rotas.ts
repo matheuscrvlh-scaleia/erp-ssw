@@ -17,7 +17,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
 ) => {
   app.get(
     c.listarPrazos.caminho,
-    { schema: { response: { 200: c.listarPrazos.saida } }, preHandler: admin },
+    { schema: { response: { 200: c.listarPrazos.saida } }, onRequest: admin },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return listarPrazos(request.db, empresa.id);
@@ -28,7 +28,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
     c.criarPrazo.caminho,
     {
       schema: { body: c.criarPrazo.entrada, response: { 200: c.criarPrazo.saida } },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -44,7 +44,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
         body: c.alterarPrazo.entrada,
         response: { 200: c.alterarPrazo.saida },
       },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -67,7 +67,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
         body: c.ligarPrazo.entrada,
         response: { 200: c.ligarPrazo.saida },
       },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -86,7 +86,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
     c.excluirPrazo.caminho,
     {
       schema: { params: c.excluirPrazo.parametros, response: { 200: c.excluirPrazo.saida } },
-      preHandler: admin,
+      onRequest: admin,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
