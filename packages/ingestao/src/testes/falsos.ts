@@ -245,6 +245,7 @@ export function repositorioFalso(s: EstadoFalso): RepositorioIngestao {
         regrasDePrazo: [],
         config: CONFIGURACAO_PADRAO,
         cnpjsProprios: ["99888777000166"],
+        dominioSsw: "FRT",
       }),
     ctesDasChaves: (chaves) => {
       const quero = daChave(chaves);

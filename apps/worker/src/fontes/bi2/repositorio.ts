@@ -1,9 +1,9 @@
 import { type Transacao } from "@erp/db";
 import { bi2Bruto, bi2Sincronizacoes, ctes } from "@erp/db/schema";
+import { comoCte } from "@erp/ingestao/infra";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { exigirEmpresa } from "../comum/empresa";
-import { COLUNAS_DO_CTE, paraCteGravado } from "../comum/repositorio-cte";
 import { type RepositorioBi2 } from "./job";
 
 export function criarRepositorioBi2(
@@ -15,10 +15,10 @@ export function criarRepositorioBi2(
     ctesPorNumeros: async (numeros) => {
       if (numeros.length === 0) return [];
       const linhas = await tx
-        .select(COLUNAS_DO_CTE)
+        .select()
         .from(ctes)
         .where(and(eq(ctes.empresaId, empresa()), inArray(ctes.numero, [...numeros])));
-      return linhas.map(paraCteGravado);
+      return linhas.map(comoCte);
     },
 
     // Upsert por (empresa, número, relatório); payload igual não regrava (era o gatilho

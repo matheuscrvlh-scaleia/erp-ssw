@@ -1,11 +1,17 @@
 /**
- * Gravação de CT-e pela ingestão, sempre pelo núcleo (`prepararGravacaoDoCte`): derivados,
- * "não grava linha igual" e histórico de previsão na mesma transação.
+ * Gravação de CT-e pela ingestão — arquivos do SSW, XML, BI2 e webhook —, sempre pelo núcleo
+ * (`prepararGravacaoDoCte`): trava do BI2, data mínima, derivados, "não grava linha igual" e
+ * histórico de previsão na mesma transação.
  */
-import { type OcorrenciaDoCte, prepararGravacaoDoCte } from "@erp/dominio/nucleo";
+import {
+  type FonteDaEscrita,
+  type MotivoDoDescarte,
+  type OcorrenciaDoCte,
+  prepararGravacaoDoCte,
+} from "@erp/dominio/nucleo";
 
 import { type CamposDoCte, type CteDaIngestao } from "../aplicacao";
-import { type CadastrosDoNucleo, type RepositorioIngestao } from "./portas";
+import { type CadastrosDoNucleo, type RepositorioCteNucleo } from "./portas";
 
 /** Linha nova de `ctes` com os valores padrão do banco; os campos vêm por cima. */
 export function cteEmBranco(empresaId: string, id: string, agora: Date): CteDaIngestao {
@@ -130,32 +136,58 @@ export function camposQueMudaram(antigo: CteDaIngestao, novo: CteDaIngestao): Ca
   return saida;
 }
 
-export type ResultadoDaGravacao = "gravado" | "igual" | `descartado:${string}`;
+export type ResultadoDaGravacao =
+  | { tipo: "descartado"; motivo: MotivoDoDescarte }
+  | { tipo: "igual" | "gravado"; cte: CteDaIngestao };
 
 /**
  * Aplica `campos` no CT-e já gravado pelo núcleo e grava a diferença (com `atualizado_em`) e o
- * histórico de previsão. `ajustar` mexe no resultado do núcleo antes de gravar (ex.: `campos_ssw`).
+ * histórico de previsão. `fonte` decide o que o BI2 pode mudar (padrão: arquivos do SSW, webhook,
+ * XML); `ajustar` mexe no resultado do núcleo antes de gravar (ex.: `campos_ssw`). Única gravação
+ * de CT-e existente da ingestão (arquivos, XML, BI2 e webhook).
  */
 export async function regravarCte(
-  repo: RepositorioIngestao,
+  repo: RepositorioCteNucleo,
   cad: CadastrosDoNucleo,
   antigo: CteDaIngestao,
   campos: CamposDoCte,
   ocorrencias: readonly OcorrenciaDoCte[],
   agora: Date,
-  ajustar?: (cte: CteDaIngestao) => CamposDoCte,
+  opcoes: { fonte?: FonteDaEscrita; ajustar?: (cte: CteDaIngestao) => CamposDoCte } = {},
 ): Promise<ResultadoDaGravacao> {
   const g = prepararGravacaoDoCte({
     antigo,
     novo: { ...antigo, ...campos },
-    fonte: "outra",
+    fonte: opcoes.fonte ?? "outra",
     contexto: { ...cad, ocorrencias },
   });
-  if (g.tipo === "descartar") return `descartado:${g.motivo}`;
-  const final = ajustar ? { ...g.cte, ...ajustar(g.cte) } : g.cte;
+  if (g.tipo === "descartar") return { tipo: "descartado", motivo: g.motivo };
+  const final = opcoes.ajustar ? { ...g.cte, ...opcoes.ajustar(g.cte) } : g.cte;
   const mudou = camposQueMudaram(antigo, final);
-  if (Object.keys(mudou).length === 0) return "igual";
+  if (Object.keys(mudou).length === 0) return { tipo: "igual", cte: antigo };
   await repo.atualizarCte(antigo.id, { ...mudou, atualizadoEm: agora });
   if (g.trocaDePrevisao) await repo.registrarTrocaDePrevisao(antigo.id, g.trocaDePrevisao);
-  return "gravado";
+  return { tipo: "gravado", cte: { ...final, atualizadoEm: agora } };
+}
+
+/**
+ * Cria um CT-e pelo núcleo (data mínima de emissão e "o BI2 não cria" valem aqui). CT-e que já
+ * existe com a mesma sigla e número (corrida entre duas gravações) é erro.
+ */
+export async function criarCte(
+  repo: RepositorioCteNucleo,
+  cad: CadastrosDoNucleo,
+  novo: CteDaIngestao,
+  fonte: FonteDaEscrita,
+): Promise<ResultadoDaGravacao> {
+  const g = prepararGravacaoDoCte({
+    antigo: null,
+    novo,
+    fonte,
+    contexto: { ...cad, ocorrencias: [] },
+  });
+  if (g.tipo === "descartar") return { tipo: "descartado", motivo: g.motivo };
+  const [inserido] = await repo.inserirCtes([g.cte]);
+  if (!inserido) throw new Error(`CT-e ${novo.sigla} ${novo.numero} já existe.`);
+  return { tipo: "gravado", cte: inserido };
 }

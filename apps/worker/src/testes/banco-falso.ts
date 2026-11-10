@@ -13,11 +13,12 @@ import {
   type TrocaDePrevisao,
 } from "@erp/dominio/nucleo";
 import { CATALOGO_FR } from "@erp/dominio/nucleo/apoio-testes";
+import { type CteDaIngestao } from "@erp/ingestao/aplicacao";
+import { type CadastrosDoNucleo, cteEmBranco } from "@erp/ingestao/casos-de-uso";
 import { estadoFalso, repositorioFalso } from "@erp/ingestao/testes";
 import { type IntegracaoDaIngestao } from "@erp/shared/ingestao";
 
 import { type SincronizacaoNova } from "../fontes/bi2/job";
-import { type ContextoDaEmpresa, type CteGravado, cteVazio } from "../fontes/comum/cte-nucleo";
 import { type IntegracaoGravada, type VerificacaoDaIntegracao } from "../fontes/comum/integracao";
 import { type OcorrenciaDoWebhook, type ResultadoDoEvento } from "../fontes/webhook/job";
 import { type ExecutorDoWorker, type RepositoriosDoWorker } from "../jobs/registro";
@@ -25,22 +26,19 @@ import { ProjecoesFalsas } from "./projecoes-falsas";
 
 export const EMPRESA = "0b9a2c3e-1d4f-4a5b-8c6d-7e8f9a0b1c2d";
 
-export function cteGravado(extra: Partial<CteGravado> = {}): CteGravado {
+export function cteGravado(extra: Partial<CteDaIngestao> = {}): CteDaIngestao {
   return {
-    ...cteVazio({
-      sigla: "CAP",
-      numero: "33214",
-      dataEmissao: "2026-11-01",
-      criadoEm: new Date("2026-11-01T12:00:00Z"),
-    }),
-    id: randomUUID(),
+    ...cteEmBranco(EMPRESA, randomUUID(), new Date("2026-11-01T12:00:00Z")),
+    sigla: "CAP",
+    numero: "33214",
+    dataEmissao: "2026-11-01",
     ...extra,
   };
 }
 
 export class BancoFalso {
   contextos: ContextoBanco[] = [];
-  ctes: CteGravado[] = [];
+  ctes: CteDaIngestao[] = [];
   ocorrencias: (OcorrenciaDoCte & OcorrenciaDoWebhook)[] = [];
   trocas: (TrocaDePrevisao & { cteId: string })[] = [];
   bruto = new Map<string, { dataAlvo: string; payload: Record<string, string> }>();
@@ -52,11 +50,12 @@ export class BancoFalso {
   integracoes = new Map<IntegracaoDaIngestao, IntegracaoGravada>();
   verificacoes: (VerificacaoDaIntegracao & { tipo: string })[] = [];
   empresas: { id: string; integracoes: IntegracaoDaIngestao[] }[] = [];
-  contexto: ContextoDaEmpresa = {
+  contexto: CadastrosDoNucleo = {
     catalogo: CATALOGO_FR,
     filiais: [{ sigla: "CAP", cidade: "CAMPINAS", uf: "SP", propria: true }],
     regrasDePrazo: [],
     config: CONFIGURACAO_PADRAO,
+    cnpjsProprios: [],
     dominioSsw: "FRT",
   };
   /** Estado da ingestão por arquivo (falso do pacote `@erp/ingestao`). */
@@ -111,19 +110,21 @@ export class BancoFalso {
         },
       },
       cteNucleo: {
-        contextoDaEmpresa: () => Promise.resolve(this.contexto),
+        cadastrosDoNucleo: () => Promise.resolve(this.contexto),
         ocorrenciasDosCtes: (ids) =>
           Promise.resolve(
             new Map(ids.map((id) => [id, this.ocorrencias.filter((o) => o.cteId === id)])),
           ),
-        atualizarCte: (cte) => {
-          this.ctes = this.ctes.map((c) => (c.id === cte.id ? cte : c));
+        atualizarCte: (id, campos) => {
+          this.ctes = this.ctes.map((c) => (c.id === id ? { ...c, ...campos } : c));
           return Promise.resolve();
         },
-        inserirCte: (cte) => {
-          const gravado = { ...cte, id: randomUUID() };
-          this.ctes.push(gravado);
-          return Promise.resolve(gravado);
+        inserirCtes: (novos) => {
+          const entraram = novos.filter(
+            (n) => !this.ctes.some((c) => c.sigla === n.sigla && c.numero === n.numero),
+          );
+          this.ctes.push(...entraram);
+          return Promise.resolve(entraram);
         },
         registrarTrocaDePrevisao: (cteId, troca) => {
           this.trocas.push({ ...troca, cteId });

@@ -14,12 +14,13 @@ import {
   vazioQuandoNaoEncontrado,
 } from "@erp/dominio/ingestao/bi2-0017";
 import { hojeSp } from "@erp/dominio/nucleo";
+import { type CteDaIngestao } from "@erp/ingestao/aplicacao";
+import { regravarCte, type RepositorioCteNucleo } from "@erp/ingestao/casos-de-uso";
 import { ehDataIso } from "@erp/shared/datas";
 import { filaDoJob } from "@erp/shared/ingestao";
 import { z } from "@erp/shared/zod";
 
 import { definirJob, type RepositoriosDoWorker } from "../../jobs/registro";
-import { alterarCte, type CteGravado, type RepositorioCteNucleo } from "../comum/cte-nucleo";
 import { type Cofre, parametroTexto, segredoDa } from "../comum/integracao";
 import { type Buscar, buscarRelatorioBi2, lerCsvBi2, urlDoRelatorio } from "./cliente";
 import { CODIGO_DO_0017, comAutorizacao, lerLinhas0017 } from "./relatorio-0017";
@@ -43,7 +44,7 @@ export interface SincronizacaoNova {
 
 export interface RepositorioBi2 {
   /** CT-e da empresa com estes números (qualquer sigla: o BI2 casa por número + emissão). */
-  ctesPorNumeros(numeros: readonly string[]): Promise<CteGravado[]>;
+  ctesPorNumeros(numeros: readonly string[]): Promise<CteDaIngestao[]>;
   gravarBruto(
     codigoRelatorio: string,
     dataAlvo: string,
@@ -205,7 +206,7 @@ export async function aplicarLote0017(
       .map((cte) => ({ linha, cte })),
   );
   if (pares.length === 0) return { casados: 0, alterados: 0 };
-  const contexto = await repo.contextoDaEmpresa();
+  const cad = await repo.cadastrosDoNucleo();
   const ocorrencias = await repo.ocorrenciasDosCtes(pares.map((p) => p.cte.id));
   let alterados = 0;
   for (const { linha, cte } of pares) {
@@ -213,15 +214,7 @@ export async function aplicarLote0017(
     let atual = cte;
     const passo1 = entregaEPrevisaoDoBi2(atual, linha);
     if (passo1) {
-      const r = await alterarCte({
-        repo,
-        antigo: atual,
-        alteracao: passo1,
-        fonte: "bi2",
-        contexto,
-        ocorrencias: doCte,
-        agora,
-      });
+      const r = await regravarCte(repo, cad, atual, passo1, doCte, agora, { fonte: "bi2" });
       if (r.tipo === "gravado") {
         atual = r.cte;
         alterados++;
@@ -229,14 +222,8 @@ export async function aplicarLote0017(
     }
     const passo2 = prazoAjustadoDepoisDaEntrega(atual, linha);
     if (passo2) {
-      const r = await alterarCte({
-        repo,
-        antigo: atual,
-        alteracao: passo2,
+      const r = await regravarCte(repo, cad, atual, passo2, doCte, agora, {
         fonte: "bi2_0017_prazo_entregue",
-        contexto,
-        ocorrencias: doCte,
-        agora,
       });
       if (r.tipo === "gravado" && atual === cte) alterados++;
     }

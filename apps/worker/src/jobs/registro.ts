@@ -1,14 +1,17 @@
 import { type ContextoBanco } from "@erp/db";
 import { type RepositorioGravacao050 } from "@erp/dominio/coletas/gravacao-050";
 import { type RepositorioProjecoesRomaneio } from "@erp/dominio/romaneio/projecoes";
-import { type RepositorioDeRetencao, type RepositorioIngestao } from "@erp/ingestao/casos-de-uso";
+import {
+  type RepositorioCteNucleo,
+  type RepositorioDeRetencao,
+  type RepositorioIngestao,
+} from "@erp/ingestao/casos-de-uso";
 import { filaDoJob, JOBS_DE_INGESTAO, type NomeDoJobDeIngestao } from "@erp/shared/ingestao";
 import { type z } from "@erp/shared/zod";
 import { type Logger } from "pino";
 
 import { type RepositorioAgendamentos } from "../agendamentos/agendamentos";
 import { type RepositorioBi2 } from "../fontes/bi2/job";
-import { type RepositorioCteNucleo } from "../fontes/comum/cte-nucleo";
 import { type RepositorioIntegracoes } from "../fontes/comum/integracao";
 import { type RepositorioWebhook } from "../fontes/webhook/job";
 import { type RepositorioManutencao } from "./manutencao/job";

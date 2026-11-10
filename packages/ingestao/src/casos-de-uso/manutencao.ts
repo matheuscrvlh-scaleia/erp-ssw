@@ -51,7 +51,7 @@ export async function unidadePelo455Recente(deps: DependenciasDaAplicacao): Prom
           ocorrencias.get(cte.id) ?? [],
           deps.agora(),
         );
-        if (res === "gravado") saida.push(`${cte.sigla}|${cte.numero}`);
+        if (res.tipo === "gravado") saida.push(`${cte.sigla}|${cte.numero}`);
       }
       return saida;
     });

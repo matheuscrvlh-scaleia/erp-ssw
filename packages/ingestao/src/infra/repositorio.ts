@@ -38,6 +38,7 @@ import {
   type ArquivoRegistrado,
   type CicloRegistrado,
   type LinhaDaChave,
+  type RepositorioCteNucleo,
   type RepositorioDeRetencao,
   type RepositorioIngestao,
 } from "../casos-de-uso/portas";
@@ -98,8 +99,11 @@ const comoArquivo = (a: typeof ingestaoArquivos.$inferSelect): ArquivoRegistrado
   importadoEm: a.importadoEm,
 });
 
-/** O schema guarda `ocorr_efetiva_fonte` como texto; o núcleo o fecha num tipo. */
-const comoCte = (c: typeof ctes.$inferSelect) => c as CteDaIngestao;
+/**
+ * O schema guarda `ocorr_efetiva_fonte` como texto; o núcleo o fecha num tipo. Exportado para o
+ * BI2 e o webhook, que buscam o CT-e pelos próprios critérios.
+ */
+export const comoCte = (c: typeof ctes.$inferSelect) => c as CteDaIngestao;
 
 function filtrarPelaChave<T extends { sigla: string | null; numero: string | null }>(
   linhas: readonly T[],
@@ -536,6 +540,7 @@ export function criarRepositorioIngestao(
           empresa.cnpj,
           Array.isArray(emitentes) ? emitentes.map(String) : [],
         ),
+        dominioSsw: empresa.dominioSsw,
       };
     },
 
@@ -968,5 +973,17 @@ export function criarRepositorioDeRetencao(tx: Transacao): RepositorioDeRetencao
         if (n < bloco) return total;
       }
     },
+  };
+}
+
+/** Só a gravação do núcleo do CT-e (BI2 e webhook no worker): a mesma do repositório da ingestão. */
+export function criarRepositorioCteNucleo(tx: Transacao, empresaId: string): RepositorioCteNucleo {
+  const r = criarRepositorioIngestao(tx, empresaId, null);
+  return {
+    cadastrosDoNucleo: () => r.cadastrosDoNucleo(),
+    ocorrenciasDosCtes: (ids) => r.ocorrenciasDosCtes(ids),
+    inserirCtes: (novos) => r.inserirCtes(novos),
+    atualizarCte: (id, campos) => r.atualizarCte(id, campos),
+    registrarTrocaDePrevisao: (cteId, troca) => r.registrarTrocaDePrevisao(cteId, troca),
   };
 }

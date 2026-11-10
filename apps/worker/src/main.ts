@@ -7,6 +7,7 @@ import {
   criarEnfileirador,
   criarFilaDeAplicacao,
   criarProgressos,
+  criarRepositorioCteNucleo,
   criarRepositorioDeRetencao,
   criarRepositorioGravacao050,
   criarRepositorioIngestao,
@@ -28,8 +29,8 @@ import { criarRepositorioAgendamentos } from "./agendamentos/repositorio";
 import { carregarAmbiente } from "./config/env";
 import { criarJobBi2_0017 } from "./fontes/bi2/job";
 import { criarRepositorioBi2 } from "./fontes/bi2/repositorio";
+import { exigirEmpresa } from "./fontes/comum/empresa";
 import { criarCofre } from "./fontes/comum/integracao";
-import { criarRepositorioCteNucleo } from "./fontes/comum/repositorio-cte";
 import { criarRepositorioIntegracoes } from "./fontes/comum/repositorio-integracoes";
 import { criarCofreDeToken } from "./fontes/ssw-api/cofre-de-token";
 import { criarJobTokenSsw } from "./fontes/ssw-api/job";
@@ -84,7 +85,10 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     agendamentos: criarRepositorioAgendamentos(tx),
     manutencao: criarRepositorioManutencao(tx),
     integracoes: criarRepositorioIntegracoes(tx),
-    cteNucleo: criarRepositorioCteNucleo(tx, empresaId),
+    // Só os jobs de empresa usam (BI2, webhook): sem empresa no contexto, falha no uso.
+    get cteNucleo() {
+      return criarRepositorioCteNucleo(tx, exigirEmpresa(empresaId));
+    },
     bi2: criarRepositorioBi2(tx, empresaId),
     webhook: criarRepositorioWebhook(tx, empresaId),
     ingestao: (id) => criarRepositorioIngestao(tx, id, null),

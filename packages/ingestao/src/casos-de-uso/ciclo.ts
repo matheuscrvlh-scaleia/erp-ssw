@@ -80,7 +80,7 @@ async function regravarChaves(
     const campos = await calcular(cte, chaveDoCte(cte));
     if (!campos || Object.keys(campos).length === 0) continue;
     const res = await regravarCte(r, cad, cte, campos, ocorrencias.get(cte.id) ?? [], agora);
-    if (res === "gravado") mudaram.push(chaveDoCte(cte));
+    if (res.tipo === "gravado") mudaram.push(chaveDoCte(cte));
   }
   return mudaram;
 }

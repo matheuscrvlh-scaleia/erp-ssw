@@ -358,13 +358,11 @@ export async function aplicarChaves(
       campos,
       ocorrencias.get(cte.id) ?? [],
       agora,
-      (final) => ({
-        camposSsw: camposSswDoCte(final, p.cand),
-      }),
+      { ajustar: (final) => ({ camposSsw: camposSswDoCte(final, p.cand) }) },
     );
-    if (res.startsWith("descartado:")) ignorados.push({ chave: p.chave, motivo: res.slice(11) });
-    if (res === "gravado" && p.prod) atualizados++;
-    if (res === "gravado" || !p.prod) mudaram.push(p.chave);
+    if (res.tipo === "descartado") ignorados.push({ chave: p.chave, motivo: res.motivo });
+    if (res.tipo === "gravado" && p.prod) atualizados++;
+    if (res.tipo === "gravado" || !p.prod) mudaram.push(p.chave);
   }
   await r.marcarAplicadas(RELATORIOS_DA_FILA, chaves, agora);
 

@@ -39,7 +39,12 @@ function evento(payload: unknown) {
 const processar = (id: string) =>
   banco.executar(
     { empresaId: EMPRESA, usuarioId: null, plataforma: false },
-    ({ webhook, cteNucleo }) => processarEvento(webhook, cteNucleo, id, "prot0001", agora),
+    ({ webhook, cteNucleo }) => processarEvento(
+        webhook,
+        cteNucleo,
+        { empresaId: EMPRESA, eventoId: id, protocolo: "prot0001" },
+        agora,
+      ),
   );
 
 beforeEach(() => {

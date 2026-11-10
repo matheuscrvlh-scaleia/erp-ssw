@@ -122,6 +122,8 @@ export interface CadastrosDoNucleo {
   config: ConfiguracaoDoNucleo;
   /** CNPJs (dígitos) da própria empresa: `empresas.cnpj` + `cnpjs_emitentes` da integração XML. */
   cnpjsProprios: readonly string[];
+  /** Domínio da empresa no SSW (a ocorrência do webhook decide a filial por ele). */
+  dominioSsw: string | null;
 }
 
 export interface OcorrenciaNova {
@@ -205,7 +207,21 @@ export interface SincronizacaoFtp {
  * Tudo o que a ingestão lê e grava no banco, preso a uma transação no contexto da empresa (RLS).
  * Toda gravação leva a empresa do contexto.
  */
-export interface RepositorioIngestao {
+/**
+ * Gravação do CT-e pelo núcleo — a mesma para todas as fontes da ingestão (arquivos do SSW, XML,
+ * BI2 e webhook). Ver `regravarCte`/`criarCte`.
+ */
+export interface RepositorioCteNucleo {
+  cadastrosDoNucleo(): Promise<CadastrosDoNucleo>;
+  ocorrenciasDosCtes(ids: readonly string[]): Promise<Map<string, OcorrenciaDoCte[]>>;
+  /** INSERT ... ON CONFLICT (empresa, sigla, número) DO NOTHING; devolve os que entraram. */
+  inserirCtes(ctes: readonly CteDaIngestao[]): Promise<CteDaIngestao[]>;
+  /** Grava só as colunas dadas (o caso de uso já tirou as iguais). */
+  atualizarCte(id: string, campos: CamposDoCte): Promise<void>;
+  registrarTrocaDePrevisao(cteId: string, troca: TrocaDePrevisao): Promise<void>;
+}
+
+export interface RepositorioIngestao extends RepositorioCteNucleo {
   empresa(): Promise<EmpresaDaIngestao>;
   configuracoes(chaves: readonly string[]): Promise<Map<string, string>>;
   gravarConfiguracao(chave: string, valor: string): Promise<void>;
@@ -263,16 +279,10 @@ export interface RepositorioIngestao {
     loteIds: readonly string[],
   ): Promise<{ linhas: number; erros: number; apagadas: LinhaApagada[] }>;
 
-  // CT-e e ocorrências
-  cadastrosDoNucleo(): Promise<CadastrosDoNucleo>;
+  // CT-e e ocorrências (a gravação do núcleo está em `RepositorioCteNucleo`)
   ctesDasChaves(chaves: readonly ChaveCte[]): Promise<CteDaIngestao[]>;
-  /** INSERT ... ON CONFLICT (empresa, sigla, número) DO NOTHING; devolve os que entraram. */
-  inserirCtes(ctes: readonly CteDaIngestao[]): Promise<CteDaIngestao[]>;
-  atualizarCte(id: string, campos: CamposDoCte): Promise<void>;
-  registrarTrocaDePrevisao(cteId: string, troca: TrocaDePrevisao): Promise<void>;
   /** CT-e que já usa a chave de 44 dígitos (para não repetir chave). */
   cteDaChave(chave: string): Promise<string | null>;
-  ocorrenciasDosCtes(ids: readonly string[]): Promise<Map<string, OcorrenciaDoCte[]>>;
   inserirCodigos(codigos: readonly CodigoNovo[]): Promise<void>;
   inserirOcorrencias(ocorrencias: readonly OcorrenciaNova[]): Promise<number>;
   apagarOcorrencia(cteId: string, codigo: number, dataHora: Date): Promise<number>;

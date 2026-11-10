@@ -6,10 +6,10 @@ import {
   ocorrencias,
   sswWebhookEventos,
 } from "@erp/db/schema";
+import { comoCte } from "@erp/ingestao/infra";
 import { and, eq, sql } from "drizzle-orm";
 
 import { exigirEmpresa } from "../comum/empresa";
-import { COLUNAS_DO_CTE, paraCteGravado } from "../comum/repositorio-cte";
 import { type RepositorioWebhook } from "./job";
 
 export function criarRepositorioWebhook(
@@ -41,18 +41,18 @@ export function criarRepositorioWebhook(
 
     ctePorSiglaENumero: async (sigla, numero) => {
       const [linha] = await tx
-        .select(COLUNAS_DO_CTE)
+        .select()
         .from(ctes)
         .where(and(eq(ctes.empresaId, empresa()), eq(ctes.sigla, sigla), eq(ctes.numero, numero)));
-      return linha ? paraCteGravado(linha) : null;
+      return linha ? comoCte(linha) : null;
     },
 
     ctesPorNumero: async (numero) => {
       const linhas = await tx
-        .select(COLUNAS_DO_CTE)
+        .select()
         .from(ctes)
         .where(and(eq(ctes.empresaId, empresa()), eq(ctes.numero, numero)));
-      return linhas.map(paraCteGravado);
+      return linhas.map(comoCte);
     },
 
     filialPorCidade: async (cidade) => {

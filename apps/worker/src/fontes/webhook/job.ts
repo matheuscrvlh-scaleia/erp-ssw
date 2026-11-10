@@ -5,6 +5,8 @@
  * núcleo. O resultado volta para o evento (o que a tela Ingestão SSW mostra).
  * Especificação: docs/regras/06-ingestao.md §3.17.
  */
+import { randomUUID } from "node:crypto";
+
 import {
   cteVigente,
   emissaoDoCteDoWebhook,
@@ -22,18 +24,18 @@ import {
   prepararOcorrencia,
   type Responsavel,
 } from "@erp/dominio/nucleo";
+import { type CteDaIngestao } from "@erp/ingestao/aplicacao";
+import {
+  type CadastrosDoNucleo,
+  criarCte,
+  cteEmBranco,
+  regravarCte,
+  type RepositorioCteNucleo,
+} from "@erp/ingestao/casos-de-uso";
 import { filaDoJob } from "@erp/shared/ingestao";
 import { z } from "@erp/shared/zod";
 
 import { definirJob } from "../../jobs/registro";
-import {
-  alterarCte,
-  type ContextoDaEmpresa,
-  criarCte,
-  type CteGravado,
-  cteVazio,
-  type RepositorioCteNucleo,
-} from "../comum/cte-nucleo";
 
 export interface ResultadoDoEvento {
   statusHttp: number;
@@ -59,8 +61,8 @@ export interface OcorrenciaDoWebhook {
 export interface RepositorioWebhook {
   payloadDoEvento(eventoId: string): Promise<{ payload: unknown } | null>;
   atualizarEvento(eventoId: string, resultado: ResultadoDoEvento): Promise<void>;
-  ctePorSiglaENumero(sigla: string, numero: string): Promise<CteGravado | null>;
-  ctesPorNumero(numero: string): Promise<CteGravado[]>;
+  ctePorSiglaENumero(sigla: string, numero: string): Promise<CteDaIngestao | null>;
+  ctesPorNumero(numero: string): Promise<CteDaIngestao[]>;
   /** Sigla da filial pelo nome da cidade (`filiais_apelidos`, igualdade exata). */
   filialPorCidade(cidade: string): Promise<string | null>;
   cadastrarCodigo(codigo: CodigoNovo): Promise<void>;
@@ -83,10 +85,10 @@ export const jobWebhookSsw = definirJob({
   escopo: "empresa",
   dados: dadosDoWebhook,
   agendamento: null,
-  async processar({ executar, agora, log }, { eventoId, protocolo }) {
+  async processar({ executar, agora, log }, { empresaId, eventoId, protocolo }) {
     try {
       const resultado = await executar(({ webhook, cteNucleo }) =>
-        processarEvento(webhook, cteNucleo, eventoId, protocolo, agora()),
+        processarEvento(webhook, cteNucleo, { empresaId, eventoId, protocolo }, agora()),
       );
       log.info({ eventoId, status: resultado?.statusHttp }, "evento do webhook processado");
       return resultado;
@@ -111,13 +113,17 @@ export const jobWebhookSsw = definirJob({
 export async function processarEvento(
   webhook: RepositorioWebhook,
   repo: RepositorioCteNucleo,
-  eventoId: string,
-  protocolo: string,
+  { empresaId, eventoId, protocolo }: z.output<typeof dadosDoWebhook>,
   agora: Date,
 ): Promise<ResultadoDoEvento | null> {
   const gravado = await webhook.payloadDoEvento(eventoId);
   if (gravado === null) return null;
-  const resultado = await aplicarEvento(webhook, repo, gravado.payload, protocolo, agora);
+  const resultado = await aplicarEvento(
+    webhook,
+    repo,
+    { empresaId, payload: gravado.payload, protocolo },
+    agora,
+  );
   await webhook.atualizarEvento(eventoId, resultado);
   return resultado;
 }
@@ -134,8 +140,7 @@ const semVinculo = (motivo: string, cteId: string | null = null): ResultadoDoEve
 export async function aplicarEvento(
   webhook: RepositorioWebhook,
   repo: RepositorioCteNucleo,
-  payload: unknown,
-  protocolo: string,
+  { empresaId, payload, protocolo }: { empresaId: string; payload: unknown; protocolo: string },
   agora: Date,
 ): Promise<ResultadoDoEvento> {
   const lido = lerEventoSsw2181(payload);
@@ -147,35 +152,33 @@ export async function aplicarEvento(
     };
   }
   const evento = lido.evento;
-  const contexto = await repo.contextoDaEmpresa();
+  const cad = await repo.cadastrosDoNucleo();
 
   let cte = await localizarCte(webhook, evento);
   if (cte === null) {
     if (!podeCriarCteDoWebhook(evento) || evento.sigla === null) return semVinculo(SEM_VINCULO);
-    const criado = await criarCte({
+    const criado = await criarCte(
       repo,
-      novo: {
-        ...cteVazio({
-          sigla: evento.sigla,
-          numero: evento.numero,
-          dataEmissao: emissaoDoCteDoWebhook(evento),
-          criadoEm: agora,
-        }),
+      cad,
+      {
+        ...cteEmBranco(empresaId, randomUUID(), agora),
+        sigla: evento.sigla,
+        numero: evento.numero,
+        dataEmissao: emissaoDoCteDoWebhook(evento),
         statusAtual: evento.descricao,
         chaveNfe: evento.chaveNfe,
         numeroNf: evento.numeroNfe > 0 ? evento.numeroNfe : null,
         serieNf: evento.serieNfe,
         cnpjRemetente: evento.cnpjRemetente,
       },
-      fonte: "outra",
-      contexto,
-    });
+      "outra",
+    );
     // CT-e emitido antes da data mínima não entra: o evento fica registrado sem vínculo.
     if (criado.tipo === "descartado") return semVinculo(criado.motivo);
     cte = criado.cte;
   }
 
-  const catalogo = await garantirCodigo(webhook, contexto, evento);
+  const catalogo = await garantirCodigo(webhook, cad, evento);
   const preparada = prepararOcorrencia({
     ocorrencia: {
       codigo: evento.codigo,
@@ -187,8 +190,8 @@ export async function aplicarEvento(
     cte,
     catalogo,
     empresa: {
-      dominioSsw: contexto.dominioSsw,
-      filiaisProprias: new Set(filiaisProprias(contexto.filiais)),
+      dominioSsw: cad.dominioSsw,
+      filiaisProprias: new Set(filiaisProprias(cad.filiais)),
     },
     trackingdanfe: null,
   });
@@ -210,15 +213,7 @@ export async function aplicarEvento(
   });
 
   const ocorrencias = (await repo.ocorrenciasDosCtes([cte.id])).get(cte.id) ?? [];
-  await alterarCte({
-    repo,
-    antigo: cte,
-    alteracao: dadosDaNota(cte, evento),
-    fonte: "outra",
-    contexto: { ...contexto, catalogo },
-    ocorrencias,
-    agora,
-  });
+  await regravarCte(repo, { ...cad, catalogo }, cte, dadosDaNota(cte, evento), ocorrencias, agora);
   return {
     statusHttp: 200,
     motivoRejeicao: null,
@@ -231,7 +226,7 @@ export async function aplicarEvento(
 async function localizarCte(
   webhook: RepositorioWebhook,
   evento: EventoSsw2181,
-): Promise<CteGravado | null> {
+): Promise<CteDaIngestao | null> {
   if (evento.sigla !== null) return webhook.ctePorSiglaENumero(evento.sigla, evento.numero);
   return cteVigente(await webhook.ctesPorNumero(evento.numero));
 }
@@ -239,14 +234,14 @@ async function localizarCte(
 /** Código fora do catálogo entra pendente de classificação (garantir_codigo_ocorrencia). */
 async function garantirCodigo(
   webhook: RepositorioWebhook,
-  contexto: ContextoDaEmpresa,
+  cad: CadastrosDoNucleo,
   evento: EventoSsw2181,
 ) {
-  if (contexto.catalogo.has(evento.codigo)) return contexto.catalogo;
+  if (cad.catalogo.has(evento.codigo)) return cad.catalogo;
   const novo = codigoRecebidoSemCadastro(evento.codigo, evento.descricao);
-  if (novo === null) return contexto.catalogo;
+  if (novo === null) return cad.catalogo;
   await webhook.cadastrarCodigo(novo);
-  return montarCatalogo([...contexto.catalogo.values(), novo]);
+  return montarCatalogo([...cad.catalogo.values(), novo]);
 }
 
 async function filialDoComplemento(webhook: RepositorioWebhook, evento: EventoSsw2181) {
@@ -258,7 +253,7 @@ async function filialDoComplemento(webhook: RepositorioWebhook, evento: EventoSs
  * Chave da NF-e e CNPJ do remetente (da chave) sempre sobrescrevem; número e série da NF só
  * preenchem vazio.
  */
-function dadosDaNota(cte: CteGravado, evento: EventoSsw2181): Partial<CteGravado> {
+function dadosDaNota(cte: CteDaIngestao, evento: EventoSsw2181): Partial<CteDaIngestao> {
   return {
     ...(evento.chaveNfe === null ? {} : { chaveNfe: evento.chaveNfe }),
     ...(evento.cnpjRemetente === null ? {} : { cnpjRemetente: evento.cnpjRemetente }),
