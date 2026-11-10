@@ -36,6 +36,13 @@
       "when": 1794320488680,
       "tag": "0004_projecoes_romaneio",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794329927161,
+      "tag": "0005_conferente_e_historico_de_registro",
+      "breakpoints": true
     }
   ]
 }

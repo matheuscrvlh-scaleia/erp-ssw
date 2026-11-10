@@ -12,6 +12,7 @@ import { type RepositorioIntegracoes } from "../fontes/comum/integracao";
 import { type RepositorioWebhook } from "../fontes/webhook/job";
 import { type RepositorioManutencao } from "./manutencao/job";
 import { type RepositorioPrazosDoWorker } from "./prazos/job";
+import { type RepositorioRecalculo } from "./recalculo/job";
 import { type RepositorioSlaArquivos } from "./sla-arquivos/job";
 
 /** Repositórios dos jobs presos a uma transação com contexto (mesmo padrão da API). */
@@ -28,6 +29,7 @@ export interface RepositoriosDoWorker {
   slaArquivos: RepositorioSlaArquivos;
   prazos: RepositorioPrazosDoWorker;
   projecoesRomaneio: RepositorioProjecoesRomaneio;
+  recalculo: RepositorioRecalculo;
 }
 
 export type ExecutorDoWorker = <T>(
@@ -36,7 +38,7 @@ export type ExecutorDoWorker = <T>(
 ) => Promise<T>;
 
 export type NomeDaFila =
-  "manutencao" | "agendador" | "projecoes" | "prazos" | ReturnType<typeof filaDoJob>;
+  "manutencao" | "agendador" | "projecoes" | "prazos" | "recalculo" | ReturnType<typeof filaDoJob>;
 
 export interface DefinicaoDeFila {
   nome: NomeDaFila;
@@ -68,6 +70,8 @@ export const FILAS: readonly DefinicaoDeFila[] = [
   })),
   // Recálculo de previsão pelos prazos configurados: um por vez (cada um varre a empresa).
   { nome: "prazos", concorrencia: 1 },
+  // Recálculos em lote pedidos pela API (ex.: classificação de código de ocorrência).
+  { nome: "recalculo", concorrencia: 1 },
 ];
 
 /** `plataforma`: um job para o sistema todo. `empresa`: um por empresa ativa, no contexto dela. */

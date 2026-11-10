@@ -15,11 +15,16 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
+import { Route as AutenticadoColetasRouteImport } from './routes/_autenticado/coletas'
+import { Route as AutenticadoComprovantesRouteImport } from './routes/_autenticado/comprovantes'
+import { Route as AutenticadoHistoricoRouteImport } from './routes/_autenticado/historico'
+import { Route as AutenticadoOcorrenciasRouteImport } from './routes/_autenticado/ocorrencias'
 import { Route as AutenticadoPrazoParceiroRouteImport } from './routes/_autenticado/prazo-parceiro'
 import { Route as AutenticadoRomaneioRouteImport } from './routes/_autenticado/romaneio'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
 import { Route as AutenticadoAdminAhgoraRouteImport } from './routes/_autenticado/admin.ahgora'
 import { Route as AutenticadoAdminBonificacaoEntregaRouteImport } from './routes/_autenticado/admin.bonificacao-entrega'
+import { Route as AutenticadoAdminCodigosRouteImport } from './routes/_autenticado/admin.codigos'
 import { Route as AutenticadoAdminConfiguracoesRouteImport } from './routes/_autenticado/admin/configuracoes'
 import { Route as AutenticadoAdminDepartamentosRouteImport } from './routes/_autenticado/admin/departamentos'
 import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autenticado/admin.equipes'
@@ -31,6 +36,7 @@ import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_au
 import { Route as AutenticadoAdminUsuariosRouteImport } from './routes/_autenticado/admin/usuarios'
 import { Route as AutenticadoAdminXmlCteRouteImport } from './routes/_autenticado/admin.xml-cte'
 import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
+import { Route as AutenticadoHistoricoFeriadosRouteImport } from './routes/_autenticado/historico_.feriados'
 import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
 import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
 import { Route as AutenticadoPlataformaAdministradoresRouteImport } from './routes/_autenticado/plataforma/administradores'
@@ -72,6 +78,26 @@ const AutenticadoCalendarioRoute = AutenticadoCalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoColetasRoute = AutenticadoColetasRouteImport.update({
+  id: '/coletas',
+  path: '/coletas',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoComprovantesRoute = AutenticadoComprovantesRouteImport.update({
+  id: '/comprovantes',
+  path: '/comprovantes',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoHistoricoRoute = AutenticadoHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoOcorrenciasRoute = AutenticadoOcorrenciasRouteImport.update({
+  id: '/ocorrencias',
+  path: '/ocorrencias',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoPrazoParceiroRoute =
   AutenticadoPrazoParceiroRouteImport.update({
     id: '/prazo-parceiro',
@@ -99,6 +125,11 @@ const AutenticadoAdminBonificacaoEntregaRoute =
     path: '/admin/bonificacao-entrega',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoAdminCodigosRoute = AutenticadoAdminCodigosRouteImport.update({
+  id: '/admin/codigos',
+  path: '/admin/codigos',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoAdminConfiguracoesRoute =
   AutenticadoAdminConfiguracoesRouteImport.update({
     id: '/admin/configuracoes',
@@ -160,6 +191,12 @@ const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
   path: '/ctrc/$numero',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoHistoricoFeriadosRoute =
+  AutenticadoHistoricoFeriadosRouteImport.update({
+    id: '/historico_/feriados',
+    path: '/historico/feriados',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoPerformanceIndexRoute =
   AutenticadoPerformanceIndexRouteImport.update({
     id: '/performance/',
@@ -231,11 +268,16 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/coletas': typeof AutenticadoColetasRoute
+  '/comprovantes': typeof AutenticadoComprovantesRoute
+  '/historico': typeof AutenticadoHistoricoRoute
+  '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
   '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
   '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/admin/codigos': typeof AutenticadoAdminCodigosRoute
   '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
   '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
@@ -247,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
   '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
@@ -264,12 +307,17 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/coletas': typeof AutenticadoColetasRoute
+  '/comprovantes': typeof AutenticadoComprovantesRoute
+  '/historico': typeof AutenticadoHistoricoRoute
+  '/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
   '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
   '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
   '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/admin/codigos': typeof AutenticadoAdminCodigosRoute
   '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
   '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/admin/equipes': typeof AutenticadoAdminEquipesRoute
@@ -281,6 +329,7 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
   '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
@@ -300,12 +349,17 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
+  '/_autenticado/coletas': typeof AutenticadoColetasRoute
+  '/_autenticado/comprovantes': typeof AutenticadoComprovantesRoute
+  '/_autenticado/historico': typeof AutenticadoHistoricoRoute
+  '/_autenticado/ocorrencias': typeof AutenticadoOcorrenciasRoute
   '/_autenticado/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
   '/_autenticado/romaneio': typeof AutenticadoRomaneioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
   '/_autenticado/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
   '/_autenticado/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
+  '/_autenticado/admin/codigos': typeof AutenticadoAdminCodigosRoute
   '/_autenticado/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
   '/_autenticado/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
   '/_autenticado/admin/equipes': typeof AutenticadoAdminEquipesRoute
@@ -317,6 +371,7 @@ export interface FileRoutesById {
   '/_autenticado/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
   '/_autenticado/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
   '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
+  '/_autenticado/historico_/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/_autenticado/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
   '/_autenticado/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
@@ -337,11 +392,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/coletas'
+    | '/comprovantes'
+    | '/historico'
+    | '/ocorrencias'
     | '/prazo-parceiro'
     | '/romaneio'
     | '/sem-acesso'
     | '/admin/ahgora'
     | '/admin/bonificacao-entrega'
+    | '/admin/codigos'
     | '/admin/configuracoes'
     | '/admin/departamentos'
     | '/admin/equipes'
@@ -353,6 +413,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/admin/xml-cte'
     | '/ctrc/$numero'
+    | '/historico/feriados'
     | '/performance/lista'
     | '/plataforma/administradores'
     | '/plataforma/logs'
@@ -370,12 +431,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/coletas'
+    | '/comprovantes'
+    | '/historico'
+    | '/ocorrencias'
     | '/prazo-parceiro'
     | '/romaneio'
     | '/sem-acesso'
     | '/'
     | '/admin/ahgora'
     | '/admin/bonificacao-entrega'
+    | '/admin/codigos'
     | '/admin/configuracoes'
     | '/admin/departamentos'
     | '/admin/equipes'
@@ -387,6 +453,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/admin/xml-cte'
     | '/ctrc/$numero'
+    | '/historico/feriados'
     | '/performance/lista'
     | '/plataforma/administradores'
     | '/plataforma/logs'
@@ -405,12 +472,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/_autenticado/calendario'
+    | '/_autenticado/coletas'
+    | '/_autenticado/comprovantes'
+    | '/_autenticado/historico'
+    | '/_autenticado/ocorrencias'
     | '/_autenticado/prazo-parceiro'
     | '/_autenticado/romaneio'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
     | '/_autenticado/admin/ahgora'
     | '/_autenticado/admin/bonificacao-entrega'
+    | '/_autenticado/admin/codigos'
     | '/_autenticado/admin/configuracoes'
     | '/_autenticado/admin/departamentos'
     | '/_autenticado/admin/equipes'
@@ -422,6 +494,7 @@ export interface FileRouteTypes {
     | '/_autenticado/admin/usuarios'
     | '/_autenticado/admin/xml-cte'
     | '/_autenticado/ctrc/$numero'
+    | '/_autenticado/historico_/feriados'
     | '/_autenticado/performance/lista'
     | '/_autenticado/plataforma/administradores'
     | '/_autenticado/plataforma/logs'
@@ -487,6 +560,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoCalendarioRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/coletas': {
+      id: '/_autenticado/coletas'
+      path: '/coletas'
+      fullPath: '/coletas'
+      preLoaderRoute: typeof AutenticadoColetasRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/comprovantes': {
+      id: '/_autenticado/comprovantes'
+      path: '/comprovantes'
+      fullPath: '/comprovantes'
+      preLoaderRoute: typeof AutenticadoComprovantesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/historico': {
+      id: '/_autenticado/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AutenticadoHistoricoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/ocorrencias': {
+      id: '/_autenticado/ocorrencias'
+      path: '/ocorrencias'
+      fullPath: '/ocorrencias'
+      preLoaderRoute: typeof AutenticadoOcorrenciasRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/prazo-parceiro': {
       id: '/_autenticado/prazo-parceiro'
       path: '/prazo-parceiro'
@@ -520,6 +621,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/bonificacao-entrega'
       fullPath: '/admin/bonificacao-entrega'
       preLoaderRoute: typeof AutenticadoAdminBonificacaoEntregaRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/admin/codigos': {
+      id: '/_autenticado/admin/codigos'
+      path: '/admin/codigos'
+      fullPath: '/admin/codigos'
+      preLoaderRoute: typeof AutenticadoAdminCodigosRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/admin/configuracoes': {
@@ -597,6 +705,13 @@ declare module '@tanstack/react-router' {
       path: '/ctrc/$numero'
       fullPath: '/ctrc/$numero'
       preLoaderRoute: typeof AutenticadoCtrcNumeroRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/historico_/feriados': {
+      id: '/_autenticado/historico_/feriados'
+      path: '/historico/feriados'
+      fullPath: '/historico/feriados'
+      preLoaderRoute: typeof AutenticadoHistoricoFeriadosRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/performance/': {
@@ -681,12 +796,17 @@ declare module '@tanstack/react-router' {
 
 interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
+  AutenticadoColetasRoute: typeof AutenticadoColetasRoute
+  AutenticadoComprovantesRoute: typeof AutenticadoComprovantesRoute
+  AutenticadoHistoricoRoute: typeof AutenticadoHistoricoRoute
+  AutenticadoOcorrenciasRoute: typeof AutenticadoOcorrenciasRoute
   AutenticadoPrazoParceiroRoute: typeof AutenticadoPrazoParceiroRoute
   AutenticadoRomaneioRoute: typeof AutenticadoRomaneioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
   AutenticadoAdminAhgoraRoute: typeof AutenticadoAdminAhgoraRoute
   AutenticadoAdminBonificacaoEntregaRoute: typeof AutenticadoAdminBonificacaoEntregaRoute
+  AutenticadoAdminCodigosRoute: typeof AutenticadoAdminCodigosRoute
   AutenticadoAdminConfiguracoesRoute: typeof AutenticadoAdminConfiguracoesRoute
   AutenticadoAdminDepartamentosRoute: typeof AutenticadoAdminDepartamentosRoute
   AutenticadoAdminEquipesRoute: typeof AutenticadoAdminEquipesRoute
@@ -698,6 +818,7 @@ interface AutenticadoRouteChildren {
   AutenticadoAdminUsuariosRoute: typeof AutenticadoAdminUsuariosRoute
   AutenticadoAdminXmlCteRoute: typeof AutenticadoAdminXmlCteRoute
   AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
+  AutenticadoHistoricoFeriadosRoute: typeof AutenticadoHistoricoFeriadosRoute
   AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
   AutenticadoPlataformaAdministradoresRoute: typeof AutenticadoPlataformaAdministradoresRoute
   AutenticadoPlataformaLogsRoute: typeof AutenticadoPlataformaLogsRoute
@@ -712,6 +833,10 @@ interface AutenticadoRouteChildren {
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
+  AutenticadoColetasRoute: AutenticadoColetasRoute,
+  AutenticadoComprovantesRoute: AutenticadoComprovantesRoute,
+  AutenticadoHistoricoRoute: AutenticadoHistoricoRoute,
+  AutenticadoOcorrenciasRoute: AutenticadoOcorrenciasRoute,
   AutenticadoPrazoParceiroRoute: AutenticadoPrazoParceiroRoute,
   AutenticadoRomaneioRoute: AutenticadoRomaneioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
@@ -719,6 +844,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoAdminAhgoraRoute: AutenticadoAdminAhgoraRoute,
   AutenticadoAdminBonificacaoEntregaRoute:
     AutenticadoAdminBonificacaoEntregaRoute,
+  AutenticadoAdminCodigosRoute: AutenticadoAdminCodigosRoute,
   AutenticadoAdminConfiguracoesRoute: AutenticadoAdminConfiguracoesRoute,
   AutenticadoAdminDepartamentosRoute: AutenticadoAdminDepartamentosRoute,
   AutenticadoAdminEquipesRoute: AutenticadoAdminEquipesRoute,
@@ -730,6 +856,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoAdminUsuariosRoute: AutenticadoAdminUsuariosRoute,
   AutenticadoAdminXmlCteRoute: AutenticadoAdminXmlCteRoute,
   AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
+  AutenticadoHistoricoFeriadosRoute: AutenticadoHistoricoFeriadosRoute,
   AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
   AutenticadoPlataformaAdministradoresRoute:
     AutenticadoPlataformaAdministradoresRoute,

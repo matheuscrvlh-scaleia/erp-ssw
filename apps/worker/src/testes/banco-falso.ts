@@ -94,6 +94,7 @@ export class BancoFalso {
         candidatos: () => Promise.resolve([]),
         gravar: () => Promise.resolve(),
       },
+      recalculo: { propagarClassificacao: () => Promise.resolve(0) },
       prazos: {
         regras: () => Promise.resolve([]),
         candidatos: () => Promise.resolve([]),

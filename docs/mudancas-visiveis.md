@@ -232,3 +232,31 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   da linha); as colunas Tipo e Identificador podem ser ligadas em "Colunas" e entram na exportação.
 - **Implantação** passa a apontar integração ligada sem senha/token e deixa de listar itens "fase
   seguinte" da migração antiga.
+## Ocorrências, Comprovantes, Coletas, Histórico e Admin › Códigos (spec 04)
+
+- **Q04 — contagens reais.** A frequência de 30 dias em Admin › Códigos é a contagem real (antes,
+  amostra); o Histórico avisa quando o período passa do teto da tela, em vez de cortar calado.
+- **Q06 — ordem numérica.** Na lista de Ocorrências, número de CT-e e atraso ordenam como número;
+  "sem atraso" fica sempre no fim.
+- **Q07 — desempate fixo.** Linhas empatadas na ordenação saem sempre na mesma ordem (antes, ao
+  acaso entre uma página e outra).
+- **Q09 — anotação só pelo autor ou admin.** Outro usuário vê a anotação, mas não edita nem exclui
+  ("Só o autor ou um administrador pode alterar esta anotação.").
+- **Q10 — busca literal.** `%` e `_` digitados na busca valem como texto; o total da lista vem certo
+  mesmo além da última página; feriado repetido avisa "Já existe um feriado igual nesta data."
+- **Q11 — dia de Brasília.** Atalhos de período e o dia de Comprovantes (data de conclusão efetiva)
+  seguem o dia de Brasília, não o do navegador.
+- **Q21 — quarentena fora.** Ocorrência em quarentena não entra no painel de Ocorrências, no 88 de
+  Comprovantes nem na frequência de Admin › Códigos.
+- **Q24 — 050 sem duplicar.** A coleta é única por unidade + número; reimportar o mesmo 050 regrava,
+  e dentro do arquivo vale a última linha.
+- **Q31 — histórico do código só da empresa ativa** em Admin › Códigos.
+- **Q32 — anotações auditadas.** Criar, editar e excluir anotação fica no registro de auditoria.
+- **Q48 — "22 códigos" vira configuração.** O texto "recorte: N códigos de pendência" mostra quantos
+  a empresa acompanha (catálogo menos `ocorrencias_codigos_fora_da_tela`), não um número fixo.
+- **Conferente na Ocorrências.** O seletor lista só os conferentes do romaneio mais recente de cada
+  CT-e (antes, qualquer conferente que já apareceu no 036).
+- **050 importado em /coletas.** O administrador da empresa importa o relatório 050 (impresso ou
+  CSV) pelo botão "Importar 050" da própria tela; antes era só por Admin · Importação SSW.
+- **Histórico › Feriados com a regra do Calendário.** Municipal exige cidade e UF e a descrição tem
+  ao menos 3 letras; o nacional cadastrado pela Plataforma aparece sem editar/excluir (Q28).

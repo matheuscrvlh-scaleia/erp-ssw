@@ -13,5 +13,6 @@ export const JOB_PROJECOES = {
   maxChaves: 50_000,
 } as const;
 
-// TODO(coletas): o job é do domínio de Coletas (leitor e gravação do 050).
+// TODO(coletas): falta o consumidor no worker (as regras já existem: `lerRelatorio050` e
+// `planejarGravacao050` em `@erp/dominio/coletas`; hoje só a importação manual da tela usa).
 export const JOB_COLETAS_050 = { fila: "coletas", nome: "coletas.importar-050" } as const;

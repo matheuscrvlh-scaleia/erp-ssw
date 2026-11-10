@@ -8,7 +8,7 @@ import { construirApp, type Dependencias } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
 import type { Armazenamento } from "../infra/armazenamento";
 import { type Correio, type Mensagem } from "../infra/correio";
-import type { FilaDeJobs } from "../infra/fila";
+import type { DadosDoJob, FilaDeJobs } from "../infra/fila";
 import { type ProvedorGoogle } from "../infra/google";
 import { criarLimitadorEmMemoria } from "../infra/limitador";
 import { criarServicoDeSenhas } from "../infra/senhas";
@@ -43,8 +43,9 @@ export class CorreioFalso implements Correio {
 }
 
 export class FilaFalsa implements FilaDeJobs {
-  jobs: { nome: string; fila: string; dados: { empresaId: string } }[] = [];
-  enfileirar(job: JobEnfileiravel, dados: { empresaId: string }) {
+  ligada = true;
+  jobs: { nome: string; fila: string; dados: DadosDoJob }[] = [];
+  enfileirar(job: JobEnfileiravel, dados: DadosDoJob) {
     this.jobs.push({ ...job, dados });
     return Promise.resolve(true);
   }
