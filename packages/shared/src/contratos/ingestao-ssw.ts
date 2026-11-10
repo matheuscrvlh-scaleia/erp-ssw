@@ -53,7 +53,6 @@ export const credenciaisSsw = z.object({
       em: instante,
       ok: z.boolean(),
       mensagem: z.string().nullable(),
-      origem: z.enum(["automatica", "manual"]),
     })
     .nullable(),
 });

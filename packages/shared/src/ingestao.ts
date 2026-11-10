@@ -118,6 +118,17 @@ export function idDeExecucao(job: NomeDoJobDeIngestao, empresaId: string): strin
 /** Prefixo das chaves do BullMQ no Redis (o mesmo no worker e na API). */
 export const PREFIXO_DAS_FILAS = "erp";
 
+/**
+ * Política padrão dos jobs (worker e disparo manual da API): 5 tentativas com espera exponencial
+ * de 30 s; histórico limitado no Redis.
+ */
+export const OPCOES_PADRAO_DO_JOB = {
+  attempts: 5,
+  backoff: { type: "exponential", delay: 30_000 },
+  removeOnComplete: { age: 24 * 3600, count: 1000 },
+  removeOnFail: { age: 7 * 24 * 3600 },
+} as const;
+
 export function ehJobDeIngestao(nome: string): nome is NomeDoJobDeIngestao {
   return JOBS_DE_INGESTAO.some((j) => j.job === nome);
 }
