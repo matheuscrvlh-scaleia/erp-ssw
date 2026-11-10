@@ -217,8 +217,22 @@ describe("Plataforma › Diagnóstico SSW", () => {
             erro: "FTP recusou a senha.",
           },
           proximaExecucao: "2026-11-10T12:01:00.000Z",
+          agendado: true,
+          naFila: 2,
+          rodando: 1,
+          atrasados: 3,
+          falhos: 4,
+          ultimasFalhas: [
+            {
+              execucaoId: "7",
+              quando: "2026-11-10T11:59:00.000Z",
+              erro: "FTP recusou a senha.",
+              tentativas: 5,
+            },
+          ],
         },
       ],
+      aplicacao: { pendentes: 0, rodando: false },
     };
     const headers = await plataforma();
     const r = await app.inject({ url: DIAGNOSTICO, headers });
@@ -227,14 +241,17 @@ describe("Plataforma › Diagnóstico SSW", () => {
     expect(corpo.filasDisponiveis).toBe(true);
     expect(corpo.jobs.find((j) => j.job === "sincronizar-ftp")).toMatchObject({
       agendado: true,
+      aguardando: 2,
       ativos: 1,
+      atrasados: 3,
+      falhos: 4,
       proximaExecucao: "2026-11-10T12:01:00.000Z",
       ultimasFalhas: [
         {
           id: "7",
           quando: "2026-11-10T11:59:00.000Z",
           erro: "FTP recusou a senha.",
-          tentativas: 1,
+          tentativas: 5,
         },
       ],
     });

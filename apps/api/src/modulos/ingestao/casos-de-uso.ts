@@ -137,23 +137,27 @@ async function auditarEPedir<T extends z.ZodType>(
   return workerSsw.operacao(empresaId, operacao, saida, pedido);
 }
 
-/** Jobs rodando agora no worker-ssw; fora ou não configurado = nenhum (a tela continua). */
-async function jobsRodando(deps: DependenciasIngestao, empresaId: string): Promise<Set<string>> {
-  if (deps.workerSsw === null) return new Set();
+/** Fila de aplicação no worker-ssw; fora ou não configurado = vazia (a tela continua). */
+async function filaDeAplicacao(
+  deps: DependenciasIngestao,
+  empresaId: string,
+): Promise<{ pendentes: number; rodando: boolean }> {
+  if (deps.workerSsw === null) return { pendentes: 0, rodando: false };
   try {
-    const { jobs } = await deps.workerSsw.situacao(empresaId);
-    return new Set(jobs.filter((j) => j.estado === "rodando").map((j) => j.job));
+    const { jobs, aplicacao } = await deps.workerSsw.situacao(empresaId);
+    const ciclos = jobs.find((j) => j.job === "aplicar-ciclos");
+    return {
+      pendentes: aplicacao.pendentes,
+      rodando: aplicacao.rodando || ciclos?.estado === "rodando",
+    };
   } catch {
-    return new Set();
+    return { pendentes: 0, rodando: false };
   }
 }
 
 // --- Importação SSW -----------------------------------------------------------------------------
 
-/**
- * Últimos ciclos e arquivos, relatórios esperados e se há aplicação rodando. A fila de aplicação
- * vive no Redis do worker-ssw e não está no contrato: a contagem sai zerada.
- */
+/** Últimos ciclos e arquivos, relatórios esperados e a fila de aplicação (do worker-ssw). */
 export async function lerPipeline(
   db: Db,
   deps: DependenciasIngestao,
@@ -164,7 +168,7 @@ export async function lerPipeline(
     arquivos: await ingestao.ultimosArquivos(empresaId, 25),
     esperados: await ingestao.relatoriosEsperados(empresaId),
   }));
-  const rodando = await jobsRodando(deps, empresaId);
+  const fila = await filaDeAplicacao(deps, empresaId);
   return {
     ciclos: dados.ciclos.map((x) => ({
       ...x,
@@ -179,8 +183,8 @@ export async function lerPipeline(
       importadoEm: iso(a.importadoEm),
     })),
     esperados: dados.esperados,
-    filaPendente: 0,
-    aplicacaoRodando: rodando.has("aplicar-ciclos"),
+    filaPendente: fila.pendentes,
+    aplicacaoRodando: fila.rodando,
   };
 }
 

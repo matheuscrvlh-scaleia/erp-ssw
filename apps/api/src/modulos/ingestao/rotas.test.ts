@@ -55,12 +55,16 @@ describe("telas de ingestão (só Plataforma)", () => {
     expect(negado.statusCode).toBe(403);
 
     ciclo("2026-11-10_1000", "aberto");
-    workerSsw.situacaoDaEmpresa = { jobs: [{ job: "aplicar-ciclos", estado: "rodando" }] };
+    workerSsw.situacaoDaEmpresa = {
+      jobs: [],
+      aplicacao: { pendentes: 42, rodando: true },
+    };
     const headers = await plataforma();
     const pipeline = await app.inject({ url: `${BASE}/pipeline`, headers });
     expect(pipeline.statusCode).toBe(200);
     expect(pipeline.json()).toMatchObject({
       ciclos: [{ cicloChave: "2026-11-10_1000", status: "aberto" }],
+      filaPendente: 42,
       aplicacaoRodando: true,
     });
 
@@ -68,7 +72,7 @@ describe("telas de ingestão (só Plataforma)", () => {
     workerSsw.fora = true;
     const semWorker = await app.inject({ url: `${BASE}/pipeline`, headers });
     expect(semWorker.statusCode).toBe(200);
-    expect(semWorker.json()).toMatchObject({ aplicacaoRodando: false });
+    expect(semWorker.json()).toMatchObject({ filaPendente: 0, aplicacaoRodando: false });
   });
 
   it("FTP: estado do worker-ssw com o histórico do banco; fora do ar, a pausa do banco", async () => {

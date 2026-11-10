@@ -546,7 +546,7 @@ export async function diagnosticoSsw(
       xml: await ingestaoSsw.xmlOrfaos(),
     };
   });
-  // O worker-ssw informa o estado da última execução de cada job (ADR 0012, `/situacao`).
+  // O worker-ssw informa a fila e as falhas recentes de cada job (ADR 0012, `/situacao`).
   const situacao = await situacaoDosJobs(deps, empresaId);
   const jobs: StatusDoJob[] = JOBS_DE_INGESTAO.map((j) => {
     const s = situacao?.get(j.job);
@@ -556,25 +556,18 @@ export async function diagnosticoSsw(
       integracao: j.integracao,
       cron: j.cron,
       integracaoLigada: dados.ligadas.get(j.integracao) ?? false,
-      agendado: s?.proximaExecucao !== undefined,
+      agendado: s?.agendado ?? false,
       proximaExecucao: s?.proximaExecucao ?? null,
-      aguardando: s?.estado === "na_fila" ? 1 : 0,
-      ativos: s?.estado === "rodando" ? 1 : 0,
-      atrasados: 0,
-      falhos: s?.estado === "falhou" ? 1 : 0,
+      aguardando: s?.naFila ?? 0,
+      ativos: s?.rodando ?? 0,
+      atrasados: s?.atrasados ?? 0,
+      falhos: s?.falhos ?? 0,
       ultimaConclusao:
         s?.ultimaExecucao?.estado === "concluida" ? s.ultimaExecucao.terminadaEm : null,
-      ultimasFalhas:
-        s?.ultimaExecucao?.estado === "falhou"
-          ? [
-              {
-                id: s.ultimaExecucao.execucaoId,
-                quando: s.ultimaExecucao.terminadaEm,
-                erro: s.ultimaExecucao.erro ?? "",
-                tentativas: 1,
-              },
-            ]
-          : [],
+      ultimasFalhas: (s?.ultimasFalhas ?? []).map(({ execucaoId, ...falha }) => ({
+        id: execucaoId,
+        ...falha,
+      })),
     };
   });
   return {

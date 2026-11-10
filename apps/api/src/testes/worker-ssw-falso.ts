@@ -20,7 +20,7 @@ export class WorkerSswFalso implements ClienteWorkerSsw {
   operacoes: (PedidoDeOperacao & { empresaId: string; operacao: OperacaoManual })[] = [];
   /** Como a execução está quando a API consulta (padrão: ainda na fila). */
   execucao: SituacaoDaExecucao = { estado: "na_fila" };
-  situacaoDaEmpresa: SituacaoDaEmpresa = { jobs: [] };
+  situacaoDaEmpresa: SituacaoDaEmpresa = { jobs: [], aplicacao: { pendentes: 0, rodando: false } };
   /** Resposta de cada operação manual (o teste põe a que vai usar). */
   respostas: Partial<Record<OperacaoManual, unknown>> = {};
   /** Jobs já na fila: o pedido repetido com `deduplicar` volta 409. */
