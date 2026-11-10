@@ -16,6 +16,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
+import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
 
 const AutenticadoRoute = AutenticadoRouteImport.update({
   id: '/_autenticado',
@@ -51,6 +52,12 @@ const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
   path: '/sem-acesso',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoPerformanceIndexRoute =
+  AutenticadoPerformanceIndexRouteImport.update({
+    id: '/performance/',
+    path: '/performance/',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
+  '/performance/': typeof AutenticadoPerformanceIndexRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
   '/calendario': typeof AutenticadoCalendarioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
+  '/performance': typeof AutenticadoPerformanceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +86,7 @@ export interface FileRoutesById {
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/performance/': typeof AutenticadoPerformanceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/calendario'
     | '/sem-acesso'
+    | '/performance/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aceitar-convite'
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/sem-acesso'
     | '/'
+    | '/performance'
   id:
     | '__root__'
     | '/_autenticado'
@@ -104,6 +116,7 @@ export interface FileRouteTypes {
     | '/_autenticado/calendario'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
+    | '/_autenticado/performance/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/performance/': {
+      id: '/_autenticado/performance/'
+      path: '/performance'
+      fullPath: '/performance/'
+      preLoaderRoute: typeof AutenticadoPerformanceIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
@@ -171,12 +191,14 @@ interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoPerformanceIndexRoute: typeof AutenticadoPerformanceIndexRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoPerformanceIndexRoute: AutenticadoPerformanceIndexRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
