@@ -5,7 +5,7 @@
  */
 import { diferencaEmDias } from "@erp/shared/datas";
 
-import { ehCodigoEntrega } from "./nucleo-local";
+import { ehCodigoEntrega } from "../nucleo";
 
 export interface LinhaSituacao {
   dataPrevista: string | null;

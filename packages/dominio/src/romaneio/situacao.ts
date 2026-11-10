@@ -11,13 +11,13 @@ import { type CampoData, type Recorte } from "@erp/shared/contratos/romaneio";
 
 import {
   diaSp,
+  ehTipoPendencia,
   estaEntregue,
   estaFinalizadoSemEntrega,
   inicioDoDiaSp,
   normCodigoOcorr,
 } from "../nucleo";
 import { CODIGO_RETORNO, CODIGO_SAIDA, CODIGOS_ROTA } from "./normalizacao";
-import { ehTipoPendencia } from "./nucleo-local";
 
 export interface Periodo {
   inicio: string;

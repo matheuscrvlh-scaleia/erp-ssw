@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { ErroDeNegocio } from "../erros";
-import { cidadeDaFilial, cnpjsPropriosDaEmpresa, filiaisProprias } from "./cadastros";
+import {
+  cidadeDaFilial,
+  cnpjsPropriosDaEmpresa,
+  filiaisProprias,
+  unidadeResponsavel,
+} from "./cadastros";
 import {
   CONFIGURACAO_PADRAO,
   lerConfiguracaoDoNucleo,
@@ -108,5 +113,18 @@ describe("configuração do núcleo (§5.3, §7.1, Q48)", () => {
     expect(() => {
       validarConfiguracaoDoNucleo("outra_chave", "qualquer");
     }).not.toThrow();
+  });
+});
+
+describe("unidadeResponsavel", () => {
+  const proprias = new Set(["RIO", "SPO"]);
+  const cte = { unidadeDestino: "RIO", unidadeAtual: "SPO", filial: "CAP" };
+
+  it("destino próprio, senão atual própria, senão a filial de emissão", () => {
+    expect(unidadeResponsavel(proprias, cte)).toBe("RIO");
+    expect(unidadeResponsavel(proprias, { ...cte, unidadeDestino: "BHZ" })).toBe("SPO");
+    expect(unidadeResponsavel(proprias, { ...cte, unidadeDestino: null, unidadeAtual: null })).toBe(
+      "CAP",
+    );
   });
 });

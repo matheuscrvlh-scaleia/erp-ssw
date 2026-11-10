@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CATALOGO_FR } from "./apoio-testes";
 import { codigoNumericoOuNulo, codigosDeBaixa, normCodigoOcorr } from "./codigos";
-import { diaSp, difDias, hojeSp, inicioDoDiaSp } from "./tempo";
+import { diaSp, difDias, hojeSp, horaSp, inicioDoDiaSp } from "./tempo";
 import {
   casaFiltroTexto,
   formatarCnpjCpf,
@@ -117,5 +117,10 @@ describe("dia de Brasília (Q11)", () => {
     expect(inicioDoDiaSp("2026-11-05").toISOString()).toBe("2026-11-05T03:00:00.000Z");
     expect(difDias("2026-11-10", "2026-11-05")).toBe(5);
     expect(difDias("2026-11-05", "2026-11-10")).toBe(-5);
+  });
+
+  it("hora de Brasília: 02:30 UTC é 23 h da véspera", () => {
+    expect(horaSp(new Date("2026-11-06T02:30:00Z"))).toBe(23);
+    expect(horaSp(new Date("2026-11-06T03:00:00Z"))).toBe(0);
   });
 });
