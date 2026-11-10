@@ -1,29 +1,29 @@
 import { type FiltroDoRanking, type LinhaDoRanking } from "@erp/shared/contratos/ranking";
 import { type PontoDaSerie } from "@erp/shared/contratos/sla-serie";
+import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarCnpj } from "@erp/shared/formatacao";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, ChevronRight, Download, Eye, EyeOff } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
-import { Button } from "@/componentes/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
+import { ExportMenu } from "@/componentes/comum/ExportMenu";
+import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
+import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
+import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
+import { GraficoLinha } from "@/componentes/comum/Graficos";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { type Periodo, resolverPeriodo, ROTULO_ATALHO } from "@/componentes/comum/periodo";
+import { type ColunaExportacao } from "@/lib/exportacao";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";
-import {
-  baixarCsv,
-  type ColunaDeExportacao,
-  COR_DO_STATUS,
-  FUNDO_DO_STATUS,
-  KpiCard,
-  TEXTO_DO_STATUS,
-} from "./kit-local";
-import { isoLocal, type PeriodoRapido, resolverPeriodo } from "./periodo";
+import { diaCurto } from "./periodo";
 import {
   ALERTA_PADRAO,
   caminhoDaLista,
   type ChaveDeOrdem,
+  COR_DO_NIVEL,
   filtrarPorCard,
   type FiltroDoCard,
   formatarPct,
@@ -59,6 +59,7 @@ function lerFreteVisivel(): boolean {
 }
 
 const CLASSE_DO_BOTAO = "rounded-[5px] px-3 py-1 text-[12px] transition-colors ";
+const ATALHOS = ["hoje", "7d", "30d", "mes"] as const;
 const classeDoAlternador = (ativo: boolean) =>
   CLASSE_DO_BOTAO +
   (ativo ? "bg-[var(--brand)] text-white" : "text-muted-foreground hover:bg-muted");
@@ -70,11 +71,13 @@ type Recorte =
 export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "transportadora";
+  // Q11: "hoje" é o dia da empresa (Brasília), não o do navegador.
+  const hoje = hojeNoFuso(acesso.empresa?.fuso ?? "America/Sao_Paulo");
   const navigate = useNavigate();
   const meta = META_PADRAO;
   const alerta = ALERTA_PADRAO;
 
-  const [rapido, setRapido] = useState<PeriodoRapido>("30d");
+  const [rapido, setRapido] = useState<Periodo>("30d");
   const [base, setBase] = useState<Base>("emissao");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
@@ -88,9 +91,17 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const [filtroCard, setFiltroCard] = useState<FiltroDoCard>("todos");
   const [freteVisivel, setFreteVisivel] = useState(lerFreteVisivel);
 
-  const periodo = useMemo(() => resolverPeriodo(rapido, new Date(), de, ate), [rapido, de, ate]);
-  // TODO(kit-ui): seletores de Unidade responsável e Tipo de documento (FilialPicker,
-  // TipoDocumentoPicker) e autocomplete de Remetente/Destino quando o kit trouxer.
+  const intervalo = resolverPeriodo(rapido, de, ate, hoje, "30d");
+  const periodo = {
+    ...intervalo,
+    rotulo:
+      rapido === "custom"
+        ? `${diaCurto(intervalo.inicio)} → ${diaCurto(intervalo.fim)}`
+        : ROTULO_ATALHO[rapido],
+  };
+  // TODO(performance): seletores de Unidade responsável e Tipo de documento (FiltroMultiplo) e
+  // sugestões de Remetente/Destino quando a Performance publicar as consultas de opções; o
+  // contrato do ranking já aceita `filiais` e `tipos`.
   const filtro: FiltroDoRanking = {
     grupo,
     inicio: periodo.inicio,
@@ -104,7 +115,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const linhas = useMemo(() => data ?? [], [data]);
 
   // Opções de Parceiros: os pagadores com CT-e no período (o ranking por parceiro, sem filtros).
-  const { data: pagadores = [] } = useQuery(
+  const { data: pagadores } = useQuery(
     consultaRankingOperacional({
       grupo: "pagador",
       inicio: periodo.inicio,
@@ -113,10 +124,10 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
     }),
   );
 
-  const anoAtual = new Date().getFullYear();
+  const anoAtual = Number(hoje.slice(0, 4));
   const [ano, setAno] = useState(anoAtual);
   // No ano corrente vai só até hoje: os meses seguintes não têm emissão.
-  const fimSerie = ano === anoAtual ? isoLocal(new Date()) : `${ano}-12-31`;
+  const fimSerie = ano === anoAtual ? hoje : `${String(ano)}-12-31`;
   const serie = useQuery(
     consultaSerieMensal({
       granularidade: "mes",
@@ -192,27 +203,23 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
     </td>
   );
 
-  const colunasExportacao: ColunaDeExportacao<LinhaDoRanking>[] = [
-    { cabecalho: rotuloDoGrupo, valor: nomeDe },
-    { cabecalho: "CT-e", valor: (r) => r.totalCtes },
-    { cabecalho: "Entregue", valor: (r) => r.entregue },
-    { cabecalho: "No Prazo", valor: (r) => r.noPrazo },
-    { cabecalho: "Fora Prazo", valor: (r) => r.foraPrazo },
-    { cabecalho: "Cliente", valor: (r) => r.foraCliente },
-    { cabecalho: "Transp.", valor: (r) => r.foraTransp },
-    {
-      cabecalho: "SLA (%)",
-      valor: (r) => (r.slaPct === null ? "" : +(r.slaPct * 100).toFixed(1)),
-    },
-    { cabecalho: "A Entregar", valor: (r) => r.aEntregar },
-    { cabecalho: "Atrasadas", valor: (r) => r.atrasadas },
-    { cabecalho: "No Prazo (aberto)", valor: (r) => r.noPrazoAberto },
-    { cabecalho: "Peso (kg)", valor: (r) => Math.round(r.peso) },
-    { cabecalho: "Volumes", valor: (r) => Math.round(r.volumes) },
-    ...(freteVisivel
-      ? [{ cabecalho: "Frete (R$)", valor: (r: LinhaDoRanking) => +r.frete.toFixed(2) }]
-      : []),
+  const colunasExportacao: ColunaExportacao[] = [
+    { chave: "nome", titulo: rotuloDoGrupo },
+    { chave: "totalCtes", titulo: "CT-e", formato: "inteiro" },
+    { chave: "entregue", titulo: "Entregue", formato: "inteiro" },
+    { chave: "noPrazo", titulo: "No Prazo", formato: "inteiro" },
+    { chave: "foraPrazo", titulo: "Fora Prazo", formato: "inteiro" },
+    { chave: "foraCliente", titulo: "Cliente", formato: "inteiro" },
+    { chave: "foraTransp", titulo: "Transp.", formato: "inteiro" },
+    { chave: "slaPct", titulo: "SLA", formato: "percentual" },
+    { chave: "aEntregar", titulo: "A Entregar", formato: "inteiro" },
+    { chave: "atrasadas", titulo: "Atrasadas", formato: "inteiro" },
+    { chave: "noPrazoAberto", titulo: "No Prazo (aberto)", formato: "inteiro" },
+    { chave: "peso", titulo: "Peso (kg)", formato: "inteiro" },
+    { chave: "volumes", titulo: "Volumes", formato: "inteiro" },
+    ...(freteVisivel ? [{ chave: "frete", titulo: "Frete (R$)", formato: "moeda" as const }] : []),
   ];
+  const linhasExportacao = ordenadas.map((r) => ({ ...r, nome: nomeDe(r) }));
 
   const cabecalhos: { chave: ChaveDeOrdem; rotulo: string; alinhar: "left" | "right" }[] = [
     { chave: "nome", rotulo: rotuloDoGrupo, alinhar: "left" },
@@ -241,22 +248,19 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-border/70 bg-card p-2">
-        <div className="flex rounded-md border border-border/70 p-0.5">
-          {(["hoje", "7d", "30d", "mes"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => {
-                setRapido(p);
-                setDe("");
-                setAte("");
-              }}
-              className={classeDoAlternador(rapido === p)}
-            >
-              {p === "hoje" ? "Hoje" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "Mês"}
-            </button>
-          ))}
-        </div>
+        <FiltroPeriodo
+          periodo={rapido}
+          de={de}
+          ate={ate}
+          atalhos={ATALHOS}
+          padrao="30d"
+          rotulo={base === "emissao" ? "Emissão" : "Previsão"}
+          aoMudar={(m) => {
+            setRapido(m.periodo);
+            setDe(m.de);
+            setAte(m.ate);
+          }}
+        />
         <div
           className="flex rounded-md border border-border/70 p-0.5"
           role="group"
@@ -277,62 +281,30 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1 text-[12px]">
-          <input
-            type="date"
-            aria-label="De"
-            value={de}
-            onChange={(e) => {
-              setDe(e.target.value);
-              if (e.target.value && ate) setRapido("custom");
-            }}
-            className="rounded-md border border-border bg-card px-2 py-1"
-          />
-          <span className="text-muted-foreground">→</span>
-          <input
-            type="date"
-            aria-label="Até"
-            value={ate}
-            onChange={(e) => {
-              setAte(e.target.value);
-              if (de && e.target.value) setRapido("custom");
-            }}
-            className="rounded-md border border-border bg-card px-2 py-1"
-          />
-        </div>
-        <SeletorDeParceiros opcoes={pagadores} selecionados={parceiros} aoMudar={setParceiros} />
-        <input
-          aria-label="Remetente"
-          placeholder="Remetente (a|b)"
-          value={remetente}
-          onChange={(e) => {
-            setRemetente(e.target.value);
-          }}
-          className="w-40 rounded-md border border-border bg-card px-2 py-1 text-[12px]"
+        <FiltroMultiplo
+          rotulo="Parceiros"
+          opcoes={pagadores?.map((o) => ({
+            valor: o.chave,
+            rotulo: o.rotulo ?? formatarCnpj(o.chave),
+            detalhe: nfInt.format(o.totalCtes),
+          }))}
+          selecionados={parceiros}
+          aoMudar={setParceiros}
+          textoVazio="Nenhum parceiro no período."
         />
-        <input
-          aria-label="Destino"
-          placeholder="Destino (a|b)"
-          value={destino}
-          onChange={(e) => {
-            setDestino(e.target.value);
-          }}
-          className="w-40 rounded-md border border-border bg-card px-2 py-1 text-[12px]"
-        />
+        <FiltroTexto rotulo="Remetente" valor={remetente} aoMudar={setRemetente} />
+        <FiltroTexto rotulo="Destino" valor={destino} aoMudar={setDestino} />
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground">
             meta {formatarPct(meta)} · {periodo.rotulo}
           </span>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-[12px]"
-            onClick={() => {
-              baixarCsv(`ranking-${grupo}`, colunasExportacao, ordenadas);
-            }}
-          >
-            <Download className="mr-1 h-3.5 w-3.5" /> Exportar
-          </Button>
+          <ExportMenu
+            arquivo={`ranking-${grupo === "pagador" ? "parceiro" : "cidade"}`}
+            titulo={`Ranking por ${rotuloDoGrupo}`}
+            subtitulo={`${periodo.rotulo} · por ${ROTULO_DA_BASE[base]}`}
+            colunas={colunasExportacao}
+            linhas={linhasExportacao}
+          />
         </div>
       </div>
 
@@ -340,9 +312,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         <KpiCard
           rotulo={grupo === "pagador" ? "Parceiros" : "Cidades"}
           valor={nfInt.format(kpis.grupos)}
-          status="good"
+          status="bom"
           neutro
-          meta="no período · ver todos"
+          detalhe="no período · ver todos"
           aoClicar={() => {
             setFiltroCard("todos");
           }}
@@ -351,9 +323,9 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         <KpiCard
           rotulo="CT-e no período"
           valor={nfInt.format(kpis.totalCtes)}
-          status="good"
+          status="bom"
           neutro
-          meta={periodo.rotulo}
+          detalhe={periodo.rotulo}
           aoClicar={() => {
             setFiltroCard("todos");
           }}
@@ -362,10 +334,10 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         <KpiCard
           rotulo="SLA médio"
           valor={formatarPct(kpis.slaMedio)}
-          status={statusDoSlaMedio ?? "good"}
+          status={statusDoSlaMedio ?? "bom"}
           neutro={statusDoSlaMedio === null}
           progresso={kpis.slaMedio ?? undefined}
-          meta={`meta ${formatarPct(meta)} · ver os que atingem`}
+          detalhe={`meta ${formatarPct(meta)} · ver os que atingem`}
           aoClicar={() => {
             alternarCard("na_meta");
           }}
@@ -374,8 +346,8 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         <KpiCard
           rotulo="Abaixo da meta"
           valor={nfInt.format(kpis.abaixoMeta)}
-          status={kpis.abaixoMeta > 0 ? "bad" : "good"}
-          meta={`de ${nfInt.format(kpis.grupos)} ${plural}`}
+          status={kpis.abaixoMeta > 0 ? "ruim" : "bom"}
+          detalhe={`de ${nfInt.format(kpis.grupos)} ${plural}`}
           aoClicar={() => {
             alternarCard("abaixo_meta");
           }}
@@ -383,15 +355,14 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
       </div>
 
-      <SerieMensal
-        titulo={`SLA mês a mês — ${ano}`}
-        subtitulo={`por ${ROTULO_DA_BASE[base]} · não segue o período acima`}
-        pontos={serie.data}
-        carregando={serie.isFetching}
-        erro={serie.error}
-        meta={meta}
-        alerta={alerta}
-        seletorDeAno={
+      <section className="rounded-[10px] border border-border/70 bg-card p-3">
+        <header className="mb-2 flex items-start justify-between gap-2">
+          <div>
+            <h3 className="text-[13px] font-semibold">SLA mês a mês — {ano}</h3>
+            <p className="text-[11px] text-muted-foreground">
+              por {ROTULO_DA_BASE[base]} · não segue o período acima
+            </p>
+          </div>
           <select
             aria-label="Ano do gráfico"
             value={ano}
@@ -406,8 +377,19 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
               </option>
             ))}
           </select>
-        }
-      />
+        </header>
+        <GraficoLinha
+          descricao={`SLA mês a mês em ${String(ano)}`}
+          dados={pontosDoGrafico(serie.data)}
+          eixoX="mes"
+          series={[{ chave: "sla", nome: "SLA" }]}
+          formato="percentual"
+          meta={{ valor: meta, rotulo: `meta ${formatarPct(meta)}` }}
+          dica={(p) => `${p.mes}: SLA ${formatarPct(p.sla)} · ${nfInt.format(p.totalCtes)} CT-e`}
+          carregando={serie.isLoading}
+          erro={serie.error}
+        />
+      </section>
 
       {filtroCard !== "todos" && (
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
@@ -517,14 +499,14 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
                   }}
                   title="Ver todos os CT-e (clique num número para ver só aquela coluna)"
                   className="cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/40"
-                  style={nivel === "bad" ? { background: FUNDO_DO_STATUS.bad } : undefined}
+                  style={nivel === "ruim" ? { background: COR_DO_NIVEL.ruim.fundo } : undefined}
                 >
                   <td className="px-2 py-1.5 tabular-nums text-muted-foreground">{i + 1}</td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-1.5">
                       <span
                         className="inline-block h-2 w-2 shrink-0 rounded-full bg-muted-foreground/50"
-                        style={nivel ? { background: COR_DO_STATUS[nivel] } : undefined}
+                        style={nivel ? { background: COR_DO_NIVEL[nivel].cor } : undefined}
                         aria-hidden
                       />
                       <div className="min-w-0">
@@ -549,7 +531,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
                   {celula(r, r.foraTransp, "fora_prazo", `Fora do prazo por culpa da ${nomeCurto}`)}
                   <td
                     className="px-2 py-1.5 text-right font-bold tabular-nums"
-                    style={nivel ? { color: TEXTO_DO_STATUS[nivel] } : undefined}
+                    style={nivel ? { color: COR_DO_NIVEL[nivel].texto } : undefined}
                   >
                     {formatarPct(r.slaPct)}
                   </td>
@@ -589,157 +571,13 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   );
 }
 
-/** TODO(kit-ui): trocar pelo PagadorPicker do kit (com busca e "agrupados por nome"). */
-function SeletorDeParceiros({
-  opcoes,
-  selecionados,
-  aoMudar,
-}: {
-  opcoes: LinhaDoRanking[];
-  selecionados: string[];
-  aoMudar: (v: string[]) => void;
-}) {
-  const [busca, setBusca] = useState("");
-  const termo = busca.trim().toLowerCase();
-  const visiveis = opcoes
-    .filter(
-      (o) => !termo || (o.rotulo ?? "").toLowerCase().includes(termo) || o.chave.includes(termo),
-    )
-    .sort((a, b) => (a.rotulo ?? a.chave).localeCompare(b.rotulo ?? b.chave, "pt-BR"));
-  const alternar = (cnpj: string) => {
-    aoMudar(
-      selecionados.includes(cnpj)
-        ? selecionados.filter((c) => c !== cnpj)
-        : [...selecionados, cnpj].sort(),
-    );
-  };
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="rounded-md border border-border bg-card px-2 py-1 text-[12px] hover:bg-muted"
-        >
-          Parceiros{selecionados.length ? ` (${selecionados.length})` : ""}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-2">
-        <input
-          placeholder="Buscar parceiro ou CNPJ"
-          value={busca}
-          onChange={(e) => {
-            setBusca(e.target.value);
-          }}
-          className="mb-2 w-full rounded-md border border-border bg-background px-2 py-1 text-[12px]"
-        />
-        <div className="max-h-64 space-y-0.5 overflow-auto">
-          {visiveis.map((o) => (
-            <label
-              key={o.chave}
-              className="flex items-center gap-2 rounded px-1 py-0.5 text-[12px] hover:bg-muted"
-            >
-              <input
-                type="checkbox"
-                checked={selecionados.includes(o.chave)}
-                onChange={() => {
-                  alternar(o.chave);
-                }}
-              />
-              <span className="truncate">{o.rotulo ?? formatarCnpj(o.chave)}</span>
-              <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                {nfInt.format(o.totalCtes)}
-              </span>
-            </label>
-          ))}
-          {visiveis.length === 0 && (
-            <p className="p-2 text-center text-[12px] text-muted-foreground">Nenhum parceiro.</p>
-          )}
-        </div>
-        {selecionados.length > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              aoMudar([]);
-            }}
-            className="mt-2 text-[12px] text-[var(--brand)] hover:underline"
-          >
-            Limpar
-          </button>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-/**
- * Gráfico mês a mês do SLA do ranking e do volume de CT-e.
- * TODO(kit-ui): trocar pelo SlaSerieChart do kit (Recharts, exportação e captura no PDF).
- */
-function SerieMensal({
-  titulo,
-  subtitulo,
-  pontos,
-  carregando,
-  erro,
-  meta,
-  alerta,
-  seletorDeAno,
-}: {
-  titulo: string;
-  subtitulo: string;
-  pontos: PontoDaSerie[] | undefined;
-  carregando: boolean;
-  erro: Error | null;
-  meta: number;
-  alerta: number;
-  seletorDeAno: ReactNode;
-}) {
-  const maiorVolume = Math.max(1, ...(pontos ?? []).map((p) => p.totalCtrcs));
-  return (
-    <section className="rounded-[10px] border border-border/70 bg-card p-3">
-      <header className="mb-2 flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-[13px] font-semibold">{titulo}</h3>
-          <p className="text-[11px] text-muted-foreground">{subtitulo}</p>
-        </div>
-        {seletorDeAno}
-      </header>
-      {erro ? (
-        <p className="py-6 text-center text-[12px] text-destructive">{erro.message}</p>
-      ) : !pontos ? (
-        <p className="py-6 text-center text-[12px] text-muted-foreground">
-          {carregando ? "carregando…" : "Sem dados."}
-        </p>
-      ) : (
-        <div className="flex h-40 items-end gap-1">
-          {pontos.map((p) => {
-            const sla = p.entregue > 0 ? (p.entregue - p.foraTransp) / p.entregue : null;
-            const nivel = nivelDoSla(sla, meta, alerta);
-            const mes = MESES[Number(p.periodo.slice(5, 7)) - 1] ?? p.periodo;
-            return (
-              <div
-                key={p.periodo}
-                className="flex flex-1 flex-col items-center gap-1"
-                title={`${mes}: SLA ${formatarPct(sla)} · ${nfInt.format(p.totalCtrcs)} CT-e`}
-              >
-                <span
-                  className="text-[10px] font-semibold tabular-nums"
-                  style={nivel ? { color: TEXTO_DO_STATUS[nivel] } : undefined}
-                >
-                  {formatarPct(sla)}
-                </span>
-                <div
-                  className="w-full rounded-t bg-[var(--brand)]/30"
-                  style={{ height: `${Math.max(2, (p.totalCtrcs / maiorVolume) * 100)}px` }}
-                />
-                <span className="text-[10px] text-muted-foreground">{mes}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
+/** Ponto do gráfico: SLA do mês = (entregue − fora por culpa da transportadora) ÷ entregue. */
+function pontosDoGrafico(pontos: readonly PontoDaSerie[] | undefined) {
+  return (pontos ?? []).map((p) => ({
+    mes: MESES[Number(p.periodo.slice(5, 7)) - 1] ?? p.periodo,
+    sla: p.entregue > 0 ? (p.entregue - p.foraTransp) / p.entregue : null,
+    totalCtes: p.totalCtrcs,
+  }));
 }

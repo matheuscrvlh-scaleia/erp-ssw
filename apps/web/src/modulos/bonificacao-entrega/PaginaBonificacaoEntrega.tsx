@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
@@ -26,8 +27,8 @@ import {
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 
-// TODO(kit-ui): Tabs e Badge do kit comum.
-import { Aba, Abas, ConteudoDaAba, Etiqueta, ListaDeAbas } from "../ranking/kit-local";
+// TODO(kit-ui): o kit ainda não tem Tabs; abas locais.
+import { Aba, Abas, ConteudoDaAba, ListaDeAbas } from "../ranking/kit-local";
 import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracao, consultaUnidades } from "./api";
 import { ComoFuncionaBonificacao } from "./ComoFuncionaBonificacao";
@@ -83,11 +84,13 @@ function LinhaPessoa({ p }: { p: ResumoPessoa }) {
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             )}
             <span className="font-medium">{p.colaborador}</span>
-            <Etiqueta className="text-[10px] font-normal">{p.funcao}</Etiqueta>
+            <Badge variant="secondary" className="text-[10px] font-normal">
+              {p.funcao}
+            </Badge>
             {p.zerados > 0 && (
-              <Etiqueta tipo="destrutiva" className="text-[10px]">
+              <Badge variant="destructive" className="text-[10px]">
                 {p.zerados} zerado{p.zerados > 1 ? "s" : ""} por falta
-              </Etiqueta>
+              </Badge>
             )}
           </div>
         </td>

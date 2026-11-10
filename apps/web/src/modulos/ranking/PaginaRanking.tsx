@@ -6,7 +6,7 @@ export function PaginaRanking() {
   return (
     <div className="space-y-4">
       <header>
-        {/* TODO(kit-ui): SyncStatusBadge abaixo do título. */}
+        {/* TODO(ingestao): SeloAtualizacao do kit abaixo do título quando houver a consulta da última importação. */}
         <h1 className="text-2xl font-semibold">Ranking por Parceiro e Cidade</h1>
         <p className="text-sm text-muted-foreground">
           SLA operacional por parceiro (pagador) e por cidade de destino. Clique num item para ver

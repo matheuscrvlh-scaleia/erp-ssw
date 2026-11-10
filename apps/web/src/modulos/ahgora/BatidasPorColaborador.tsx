@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
@@ -15,8 +16,6 @@ import {
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 
-// TODO(kit-ui): Badge do kit comum.
-import { Etiqueta } from "../ranking/kit-local";
 import { isoLocal } from "../ranking/periodo";
 import { consultaBatidas, consultaFuncionarios } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
@@ -173,12 +172,10 @@ export function BatidasPorColaborador() {
         <section className="rounded-[10px] border border-border/70 bg-card p-3">
           <div className="flex flex-wrap items-center gap-2 text-[12px]">
             <span className="font-medium">{selecionado.name}</span>
-            <Etiqueta>matrícula {selecionado.register}</Etiqueta>
-            {selecionado.department && (
-              <Etiqueta tipo="contorno">{selecionado.department}</Etiqueta>
-            )}
-            {selecionado.jobTitle && <Etiqueta tipo="contorno">{selecionado.jobTitle}</Etiqueta>}
-            {selecionado.terminationDate && <Etiqueta tipo="destrutiva">demitido</Etiqueta>}
+            <Badge variant="secondary">matrícula {selecionado.register}</Badge>
+            {selecionado.department && <Badge variant="outline">{selecionado.department}</Badge>}
+            {selecionado.jobTitle && <Badge variant="outline">{selecionado.jobTitle}</Badge>}
+            {selecionado.terminationDate && <Badge variant="destructive">demitido</Badge>}
           </div>
         </section>
       )}
@@ -226,12 +223,12 @@ export function BatidasPorColaborador() {
                       {formatarDataHora(b.punchTime)}
                     </td>
                     <td className="px-3 py-1.5">
-                      <Etiqueta
-                        tipo={b.type === "DELETADA" ? "destrutiva" : "contorno"}
+                      <Badge
+                        variant={b.type === "DELETADA" ? "destructive" : "outline"}
                         className="text-[10px]"
                       >
                         {TIPO_LABEL[b.type] ?? b.type}
-                      </Etiqueta>
+                      </Badge>
                     </td>
                     <td className="px-3 py-1.5 text-muted-foreground">{b.deviceName || "—"}</td>
                     <td className="px-3 py-1.5 text-muted-foreground">

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { BancoEmMemoria } from "../../testes/banco-em-memoria";
 import { rankingOperacional } from "./casos-de-uso";
-import { padroesDoTexto } from "./filtro-performance";
 
 // O driver do Postgres rejeita com Error + `code` (57014 = statement_timeout).
 const TEMPO_ESGOTADO = Object.assign(new Error("canceling statement due to statement timeout"), {
@@ -48,12 +47,5 @@ describe("rankingOperacional — tempo esgotado", () => {
     const { esperas, executar } = cenario([erro]);
     await expect(executar()).rejects.toBe(erro);
     expect(esperas).toEqual([]);
-  });
-});
-
-describe("padroesDoTexto (texto com vários valores)", () => {
-  it("um valor vira %valor%; vários viram um padrão cada", () => {
-    expect(padroesDoTexto(" ara ")).toEqual(["%ara%"]);
-    expect(padroesDoTexto("são paulo | campinas")).toEqual(["%são paulo%", "%campinas%"]);
   });
 });

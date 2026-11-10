@@ -37,9 +37,9 @@ const C = linha("C", null, 0, 0);
 
 describe("ranking operacional — regras da tela", () => {
   it("cor do SLA: meta 95%, alerta 90%", () => {
-    expect(nivelDoSla(0.95, 0.95, 0.9)).toBe("good");
-    expect(nivelDoSla(0.9, 0.95, 0.9)).toBe("warn");
-    expect(nivelDoSla(0.899, 0.95, 0.9)).toBe("bad");
+    expect(nivelDoSla(0.95, 0.95, 0.9)).toBe("bom");
+    expect(nivelDoSla(0.9, 0.95, 0.9)).toBe("alerta");
+    expect(nivelDoSla(0.899, 0.95, 0.9)).toBe("ruim");
     expect(nivelDoSla(null, 0.95, 0.9)).toBeNull();
   });
 

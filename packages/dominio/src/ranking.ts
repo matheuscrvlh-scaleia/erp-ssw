@@ -7,8 +7,7 @@
  * (entregue, finalizado sem entrega, em aberto, atrasada) e o SLA são decididos aqui.
  */
 
-/** Códigos de entrega (finalizam com entrega). origem: _is_entregue */
-export const CODIGOS_ENTREGA: ReadonlySet<number> = new Set([1, 18, 67]);
+import { CODIGOS_ENTREGA } from "./nucleo/codigos";
 
 export type GrupoRanking = "pagador" | "cidade";
 

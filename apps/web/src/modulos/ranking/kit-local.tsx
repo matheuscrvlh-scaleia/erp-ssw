@@ -1,5 +1,5 @@
-// TODO(kit-ui): componentes locais até o kit comum (`componentes/comum/*`, `lib/exportacao`)
-// chegar na main. Mesmas classes do sistema atual; trocar pelos do kit e apagar este arquivo.
+// TODO(kit-ui): o kit comum (docs/kit-ui.md) ainda não tem abas nem o botão "Como funciona".
+// Mesmas classes do sistema atual; trocar pelos do kit quando chegarem e apagar este arquivo.
 import { Info } from "lucide-react";
 import { createContext, type ReactNode, useContext, useState } from "react";
 
@@ -96,104 +96,6 @@ export function ConteudoDaAba({
   );
 }
 
-/* ---------- Etiqueta (Badge) ---------- */
-
-const ESTILO_DA_ETIQUETA = {
-  secundaria: "border-transparent bg-secondary text-secondary-foreground",
-  destrutiva: "border-transparent bg-destructive text-white",
-  contorno: "text-foreground",
-} as const;
-
-export function Etiqueta({
-  tipo = "secundaria",
-  className,
-  children,
-}: {
-  tipo?: keyof typeof ESTILO_DA_ETIQUETA;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
-        ESTILO_DA_ETIQUETA[tipo],
-        className,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-/* ---------- Card de KPI ---------- */
-
-export type Status = "good" | "warn" | "bad";
-
-export const COR_DO_STATUS: Record<Status, string> = {
-  good: "var(--status-good)",
-  warn: "var(--status-warn)",
-  bad: "var(--status-bad)",
-};
-export const TEXTO_DO_STATUS: Record<Status, string> = {
-  good: "var(--status-good-fg)",
-  warn: "var(--status-warn-fg)",
-  bad: "var(--status-bad-fg)",
-};
-export const FUNDO_DO_STATUS: Record<Status, string> = {
-  good: "var(--status-good-bg)",
-  warn: "var(--status-warn-bg)",
-  bad: "var(--status-bad-bg)",
-};
-
-export function KpiCard({
-  rotulo,
-  valor,
-  status,
-  neutro,
-  meta,
-  progresso,
-  ativo,
-  aoClicar,
-}: {
-  rotulo: string;
-  valor: string;
-  status: Status;
-  neutro?: boolean;
-  meta: string;
-  progresso?: number | undefined;
-  ativo: boolean;
-  aoClicar: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={aoClicar}
-      aria-pressed={ativo}
-      style={{ borderLeftColor: neutro ? "var(--border)" : COR_DO_STATUS[status] }}
-      className={cn(
-        "w-full cursor-pointer rounded-[10px] border border-l-[5px] border-border/70 bg-card p-5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]",
-        ativo && "ring-2 ring-[var(--brand)]",
-      )}
-    >
-      <span className="label-xs font-bold text-foreground">{rotulo}</span>
-      <div className="num-hero mt-3 font-bold tracking-normal">{valor}</div>
-      {progresso !== undefined ? (
-        <div className="mt-3 h-[5px] overflow-hidden rounded-full bg-border/60">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${Math.max(2, Math.min(100, progresso * 100))}%`,
-              backgroundColor: COR_DO_STATUS[status],
-            }}
-          />
-        </div>
-      ) : null}
-      <div className="mt-2 text-[11px] text-muted-foreground">{meta}</div>
-    </button>
-  );
-}
-
 /* ---------- "Como funciona" ---------- */
 
 /** Botão "i" que abre a explicação da página; pulsa até a pessoa abrir pela primeira vez. */
@@ -272,29 +174,4 @@ export function Formula({ children }: { children: ReactNode }) {
       {children}
     </div>
   );
-}
-
-/* ---------- Exportação (só CSV até o kit trazer PDF/Excel com a marca) ---------- */
-
-export interface ColunaDeExportacao<T> {
-  cabecalho: string;
-  valor: (linha: T) => string | number;
-}
-
-function celulaCsv(valor: string | number): string {
-  const texto = String(valor);
-  return /[";\n]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
-}
-
-export function baixarCsv<T>(nome: string, colunas: ColunaDeExportacao<T>[], linhas: T[]): void {
-  const conteudo = [
-    colunas.map((c) => celulaCsv(c.cabecalho)).join(";"),
-    ...linhas.map((l) => colunas.map((c) => celulaCsv(c.valor(l))).join(";")),
-  ].join("\n");
-  const url = URL.createObjectURL(new Blob([`\uFEFF${conteudo}`], { type: "text/csv" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${nome}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
 }

@@ -1,6 +1,6 @@
 import { type LinhaDoRanking } from "@erp/shared/contratos/ranking";
 
-import { type Status } from "./kit-local";
+import { type StatusKpi } from "@/componentes/comum/KpiCard";
 
 /**
  * Regras da tela do ranking operacional (cards, nível de cor, ordenação, filtro dos cards).
@@ -28,12 +28,27 @@ export type ChaveDeOrdem =
 
 export type FiltroDoCard = "todos" | "na_meta" | "abaixo_meta";
 
-export function nivelDoSla(sla: number | null, meta: number, alerta: number): Status | null {
+export function nivelDoSla(sla: number | null, meta: number, alerta: number): StatusKpi | null {
   if (sla === null) return null;
-  if (sla >= meta) return "good";
-  if (sla >= alerta) return "warn";
-  return "bad";
+  if (sla >= meta) return "bom";
+  if (sla >= alerta) return "alerta";
+  return "ruim";
 }
+
+/** Cores do nível (bolinha, texto do SLA, fundo da linha ruim): paleta --status-* do tema. */
+export const COR_DO_NIVEL: Record<StatusKpi, { cor: string; texto: string; fundo: string }> = {
+  bom: {
+    cor: "var(--status-good)",
+    texto: "var(--status-good-fg)",
+    fundo: "var(--status-good-bg)",
+  },
+  alerta: {
+    cor: "var(--status-warn)",
+    texto: "var(--status-warn-fg)",
+    fundo: "var(--status-warn-bg)",
+  },
+  ruim: { cor: "var(--status-bad)", texto: "var(--status-bad-fg)", fundo: "var(--status-bad-bg)" },
+};
 
 /** SLA médio ponderado: (Σ entregue − Σ fora por culpa da transportadora) ÷ Σ entregue. */
 export function kpisDoRanking(linhas: readonly LinhaDoRanking[], meta: number) {

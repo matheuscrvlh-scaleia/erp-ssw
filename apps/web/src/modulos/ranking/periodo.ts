@@ -1,42 +1,14 @@
 /**
- * Períodos das telas de ranking e bonificação, no fuso do navegador (igual a hoje).
- * origem: resolvePeriodo (RankingTabela.tsx), periodoDoMes (BonificacaoScreen.tsx)
+ * Meses e datas das telas de ranking, bonificação e ponto, no fuso do navegador (igual a hoje).
+ * O período do ranking operacional usa `resolverPeriodo` do kit (dia de Brasília).
+ * origem: periodoDoMes (BonificacaoScreen.tsx)
  */
-
-export type PeriodoRapido = "hoje" | "7d" | "30d" | "mes" | "custom";
-
-export interface Periodo {
-  inicio: string;
-  fim: string;
-  rotulo: string;
-}
 
 /** Data local (não UTC) como AAAA-MM-DD. */
 export function isoLocal(d: Date): string {
   const mes = String(d.getMonth() + 1).padStart(2, "0");
   const dia = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mes}-${dia}`;
-}
-
-function diasAtras(hoje: Date, dias: number): string {
-  const d = new Date(hoje);
-  d.setDate(d.getDate() - dias);
-  return isoLocal(d);
-}
-
-export function resolverPeriodo(
-  rapido: PeriodoRapido,
-  hoje: Date,
-  de?: string,
-  ate?: string,
-): Periodo {
-  if (rapido === "custom" && de && ate) return { inicio: de, fim: ate, rotulo: `${de} → ${ate}` };
-  const fim = isoLocal(hoje);
-  if (rapido === "hoje") return { inicio: fim, fim, rotulo: "Hoje" };
-  if (rapido === "7d") return { inicio: diasAtras(hoje, 6), fim, rotulo: "Últimos 7 dias" };
-  if (rapido === "30d") return { inicio: diasAtras(hoje, 29), fim, rotulo: "Últimos 30 dias" };
-  const primeiro = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  return { inicio: isoLocal(primeiro), fim, rotulo: "Este mês" };
 }
 
 /** `AAAA-MM` → do dia 1 ao último dia do mês. */

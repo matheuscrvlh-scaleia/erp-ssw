@@ -60,5 +60,6 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   (antes, ao acaso).
 - **Q26 — equipes:** quem tem a tela vê todas as equipes da empresa (sem recorte por unidade).
 - **Q02 — CT-e como sigla + número** na lista de atribuição (ex.: `CAP123456`).
-- **Ranking operacional exporta só CSV por enquanto** (PDF/Excel com a marca voltam com o kit
-  comum); filtros de filial e tipo de CT-e ainda não aparecem na tela.
+- **Ranking operacional:** "hoje" dos atalhos de período é o dia de Brasília (Q11), não o do
+  navegador; filtros de filial e tipo de CT-e ainda não aparecem na tela (falta a consulta de
+  opções da Performance).

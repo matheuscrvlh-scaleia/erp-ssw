@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useState } from "react";
 
+import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
@@ -21,8 +22,6 @@ import {
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 
-// TODO(kit-ui): Badge do kit comum.
-import { Etiqueta } from "../ranking/kit-local";
 import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracaoDoPonto, consultaDepartamentos } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
@@ -62,9 +61,9 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
             )}
             <span className="font-medium">{f.name}</span>
             {f.demitido && (
-              <Etiqueta tipo="destrutiva" className="text-[10px]">
+              <Badge variant="destructive" className="text-[10px]">
                 demitido
-              </Etiqueta>
+              </Badge>
             )}
           </div>
         </td>
@@ -74,9 +73,9 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
         <td className="px-3 py-1.5 text-right tabular-nums">{formatarHoras(f.minutosApurados)}</td>
         <td className="px-3 py-1.5 text-right tabular-nums">
           {f.diasARevisar > 0 ? (
-            <Etiqueta tipo="contorno" className="border-amber-500/60 text-[10px] text-amber-600">
+            <Badge variant="outline" className="border-amber-500/60 text-[10px] text-amber-600">
               {f.diasARevisar}
-            </Etiqueta>
+            </Badge>
           ) : (
             <span className="text-muted-foreground">—</span>
           )}

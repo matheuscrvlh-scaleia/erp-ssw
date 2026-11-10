@@ -1,6 +1,7 @@
 // TODO(performance): construtor local do filtro de performance (FP, spec 02 §0.3 e §0.5). Quando o
 // agente de Performance publicar o construtor compartilhado, o ranking passa a usar o dele.
 import { ctes } from "@erp/db/schema";
+import { padroesTextoFiltro } from "@erp/dominio/nucleo";
 import { and, eq, inArray, isNotNull, not, type SQL, sql } from "drizzle-orm";
 
 export type BaseDeData = "emissao" | "prevista" | "concluido";
@@ -21,17 +22,6 @@ export interface FiltroPerformance {
 }
 
 export const SEM_TIPO = "__SEM_TIPO__";
-
-/**
- * Padrões ILIKE do texto com vários valores: "a|b" → ["%a%", "%b%"]. Não escapa % e _ digitados
- * (igual a hoje).
- * origem: texto_casa_filtro, src/lib/filtro-texto.ts
- */
-export function padroesDoTexto(filtro: string): string[] {
-  const limpo = filtro.replace(/^ +| +$/g, "");
-  if (!limpo.includes("|")) return [`%${limpo}%`];
-  return `%${limpo.replace(/\s*\|\s*/g, "%|%")}%`.split("|");
-}
 
 /** Só dígitos; nulo vira vazio. */
 export function digitos(valor: string | null | undefined): string {
@@ -88,10 +78,10 @@ export function condicaoDoFiltro(f: FiltroPerformance): SQL {
     sql`${coluna} between ${f.inicio} and ${f.fim}`,
     f.pagadores ? inArray(ctes.pagadorCnpjDigitos, f.pagadores) : undefined,
     f.remetente
-      ? sql`${ctes.remetente} ilike any(${arrayDeTexto(padroesDoTexto(f.remetente))})`
+      ? sql`${ctes.remetente} ilike any(${arrayDeTexto(padroesTextoFiltro(f.remetente))})`
       : undefined,
     f.destino
-      ? sql`${ctes.cidadeDestino} ilike any(${arrayDeTexto(padroesDoTexto(f.destino))})`
+      ? sql`${ctes.cidadeDestino} ilike any(${arrayDeTexto(padroesTextoFiltro(f.destino))})`
       : undefined,
     f.tipos ? sql`${tipoDocumentoEfetivo} = any(${arrayDeTexto(f.tipos)})` : undefined,
   ];
