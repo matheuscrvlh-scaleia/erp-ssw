@@ -1,5 +1,8 @@
 # R6 — Ingestão (SSW, BI2, FTP/XML, webhook, Ahgora, agendamentos)
 
+> Desde o ADR 0012, "worker" neste documento é o **worker-ssw** (repositório separado); no ERP
+> ficam as telas, o cliente do HTTP interno e os jobs do ERP na API.
+
 Especificação extraída do sistema atual para reimplementação no worker (BullMQ) e na API do
 `erp-ssw`. Fontes: `erp-ssw-referencia/banco/funcoes/*.sql` (definição real), código em
 `fr-transportes/.claude/worktrees/agent-ae0264d9f8203d8fa` (branch `feat/multiempresa`, F0–F6),

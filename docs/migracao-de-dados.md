@@ -88,8 +88,9 @@ Dependências primeiro (`src/tabelas/registro.ts`):
    → `ingestao_linhas`), `xml_*`, `ssw_webhook_eventos`, `ssw_sincronizacoes`.
 6. **Pós-migração:** `criado_por`/`atualizado_por` das empresas, `duplicado_de` dos CT-e,
    sequência de `auditoria.id`.
-7. **Passos finais:** `recalcular-projecoes` (ver abaixo) e `conferir-colunas-calculadas`
-   (recálculo pelo núcleo). Nenhum dos dois roda no `--dry-run`.
+7. **Passos finais:** `conferir-colunas-calculadas` (recálculo pelo núcleo; não roda no
+   `--dry-run`) e `reconstruir-projecoes`, que só deixa no relatório o lembrete de rodar o comando
+   do worker-ssw (ver abaixo).
 8. **Conferência** de cada tabela.
 
 ### Usuários e senhas
@@ -108,7 +109,7 @@ ou o segredo do webhook do `ssw_config`. É cifrado com AES-256-GCM (`packages/d
 contexto `<empresa_id>:<tipo>`). Domínio, usuário, CNPJ EDI, CNPJs aceitos e a última verificação
 do `ssw_config` completam `parametros` quando a integração não os tem. `ssw_config` sem integração
 gera a integração (`ssw_api` se tem senha, `ssw_webhook` se tem segredo). O token de sessão do SSW
-não migra (expira em 4 h; o worker gera outro).
+não migra (expira em 4 h; o worker-ssw gera outro).
 
 ## Tempo estimado
 
@@ -157,11 +158,12 @@ O `public` nunca é escrito: o sistema atual continua igual, não há o que desf
 - **Logo das empresas:** `empresas.logo_caminho` guarda o mesmo caminho do Storage do Supabase;
   o arquivo precisa ser copiado para o S3 com a mesma chave.
 - **Projeções** (`romaneio_viagens_cte`, `romaneio_cte_atual`, `cte_dados_relatorios`,
-  `romaneio_conferente_cte`): o passo `recalcular-projecoes` roda o caso de uso do worker
-  (`reconstruirProjecoesDoRomaneio`) por empresa, lendo as linhas de **toda** a staging do
-  `public` (não só os 60 dias de `ingestao_linhas`: a projeção é o estado acumulado) e gravando
-  com o repositório do worker. O relatório traz, por empresa, os CT-e reconstruídos e a contagem
-  de cada projeção ao lado da matview de hoje (fazer `REFRESH` delas antes).
+  `romaneio_conferente_cte`): são do worker-ssw (ADR 0012) e o migrador não as grava. Na virada,
+  depois da carga e antes de ligar a ingestão, roda o comando `reconstruir-projecoes` do
+  worker-ssw por empresa (docs/deploy.md §10); o relatório do migrador traz o lembrete. A projeção
+  é o estado acumulado: conferir com o worker-ssw se o comando lê toda a staging do `public` ou só
+  os 60 dias de `ingestao_linhas`, e comparar a contagem de cada projeção com a matview de hoje
+  (fazer `REFRESH` delas antes).
 - **Colunas calculadas** (`fora_universo`, `ocorr_efetiva_*`, `data_conclusao_efetiva`,
   `prazo_padrao_*`, `penaliza`, `quarentena`...): copiadas como estão, para o primeiro dia bater.
   As três colunas novas de `ctes` (`filial_efetiva`, `pagador_cnpj_digitos`,
@@ -182,4 +184,4 @@ O `public` nunca é escrito: o sistema atual continua igual, não há o que desf
 | CT-e sem sigla, com sigla ambígua no 455 ou duplicado em sigla + número                   | Descartado com motivo e chave no relatório (o duplicado fica o atualizado por último); ocorrências dele também ficam de fora.           |
 | Código de ocorrência que não está no catálogo da empresa                                  | Ocorrência descartada e listada (a FK do destino não aceitaria).                                                                       |
 | Sistema atual continua escrevendo durante a carga                                         | Rodar de novo antes da virada: o upsert traz o que mudou (linhas apagadas na origem não são apagadas no destino; na virada, `--recomecar` sobre um `erp` limpo). |
-| Chaves de segredo diferentes das da API                                                   | A API não decifra as integrações; usar exatamente `SEGREDOS_CHAVES`/`SEGREDOS_CHAVE_ATUAL` da API.                                     |
+| Chaves de segredo diferentes das da API                                                   | A API e o worker-ssw não decifram as integrações; usar exatamente `SEGREDOS_CHAVES`/`SEGREDOS_CHAVE_ATUAL` da API (as mesmas do worker-ssw). |

@@ -4,45 +4,54 @@ Arquivos: `infra/compose.yaml`, `infra/Caddyfile`, `infra/redis.conf`, `infra/de
 `infra/.env.example`, `infra/docker/*.Dockerfile`. CI: `.github/workflows/ci.yml` (todo push/PR) e
 `release.yml` (manual, publica no GHCR). Validado localmente em 10/11/2026 (§1.3).
 
+A ingestão do SSW (FTP, BI2, webhook, XML, projeções do Romaneio) é o **worker-ssw**, sistema
+separado com compose, Redis e deploy próprios (ADR 0012). Este runbook cobre o ERP e o que liga os
+dois: a rede `erp-interna` (§1.4), as conexões do Postgres (§4.1) e a ordem na virada (§10).
+
 ## 1. Visão geral
 
 ```
 internet ──80/443 tcp, 443 udp──▶ caddy (borda: TLS automático, HTTP/2 e 3, cabeçalhos, limites, log)
                                    │  rede "interna" (sem saída para a internet)
                                    ├──▶ web:8080   SPA estática (Caddy sem TLS, N réplicas)
-                                   └──▶ api:3001   Fastify (N réplicas) ─┐
-                                                                         │ rede "dados" (sem saída)
-                                       worker (BullMQ, 1 réplica) ───────┼──▶ redis:6379 (senha, AOF)
-                                                                         │ rede "saida"
-                                       migrador (execução única) ────────┴──▶ Postgres (Supabase),
-                                                                              SMTP, Google, SSW, FTP
+                                   ├──▶ api:3001   Fastify + jobs do ERP no BullMQ (N réplicas) ─┐
+                                   │                                                             │ rede "dados" (sem saída)
+                                   │                                                             ├──▶ redis:6379 (senha, AOF)
+                                   │  rede externa "erp-interna" (§1.4)                          │ rede "saida"
+                                   └──▶ worker-ssw:3100 (/api/public/*; outro compose)           ├──▶ Postgres (Supabase),
+                                        ▲ api ──▶ /interno/v1/* (WORKER_SSW_URL)                 │    SMTP, Google, Ahgora
+                                       migrador (execução única) ────────────────────────────────┘
 ```
 
 ### 1.1 Rotas e limites da borda
 
 | Caminho               | Destino | Teto de corpo                 | Observação                                         |
 | --------------------- | ------- | ----------------------------- | -------------------------------------------------- |
-| `/api/public/*`       | api     | 64 MiB (`LIMITE_CORPO_PUBLICO_MB`) | integrações por segredo; arquivo em base64 (455 ~39 MB) |
+| `/api/public/*`       | worker-ssw | 64 MiB (`LIMITE_CORPO_PUBLICO_MB`) | integrações do SSW por segredo; arquivo em base64 (455 ~39 MB) |
+| `/api/public/ranking/*` | api   | 1 MiB (`LIMITE_CORPO_API_MB`) | link público do ranking (é da API, não do worker-ssw) |
 | `/api/*`              | api     | 1 MiB (`LIMITE_CORPO_API_MB`) | JSON; `Cache-Control: no-store` se a API não mandar |
 | `/healthz`, `/readyz` | api     | —                             | monitoramento externo                              |
 | `/metrics`, `/docs*`  | 404     | —                             | métricas só pela rede interna; swagger nunca       |
 | resto                 | web     | 64 KiB                        | `/assets/*` 1 ano imutável; `index.html` `no-cache` |
 
-**Teto da borda = `bodyLimit` da API, nunca maior.** Medido: com a borda em 2 MiB e a API em 1 MiB,
-um corpo de 1,5 MiB virava **502** — a API responde 413 e fecha a conexão no meio do envio, e o
-Caddy perde o upstream. Com os tetos iguais a borda responde 413 sozinha. Quem implementar as rotas
-públicas de arquivo (onda 2) usa `bodyLimit: 64 * 1024 * 1024` nelas; se mudar, muda o `.env`.
+**Teto da borda = `bodyLimit` de quem está atrás, nunca maior.** Medido: com a borda em 2 MiB e a
+API em 1 MiB, um corpo de 1,5 MiB virava **502** — a API responde 413 e fecha a conexão no meio do
+envio, e o Caddy perde o upstream. Com os tetos iguais a borda responde 413 sozinha. As rotas
+públicas de arquivo do worker-ssw usam `bodyLimit: 64 * 1024 * 1024`; se ele mudar, muda o `.env`.
 
 ### 1.2 Tempos (de dentro para fora)
 
 Consulta da API corta em `DB_TIMEOUT_CONSULTA_MS` = 30 s (mensagem "reduza o período") → borda espera
 o cabeçalho da resposta até 60 s → corpo de upload pode levar até 5 min (`read_body`) e download até
-5 min (`write`). Desligamento: API termina o que está em andamento em até 10 s (`server.ts`;
-`stop_grace_period` 15 s), worker em até 30 s (`main.ts`; 40 s).
+5 min (`write`). Desligamento: a API termina as requisições e os jobs do ERP em andamento em até
+25 s (`server.ts`; `stop_grace_period` 30 s); o job que não terminar volta para a fila do BullMQ.
+Ações das telas de ingestão esperam o worker-ssw por 5 s (mais o `aguardarMs` de quem espera o
+resultado: BI2 60 s, testar SSW 30 s); sem resposta, "O worker do SSW não respondeu".
 
 ### 1.3 O que foi validado localmente (Docker Desktop, 10/11/2026)
 
-Sem tocar banco real: `DATABASE_URL` apontando para `127.0.0.1:1` (recusa na hora).
+Sem tocar banco real: `DATABASE_URL` apontando para `127.0.0.1:1` (recusa na hora). Rodada feita
+com o worker ainda neste compose (antes do ADR 0012): refazer com a `erp-interna` e o worker-ssw.
 
 - Build das 5 imagens; hadolint, shellcheck, actionlint, `caddy validate` e `caddy fmt` limpos;
   `docker compose config` ok.
@@ -54,6 +63,30 @@ Sem tocar banco real: `DATABASE_URL` apontando para `127.0.0.1:1` (recusa na hor
   rede interna sem saída para a internet; raiz somente leitura e `cap_drop: ALL` em tudo.
 - `deploy.sh` sob carga, `deploy.sh voltar`, backup e restauração do Redis (§6.2, §7).
 
+### 1.4 Rede `erp-interna` e o worker-ssw
+
+Os dois compose (este e o do worker-ssw) se falam só pela rede Docker externa `erp-interna`, criada
+uma vez na VPS antes do primeiro `up` de qualquer um deles (o `deploy.sh` recusa sem ela):
+
+```bash
+docker network create erp-interna
+```
+
+Nela ficam o caddy e a api do ERP e o worker-ssw (contêiner `worker-ssw`, porta 3100):
+
+- borda → worker-ssw: `/api/public/*` (webhook SSW2181, `ftp-relatorio-import`,
+  `ssw-ciclo-aplicar`, `xml-orfaos-retry`), em `WORKER_SSW_PUBLICO` (padrão `worker-ssw:3100`);
+- api → worker-ssw: HTTP interno `/interno/v1/*` em `WORKER_SSW_URL` (ex.
+  `http://worker-ssw:3100`), com `Authorization: Bearer <WORKER_SSW_TOKEN>`. O token é um dos
+  `INTERNO_TOKENS` do worker-ssw: para girar, pôr o novo lá como `atual,anterior`, trocar aqui
+  (`./deploy.sh <tag atual>`) e só depois tirar o antigo de lá.
+
+Sem `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` a API sobe e as telas de ingestão leem o banco; as ações
+(rodar FTP/BI2, testar SSW, reprocessar) respondem 503 "Integração com o worker do SSW não
+configurada". Com o worker-ssw fora do ar, as mesmas ações respondem 503 "O worker do SSW não
+respondeu" e o resto do ERP segue. Worker-ssw em VPS separada: a `erp-interna` vira uma rede
+privada entre as VPS (WireGuard ou a rede privada do provedor), nunca porta publicada.
+
 ## 2. Tamanho da VPS
 
 **Recomendado: 4 vCPU, 8 GB de RAM, 80 GB SSD NVMe, Ubuntu 24.04 LTS, na mesma região do projeto
@@ -63,14 +96,14 @@ Mínimo para operar depois da virada: 2 vCPU / 4 GB, sem folga para pico nem par
 - **Região antes de tudo.** Cada requisição abre uma transação com `SET LOCAL` do contexto e faz
   uma ou mais consultas: são várias idas ao Postgres por tela. Na mesma região são 1–3 ms por ida;
   de outro continente, ~120 ms cada.
-- **Memória** (limites do compose): api 2 × 768 MB + worker 1 GB + redis 512 MB + caddy 256 MB +
-  web 128 MB ≈ 3,4 GB; o migrador da virada roda ao lado com até 2 GB; Docker e SO ~1 GB. Pico
+- **Memória** (limites do compose): api 2 × 768 MB + redis 512 MB + caddy 256 MB + web 128 MB
+  ≈ 2,4 GB, mais o worker-ssw na mesma VPS (~1 GB + o Redis dele) ≈ 3,4 GB; o migrador da virada roda ao lado com até 2 GB; Docker e SO ~1 GB. Pico
   ≈ 6,5 GB → 8 GB. As listas detalhadas e as exportações montam JSON grande em memória (objeto +
-  string + compressão) e o worker lê CSV de ~39 MB; é a memória que limita, não a CPU.
+  string + compressão) e o worker-ssw lê CSV de ~39 MB; é a memória que limita, não a CPU.
 - **CPU**: a agregação pesada roda no Postgres. Na VPS gasta CPU o argon2id do login (proposital:
-  dezenas de ms por tentativa), serializar JSON, TLS e compressão. 2 réplicas × 1,5 + worker 1 +
-  borda 1 cabem em 4 vCPU com folga.
-- **Disco**: imagens (api ~300 MB, worker ~270 MB, web/caddy ~90 MB, migrador ~900 MB, sem
+  dezenas de ms por tentativa), serializar JSON, TLS e compressão. 2 réplicas × 1,5 + worker-ssw 1
+  + borda 1 cabem em 4 vCPU com folga.
+- **Disco**: imagens (api ~300 MB, worker-ssw ~270 MB, web/caddy ~90 MB, migrador ~900 MB, sem
   compressão), 3 versões guardadas para rollback ≈ 5 GB; logs rotacionados (100 MB por contêiner);
   AOF do Redis (pequeno). 40 GB bastam; 80 GB é conforto.
 - **Rede**: IPv4 público obrigatório (o pooler do Supabase é IPv4); IPv6 desejável (§4.1).
@@ -177,7 +210,7 @@ usermod -aG docker deploy
 - `live-restore`: atualizar o Docker não derruba os contêineres.
 - Grupo `docker` equivale a root no host: só o `deploy` entra nele.
 - **Docker ignora o ufw para porta publicada.** Por isso só o caddy publica porta. Nunca publicar
-  porta de api, web, worker ou redis.
+  porta de api, web, redis ou worker-ssw.
 
 ## 4. Banco (Postgres do Supabase, projeto DEVELOP)
 
@@ -200,8 +233,9 @@ do sistema atual e não se escreve nele.
   e terminar a URL com `?sslmode=verify-full&sslrootcert=/etc/erp/certs/supabase-ca.crt`.
 - **Restrição de rede** (Dashboard → Database → Network Restrictions): liberar só o IPv4 da VPS e o
   de quem aplica SQL à mão. Ativar depois de listar quem conecta hoje, ou alguém fica trancado fora.
-- **Orçamento de conexões**: `API_REPLICAS × API_DB_MAX_CONEXOES + WORKER_DB_MAX_CONEXOES` (+1 do
-  migrador) = 2 × 10 + 5 + 1 = 26 no padrão. Tem de caber no _Pool Size_ do pooler (Dashboard →
+- **Orçamento de conexões**: `API_REPLICAS × API_DB_MAX_CONEXOES` + as do worker-ssw (o
+  `DB_MAX_CONEXOES` do compose dele, papel `erp_worker`) (+1 do migrador) = 2 × 10 + 5 + 1 = 26 no
+  padrão (worker-ssw com 5). Os dois sistemas somam no mesmo Postgres. Tem de caber no _Pool Size_ do pooler (Dashboard →
   Database → Connection pooling; depende do tamanho da instância) somado ao que o sistema atual já
   usa. Se não couber: subir o Pool Size ou baixar `API_DB_MAX_CONEXOES`. Deploy sem queda dobra as
   réplicas da API por alguns segundos: deixar folga de mais `API_REPLICAS × API_DB_MAX_CONEXOES`
@@ -211,8 +245,12 @@ do sistema atual e não se escreve nele.
 ### 4.2 Papéis (uma vez, pelo DBA)
 
 `packages/db/bootstrap/papeis.sql` cria `erp_migracao` (dono do schema `erp`; roda migrations e
-seeds) e `erp_app` (API e worker; sem BYPASSRLS, só DML). As permissões do `erp_app` vêm da
-migration `0002_permissoes_app.sql`.
+seeds), `erp_app` (API; sem BYPASSRLS, só DML) e `erp_worker` (worker-ssw; sem BYPASSRLS, sem
+herdar papel, só o GRANT mínimo das tabelas da ingestão e do que ela grava). As permissões vêm das
+migrations: `erp_app` em `0002_permissoes_app.sql`, `erp_worker` em `0008_worker_ssw.sql` (que
+também põe o `erp_worker` nas policies de RLS). Banco que já tinha os papéis antes do ADR 0012:
+rodar só `create role erp_worker login nobypassrls noinherit;` **antes** da migration 0008 (sem o
+papel ela falha).
 
 ```bash
 # De uma máquina confiável, com o papel postgres (conexão direta ou pooler em modo sessão):
@@ -220,6 +258,7 @@ psql "postgres://postgres.<ref>@aws-0-<regiao>.pooler.supabase.com:5432/postgres
   -f packages/db/bootstrap/papeis.sql
 psql "<mesma URL>" -c '\password erp_migracao'
 psql "<mesma URL>" -c '\password erp_app'
+psql "<mesma URL>" -c '\password erp_worker'   # vai para o .env do worker-ssw, não para este
 ```
 
 `\password` calcula o hash no cliente: a senha não passa em texto pelo log de SQL (não usar o SQL
@@ -229,7 +268,8 @@ gerenciador de senhas e no `infra/.env`.
 ### 4.3 Migrations e catálogo (papel `erp_migracao`)
 
 Rodam da VPS, com a imagem `erp-migrador` da mesma tag da API. Só o migrador recebe
-`DATABASE_URL_MIGRACAO`; a API e o worker nunca.
+`DATABASE_URL_MIGRACAO`; a API e o worker-ssw nunca. Mudança de schema que o worker-ssw use:
+migration aqui primeiro (expandir), deploy do worker-ssw depois, contrair num deploy seguinte.
 
 ```bash
 cd ~/erp/infra
@@ -282,8 +322,8 @@ vazamento for do banco (sessões), revogar as sessões lá.
 
 Senha do SFTP, token do SSW etc. ficam no banco cifrados pela aplicação
 (`packages/db/src/segredos.ts`), com chave versionada. As variáveis (`SEGREDOS_CHAVES`,
-`SEGREDOS_CHAVE_ATUAL`) já estão no compose da API e do worker; entram em uso quando a ingestão
-(onda 2) passar a ler essas variáveis — nome a confirmar com quem implementar.
+`SEGREDOS_CHAVE_ATUAL`) vão no `.env` da API (que cifra ao cadastrar a integração) e, **com o mesmo
+valor**, no do worker-ssw (que decifra para falar com FTP, SSW e BI2).
 
 ```bash
 echo "SEGREDOS_CHAVES=1:$(openssl rand -base64 32)"   # 32 bytes aleatórios em base64
@@ -291,11 +331,13 @@ echo "SEGREDOS_CHAVE_ATUAL=1"
 ```
 
 **Rotação**: acrescentar a nova (`SEGREDOS_CHAVES=1:<antiga>,2:<nova>`), `SEGREDOS_CHAVE_ATUAL=2`,
-`./deploy.sh <tag atual>`: gravação nova sai com a 2, leitura usa a versão da linha. Pedir o job de
-recifrar (`docker compose run --rm worker node dist/main.js --recifrar-segredos`: só enfileira; o
-worker no ar regrava cada segredo, e o segredo anterior do webhook, com a chave atual e loga
-"segredos recifrados com a chave atual" com o total e as falhas). Só remover a `1:` quando o log
-disser `falhas: []` e nenhuma linha estiver mais na versão 1.
+`./deploy.sh <tag atual>` e o mesmo par no worker-ssw (deploy dele): gravação nova sai com a 2,
+leitura usa a versão da linha. Pedir o job de recifrar
+(`docker compose run --rm --no-deps api dist/server.js --recifrar-segredos`: só enfileira; uma
+réplica da API no ar com `JOBS_LIGADOS=true` regrava cada segredo, e o segredo anterior do webhook,
+com a chave atual e loga "segredos recifrados com a chave atual" com o total e as falhas). Só
+remover a `1:` (aqui e no worker-ssw) quando o log disser `falhas: []` e nenhuma linha estiver mais
+na versão 1.
 
 **Nunca perder a chave**: sem ela os segredos do banco não decifram (recadastrar integração por
 integração). Guardar no gerenciador de senhas, **separada** do backup do banco: backup + chave
@@ -306,7 +348,8 @@ juntos equivalem aos segredos em texto.
 ### 6.1 Primeiro deploy
 
 Pré-requisitos (§13): VPS endurecida (§3), DNS do domínio apontando para ela, papéis do banco
-criados (§4.2), imagens publicadas no GHCR (`release.yml`), token de leitura do GHCR.
+criados (§4.2), imagens publicadas no GHCR (`release.yml`), token de leitura do GHCR, rede
+`erp-interna` criada (§1.4).
 
 ```bash
 # Login no GHCR (token com read:packages)
@@ -318,7 +361,8 @@ cd ~/erp && git sparse-checkout set infra && git checkout <sha-publicado>
 
 cd infra
 cp .env.example .env && chmod 600 .env
-$EDITOR .env      # §4 e §5; IMAGEM_TAG=CADDY_TAG=<sha7>; AGENDAMENTOS_LIGADOS=false
+$EDITOR .env      # §4 e §5; IMAGEM_TAG=CADDY_TAG=<sha7>; AGENDAMENTOS_LIGADOS=false;
+                  # WORKER_SSW_URL/WORKER_SSW_TOKEN quando o worker-ssw estiver no ar (§1.4)
 # CA do Supabase em certs/supabase-ca.crt (§4.1)
 
 docker compose config --quiet              # falha se faltar variável obrigatória
@@ -335,13 +379,14 @@ Depois: conferir os cabeçalhos (`curl -sI https://<dominio>/`, securityheaders.
 abrir o sistema com o console do navegador aberto (nenhuma violação de CSP, §6.5) e, se usar
 Google, cadastrar `https://<dominio>/api/v1/auth/google/retorno` no Google Cloud Console.
 
-Fase lado a lado: subdomínio próprio (ex.: `novo.<dominio>`), worker com
-`AGENDAMENTOS_LIGADOS=false` (não ingere nada), o sistema atual seguindo no domínio de hoje.
+Fase lado a lado: subdomínio próprio (ex.: `novo.<dominio>`), API com
+`AGENDAMENTOS_LIGADOS=false`, worker-ssw com a ingestão desligada (não ingere nada; ver o runbook
+dele), o sistema atual seguindo no domínio de hoje.
 
 ### 6.2 Deploy sem queda
 
 1. GitHub → Actions → **Release** → _Run workflow_ com o `ref`. Sai
-   `ghcr.io/<dono>/<repo>/erp-{api,worker,web,migrador,caddy}:<sha7>`, cada uma escaneada pelo Trivy
+   `ghcr.io/<dono>/<repo>/erp-{api,web,migrador,caddy}:<sha7>`, cada uma escaneada pelo Trivy
    antes do push, com SBOM e proveniência.
 2. Na VPS:
 
@@ -354,8 +399,9 @@ O `deploy.sh`, para web e depois api: sobe réplicas novas ao lado das antigas, 
 HEALTHCHECK de todas (até 180 s) e só então manda SIGTERM nas antigas, que terminam o que estão
 atendendo. O Caddy enxerga as réplicas pelo DNS interno do Docker (relido a cada 5 s) e refaz em
 outra réplica a requisição que bater em porta fechada (`lb_try_duration`). Se as novas não ficarem
-saudáveis, o script as remove e para — as antigas nunca saíram. Depois troca o worker (o BullMQ
-devolve à fila o job interrompido), recarrega o Caddyfile e grava a tag no `.env` e em
+saudáveis, o script as remove e para — as antigas nunca saíram. Os jobs do ERP rodam nas
+réplicas da API: a antiga devolve à fila o job interrompido e uma nova o retoma. Depois recarrega o
+Caddyfile e grava a tag no `.env` e em
 `infra/.deploy-historico`.
 
 Mudou só o `.env` (segredo novo, limite)? `./infra/deploy.sh <tag atual>`: as réplicas novas nascem
@@ -404,8 +450,8 @@ caddy` (§6.3); a política passa a só avisar. Corrigir a diretiva em `infra/Ca
 | banco                               | Supabase                 | backups/PITR do próprio Supabase (fora desta VPS)      |
 
 **Redis** guarda filas e agendamentos do BullMQ, histórico de jobs e contadores de limite/bloqueio
-de login. Perder o Redis = perder os jobs que estavam na fila (os agendamentos se recriam no boot do
-worker a partir do banco); não perde dado de negócio. Por isso backup diário com 7 dias basta.
+de login. Perder o Redis = perder os jobs que estavam na fila (os agendamentos se recriam no boot da
+API a partir do banco); não perde dado de negócio. Por isso backup diário com 7 dias basta.
 **Certificados**: regeneram sozinhos, mas o Let's Encrypt limita emissões repetidas (5 por semana
 para o mesmo nome) — perder o volume num dia de incidente pode deixar o site sem HTTPS.
 
@@ -432,7 +478,7 @@ AOF é ligado a quente, gerado a partir do que foi carregado:
 
 ```bash
 cd ~/erp/infra
-docker compose stop worker api redis
+docker compose stop api redis
 docker run --rm -v erp_redis_dados:/d -v /var/backups/erp:/b:ro alpine:3 \
   sh -c 'rm -rf /d/appendonlydir /d/dump.rdb && cp /b/redis-<data>.rdb /d/dump.rdb && chown 999:1000 /d/dump.rdb'
 docker compose run -d --name redis-restauro redis \
@@ -449,19 +495,19 @@ quase tudo no §3.
 
 ## 8. Logs
 
-- Todos os contêineres logam **JSON no stdout** (pino na API e no worker); o Docker guarda com
+- Todos os contêineres logam **JSON no stdout** (pino na API); o Docker guarda com
   rotação (20 MB × 5 por contêiner, no compose e no `daemon.json`): alguns dias de histórico.
 - Segredo fora do log: a borda omite `Authorization`/`Cookie`, apaga os cabeçalhos de segredo das
   rotas públicas (`X-Ftp-Ingest-Secret`, `X-Ingest-Secret`, `X-Cron-Token`, `Apikey`) e troca
-  `secret`, `token`, `senha`, `code`, `state`... da query por `***`; o worker mascara `*.senha`,
-  `*.token`, `*.segredo`.
+  `secret`, `token`, `senha`, `code`, `state`... da query por `***` (as rotas públicas do SSW
+  passam pela borda antes do worker-ssw); a API mascara `*.senha`, `*.token`, `*.segredo`.
 
 ```bash
 cd ~/erp/infra
 docker compose logs -f --since 10m api
 docker compose logs --since 1h caddy | grep '"status":5'              # 5xx da borda
-docker compose logs --since 1h api worker | grep -E '"level":(50|60)' # erros (pino)
-docker compose logs --since 1h worker | grep 'job falhou'
+docker compose logs --since 1h api | grep -E '"level":(50|60)'        # erros (pino)
+docker compose logs --since 1h api | grep -E 'job falhou|worker-ssw não respondeu'
 docker compose logs --no-log-prefix --since 1h caddy \
   | jq -r 'select(.msg=="handled request") | [.status, .duration, .request.uri] | @tsv' \
   | sort -k2 -nr | head                                                # requisições mais lentas
@@ -481,9 +527,9 @@ De fora da VPS (UptimeRobot, Better Stack, Healthchecks.io):
 | `GET https://<dominio>/login` 200   | 5 min      | 2 falhas          | web fora                                    |
 | validade do certificado             | diária     | < 14 dias         | renovação automática falhou                 |
 
-Na VPS: `docker compose ps` mostra `unhealthy` (o worker fica `unhealthy` se o Redis cair ou um
+Na VPS: `docker compose ps` mostra `unhealthy` (com `JOBS_LIGADOS`, o `/readyz` da API falha se um
 Worker do BullMQ parar; o Docker não reinicia contêiner `unhealthy` sozinho — o alerta é o log ou
-o agente abaixo). Alerta de disco > 80% (o provedor costuma oferecer).
+o agente abaixo). O worker-ssw tem monitoramento próprio (`/saude/*` e `/metrics` dele). Alerta de disco > 80% (o provedor costuma oferecer).
 
 **Métricas Prometheus** (`/metrics` da API: padrão do Node + `http_requisicao_duracao_segundos`):
 existem só com `METRICAS_TOKEN` no `.env` e só pela rede interna (a borda devolve 404). Para
@@ -506,27 +552,35 @@ Antes: fase lado a lado (§6.1) com os roteiros de paridade de tela aprovados, m
 ensaiado contra o DEVELOP com tempo medido, TTL do DNS em 300 s na semana da virada, aviso aos
 usuários da janela.
 
+0. **worker-ssw no ar antes**: subido pelo runbook dele, na `erp-interna` (§1.4), com a ingestão
+   ainda desligada, `/saude/pronto` ok e o contrato do schema aceito no boot. No `.env` daqui,
+   `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` e `./deploy.sh <tag atual>`; Plataforma › Diagnóstico SSW
+   mostra a situação dos jobs vinda do worker-ssw.
 1. **Congelar o atual**: desligar a ingestão do sistema atual (crons e funções que puxam FTP/BI2/
    SSW) para não processar duas vezes. Usuários fora (janela combinada).
 2. **Ponto de restauração**: conferir o backup/PITR do Supabase do momento.
 3. **Migrar**: `docker compose run --rm migrador migrar`, `semear` e
    `docker compose run --rm migrador dados` (§12). Conferir o relatório do migrador (contagens por
-   tabela e empresa) contra o atual.
-4. **Ligar o worker**: `AGENDAMENTOS_LIGADOS=true` no `.env` → `./deploy.sh <tag atual>`. No log do
-   worker, "agendamentos" com os jobs criados por empresa; acompanhar o primeiro ciclo de cada
-   ingestão (`job falhou` = parar e olhar).
+   tabela e empresa) contra o atual. Depois, no worker-ssw, `reconstruir-projecoes` por empresa
+   (as projeções do Romaneio são dele; o relatório do migrador lembra).
+4. **Ligar a ingestão e os agendamentos**: no worker-ssw, ligar a ingestão (runbook dele) e
+   acompanhar o primeiro ciclo de cada uma; aqui, `AGENDAMENTOS_LIGADOS=true` no `.env` →
+   `./deploy.sh <tag atual>` (jobs do ERP: limpar sessões, prazos configurados). No log da API,
+   "agendamentos" por fila; `job falhou` = parar e olhar.
 5. **Trocar o DNS**: registro A/AAAA do domínio de hoje para o IP da VPS. Em seguida, no `.env`,
    `DOMINIO=<domínio de hoje>` (e `GOOGLE_REDIRECT_URI`, se usar Google), `docker compose up -d
    caddy` e `./deploy.sh <tag atual>` (a API passa a usar o `WEB_URL` novo nos e-mails e no CORS).
    O Caddy emite o certificado assim que o DNS responde com o IP da VPS (segundos). URLs, telas e
-   rotas públicas (`/api/public/*`, webhook do SSW) são as mesmas: integrações externas não mudam.
-   Antes, em Plataforma → Empresa → Integrações, cadastrar e ligar "Rotas públicas da ingestão"
-   com o mesmo valor do `FTP_INGEST_SECRET` de hoje (ADR 0010); sem isso as rotas respondem 503.
+   rotas públicas (`/api/public/*`, webhook do SSW, agora atendidas pelo worker-ssw atrás da
+   mesma borda) são as mesmas: integrações externas não mudam. Antes, em Plataforma → Empresa →
+   Integrações, cadastrar e ligar "Rotas públicas da ingestão" com o mesmo valor do
+   `FTP_INGEST_SECRET` de hoje (ADR 0010); sem isso as rotas respondem 503.
 6. **Conferir**: login de usuários reais (senha antiga validada e regravada em argon2id),
    `/readyz`, telas principais, logs sem 5xx, primeiros jobs ok.
 
 **Voltar** (se algo grave aparecer): DNS de volta para o sistema atual (até 5 min com TTL 300 s),
-`AGENDAMENTOS_LIGADOS=false` + `./deploy.sh <tag atual>` na VPS, religar a ingestão do atual. O que
+desligar a ingestão do worker-ssw, `AGENDAMENTOS_LIGADOS=false` + `./deploy.sh <tag atual>` na
+VPS, religar a ingestão do atual. O que
 entrou só no ERP SSW durante a janela (cadastros, ajustes feitos por usuários) não volta sozinho:
 anotar e refazer no atual. Por isso a janela de decisão é curta (mesmo dia).
 
@@ -556,6 +610,10 @@ A imagem `erp-migrador` (`infra/docker/migrador.Dockerfile`) já existe e espera
 4. arquivo temporário só em `/tmp` (tmpfs de 256 MB; o resto é somente leitura); memória até 2 GB.
 
 `docker compose run --rm migrador dados [args]` repassa os argumentos.
+
+O migrador não grava as projeções do Romaneio (`romaneio_*`, `cte_dados_relatorios`): são do
+worker-ssw. Na virada, depois do `dados`, roda o `reconstruir-projecoes` do worker-ssw por empresa
+(§10, passo 3); o relatório do migrador traz o lembrete como passo final.
 
 ## 13. O que o dono precisa providenciar
 

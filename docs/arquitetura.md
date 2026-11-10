@@ -37,7 +37,7 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 | Web | Vite + React 19 + TS strict + Tailwind 4 + shadcn/Radix + TanStack Router + TanStack Query + react-hook-form | SPA simples de servir; roteamento tipado; cache de dados |
 | API | Node 22 LTS + Fastify 5 + TS strict + Zod 4 (`fastify-type-provider-zod`) | rápido, schema-first, ecossistema maduro |
 | Banco | Postgres (Supabase DEVELOP) + **Drizzle ORM** + `pg` | schema como código, migrations versionadas, SQL tipado, RLS declarado |
-| Jobs | **BullMQ + Redis** (worker separado) | padrão de mercado; agendamento repetível, retry, concorrência por fila |
+| Jobs | **BullMQ + Redis**, dentro do processo da API (`JOBS_LIGADOS`) | padrão de mercado; agendamento repetível, retry, concorrência por fila; os jobs do ERP são poucos e leves |
 | Auth | argon2id (`@node-rs/argon2`), JWT de acesso curto (`jose`, EdDSA), refresh opaco rotativo em cookie httpOnly | padrão OWASP; sessão revogável |
 | Arquivos | S3 compatível (`@aws-sdk/client-s3`) | logo da empresa; troca de provedor sem código |
 | Segredos de integração | AES-256-GCM no backend (chave mestra por env, rotação por versão) | sem Vault do banco |
@@ -49,13 +49,15 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 ```
 apps/
   web/                    SPA
-  api/                    HTTP (Fastify)
-  worker/                 jobs BullMQ (ingestão SSW/BI2/FTP/Ahgora, projeções, agendamentos)
+  api/                    HTTP (Fastify) + jobs do ERP no BullMQ (src/jobs: limpar sessões, prazos
+                          configurados, classificação de códigos, recifrar segredos)
+  migrador/               carga única public → erp
 packages/
   config/                 tsconfig, eslint, prettier
   shared/                 contratos zod (entrada/saída de cada endpoint), tipos, permissões, formatação
-  dominio/                regras de negócio PURAS (sem I/O): prazo, dias úteis, ocorrência efetiva,
-                          finalizadores, atraso, performance, romaneio, ranking, bonificação...
+  dominio/                regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
+                          atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
+                          leitores dos relatórios SSW (prévia da importação e migrador)...
   db/                     Drizzle: schema, migrations, políticas RLS, client com contexto de empresa
 docs/
   arquitetura.md          este arquivo
@@ -72,7 +74,27 @@ repositorio.ts    acesso a dados (Drizzle). Consultas set-based; nenhuma regra d
 *.test.ts         testes dos casos de uso com repositório falso.
 ```
 
-Regras puras (cálculos) ficam em `packages/dominio` e são usadas pela API e pelo worker.
+Regras puras (cálculos) ficam em `packages/dominio` e são usadas pela API, pela web e pelo
+migrador. O worker-ssw leva a sua cópia do núcleo do CT-e (ADR 0012).
+
+## Ingestão do SSW: o worker-ssw (ADR 0012)
+
+A ingestão (FTP, BI2, webhook SSW2181, XML CT-e, aplicação dos ciclos, projeções do Romaneio,
+SLA pelos arquivos, coletas do 050 pelo FTP) é um sistema separado, o **worker-ssw**, com Redis,
+compose e deploy próprios, que grava no mesmo schema `erp` com o papel `erp_worker` (GRANT mínimo,
+RLS valendo). O ERP:
+
+- **lê** o estado da ingestão direto do banco nas telas de Plataforma (Importação SSW, XML CT-e,
+  Diagnóstico SSW, integrações) e em `GET /api/v1/ssw/atualizacao`/`saude`;
+- **pede ações** ao worker-ssw pelo HTTP interno (`/interno/v1/*`, `WORKER_SSW_URL` +
+  `WORKER_SSW_TOKEN`): rodar FTP/BI2, testar a SSW API, reprocessar webhook e XML órfãos,
+  projeções depois de descartar um ciclo, situação dos jobs. A auditoria de quem pediu é gravada
+  **antes** do pedido. Sem a configuração, as ações respondem 503 e as leituras seguem;
+- cadastra as integrações (`empresa_integracoes`, cifradas): o ERP grava, o worker-ssw lê, com as
+  mesmas `SEGREDOS_CHAVES`.
+
+A borda do ERP encaminha `/api/public/*` (menos o link público do ranking) ao worker-ssw pela rede
+Docker `erp-interna`: as URLs das integrações externas não mudam (docs/deploy.md §1.4).
 
 **Agregação pesada** (ex.: performance de 250 mil CT-e) é feita por consulta SQL montada no backend
 (Drizzle/`sql` parametrizado), com a regra expressa em TypeScript: o backend decide o que filtrar,
@@ -80,13 +102,16 @@ agrupar e calcular; o banco só executa a consulta. Nada de função armazenada.
 
 **O que hoje é gatilho, matview ou cron** vira:
 - valor calculado e gravado pelo caso de uso no momento da escrita (ex.: `fora_universo`, prazo);
-- tabela de leitura (projeção) mantida pelo worker (ex.: romaneio por viagem, placa por motorista);
-- job agendado no BullMQ (ex.: sincronização FTP, BI2, heartbeat SSW).
+- tabela de leitura (projeção) mantida pelo worker-ssw (ex.: romaneio por viagem, placa por
+  motorista);
+- job agendado no BullMQ: os do ERP na API (ex.: limpar sessões, prazos configurados), os da
+  ingestão no worker-ssw (ex.: sincronização FTP, BI2, heartbeat SSW).
 
 ## Multiempresa e segurança
 
 - Toda tabela de dado de cliente tem `empresa_id uuid not null`.
-- O backend conecta com um papel **sem BYPASSRLS** (`erp_app`). Cada requisição roda numa transação
+- O backend conecta com um papel **sem BYPASSRLS** (`erp_app`; o worker-ssw com `erp_worker`, também
+  sem BYPASSRLS e com GRANT só no que a ingestão usa). Cada requisição roda numa transação
   que faz `SET LOCAL app.empresa_id`, `app.usuario_id` e `app.plataforma` (on/off). As políticas RLS
   são `empresa_id = current_setting('app.empresa_id')::uuid` (+ exceção para plataforma onde fizer
   sentido). Sem contexto ⇒ nenhuma linha.
@@ -108,7 +133,8 @@ agrupar e calcular; o banco só executa a consulta. Nada de função armazenada.
 - **Português** no domínio, rotas, mensagens e comentários (`ctrc`, `romaneio`, `ocorrencia`,
   `listarCtrcs`). Mensagem de erro fala com o operador ("reduza o período...").
 - Rotas REST: `/api/v1/<dominio>/<recurso>`; rotas públicas de integração em `/api/public/*` com os
-  mesmos caminhos de hoje e segredo por header.
+  mesmos caminhos de hoje e segredo por header (as do SSW atendidas pelo worker-ssw; o link público
+  do ranking pela API).
 - Funções pequenas, nomes que dizem a intenção, sem efeito colateral escondido; injeção de
   dependência pela composição em `app.ts` (sem container mágico).
 - Toda regra portada de uma função SQL cita a origem num comentário curto
@@ -123,5 +149,5 @@ agrupar e calcular; o banco só executa a consulta. Nada de função armazenada.
 | --- | --- |
 | 0 | Especificação das regras (`docs/regras/`); fundação (monorepo, api, web, worker, auth, contexto de empresa, RLS); schema de domínio |
 | 1 | Domínios em paralelo: performance/ctrc, romaneio/prazo, ocorrências/comprovantes/coletas/histórico/calendário, ranking/bonificação/ahgora, admin/plataforma/auditoria/exportação |
-| 2 | Ingestão (SSW/BI2/FTP/XML/webhook/Ahgora) no worker; migrador de dados `public` → `erp`; infra (Docker/Caddy/CI) |
+| 2 | Ingestão (SSW/BI2/FTP/XML/webhook) — hoje no worker-ssw (ADR 0012); migrador de dados `public` → `erp`; infra (Docker/Caddy/CI) |
 | 3 | Revisão de segurança e de código; consolidação |

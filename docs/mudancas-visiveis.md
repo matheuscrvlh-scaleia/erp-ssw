@@ -37,7 +37,7 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
 - **Q54 — código de ocorrência com letra** na coluna do SSW conta como "sem código" na saída para
   entrega, em vez de derrubar a consulta.
 
-## Ingestão SSW — relatórios, FTP, XML CT-e e ciclo (`packages/ingestao`, spec 06)
+## Ingestão SSW — relatórios, FTP, XML CT-e e ciclo (hoje no worker-ssw, spec 06)
 
 - **Q02 — CT-e por sigla + número.** A ingestão casa todo relatório pelo par (sigla, número): acabam
   a "série vigente" e o CT-e "estacionado" (`35123/CAS`); o CT-e antigo de outra série segue com
@@ -153,7 +153,7 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   navegador; filtros de filial e tipo de CT-e ainda não aparecem na tela (falta a consulta de
   opções da Performance).
 
-## Ingestão SSW: BI2, webhook e SSW API (`apps/worker/src/fontes`, spec 06)
+## Ingestão SSW: BI2, webhook e SSW API (hoje no worker-ssw, spec 06)
 
 - **Q41 — BI2 só com o 0017.** 0174, 0013/0016, 0220, cadastros, reprocessos e o backfill do 0017
   não existem mais; a tela Ingestão SSW perde os cards de backfill, a "ordem recomendada" e o
@@ -178,6 +178,26 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   CNPJ e o teste do trackingdanfe (o enriquecimento pela SSW API está desligado).
 - **Guarda do conteúdo bruto do BI2 (`bi2_bruto`) por 400 dias**, como as sincronizações; eventos do
   webhook e sincronizações do SSW, 90 dias.
+
+## Ingestão SSW no worker-ssw (ADR 0012)
+
+Só telas da Plataforma mudam; operação, números e URLs das integrações ficam iguais (a borda repassa
+`/api/public/*` ao worker-ssw).
+
+- **Ações sem pedido no contrato do worker-ssw** respondem "Esta ação agora é feita pelo worker do
+  SSW e ainda não pode ser pedida por esta tela. Fale com o suporte.": em Importação SSW, retomar
+  ciclo, importar relatório e aplicar à mão; em XML CT-e, liberar a trava do FTP e importar XML à
+  mão. Voltam quando o contrato do HTTP interno ganhar esses pedidos.
+- **Worker-ssw fora do ar ou não configurado:** as telas continuam com o que está no banco; rodar
+  FTP/BI2, testar a SSW API e reprocessar respondem "O worker do SSW não respondeu..." ou
+  "Integração com o worker do SSW não configurada.".
+- **Importação SSW:** "Na fila" fica sempre 0 e o FTP não mostra mais o progresso arquivo a
+  arquivo (os dois ficam no Redis do worker-ssw, fora do contrato); "aplicando" e "trava ativa"
+  vêm da situação dos jobs.
+- **Diagnóstico SSW:** a situação dos jobs vem do worker-ssw (rodando ou não, última e próxima
+  execução); somem as contagens de atrasados e a lista das últimas falhas.
+- **Credenciais da SSW API:** salvar credenciais novas pede ao worker-ssw uma verificação do token
+  (antes só apagava o token guardado).
 
 ## Performance e relatório de período (`/performance`, spec 02)
 
