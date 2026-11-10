@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Regras de negócio puras (sem I/O), usadas pela API e pelo worker.",
   "exports": {
+    "./nucleo": "./src/nucleo/index.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {
