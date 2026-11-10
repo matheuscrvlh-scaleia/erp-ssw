@@ -13,7 +13,7 @@ import {
   type TipoRecorte,
 } from "@erp/shared/contratos/listagem";
 
-import { diaSp, hojeSp } from "../ctrc/nucleo-provisorio";
+import { diaSp, hojeSp } from "../nucleo";
 import { type CtrcProcurado, lerCtrcProcurado, lerNotaProcurada, padroesDeTexto } from "./texto";
 
 /** Horas à frente do recorte "Vencendo em 24-48h". origem: p_vencendo_horas DEFAULT 48 */

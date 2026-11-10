@@ -4,7 +4,7 @@
  * origem: ctrc.functions.ts, ctrc.$numero.tsx, src/lib/ssw.ts (sistema atual)
  */
 import { lerCtrcProcurado } from "../listagem/texto";
-import { CODIGOS_ENTREGA, diaSp, estaEntregue } from "./nucleo-provisorio";
+import { CODIGOS_ENTREGA, diaSp, estaEntregue } from "../nucleo";
 
 /**
  * Número do endereço (`33214`, `033214`, `CAP033214`) + série opcional da query. A série da

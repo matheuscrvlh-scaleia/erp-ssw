@@ -1,7 +1,7 @@
 import { type Transacao } from "@erp/db";
 import { codigosOcorrencia, ctes, romaneioCteAtual } from "@erp/db/schema";
-import { CODIGO_SAIDA_PARA_ENTREGA } from "@erp/dominio/ctrc/nucleo-provisorio";
 import { type FiltroLista } from "@erp/dominio/listagem/filtro";
+import { CODIGO_SAIDA_PARA_ENTREGA } from "@erp/dominio/nucleo";
 import { z } from "@erp/shared/zod";
 import { and, type AnyColumn, eq, sql } from "drizzle-orm";
 

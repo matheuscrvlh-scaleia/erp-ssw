@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { atrasoDias } from "../nucleo";
 import {
   finalizacaoDoCtrc,
   lerIdentificacao,
@@ -8,7 +9,6 @@ import {
   ocorrenciasExibidas,
   statusDoPrazo,
 } from "./detalhe";
-import { atrasoDias } from "./nucleo-provisorio";
 
 const BAIXAS = new Set([12, 36, 61, 77, 92, 93, 94, 99]);
 

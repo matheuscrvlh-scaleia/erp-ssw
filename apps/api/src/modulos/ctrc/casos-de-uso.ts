@@ -4,7 +4,7 @@ import {
   localizacaoExibida,
   ocorrenciasExibidas,
 } from "@erp/dominio/ctrc/detalhe";
-import { atrasoDias, normCodigoOcorr } from "@erp/dominio/ctrc/nucleo-provisorio";
+import { atrasoDias, normCodigoOcorr } from "@erp/dominio/nucleo";
 import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type contratosCtrc,

@@ -4,7 +4,7 @@
  */
 import { type TipoRecorte } from "@erp/shared/contratos/listagem";
 
-import { CODIGOS_ENTREGA } from "../ctrc/nucleo-provisorio";
+import { CODIGOS_ENTREGA } from "../nucleo";
 
 export interface FaixaDeAtraso {
   faixa: string;

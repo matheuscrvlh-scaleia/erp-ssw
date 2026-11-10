@@ -4,7 +4,6 @@
  * origem: _lista_ctrcs_detalhado_filtro (sistema atual), escrito por extenso como lá.
  */
 import { ctes, ocorrencias } from "@erp/db/schema";
-import { CODIGO_SAIDA_PARA_ENTREGA, CODIGOS_ENTREGA } from "@erp/dominio/ctrc/nucleo-provisorio";
 import {
   CODIGO_AGENDAMENTO,
   CODIGOS_EM_ROTA,
@@ -12,6 +11,7 @@ import {
 } from "@erp/dominio/listagem/faixas";
 import { type FiltroLista } from "@erp/dominio/listagem/filtro";
 import { type CtrcProcurado } from "@erp/dominio/listagem/texto";
+import { CODIGO_SAIDA_PARA_ENTREGA, CODIGOS_ENTREGA } from "@erp/dominio/nucleo";
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/filtros";
 import { type OrdemLista, type TipoRecorte } from "@erp/shared/contratos/listagem";
 import { and, type SQL, sql } from "drizzle-orm";

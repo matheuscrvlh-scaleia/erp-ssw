@@ -3,7 +3,7 @@
  * todo valor de fora entra como parâmetro.
  */
 import { ctes } from "@erp/db/schema";
-import { FUSO_DO_NEGOCIO } from "@erp/dominio/ctrc/nucleo-provisorio";
+import { FUSO_DO_NEGOCIO } from "@erp/dominio/nucleo";
 import { type AnyColumn, type SQL, sql } from "drizzle-orm";
 
 /** Array como UM parâmetro (o `sql` do Drizzle expandiria em lista `($1, $2)`). */
