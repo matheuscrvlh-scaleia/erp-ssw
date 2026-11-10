@@ -73,6 +73,11 @@ export function configurarEslint({ tsconfigRootDir, web, ignorar = [], shadcn = 
         ...reactHooks.configs.recommended.rules,
         "react/prop-types": "off",
         "no-console": ["error", { allow: ["warn", "error"] }],
+        // `throw redirect(...)` é como o TanStack Router desvia a navegação no beforeLoad.
+        "@typescript-eslint/only-throw-error": [
+          "error",
+          { allow: [{ from: "package", package: "@tanstack/router-core", name: "Redirect" }] },
+        ],
         // Handler async em atributo JSX é o padrão do React (onClick={async () => ...}).
         "@typescript-eslint/no-misused-promises": [
           "error",
