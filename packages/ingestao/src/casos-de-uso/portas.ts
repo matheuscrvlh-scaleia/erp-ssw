@@ -418,8 +418,8 @@ export interface CredenciaisDaEmpresa {
 // --- Jobs ---------------------------------------------------------------------------------------
 
 export interface OpcoesDeEnfileiramento {
-  /** Id determinístico: o BullMQ não duplica job com o mesmo id enquanto ele existir. */
-  jobId?: string;
+  /** Singleton: enquanto houver um job com este id esperando ou rodando, outro não entra. */
+  deduplicacao?: string;
 }
 
 export interface Enfileirador {

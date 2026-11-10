@@ -24,7 +24,11 @@ export function criarEnfileirador(redis: Redis): Enfileirador & { fechar(): Prom
   };
   return {
     async enfileirar(nomeDaFila, nome, dados, opcoes) {
-      await fila(nomeDaFila).add(nome, dados, opcoes?.jobId ? { jobId: opcoes.jobId } : {});
+      await fila(nomeDaFila).add(
+        nome,
+        dados,
+        opcoes?.deduplicacao ? { deduplication: { id: opcoes.deduplicacao } } : {},
+      );
     },
     async fechar() {
       await Promise.all([...filas.values()].map((q) => q.close()));

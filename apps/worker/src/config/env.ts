@@ -13,6 +13,19 @@ const esquema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  /** Liga os agendamentos da ingestão SSW (FTP, ciclo, 455, limpeza); exige AGENDAMENTOS_LIGADOS. */
+  INGESTAO_AGENDADA: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  /** Cofre das integrações: `"1:<base64 de 32 bytes>,2:<…>"` (formato de `lerChavesDeSegredo`). */
+  SEGREDOS_CHAVES: z.string().optional(),
+  SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().optional(),
+  /** Só para integração com `parametros.usar_env` (transição da FR). */
+  SFTP_HOST: z.string().optional(),
+  SFTP_PORTA: z.string().optional(),
+  SFTP_USUARIO: z.string().optional(),
+  SFTP_SENHA: z.string().optional(),
 });
 
 export type AmbienteWorker = z.output<typeof esquema>;

@@ -28,7 +28,7 @@ export const AGENDA_DA_INGESTAO = {
   limpeza: "40 3 * * *",
 } as const;
 
-/** Id determinístico do singleton por empresa + tipo (spec 06 §4.2). */
+/** Chave do singleton por empresa + tipo (spec 06 §4.2). */
 export const idDoJob = (nome: string, empresaId: string) => `${nome}:${empresaId}`;
 
 // TODO(romaneio): o job é do domínio de Romaneio (`recalcularProjecoesDoRomaneio`); a ingestão só

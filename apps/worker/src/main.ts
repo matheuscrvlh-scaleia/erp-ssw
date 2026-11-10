@@ -1,4 +1,16 @@
 import { comContexto, conectarBanco, type Transacao } from "@erp/db";
+import { lerChavesDeSegredo } from "@erp/db/segredos";
+import {
+  criarClienteSftp,
+  criarCredenciais,
+  criarEnfileirador,
+  criarFilaDeAplicacao,
+  criarProgressos,
+  criarRepositorioDeRetencao,
+  criarRepositorioIngestao,
+  criarTravas,
+  lerIntegracao,
+} from "@erp/ingestao/infra";
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { pino } from "pino";
@@ -6,6 +18,7 @@ import { pino } from "pino";
 import { agendamentosDesejados, sincronizarAgendamentos } from "./agendamentos/agendamentos";
 import { criarRepositorioAgendamentos } from "./agendamentos/repositorio";
 import { carregarAmbiente } from "./config/env";
+import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
 import {
@@ -17,9 +30,6 @@ import {
 } from "./jobs/registro";
 import { criarProcessador } from "./processador";
 import { criarServidorDeSaude } from "./saude";
-
-/** Todos os jobs do sistema. Job novo entra aqui. */
-const JOBS: readonly DefinicaoDeJob[] = [limparSessoes];
 
 const PRAZO_DE_DESLIGAMENTO_MS = 30_000;
 
@@ -43,10 +53,41 @@ function repositorios(tx: Transacao): RepositoriosDoWorker {
   return {
     agendamentos: criarRepositorioAgendamentos(tx),
     manutencao: criarRepositorioManutencao(tx),
+    ingestao: (empresaId) => criarRepositorioIngestao(tx, empresaId, null),
+    retencaoDaIngestao: criarRepositorioDeRetencao(tx),
+    integracao: (empresaId, tipo) => lerIntegracao(tx, empresaId, tipo),
   };
 }
 const executar: ExecutorDoWorker = (contexto, fn) =>
   comContexto(conexao.banco, contexto, (tx) => fn(repositorios(tx)));
+
+const chavesDeSegredo =
+  ambiente.SEGREDOS_CHAVES && ambiente.SEGREDOS_CHAVE_ATUAL
+    ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
+    : null;
+const enfileirador = criarEnfileirador(redis);
+
+/** Todos os jobs do sistema. Job novo entra aqui. */
+const JOBS: readonly DefinicaoDeJob[] = [
+  limparSessoes,
+  ...criarJobsDaIngestao({
+    fila: criarFilaDeAplicacao(redis),
+    travas: criarTravas(redis),
+    progressos: criarProgressos(redis),
+    enfileirador,
+    sftp: criarClienteSftp(),
+    credenciais: criarCredenciais(
+      (empresaId) =>
+        executar({ empresaId, usuarioId: null, plataforma: false }, ({ integracao }) =>
+          integracao(empresaId, "sftp"),
+        ),
+      chavesDeSegredo,
+      ambiente,
+    ),
+    esperar: (ms) => new Promise((resolver) => setTimeout(resolver, ms)),
+    agendada: ambiente.INGESTAO_AGENDADA,
+  }),
+];
 
 const filas = FILAS.map(
   ({ nome }) =>
@@ -102,6 +143,7 @@ async function desligar(sinal: string) {
   saude.close();
   await Promise.all(workers.map((w) => w.close()));
   await Promise.all(filas.map((f) => f.close()));
+  await enfileirador.fechar();
   await conexao.encerrar();
   await redis.quit();
   process.exit(0);

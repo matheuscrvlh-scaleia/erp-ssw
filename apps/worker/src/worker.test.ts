@@ -13,6 +13,7 @@ import {
 } from "./agendamentos/agendamentos";
 import { limparSessoes } from "./jobs/manutencao/job";
 import { definirJob, type ExecutorDoWorker, type RepositoriosDoWorker } from "./jobs/registro";
+import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { criarProcessador } from "./processador";
 
 const log = pino({ level: "silent" });
@@ -30,6 +31,19 @@ function bancoFalso() {
       },
       apagarTokensDeSenhaVencidos: () => Promise.resolve(1),
     },
+    ingestao: () => {
+      throw new Error("não usado");
+    },
+    retencaoDaIngestao: {
+      apagarLinhasAplicadasAntesDe: () => Promise.resolve(0),
+      apagarErrosAntesDe: () => Promise.resolve(0),
+      apagarArquivosCiclosEAplicacoesAntesDe: () => Promise.resolve(0),
+      apagarXmlAntesDe: () => Promise.resolve(0),
+      apagarOrfaosResolvidosAntesDe: () => Promise.resolve(0),
+      apagarSincronizacoesAntesDe: () => Promise.resolve(0),
+      apagar038Superadas: () => Promise.resolve(0),
+    },
+    integracao: () => Promise.resolve(null),
   };
   const executar: ExecutorDoWorker = (contexto, fn) => {
     contextos.push(contexto);
@@ -95,7 +109,7 @@ describe("processador", () => {
 });
 
 describe("agendamentos", () => {
-  const empresas = [{ id: EMPRESA, fuso: "America/Manaus" }];
+  const empresas = [{ id: EMPRESA, fuso: "America/Manaus", integracoesAtivas: [] }];
 
   it("um por job da Plataforma e um por empresa nos jobs por empresa, no fuso dela", () => {
     expect(agendamentosDesejados([limparSessoes, porEmpresa], empresas)).toEqual([
@@ -137,5 +151,27 @@ describe("agendamentos", () => {
     const { fila, chaves } = filaFalsa(["limpar-sessoes"]);
     await sincronizarAgendamentos(fila, []);
     expect(chaves.size).toBe(0);
+  });
+});
+
+describe("jobs da ingestão", () => {
+  const servicos = (agendada: boolean) =>
+    ({ agendada }) as unknown as Parameters<typeof criarJobsDaIngestao>[0];
+
+  it("sem INGESTAO_AGENDADA nenhum agenda; ligados, só nas empresas com SFTP", () => {
+    const empresas = [
+      { id: EMPRESA, fuso: "America/Sao_Paulo", integracoesAtivas: ["sftp"] },
+      { id: randomUUID(), fuso: "America/Sao_Paulo", integracoesAtivas: [] },
+    ];
+    expect(agendamentosDesejados(criarJobsDaIngestao(servicos(false)), empresas)).toEqual([]);
+    const ligados = agendamentosDesejados(criarJobsDaIngestao(servicos(true)), empresas);
+    expect(ligados.map((a) => a.id)).toEqual([
+      `ingestao.ftp:${EMPRESA}`,
+      `ingestao.ftp-retroativo:${EMPRESA}`,
+      `ingestao.ssw-ciclo-aplicar:${EMPRESA}`,
+      `ingestao.unidade-pelo-455:${EMPRESA}`,
+      "ingestao.limpeza",
+    ]);
+    expect(ligados[0]?.padrao).toBe("1-29,31-59 * * * *");
   });
 });
