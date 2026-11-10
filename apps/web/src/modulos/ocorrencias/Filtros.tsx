@@ -18,7 +18,7 @@ import {
 import { type BuscaOcorrencias } from "./busca";
 import { rotulosDoResponsavel } from "./rotulos";
 
-export interface OpcoesDosFiltros {
+interface OpcoesDosFiltros {
   parceiros: readonly PagadorOpcao[] | undefined;
   codigos: readonly OpcaoFiltro[] | undefined;
   conferentes: readonly OpcaoFiltro[] | undefined;

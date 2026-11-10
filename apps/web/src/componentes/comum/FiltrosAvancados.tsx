@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 import { Button } from "@/componentes/ui/button";
 import { cn } from "@/lib/utils";
 
-export interface FiltrosAvancadosProps {
+interface FiltrosAvancadosProps {
   /** FiltroPeriodo, FiltroMultiplo, FiltroTexto... na ordem da tela. */
   children: ReactNode;
   /** Com algum filtro ligado, aparece "Limpar filtros". */

@@ -104,7 +104,7 @@ export function PaginaConfiguracoes() {
   );
 }
 
-export function SecaoDoGrupo({
+function SecaoDoGrupo({
   grupo,
   itens,
   salvando,

@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/componentes/ui/tabs";
 
-export interface AbaDaLista<T extends string> {
+interface AbaDaLista<T extends string> {
   valor: T;
   rotulo: ReactNode;
 }

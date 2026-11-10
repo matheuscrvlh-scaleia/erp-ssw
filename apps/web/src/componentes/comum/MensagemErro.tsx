@@ -4,7 +4,7 @@ import { Button } from "@/componentes/ui/button";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
-export interface MensagemErroProps {
+interface MensagemErroProps {
   erro: unknown;
   /** Prefixo, ex.: "Não foi possível carregar as coletas". */
   titulo?: string | undefined;

@@ -534,7 +534,7 @@ function CartaoDeIntegracao({
 
 // --- Implantação -----------------------------------------------------------------------------
 
-export interface ItemDaImplantacao {
+interface ItemDaImplantacao {
   titulo: string;
   detalhe: string;
   feito: boolean;

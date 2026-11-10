@@ -54,7 +54,7 @@ export function classificarComprovantes(
   }));
 }
 
-export function casaTipos(c: Comprovante, tipos: readonly string[]): boolean {
+function casaTipos(c: Comprovante, tipos: readonly string[]): boolean {
   return tipos.length === 0 || tipos.includes(c.tipoEfetivo);
 }
 

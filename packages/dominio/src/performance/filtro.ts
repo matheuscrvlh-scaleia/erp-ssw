@@ -5,7 +5,7 @@ import { somenteDigitos } from "../nucleo/texto";
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function ehUuid(valor: string): boolean {
+function ehUuid(valor: string): boolean {
   return RE_UUID.test(valor);
 }
 
@@ -57,7 +57,7 @@ export function codigosDoFiltro(codigos: readonly string[] | null | undefined): 
 }
 
 /** Maiúsculas, sem vazios nem repetidos; `SEM_TIPO_DOCUMENTO` passa como está. */
-export function tiposDoFiltro(tipos: readonly string[] | null | undefined): string[] | null {
+function tiposDoFiltro(tipos: readonly string[] | null | undefined): string[] | null {
   const limpos = semDuplicados((tipos ?? []).map((t) => t.trim().toUpperCase()).filter(Boolean));
   return limpos.length > 0 ? limpos : null;
 }

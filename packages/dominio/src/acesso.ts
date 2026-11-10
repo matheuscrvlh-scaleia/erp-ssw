@@ -120,7 +120,7 @@ export function aplicarTelasDaPlataforma(
   return emOrdemDoCatalogo(resultado);
 }
 
-export interface TelaBloqueada {
+interface TelaBloqueada {
   tela: Tela;
   modulo: string;
   moduloNome: string;
@@ -214,7 +214,7 @@ export interface EntradaDoAcesso {
   modulosVigentes: readonly string[];
 }
 
-export interface ResultadoDoAcesso {
+interface ResultadoDoAcesso {
   ativo: boolean;
   papel: string | null;
   setor: Setor | null;
@@ -265,7 +265,7 @@ export function calcularAcesso(entrada: EntradaDoAcesso): ResultadoDoAcesso {
   return { ativo, papel, setor, telas, telasBloqueadas: bloqueadas };
 }
 
-export interface VinculoParaEscolha {
+interface VinculoParaEscolha {
   empresaId: string;
   ativo: boolean;
   empresaAtiva: boolean;

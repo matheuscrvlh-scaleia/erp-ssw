@@ -25,7 +25,7 @@ import { MensagemErro } from "./MensagemErro";
  * ColetasGraficos.tsx (sistema atual).
  */
 
-export interface SerieGrafico {
+interface SerieGrafico {
   /** Propriedade do ponto com o valor (null deixa um vão). */
   chave: string;
   /** Nome na legenda e na dica. */
@@ -150,7 +150,7 @@ function Area<T extends object>({
   );
 }
 
-export interface GraficoLinhaProps<T extends object> extends GraficoBaseProps<T> {
+interface GraficoLinhaProps<T extends object> extends GraficoBaseProps<T> {
   /** Linha tracejada de meta (mesma escala dos dados). */
   meta?: { valor: number; rotulo: string } | undefined;
 }
@@ -215,7 +215,7 @@ export function GraficoLinha<T extends object>(props: GraficoLinhaProps<T>) {
   );
 }
 
-export interface GraficoBarrasProps<T extends object> extends GraficoBaseProps<T> {
+interface GraficoBarrasProps<T extends object> extends GraficoBaseProps<T> {
   /** Clique numa barra (ex.: abrir a lista daquele dia). */
   aoClicarBarra?: ((ponto: T) => void) | undefined;
 }

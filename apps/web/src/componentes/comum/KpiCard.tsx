@@ -32,7 +32,7 @@ export function statusDaMeta(valor: number, meta: number, tolerancia = 0.03): St
   return "ruim";
 }
 
-export interface KpiCardProps {
+interface KpiCardProps {
   rotulo: string;
   /** Já formatado ("95,1%", "1.234"). */
   valor: string;

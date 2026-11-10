@@ -12,7 +12,7 @@ import { type Intervalo } from "@/componentes/comum/periodo";
 import { campoFiltro } from "@/hooks/use-filtros-na-url";
 
 export const PERIODOS = ["7d", "30d", "mes", "90d"] as const;
-export type PeriodoDoHistorico = (typeof PERIODOS)[number];
+type PeriodoDoHistorico = (typeof PERIODOS)[number];
 
 export const ROTULO_DO_PERIODO: Record<PeriodoDoHistorico, string> = {
   "7d": "7 dias",
@@ -22,7 +22,7 @@ export const ROTULO_DO_PERIODO: Record<PeriodoDoHistorico, string> = {
 };
 
 export const PRESENCAS = ["todos", "anotacao", "feriado", "ambos"] as const;
-export type Presenca = (typeof PRESENCAS)[number];
+type Presenca = (typeof PRESENCAS)[number];
 
 export const ROTULO_DA_PRESENCA: Record<Presenca, string> = {
   todos: "Todos os dias",
@@ -49,7 +49,7 @@ export const esquemaDaBusca = z.object({
   autor: campoFiltro.texto(60),
   q: campoFiltro.texto(200),
 });
-export type BuscaHistorico = z.output<typeof esquemaDaBusca>;
+type BuscaHistorico = z.output<typeof esquemaDaBusca>;
 
 /** Período do atalho, com o dia de Brasília (Q11). */
 export function intervaloDoPeriodo(periodo: PeriodoDoHistorico, hoje: string): Intervalo {

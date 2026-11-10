@@ -15,7 +15,7 @@ const COR: Record<Tom, string> = {
 };
 
 /** Meta e alerta do SLA da empresa (frações). */
-export interface Sla {
+interface Sla {
   meta: number;
   alerta: number;
 }

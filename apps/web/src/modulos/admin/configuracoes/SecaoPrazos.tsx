@@ -271,7 +271,7 @@ function SubSecao({
 const soDigitos = (v: string) => v.replace(/[^0-9]/g, "");
 const numeroOuNulo = (v: string) => (v ? Number(v) : null);
 
-export function ModalDeRegra({
+function ModalDeRegra({
   tipo,
   regra,
   opcoes,

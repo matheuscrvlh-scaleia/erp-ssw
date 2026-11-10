@@ -148,7 +148,7 @@ export function validarParametrosDeIntegracao(parametros: Record<string, unknown
   }
 }
 
-export interface LogoValidado {
+interface LogoValidado {
   bytes: Uint8Array;
   extensao: "png" | "jpg";
   tipo: "image/png" | "image/jpeg";

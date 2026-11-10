@@ -17,8 +17,8 @@ import { AvisoDaLista, ItemMarcavel } from "@/modulos/filtros/componentes";
 
 import { consultaCodigosDoRecorte } from "./api";
 
-export const GRUPOS_DE_OCORRENCIA = ["aberto", "cliente", "empresa", "penaliza"] as const;
-export type GrupoDeOcorrencia = (typeof GRUPOS_DE_OCORRENCIA)[number];
+const GRUPOS_DE_OCORRENCIA = ["aberto", "cliente", "empresa", "penaliza"] as const;
+type GrupoDeOcorrencia = (typeof GRUPOS_DE_OCORRENCIA)[number];
 
 const ROTULO_DO_GRUPO: Record<GrupoDeOcorrencia, string> = {
   aberto: "Em aberto",

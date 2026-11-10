@@ -9,7 +9,7 @@ import { consultaAtualizacaoDosDados } from "./api";
  * Última aplicação dos arquivos do SSW na empresa ativa (e XML aguardando, só para a Plataforma).
  * Uma consulta para todas as telas: mesma chave, renovada a cada 60 s.
  */
-export function useAtualizacaoDosDados() {
+function useAtualizacaoDosDados() {
   const { data: acesso } = useQuery(consultaAcesso);
   const empresa = acesso?.empresa ?? null;
   const { data } = useQuery({

@@ -22,7 +22,7 @@ export const COLUNAS_DO_PDF: readonly ColunaExportacao[] = [
   { chave: "valor", titulo: "Valor", largura: 90 },
 ];
 
-export interface LinhaDoPdf {
+interface LinhaDoPdf {
   secao: string;
   campo: string;
   valor: string;

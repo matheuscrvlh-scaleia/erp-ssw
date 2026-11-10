@@ -34,7 +34,7 @@ export const MESES_LONGOS = [
 export const SEMANA = ["D", "S", "T", "Q", "Q", "S", "S"] as const;
 const SEMANA_CURTA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const;
 
-export interface DiaDaGrade {
+interface DiaDaGrade {
   iso: string;
   dia: number;
   outroMes: boolean;

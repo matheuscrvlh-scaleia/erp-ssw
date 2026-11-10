@@ -57,7 +57,7 @@ export const TELAS_SO_PLATAFORMA: readonly Tela[] = [
 export const TELAS_POR_REGRA: readonly Tela[] = ["admin_logs"];
 
 /** Liberam um recurso dentro de uma tela; não têm página nem entram no menu. */
-export const PERMISSOES_DE_RECURSO: readonly Tela[] = ["romaneio_placa"];
+const PERMISSOES_DE_RECURSO: readonly Tela[] = ["romaneio_placa"];
 
 export const TELAS_ADMIN: readonly Tela[] = [
   "admin_usuarios",

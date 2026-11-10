@@ -4,7 +4,7 @@ import { agrupar } from "../colecoes";
 import { classificar, type CodigoDoCatalogo } from "./catalogo";
 import { ctesPenalizantes } from "./painel";
 
-export interface OcorrenciaDoCard {
+interface OcorrenciaDoCard {
   cteId: string;
   codigo: number;
   descricao: string | null;

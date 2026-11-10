@@ -16,7 +16,7 @@ export const consultaPainel = (filtros: FiltrosDeColetas) =>
     refetchInterval: 5 * 60_000,
   });
 
-export interface PaginaDaLista {
+interface PaginaDaLista {
   status: StatusDaLista;
   busca: string;
   pagina: number;

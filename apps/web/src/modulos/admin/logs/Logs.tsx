@@ -58,7 +58,7 @@ const ouNada = (v: string) => (v.trim() ? v.trim() : undefined);
 
 const FILTRO = "h-8 rounded-md border border-input bg-background px-2 text-[12px] shadow-sm";
 
-export type EscopoDasAlteracoes =
+type EscopoDasAlteracoes =
   "empresa" | { empresaFixa: string } | { empresas: readonly { id: string; nome: string }[] };
 
 function colunasDaAuditoria(comEmpresa: boolean): ColunaTabela<LinhaAuditoria>[] {
@@ -263,7 +263,7 @@ const COLUNAS_DA_INTEGRACAO: ColunaTabela<LinhaIntegracao>[] = [
   { chave: "erro", titulo: "Mensagem", classe: "max-w-[320px] truncate text-muted-foreground" },
 ];
 
-export function PainelIntegracoes({ empresaId }: { empresaId?: string | undefined }) {
+function PainelIntegracoes({ empresaId }: { empresaId?: string | undefined }) {
   // Dezenas de execuções por dia: começa nos últimos 7 dias.
   const fuso = useFusoDaEmpresa();
   const [filtros, setFiltros] = useState(() => ({ ...ultimosDias(7, fuso), origem: "" }));

@@ -18,7 +18,7 @@ import { type DataIso, diaSp, menosDias } from "./tempo";
 import { vazioAposTrim } from "./texto";
 
 /** Evento do trackingdanfe mais antigo que isto antes da criação do CT-e é suspeito. */
-export const DIAS_LIMITE_TRACKINGDANFE = 400;
+const DIAS_LIMITE_TRACKINGDANFE = 400;
 
 /** Ocorrência que vai ser criada, como a ingestão recebeu. */
 export interface OcorrenciaRecebida {
@@ -32,18 +32,18 @@ export interface OcorrenciaRecebida {
 }
 
 /** Domínio e filial que o trackingdanfe trouxe no payload. */
-export interface PayloadTrackingdanfe {
+interface PayloadTrackingdanfe {
   dominio: string | null;
   filial: string | null;
 }
 
-export interface EmpresaDaOcorrencia {
+interface EmpresaDaOcorrencia {
   /** `empresas.dominio_ssw` (FR = FRT). */
   dominioSsw: string | null;
   filiaisProprias: ReadonlySet<string>;
 }
 
-export type OcorrenciaPreparada =
+type OcorrenciaPreparada =
   | { tipo: "gravar"; quarentena: boolean; responsavel: Responsavel; penaliza: boolean }
   | { tipo: "descartar"; motivo: string };
 

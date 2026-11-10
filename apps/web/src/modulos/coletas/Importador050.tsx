@@ -16,7 +16,7 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DAS_COLETAS } from "./api";
 
-export interface ArquivoImportado {
+interface ArquivoImportado {
   arquivo: string;
   resultado: ResultadoDaImportacao050;
 }

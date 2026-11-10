@@ -141,7 +141,7 @@ export function impactoDosCodigos(
 
 // ---------------------------------------------------------------- derivados e comparativo (tela)
 
-export interface DerivadosDoBloco {
+interface DerivadosDoBloco {
   totalPrazo: number;
   pctNoPrazo: number | null;
   /** Exibido como "% Penalizado Op.": fora do prazo sobre os emitidos. */
@@ -163,7 +163,7 @@ export function derivadosDoBloco(b: BlocoProducao): DerivadosDoBloco {
   };
 }
 
-export type TomDoDelta = "bom" | "ruim" | "neutro";
+type TomDoDelta = "bom" | "ruim" | "neutro";
 export interface Delta {
   texto: string;
   tom: TomDoDelta;

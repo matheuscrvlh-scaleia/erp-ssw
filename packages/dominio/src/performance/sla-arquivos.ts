@@ -5,17 +5,17 @@ import { type DataIso, diaSp } from "../nucleo/tempo";
 import { compararTexto } from "./primitivas";
 
 /** Primeira emissão que o SLA pelos arquivos recalcula (antes disso vale o BI2). */
-export const SLA_ARQUIVOS_DESDE_MINIMO = "2025-12-01";
+const SLA_ARQUIVOS_DESDE_MINIMO = "2025-12-01";
 
 /** Campos que o SLA pelos arquivos grava e marca como vindos do SSW. */
-export const CAMPOS_DO_SLA = [
+const CAMPOS_DO_SLA = [
   "no_prazo",
   "responsabilidade_cliente",
   "performance_dias",
   "fonte_performance",
 ] as const;
 
-export const FONTE_SLA_ARQUIVOS = "ssw_arquivos";
+const FONTE_SLA_ARQUIVOS = "ssw_arquivos";
 
 /** `max(2025-12-01, desde ?? hoje − 60)`. origem: calcular_sla_arquivos (sistema atual) */
 export function inicioDoSlaArquivos(hoje: string, desde: string | null): string {

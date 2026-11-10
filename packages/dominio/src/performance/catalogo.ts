@@ -1,7 +1,7 @@
 import { type Responsavel, TIPOS_PENDENCIA, type TipoSsw } from "../nucleo/codigos";
 
 export type { TipoSsw };
-export type ResponsavelOcorrencia = Responsavel;
+type ResponsavelOcorrencia = Responsavel;
 
 export interface CodigoDoCatalogo {
   codigo: number;

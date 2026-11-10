@@ -21,16 +21,12 @@ export const esquemaPrazo = z.object({
     .refine((n) => TAMANHOS_DA_LISTA.some((t) => t === n))
     .catch(50),
 });
-export type BuscaPrazo = z.output<typeof esquemaPrazo>;
-
 /** Detalhe do parceiro: período, unidades e tipos vêm da visão geral. */
 export const esquemaDetalhe = z.object({
   periodo,
   unidades: campoFiltro.lista(),
   tipos: campoFiltro.lista(),
 });
-export type BuscaDetalhe = z.output<typeof esquemaDetalhe>;
-
 export const tamanhoDaLista = (n: number): (typeof TAMANHOS_DA_LISTA)[number] =>
   TAMANHOS_DA_LISTA.find((t) => t === n) ?? 50;
 

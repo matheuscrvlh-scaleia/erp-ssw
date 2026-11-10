@@ -106,7 +106,7 @@ export function textoCsv(valor: unknown, formato: FormatoColuna = "texto", fuso 
   return textoDaCelula(valor, formato, fuso);
 }
 
-export interface CelulaExcel {
+interface CelulaExcel {
   valor: string | number | Date;
   formatoNumero?: string;
 }

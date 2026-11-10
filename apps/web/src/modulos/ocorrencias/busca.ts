@@ -145,7 +145,7 @@ export function linkDaListagem(
   return `/performance/lista?${busca.toString()}`;
 }
 
-export const ROTULO_DA_RESPONSABILIDADE: Record<Responsabilidade, string> = {
+const ROTULO_DA_RESPONSABILIDADE: Record<Responsabilidade, string> = {
   todas: "Todas",
   penalizantes: "Penalizantes",
   externas: "Não penalizantes",

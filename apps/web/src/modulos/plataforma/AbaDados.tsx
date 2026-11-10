@@ -149,7 +149,7 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
 }
 
 /** Conteúdo do arquivo em base64 (sem o prefixo `data:...;base64,`). */
-export function lerBase64(arquivo: Blob): Promise<string> {
+function lerBase64(arquivo: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
     leitor.onload = () => {

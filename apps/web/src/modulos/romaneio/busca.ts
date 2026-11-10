@@ -79,7 +79,7 @@ export const esquemaRomaneio = z.object({
     .catch(50),
 });
 export type BuscaRomaneio = z.output<typeof esquemaRomaneio>;
-export type TamanhoDePagina = (typeof TAMANHOS_DE_PAGINA)[number];
+type TamanhoDePagina = (typeof TAMANHOS_DE_PAGINA)[number];
 
 export const tamanhoDePagina = (n: number): TamanhoDePagina =>
   TAMANHOS_DE_PAGINA.find((t) => t === n) ?? 50;

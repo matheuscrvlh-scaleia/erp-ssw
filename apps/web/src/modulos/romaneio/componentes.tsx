@@ -244,7 +244,7 @@ export function AlternarCardsSecundarios({
 }
 
 /** Códigos que contam como prejuízo: os do filtro, senão o 13. */
-export const codigosDoPrejuizo = (codigos: readonly number[] | undefined) =>
+const codigosDoPrejuizo = (codigos: readonly number[] | undefined) =>
   codigos && codigos.length > 0 ? codigos : [13];
 
 /** "código 13" ou "códigos 13, 69". */

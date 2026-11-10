@@ -23,7 +23,7 @@ import { type RecorteFinalizacao, ROTULO_DA_FAIXA } from "./busca";
 import { classeDoResponsavel, rotulosDoResponsavel } from "./rotulos";
 
 /** Recortes que os blocos aplicam na tela (clicar de novo desfaz). */
-export interface RecortesDosBlocos {
+interface RecortesDosBlocos {
   prazo: FiltroPrazo | null;
   faixa: FaixaAtraso | null;
   pagador: string | null;

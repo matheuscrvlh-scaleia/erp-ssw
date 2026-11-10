@@ -16,7 +16,7 @@ export const consultaPainel = (entrada: FiltrosDeCte & Recortes) =>
     queryFn: () => chamar(c.painel, { entrada }),
   });
 
-export type EntradaDaLista = EntradaDe<typeof c.lista>;
+type EntradaDaLista = EntradaDe<typeof c.lista>;
 
 export const consultaLista = (entrada: EntradaDaLista) =>
   queryOptions({

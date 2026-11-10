@@ -7,7 +7,7 @@ import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { corDoStatus, fundoDoStatus, textoDoStatus } from "../cores";
 import { clicavel } from "./Kpis";
 
-export type LinhaDaUnidade = UnidadeResumo & {
+type LinhaDaUnidade = UnidadeResumo & {
   slaOp: number | null;
   nascidosPct: number | null;
 };

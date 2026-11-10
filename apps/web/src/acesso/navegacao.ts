@@ -32,7 +32,7 @@ import {
   UsersRound,
 } from "lucide-react";
 
-export const ICONE_DA_TELA: Record<Tela, LucideIcon> = {
+const ICONE_DA_TELA: Record<Tela, LucideIcon> = {
   performance: BarChart3,
   romaneio: FileSpreadsheet,
   ocorrencias: AlertTriangle,

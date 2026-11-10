@@ -12,7 +12,7 @@ export function formatarInteiro(valor: number | null | undefined): string {
   return valor == null || !Number.isFinite(valor) ? TRACO : inteiro.format(valor);
 }
 
-export interface OpcoesPercentual {
+interface OpcoesPercentual {
   /** Casas decimais, sempre mostradas (padrão 1). */
   casas?: number;
   /** `"fracao"` (0,951) é o padrão; `"cem"` quando o valor já vem de 0 a 100 (95,1). */
@@ -61,7 +61,7 @@ export function formatarMoeda(
   }).format(valor);
 }
 
-export interface OpcoesPeso {
+interface OpcoesPeso {
   /** Casas em toneladas (de 1.000 kg para cima). Padrão 1. */
   tonelada?: number;
   /** Casas em quilos. Padrão 0. */

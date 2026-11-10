@@ -11,13 +11,13 @@ import { cn } from "@/lib/utils";
 import { GatilhoFiltro } from "./GatilhoFiltro";
 import { type AtalhoPeriodo, type Periodo, ROTULO_ATALHO } from "./periodo";
 
-export interface MudancaPeriodo {
+interface MudancaPeriodo {
   periodo: Periodo;
   de: string;
   ate: string;
 }
 
-export interface FiltroPeriodoProps {
+interface FiltroPeriodoProps {
   periodo: Periodo;
   /** Datas do intervalo personalizado ("" quando não há). */
   de: string;

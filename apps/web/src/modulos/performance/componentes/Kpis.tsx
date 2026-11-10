@@ -38,7 +38,7 @@ export function clicavel(acao: (() => void) | undefined, pararPropagacao = false
   };
 }
 
-export function KpiBox({
+function KpiBox({
   rotulo,
   valor,
   status,
@@ -227,7 +227,7 @@ export function DistribuicaoPontualidade({
   );
 }
 
-export interface AcoesDosKpis {
+interface AcoesDosKpis {
   emAtraso: () => void;
   emAtrasoFr: () => void;
   emAtrasoCliente: () => void;

@@ -150,7 +150,7 @@ export function filtroDaBusca(
 }
 
 /** origem: TIPO_LABEL (performance.lista.tsx, sistema atual) */
-export const ROTULO_DO_RECORTE: Record<TipoRecorte, string> = {
+const ROTULO_DO_RECORTE: Record<TipoRecorte, string> = {
   emitidos: "CT-e emitidos",
   entregues: "CT-e entregues",
   no_prazo: "CT-e no prazo",
@@ -201,7 +201,7 @@ const ROTULO_FAIXA_PREVISTO: Record<FaixaPrevisto, string> = {
 };
 
 /** "(FR)" nos rótulos = a transportadora: vira o nome curto da empresa ativa. */
-export function rotuloDoRecorte(tipo: TipoRecorte, nomeCurto: string): string {
+function rotuloDoRecorte(tipo: TipoRecorte, nomeCurto: string): string {
   return ROTULO_DO_RECORTE[tipo].replace("(FR)", `(${nomeCurto})`);
 }
 

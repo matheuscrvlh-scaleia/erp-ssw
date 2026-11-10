@@ -2,7 +2,7 @@ import { destinoInterno } from "@erp/shared/acesso/destino";
 import { CAMINHO_DA_TELA, telaDoCaminho } from "@erp/shared/acesso/telas";
 import { type Acesso } from "@erp/shared/contratos/auth";
 
-export type DecisaoDaGuarda =
+type DecisaoDaGuarda =
   | { tipo: "liberado" }
   | { tipo: "modulo_desligado"; moduloNome: string }
   | { tipo: "redirecionar"; para: string };

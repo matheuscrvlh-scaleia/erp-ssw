@@ -2,7 +2,7 @@ import { type Granularidade, type PontoSerie } from "@erp/shared/contratos/perfo
 import { diferencaEmDias, somarDias } from "@erp/shared/datas";
 
 /** Janela do gráfico de evolução para o período da tela. */
-export interface JanelaDaSerie {
+interface JanelaDaSerie {
   inicio: string;
   fim: string;
   granularidade: Granularidade;
@@ -29,7 +29,7 @@ function proximoMes(iso: string): string {
 }
 
 /** Eixo completo de `trunc(inicio)` a `trunc(fim)`, dia a dia ou mês a mês. */
-export function eixoDaSerie(inicio: string, fim: string, granularidade: Granularidade): string[] {
+function eixoDaSerie(inicio: string, fim: string, granularidade: Granularidade): string[] {
   const eixo: string[] = [];
   if (granularidade === "dia") {
     for (let d = inicio; d <= fim; d = somarDias(d, 1)) eixo.push(d);
@@ -40,7 +40,7 @@ export function eixoDaSerie(inicio: string, fim: string, granularidade: Granular
 }
 
 /** Período (dia ou 1º do mês) de uma data da base. */
-export function periodoDaData(data: string, granularidade: Granularidade): string {
+function periodoDaData(data: string, granularidade: Granularidade): string {
   return granularidade === "dia" ? data : inicioDoMes(data);
 }
 
@@ -84,7 +84,7 @@ export function completarSerie(
 }
 
 /** Métricas do gráfico. A do Ranking tem fórmula própria (entregues − atrasos da transportadora). */
-export type MetricaDaSerie = "sla_op" | "sla_cli" | "sla_ranking" | "volume";
+type MetricaDaSerie = "sla_op" | "sla_cli" | "sla_ranking" | "volume";
 
 const razao = (num: number, den: number) => (den > 0 ? num / den : null);
 

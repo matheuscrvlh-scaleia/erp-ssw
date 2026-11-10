@@ -27,7 +27,7 @@ export const esquemaDaBusca = z.object({
   page: campoFiltro.pagina(),
   size: z.coerce.number().int().min(1).max(500).catch(50),
 });
-export type BuscaComprovantes = z.output<typeof esquemaDaBusca>;
+type BuscaComprovantes = z.output<typeof esquemaDaBusca>;
 
 export function filtrosDaBusca(b: BuscaComprovantes, periodo: Intervalo): FiltrosDeComprovantes {
   return {

@@ -51,7 +51,7 @@ export function rodapeDaMarca(marca: Marca): string {
   return marca.slogan ? `${marca.nome} — ${marca.slogan}` : marca.nome;
 }
 
-export type Rgb = [number, number, number];
+type Rgb = [number, number, number];
 
 export function hexParaRgb(hex: string): Rgb {
   const n = parseInt(hex.replace("#", ""), 16);

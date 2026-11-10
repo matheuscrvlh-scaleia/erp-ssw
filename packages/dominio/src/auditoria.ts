@@ -6,7 +6,7 @@
  */
 
 export type Registro = Record<string, unknown>;
-export type AcaoDeCadastro = "criar" | "alterar" | "excluir";
+type AcaoDeCadastro = "criar" | "alterar" | "excluir";
 
 /** Colunas de controle: mudar só elas não gera linha; nunca aparecem no antes/depois. */
 const IGNORADAS: ReadonlySet<string> = new Set([
@@ -59,7 +59,7 @@ function mascarar(registro: Registro | null, valorEhSegredo: boolean): Registro 
   );
 }
 
-export interface MudancaAuditada {
+interface MudancaAuditada {
   antes: Registro | null;
   depois: Registro | null;
 }

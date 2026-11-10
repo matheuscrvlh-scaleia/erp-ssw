@@ -6,7 +6,7 @@ import { type TipoRecorte } from "@erp/shared/contratos/listagem";
 
 import { CODIGOS_ENTREGA } from "../nucleo";
 
-export interface FaixaDeAtraso {
+interface FaixaDeAtraso {
   faixa: string;
   ordem: number;
   min: number;
@@ -14,7 +14,7 @@ export interface FaixaDeAtraso {
 }
 
 /** origem: listar_ctrcs_detalhado_agregado_por_faixa_atraso (sistema atual) */
-export const FAIXAS_DE_ATRASO: readonly FaixaDeAtraso[] = [
+const FAIXAS_DE_ATRASO: readonly FaixaDeAtraso[] = [
   { faixa: "Até 3 dias", ordem: 1, min: 1, max: 3 },
   { faixa: "4–5 dias", ordem: 2, min: 4, max: 5 },
   { faixa: "6–8 dias", ordem: 3, min: 6, max: 8 },
@@ -84,7 +84,7 @@ export function recorteSemPeriodo(recorte: TipoRecorte): boolean {
  * aqui 18 e 67 não finalizam e 59 (carga roubada) finaliza.
  * origem: src/features/performance/lista/em-aberto.ts (sistema atual)
  */
-export const FINALIZADORES_SAIU_COM_PRAZO_VENCIDO: readonly number[] = [
+const FINALIZADORES_SAIU_COM_PRAZO_VENCIDO: readonly number[] = [
   1, 12, 36, 59, 61, 77, 92, 93, 94, 99,
 ];
 

@@ -22,7 +22,7 @@ export const RESPONSAVEL_DA_LETRA: Record<LetraDeResponsavel, Responsavel> = {
  * Campos do código que entram na auditoria, com o nome da coluna (o histórico migrado do sistema
  * atual usa esses nomes). Carimbos de alteração ficam de fora.
  */
-export const CAMPOS_AUDITADOS = [
+const CAMPOS_AUDITADOS = [
   "descricao",
   "responsavel",
   "penaliza",
@@ -31,8 +31,8 @@ export const CAMPOS_AUDITADOS = [
   "pendente_classificacao",
   "notas",
 ] as const;
-export type CampoAuditado = (typeof CAMPOS_AUDITADOS)[number];
-export type RegistroAuditavel = Record<CampoAuditado, string | boolean | null>;
+type CampoAuditado = (typeof CAMPOS_AUDITADOS)[number];
+type RegistroAuditavel = Record<CampoAuditado, string | boolean | null>;
 
 export interface ClassificacaoDoCodigo {
   descricao: string;

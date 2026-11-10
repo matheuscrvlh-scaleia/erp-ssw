@@ -167,7 +167,7 @@ export function definirPrevisao(
 }
 
 /** Previsão dada pelas regras ativas, ou `null` se nenhuma vale para o CT-e. */
-export function previsaoPorRegra(
+function previsaoPorRegra(
   cte: Pick<CteParaPrazo, "dataEmissao" | "filial" | "parceiroCnpj">,
   ocorrencias: readonly OcorrenciaDoCte[],
   regras: readonly RegraDePrazo[],

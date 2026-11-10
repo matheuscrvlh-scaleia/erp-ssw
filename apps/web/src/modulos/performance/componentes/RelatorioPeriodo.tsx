@@ -39,7 +39,7 @@ import { DistribuicaoPontualidade } from "./Kpis";
 
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
-export interface FiltrosHerdados {
+interface FiltrosHerdados {
   entrada: Omit<FiltroPerformanceEntrada, "inicio" | "fim" | "baseData">;
   codigos: string[];
   etiquetas: { rotulo: string; valor: string }[];

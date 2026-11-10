@@ -10,7 +10,7 @@ export const TELAS_EDITAVEIS: readonly Tela[] = TELAS.filter(
 );
 
 /** Telas que um cadastro pode gravar: as editáveis e a chave gêmea do Ranking. */
-export const TELAS_GRAVAVEIS: readonly Tela[] = [...TELAS_EDITAVEIS, "ranking_novo"];
+const TELAS_GRAVAVEIS: readonly Tela[] = [...TELAS_EDITAVEIS, "ranking_novo"];
 
 export function ehTelaGravavel(tela: string): tela is Tela {
   return (TELAS_GRAVAVEIS as readonly string[]).includes(tela);

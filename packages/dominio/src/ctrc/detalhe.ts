@@ -75,7 +75,7 @@ export function finalizacaoDoCtrc(
 
 const MS_POR_DIA = 86_400_000;
 
-export type StatusDoPrazo =
+type StatusDoPrazo =
   | { tipo: "sem_previsao" }
   | { tipo: "baixado" }
   | { tipo: "entregue_no_prazo" }

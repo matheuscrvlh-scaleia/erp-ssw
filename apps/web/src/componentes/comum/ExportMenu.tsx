@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { ordenarPorPlaca } from "./ordenar-por-placa";
 import { useEmpresaDaExportacao } from "./use-empresa-da-exportacao";
 
-export type FormatoExportacao = "csv" | "excel" | "pdf" | "imprimir";
+type FormatoExportacao = "csv" | "excel" | "pdf" | "imprimir";
 
 const ROTULO: Record<FormatoExportacao, string> = {
   csv: "CSV",

@@ -9,7 +9,7 @@ import { type DataIso, diaSp } from "./tempo";
 import { nuloSeVazio } from "./texto";
 
 export const FONTES_DA_EFETIVA = ["ssw_036", "bi2_0174", "bi2_0013", "webhook"] as const;
-export type FonteDaEfetiva = (typeof FONTES_DA_EFETIVA)[number];
+type FonteDaEfetiva = (typeof FONTES_DA_EFETIVA)[number];
 
 /** Prioridade no empate: 036 › 0174 › 0013 › ocorrências gravadas ("webhook"). */
 const PRIORIDADE: Record<FonteDaEfetiva, number> = {

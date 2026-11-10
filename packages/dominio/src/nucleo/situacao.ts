@@ -75,8 +75,8 @@ export function estaSemMovimento(
   return difDias(hojeSp(agora), ultimoMovimento) > limite;
 }
 
-export const FAIXAS_PREVISAO = ["sem_prev", "vencido", "hoje", "d1", "d2", "d3_mais"] as const;
-export type FaixaPrevisao = (typeof FAIXAS_PREVISAO)[number];
+const FAIXAS_PREVISAO = ["sem_prev", "vencido", "hoje", "d1", "d2", "d3_mais"] as const;
+type FaixaPrevisao = (typeof FAIXAS_PREVISAO)[number];
 
 /**
  * Faixa de vencimento do bloco "Previstos". "Hoje" é o dia de Brasília (Q11 do dono; hoje o SQL
@@ -107,7 +107,7 @@ export function statusPrevisto(codigo: number | null, tipoSsw: TipoSsw | null): 
   return "outros";
 }
 
-export type SaiuParaEntrega = "sim" | "quarentena" | "nao_rastreado";
+type SaiuParaEntrega = "sim" | "quarentena" | "nao_rastreado";
 
 /**
  * Saiu para entrega: entregue, ou efetiva/0013/0174 de saída, ou ocorrência de saída fora de

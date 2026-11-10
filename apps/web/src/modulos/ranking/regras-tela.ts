@@ -22,7 +22,7 @@ export const PARAMETROS_PADRAO: Record<CriterioDeRegra, Record<string, string>> 
   livre: { nome: "Bônus pontual", valor: "50" },
 };
 
-export interface RascunhoDeCriterio {
+interface RascunhoDeCriterio {
   criterio: CriterioDeRegra;
   /** Texto como digitado; vira número só ao salvar. */
   parametros: Record<string, string>;

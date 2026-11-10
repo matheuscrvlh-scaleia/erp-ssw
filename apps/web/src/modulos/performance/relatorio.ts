@@ -8,7 +8,7 @@ import {
 import { type BlocoProducao, type RelatorioPeriodo } from "@erp/shared/contratos/performance";
 import { formatarInteiro, formatarMoeda, formatarPercentual } from "@erp/shared/formatacao";
 
-export type TomDoIndicador = "neutro" | "bom" | "ruim";
+type TomDoIndicador = "neutro" | "bom" | "ruim";
 
 export interface Indicador {
   secao: "Produção" | "Qualidade";
