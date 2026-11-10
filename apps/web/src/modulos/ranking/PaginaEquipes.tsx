@@ -8,12 +8,10 @@ import { toast } from "sonner";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DAS_EQUIPES, consultaCtesParaAtribuir, consultaEquipes } from "./api";
 import { isoLocal } from "./periodo";
-
-const mensagemDe = (e: unknown) =>
-  e instanceof Error ? e.message : "Não foi possível concluir. Tente de novo.";
 
 function urlDoLink(token: string): string {
   return `${window.location.origin}/ranking/publico/${token}`;
@@ -50,7 +48,7 @@ export function PaginaEquipes() {
       setNome("");
       void atualizar();
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
   const incluir = useMutation({
     mutationFn: (v: {
@@ -64,12 +62,12 @@ export function PaginaEquipes() {
         entrada: { nome: v.nome, papel: v.papel, posicao: v.posicao },
       }),
     onSuccess: () => void atualizar(),
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
   const remover = useMutation({
     mutationFn: (id: string) => chamar(c.removerMembro, { parametros: { id } }),
     onSuccess: () => void atualizar(),
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
   const gerar = useMutation({
     mutationFn: (id: string) => chamar(c.gerarLink, { parametros: { id } }),
@@ -79,7 +77,7 @@ export function PaginaEquipes() {
       copiar(url, "Link gerado e copiado");
       void atualizar();
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
   const revogar = useMutation({
     mutationFn: (id: string) => chamar(c.revogarLink, { parametros: { id } }),
@@ -88,7 +86,7 @@ export function PaginaEquipes() {
       toast.success("Token revogado");
       void atualizar();
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
 
   const unidades = data?.unidades ?? [];
@@ -355,7 +353,7 @@ function AtribuirCtes({ equipes, podeGravar }: { equipes: Equipe[]; podeGravar: 
       void refetch();
       void qc.invalidateQueries({ queryKey: ["ranking-calculo"] });
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
 
   const ctes = data?.ctes ?? [];

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { isoLocal } from "../ranking/periodo";
 import { consultaBatidas, consultaFuncionarios } from "./api";
@@ -164,7 +165,9 @@ export function BatidasPorColaborador() {
           </p>
         )}
         {funcionariosQ.error && (
-          <p className="mt-2 text-[11px] text-destructive">{funcionariosQ.error.message}</p>
+          <p className="mt-2 text-[11px] text-destructive">
+            {mensagemAmigavel(funcionariosQ.error)}
+          </p>
         )}
       </section>
 
@@ -202,7 +205,7 @@ export function BatidasPorColaborador() {
           </div>
         ) : batidasQ.error ? (
           <div className="p-6 text-center text-[12px] text-destructive">
-            {batidasQ.error.message}
+            {mensagemAmigavel(batidasQ.error)}
           </div>
         ) : batidasQ.data && batidasQ.data.data.length > 0 ? (
           <div className="overflow-x-auto">

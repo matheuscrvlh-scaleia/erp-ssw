@@ -27,6 +27,7 @@ import {
 } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { diaCurto, mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracao, consultaUnidades } from "./api";
@@ -357,7 +358,7 @@ export function PaginaBonificacaoEntrega() {
 
       {q.error && (
         <div className="rounded-[10px] border border-destructive/40 bg-destructive/5 p-3 text-[12px] text-destructive">
-          {q.error.message}
+          {mensagemAmigavel(q.error)}
         </div>
       )}
 

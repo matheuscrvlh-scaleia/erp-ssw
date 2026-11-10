@@ -19,14 +19,12 @@ import {
   SelectValue,
 } from "@/componentes/ui/select";
 import { chamar } from "@/lib/api";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { diaCurto, periodoDoMes } from "../ranking/periodo";
 import { CHAVE_DAS_FALTAS, consultaFaltas } from "./api";
 
 type TipoDeFalta = (typeof TIPOS_DE_FALTA)[number];
-
-const mensagemDe = (e: unknown) =>
-  e instanceof Error ? e.message : "Não foi possível concluir. Tente de novo.";
 
 /**
  * Faltas do mês (novo: o sistema atual tinha a regra mas não a tela — Q47/P12). Cada falta zera
@@ -64,7 +62,7 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
       setObservacao("");
       void atualizar();
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
   const excluir = useMutation({
     mutationFn: (id: string) => chamar(c.excluirFalta, { parametros: { id } }),
@@ -72,7 +70,7 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
       toast.success("Falta excluída");
       void atualizar();
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
 
   const lista = faltas.data ?? [];

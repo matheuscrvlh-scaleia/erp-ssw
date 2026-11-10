@@ -27,6 +27,7 @@ import { InfoTip } from "@/componentes/comum/InfoTip";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
@@ -630,7 +631,7 @@ export function PaginaListagem() {
 
       {lista.isError && (
         <div className="rounded-lg border border-status-bad/40 bg-status-bad-bg px-3 py-2 text-[12px] text-status-bad-fg">
-          {lista.error.message}
+          {mensagemAmigavel(lista.error)}
         </div>
       )}
 

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
+import { ErroDoOperador, mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DAS_REGRAS, consultaRegras } from "./api";
 import { mesAnterior } from "./periodo";
@@ -27,9 +28,6 @@ import {
 
 type Simulacao = SaidaDe<typeof c.simularRegra>;
 
-const mensagemDe = (e: unknown) =>
-  e instanceof Error ? e.message : "Não foi possível concluir. Tente de novo.";
-
 /** origem: routes/_authenticated/ranking.regras.tsx (sistema atual) */
 export function PaginaRegras() {
   const qc = useQueryClient();
@@ -39,7 +37,7 @@ export function PaginaRegras() {
   const salvar = useMutation({
     mutationFn: (d: Rascunho) => {
       const r = regraParaSalvar(d);
-      if (!r.ok) throw new Error(r.erro);
+      if (!r.ok) throw new ErroDoOperador(r.erro);
       return chamar(c.salvarRegra, { entrada: r.valor });
     },
     onSuccess: () => {
@@ -47,7 +45,7 @@ export function PaginaRegras() {
       void qc.invalidateQueries({ queryKey: CHAVE_DAS_REGRAS });
       setEditando(null);
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
   const excluir = useMutation({
     mutationFn: (id: string) => chamar(c.excluirRegra, { parametros: { id } }),
@@ -55,7 +53,7 @@ export function PaginaRegras() {
       toast.success("Regra removida");
       void qc.invalidateQueries({ queryKey: CHAVE_DAS_REGRAS });
     },
-    onError: (e) => toast.error(mensagemDe(e)),
+    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
 
   const [simulando, setSimulando] = useState<string | null>(null);
@@ -69,7 +67,7 @@ export function PaginaRegras() {
         await chamar(c.simularRegra, { parametros: { id }, entrada: mesAnterior(new Date()) }),
       );
     } catch (e) {
-      toast.error(mensagemDe(e));
+      toast.error(mensagemAmigavel(e));
     } finally {
       setSimulando(null);
     }

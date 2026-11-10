@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/componentes/ui/sidebar";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 export function BarraLateral({ acesso, aoSair }: { acesso: Acesso; aoSair: () => void }) {
   const caminhoAtual = useRouterState({ select: (s) => s.location.pathname });
@@ -227,7 +228,7 @@ function SeletorDeEmpresa({ acesso }: { acesso: Acesso }) {
       queryClient.clear();
       window.location.reload();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível trocar de empresa.");
+      toast.error(mensagemAmigavel(e, "Não foi possível trocar de empresa."));
       setTrocando(false);
     }
   };

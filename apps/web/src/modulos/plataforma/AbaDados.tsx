@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
+import { ErroDoOperador } from "@/lib/mensagem-de-erro";
 import { CAMPO, Campo, useGravacao } from "@/modulos/admin/comum";
 
 import { CHAVES_DA_PLATAFORMA } from "./api";
@@ -176,7 +177,7 @@ function Logo({ empresa }: { empresa: EmpresaCompleta }) {
   const envio = useGravacao({
     executar: async (arquivo: File) => {
       const problema = problemaDoLogo(arquivo);
-      if (problema) throw new Error(problema);
+      if (problema) throw new ErroDoOperador(problema);
       return chamar(p.enviarLogo, {
         parametros: { id: empresa.id },
         entrada: { conteudoBase64: await lerBase64(arquivo) },

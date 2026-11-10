@@ -215,7 +215,7 @@ export function DialogoRelatorio({
           )}
           {error && (
             <div className="rounded-md border border-red-200 bg-red-50 p-3 text-[12px] text-red-800">
-              Falha ao carregar: {error.message}
+              Falha ao carregar: {mensagemAmigavel(error)}
             </div>
           )}
           {data && (

@@ -31,6 +31,7 @@ import {
 } from "@/componentes/comum/FiltrosAvancados";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
@@ -500,7 +501,9 @@ export function PaginaPerformance() {
           style={{ color: textoDoStatus.warn }}
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{erro.message || "Não foi possível carregar os dados de performance."}</span>
+          <span>
+            {mensagemAmigavel(erro, "Não foi possível carregar os dados de performance.")}
+          </span>
         </div>
       )}
 

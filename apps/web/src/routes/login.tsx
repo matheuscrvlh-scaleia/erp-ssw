@@ -15,6 +15,7 @@ import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
 import { chamar, renovarSessao } from "@/lib/api";
+import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 const busca = z.object({
   reason: z.enum(["expired", "signed_out"]).optional().catch(undefined),
@@ -159,7 +160,7 @@ function FormularioEntrar({
       await entrar(email, senha);
       await aoEntrar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível entrar.");
+      toast.error(mensagemAmigavel(e, "Não foi possível entrar."));
     }
   });
 
@@ -208,7 +209,7 @@ function FormularioEsqueci({ aoVoltar }: { aoVoltar: () => void }) {
       // A resposta é a mesma exista ou não a conta (ninguém descobre e-mail cadastrado aqui).
       setEnviado((await chamar(contratosAuth.esqueciSenha, { entrada })).mensagem);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível enviar o link.");
+      toast.error(mensagemAmigavel(e, "Não foi possível enviar o link."));
     }
   });
 
