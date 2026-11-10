@@ -9,8 +9,8 @@ import {
   ingestaoLinhas,
   ingestaoRelatoriosEsperados,
 } from "@erp/db/schema";
-import { identificarLinha } from "@erp/ingestao/casos-de-uso";
-import { type Relatorio } from "@erp/ingestao/relatorios";
+import { identificarLinha } from "@erp/dominio/ingestao/linhas";
+import { type Relatorio } from "@erp/dominio/ingestao/relatorios";
 
 import {
   definirTabela,

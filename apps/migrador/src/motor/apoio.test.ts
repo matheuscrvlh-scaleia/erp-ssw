@@ -178,7 +178,7 @@ describe("relatório", () => {
       empresaId: null,
       instante: "2026-11-10 12:00:00+00",
       sucesso: false,
-      passosFinais: [{ nome: "recalcular-projecoes", notas: ["PENDENTE: x"] }],
+      passosFinais: [{ nome: "reconstruir-projecoes", notas: ["PENDENTE: x"] }],
       tabelas: [
         {
           nome: "ctes",

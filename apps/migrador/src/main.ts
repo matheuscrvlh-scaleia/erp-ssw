@@ -1,8 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { comContexto, conectarBanco } from "@erp/db";
-import { criarRepositorioProjecoesRomaneio } from "@erp/ingestao/infra";
 import { pino } from "pino";
 
 import { carregarAmbiente } from "./cli/ambiente";
@@ -19,8 +17,6 @@ import { criarPassos, FORA_DO_ESCOPO } from "./tabelas/registro";
 const SUCESSO = 0;
 const FALHA_NA_MIGRACAO = 1;
 const ERRO_DE_USO = 2;
-/** Teto de cada consulta das projeções no destino (lote de 500 CT-e). */
-const TETO_DAS_PROJECOES_MS = 10 * 60_000;
 
 const log = pino({
   base: { servico: "erp-migrador" },
@@ -47,13 +43,6 @@ async function principal(): Promise<number> {
 
   const poolOrigem = criarPool(ambiente.MIGRADOR_ORIGEM_URL, "erp-migrador-origem");
   const poolDestino = criarPool(ambiente.MIGRADOR_DESTINO_URL, "erp-migrador-destino");
-  // Drizzle no destino só para as projeções do Romaneio (mesmo repositório do worker).
-  const projecoes = conectarBanco({
-    url: ambiente.MIGRADOR_DESTINO_URL,
-    maxConexoes: 2,
-    timeoutConsultaMs: TETO_DAS_PROJECOES_MS,
-    nomeAplicacao: "erp-migrador-projecoes",
-  });
   try {
     const infra = { origem: origemPostgres(poolOrigem), destino: destinoPostgres(poolDestino) };
     log.info(
@@ -77,12 +66,7 @@ async function principal(): Promise<number> {
 
     const relatorio = await executarMigracao(
       criarPassos(chaves),
-      passosFinais(
-        (empresaId) => (fn) =>
-          comContexto(projecoes.banco, { empresaId, usuarioId: null, plataforma: false }, (tx) =>
-            fn(criarRepositorioProjecoesRomaneio(tx, empresaId)),
-          ),
-      ),
+      passosFinais(),
       infra,
       armazemEmArquivo(join(argumentos.saida, "checkpoint.json")),
       argumentos,
@@ -105,7 +89,7 @@ async function principal(): Promise<number> {
     log.info({ sucesso: relatorio.sucesso, relatorio: `${base}.md` }, "fim");
     return relatorio.sucesso ? SUCESSO : FALHA_NA_MIGRACAO;
   } finally {
-    await Promise.all([poolOrigem.end(), poolDestino.end(), projecoes.encerrar()]);
+    await Promise.all([poolOrigem.end(), poolDestino.end()]);
   }
 }
 

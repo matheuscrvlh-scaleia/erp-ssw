@@ -1,5 +1,5 @@
 import { decifrarSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
-import { identificarLinha } from "@erp/ingestao/casos-de-uso";
+import { identificarLinha } from "@erp/dominio/ingestao/linhas";
 import { type PgTable } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
