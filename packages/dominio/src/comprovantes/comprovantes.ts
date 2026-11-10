@@ -106,6 +106,8 @@ export function calcularPainelDeComprovantes(
 /**
  * Lista do card: todos, só digitalizados ou só pendentes (sem comprovante num dia coberto), da
  * entrega mais recente para a mais antiga; empate pelo CT-e gravado por último (Q07 do dono).
+ * A API pagina esta mesma regra no banco (comprovantes/repositorio.ts); aqui fica a forma em
+ * TypeScript, que os testes usam como referência.
  * origem: comprovantes_lista_v2 (sistema atual)
  */
 export function listarComprovantes(

@@ -111,4 +111,25 @@ describe("Comprovantes", () => {
       linhas: [{ digitalizado: false, tipoDocumento: "NORMAL", siglaCtrc: "CAS" }],
     });
   });
+
+  it("página depois da última traz o total; exportação traz a lista inteira na ordem", async () => {
+    const headers = await operador();
+    const depois = await app.inject({
+      method: "POST",
+      url: "/api/v1/comprovantes/lista",
+      headers,
+      payload: { ...PERIODO, pagina: 3, tamanho: 2 },
+    });
+    expect(depois.json()).toEqual({ total: 4, linhas: [] });
+    const exportada = await app.inject({
+      method: "POST",
+      url: "/api/v1/comprovantes/lista/exportacao",
+      headers,
+      payload: { ...PERIODO, status: "digitalizados" },
+    });
+    const linhas = exportada.json<{ linhas: { dataEntrega: string; digitalizado: boolean }[] }>()
+      .linhas;
+    expect(linhas).toHaveLength(2);
+    expect(linhas.every((l) => l.digitalizado)).toBe(true);
+  });
 });

@@ -3,7 +3,6 @@ import {
   classificarComprovantes,
   type CteEntregue,
   diaCobertoPeloArquivo,
-  listarComprovantes,
 } from "@erp/dominio/comprovantes/comprovantes";
 import {
   padroesDoFiltroDeTexto,
@@ -15,6 +14,8 @@ import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type contratosComprovantes,
   type FiltrosDeComprovantes,
+  type LinhaDeComprovante,
+  type StatusDeComprovante,
   TIPO_NAO_INFORMADO,
 } from "@erp/shared/contratos/comprovantes";
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
@@ -43,17 +44,32 @@ export interface FiltroDeEntregues {
   nf: string | null;
 }
 
-export interface DetalheDoComprovante {
+/** O que a lista de um card pede além dos filtros de CT-e. */
+export interface PedidoDaLista {
+  /** Tipos já saneados (maiúsculos); vazio = sem filtro. */
+  tipos: string[];
+  status: StatusDeComprovante;
+  /** Dias com o 930 importado (`AAAA-MM-DD`). */
+  diasCobertos: string[];
+}
+
+/** Linha da lista de um card, como o banco devolve. */
+export interface ComprovanteDaLista {
   id: string;
   numero: string;
   sigla: string;
   numeroNf: number | null;
   dataEmissao: string;
+  dataEntrega: Date;
+  unidade: string | null;
   setor: string | null;
   pagadorNome: string | null;
   remetente: string | null;
   destinatario: string | null;
   cidadeDestino: string | null;
+  /** Tipo efetivo; sem tipo = `SEM_TIPO_DOCUMENTO`. */
+  tipoEfetivo: string;
+  digitalizado: boolean;
 }
 
 export interface RepositorioComprovantes {
@@ -61,7 +77,15 @@ export interface RepositorioComprovantes {
   entregues(filtro: FiltroDeEntregues, limite: number): Promise<CteEntregue[]>;
   /** Nomes dos arquivos 930 importados (o dia coberto vem do nome). */
   arquivos930Importados(empresaId: string): Promise<string[]>;
-  detalhes(ids: string[]): Promise<DetalheDoComprovante[]>;
+  /**
+   * Lista de um card filtrada, ordenada (entrega mais recente, depois o CT-e gravado por último
+   * e o id) e paginada no banco, com o total da lista inteira.
+   */
+  lista(
+    filtro: FiltroDeEntregues,
+    pedido: PedidoDaLista,
+    pagina: { limite: number; deslocamento: number },
+  ): Promise<{ linhas: ComprovanteDaLista[]; total: number }>;
 }
 
 type Db = Executor<"comprovantes">;
@@ -91,10 +115,7 @@ async function comprovantesDoPeriodo(
 ) {
   const entregues = await repo.entregues(normalizar(empresaId, f), LIMITE_DE_LINHAS + 1);
   if (entregues.length > LIMITE_DE_LINHAS) throw consultaAmplaDemais();
-  const dias = (await repo.arquivos930Importados(empresaId))
-    .map(diaCobertoPeloArquivo)
-    .filter((d) => d !== null);
-  return classificarComprovantes(entregues, new Set(dias));
+  return classificarComprovantes(entregues, new Set(await diasCobertos(repo, empresaId)));
 }
 
 /**
@@ -114,8 +135,52 @@ export async function obterPainelDeComprovantes(
   );
 }
 
+async function diasCobertos(repo: RepositorioComprovantes, empresaId: string) {
+  return (await repo.arquivos930Importados(empresaId))
+    .map(diaCobertoPeloArquivo)
+    .filter((d) => d !== null);
+}
+
+function paraALinha(c: ComprovanteDaLista): LinhaDeComprovante {
+  return {
+    id: c.id,
+    numeroCtrc: c.numero,
+    siglaCtrc: c.sigla,
+    numeroNf: c.numeroNf,
+    dataEntrega: c.dataEntrega.toISOString(),
+    dataEmissao: c.dataEmissao,
+    unidade: c.unidade,
+    setor: c.setor,
+    pagadorNome: c.pagadorNome,
+    remetente: c.remetente,
+    destinatario: c.destinatario,
+    cidadeDestino: c.cidadeDestino,
+    tipoDocumento: c.tipoEfetivo === SEM_TIPO_DOCUMENTO ? TIPO_NAO_INFORMADO : c.tipoEfetivo,
+    digitalizado: c.digitalizado,
+  };
+}
+
+type EntradaDaLista = z.output<typeof contratosComprovantes.exportar.entrada>;
+
+async function lerLista(
+  repo: RepositorioComprovantes,
+  empresaId: string,
+  entrada: EntradaDaLista,
+  pagina: { limite: number; deslocamento: number },
+) {
+  return repo.lista(
+    normalizar(empresaId, entrada),
+    {
+      tipos: saneTipos(entrada.tipos),
+      status: entrada.status,
+      diasCobertos: await diasCobertos(repo, empresaId),
+    },
+    pagina,
+  );
+}
+
 /**
- * Lista de um card (todos, digitalizados, pendentes), paginada.
+ * Lista de um card (todos, digitalizados, pendentes), paginada no banco.
  * origem: comprovantes_lista_v2 (sistema atual)
  */
 export async function obterListaDeComprovantes(
@@ -124,41 +189,26 @@ export async function obterListaDeComprovantes(
   entrada: z.output<typeof contratosComprovantes.lista.entrada>,
 ): Promise<SaidaDe<typeof contratosComprovantes.lista>> {
   return db(async ({ comprovantes }) => {
-    const todos = listarComprovantes(
-      await comprovantesDoPeriodo(comprovantes, empresaId, entrada),
-      saneTipos(entrada.tipos),
-      entrada.status,
-    );
-    const inicio = (entrada.pagina - 1) * entrada.tamanho;
-    const pagina = todos.slice(inicio, inicio + entrada.tamanho);
-    const detalhes = new Map(
-      (await comprovantes.detalhes(pagina.map((c) => c.id))).map((d) => [d.id, d]),
-    );
-    return {
-      total: todos.length,
-      linhas: pagina.flatMap((c) => {
-        const d = detalhes.get(c.id);
-        if (!d) return [];
-        return [
-          {
-            id: c.id,
-            numeroCtrc: d.numero,
-            siglaCtrc: d.sigla,
-            numeroNf: d.numeroNf,
-            dataEntrega: c.dataEntrega.toISOString(),
-            dataEmissao: d.dataEmissao,
-            unidade: c.unidade,
-            setor: d.setor,
-            pagadorNome: d.pagadorNome,
-            remetente: d.remetente,
-            destinatario: d.destinatario,
-            cidadeDestino: d.cidadeDestino,
-            tipoDocumento:
-              c.tipoEfetivo === SEM_TIPO_DOCUMENTO ? TIPO_NAO_INFORMADO : c.tipoEfetivo,
-            digitalizado: c.digitalizado,
-          },
-        ];
-      }),
-    };
+    const { linhas, total } = await lerLista(comprovantes, empresaId, entrada, {
+      limite: entrada.tamanho,
+      deslocamento: (entrada.pagina - 1) * entrada.tamanho,
+    });
+    return { total, linhas: linhas.map(paraALinha) };
+  });
+}
+
+/** Lista inteira de um card, numa leitura só, na ordem da tela (exportação). */
+export async function exportarListaDeComprovantes(
+  db: Db,
+  empresaId: string,
+  entrada: EntradaDaLista,
+): Promise<SaidaDe<typeof contratosComprovantes.exportar>> {
+  return db(async ({ comprovantes }) => {
+    const { linhas } = await lerLista(comprovantes, empresaId, entrada, {
+      limite: LIMITE_DE_LINHAS + 1,
+      deslocamento: 0,
+    });
+    if (linhas.length > LIMITE_DE_LINHAS) throw consultaAmplaDemais();
+    return { linhas: linhas.map(paraALinha) };
   });
 }

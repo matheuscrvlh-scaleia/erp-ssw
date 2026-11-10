@@ -4,6 +4,8 @@ import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo";
 import {
   and,
   between,
+  count,
+  desc,
   eq,
   exists,
   inArray,
@@ -16,11 +18,54 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { casaAlgumPadrao, filiaisProprias, nfIgual } from "../../compartilhado/sql-cte";
-import { type FiltroDeEntregues, type RepositorioComprovantes } from "./casos-de-uso";
+import {
+  casaAlgumPadrao,
+  filiaisProprias,
+  nfIgual,
+  textos,
+  tipoDocumentoDoFiltro,
+} from "../../compartilhado/sql-cte";
+import {
+  type FiltroDeEntregues,
+  type PedidoDaLista,
+  type RepositorioComprovantes,
+} from "./casos-de-uso";
 
 /** Ocorrência que marca o comprovante de entrega digitalizado. */
 const CODIGO_COMPROVANTE_DIGITALIZADO = 88;
+
+/** Tem a 88 fora da quarentena (Q21 do dono: a 88 em quarentena não conta). */
+const tem88 = (tx: Transacao) =>
+  exists(
+    tx
+      .select({ um: sql`1` })
+      .from(ocorrencias)
+      .where(
+        and(
+          eq(ocorrencias.cteId, ctes.id),
+          eq(ocorrencias.codigo, CODIGO_COMPROVANTE_DIGITALIZADO),
+          not(ocorrencias.quarentena),
+        ),
+      ),
+  );
+
+const dataEntrega = sql<Date>`coalesce(${ctes.dataEntregaRealizada}, ${ctes.ocorrEfetivaData})`;
+
+/**
+ * Mesma regra de `classificarComprovantes` e `listarComprovantes` (dominio/comprovantes), em SQL
+ * para a lista paginar no banco: digitalizado = 88 ou "escaneado" no 455; pendente = não
+ * digitalizado num dia coberto (930 importado) ou com a coluna do 455.
+ */
+function ondeDaLista(tx: Transacao, f: FiltroDeEntregues, p: PedidoDaLista): SQL | undefined {
+  const digitalizado = sql`(${ctes.comprovanteEscaneado} is true or ${tem88(tx)})`;
+  const coberto = sql`(${ctes.dataConclusaoEfetiva} = any(${textos(p.diasCobertos)}::date[]) or ${ctes.comprovanteEscaneado} is not null)`;
+  return and(
+    ondeEntregues(tx, f),
+    p.tipos.length > 0 ? sql`${tipoDocumentoDoFiltro()} = any(${textos(p.tipos)})` : undefined,
+    p.status === "digitalizados" ? digitalizado : undefined,
+    p.status === "pendentes" ? sql`not ${digitalizado} and ${coberto}` : undefined,
+  );
+}
 
 function buscaDeCtrc(termo: string): SQL {
   return termo === "" ? sql`false` : eq(ctes.numero, termo);
@@ -63,27 +108,12 @@ export function criarRepositorioComprovantes(tx: Transacao): RepositorioComprova
           id: ctes.id,
           unidade: ctes.filialEfetiva,
           dia: ctes.dataConclusaoEfetiva,
-          dataEntrega:
-            sql<Date>`coalesce(${ctes.dataEntregaRealizada}, ${ctes.ocorrEfetivaData})`.mapWith(
-              ctes.dataEntregaRealizada,
-            ),
+          dataEntrega: dataEntrega.mapWith(ctes.dataEntregaRealizada),
           criadoEm: ctes.criadoEm,
           tipoDocumento455: ctes.tipoDocumento455,
           tipoDocumento: ctes.tipoDocumento,
           comprovanteEscaneado: ctes.comprovanteEscaneado,
-          // Q21 do dono: a 88 em quarentena não conta.
-          tem88: exists(
-            tx
-              .select({ um: sql`1` })
-              .from(ocorrencias)
-              .where(
-                and(
-                  eq(ocorrencias.cteId, ctes.id),
-                  eq(ocorrencias.codigo, CODIGO_COMPROVANTE_DIGITALIZADO),
-                  not(ocorrencias.quarentena),
-                ),
-              ),
-          ).mapWith(Boolean),
+          tem88: tem88(tx).mapWith(Boolean),
         })
         .from(ctes)
         .where(ondeEntregues(tx, filtro))
@@ -105,23 +135,42 @@ export function criarRepositorioComprovantes(tx: Transacao): RepositorioComprova
       return linhas.map((l) => l.nome);
     },
 
-    detalhes: async (ids) => {
-      if (ids.length === 0) return [];
-      return tx
+    lista: async (filtro, pedido, pagina) => {
+      const onde = ondeDaLista(tx, filtro, pedido);
+      const linhas = await tx
         .select({
           id: ctes.id,
           numero: ctes.numero,
           sigla: ctes.sigla,
           numeroNf: ctes.numeroNf,
           dataEmissao: ctes.dataEmissao,
+          dataEntrega: dataEntrega.mapWith(ctes.dataEntregaRealizada),
+          unidade: ctes.filialEfetiva,
           setor: ctes.setor,
           pagadorNome: ctes.pagadorNome,
           remetente: ctes.remetente,
           destinatario: ctes.destinatario,
           cidadeDestino: ctes.cidadeDestino,
+          tipoEfetivo: sql<string>`${tipoDocumentoDoFiltro()}`,
+          digitalizado: sql`(${ctes.comprovanteEscaneado} is true or ${tem88(tx)})`.mapWith(
+            Boolean,
+          ),
+          total: sql<number>`count(*) over ()`.mapWith(Number),
         })
         .from(ctes)
-        .where(inArray(ctes.id, ids));
+        .where(onde)
+        // Entrega mais recente primeiro; empate pelo CT-e gravado por último (Q07) e pelo id.
+        .orderBy(desc(dataEntrega), desc(ctes.criadoEm), desc(ctes.id))
+        .limit(pagina.limite)
+        .offset(pagina.deslocamento);
+      const primeira = linhas[0];
+      // Página depois da última: o total vem de uma contagem à parte (Q10).
+      const total =
+        primeira?.total ??
+        (pagina.deslocamento === 0
+          ? 0
+          : ((await tx.select({ n: count() }).from(ctes).where(onde))[0]?.n ?? 0));
+      return { total, linhas: linhas.map(({ total: _total, ...l }) => l) };
     },
   };
 }

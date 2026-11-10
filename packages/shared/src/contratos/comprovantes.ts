@@ -64,6 +64,10 @@ export const linhaDeComprovante = z.object({
 });
 export type LinhaDeComprovante = z.infer<typeof linhaDeComprovante>;
 
+const filtrosDaLista = filtrosDeComprovantes.extend({
+  status: z.enum(STATUS_DE_COMPROVANTE).default("todos"),
+});
+
 export const contratosComprovantes = {
   painel: contrato({
     metodo: "POST",
@@ -74,11 +78,17 @@ export const contratosComprovantes = {
   lista: contrato({
     metodo: "POST",
     caminho: "/api/v1/comprovantes/lista",
-    entrada: filtrosDeComprovantes.extend({
-      status: z.enum(STATUS_DE_COMPROVANTE).default("todos"),
+    entrada: filtrosDaLista.extend({
       pagina: z.number().int().min(1).default(1),
       tamanho: z.number().int().min(1).max(500).default(50),
     }),
     saida: z.object({ linhas: z.array(linhaDeComprovante), total: z.number().int() }),
+  }),
+  /** A lista inteira de um card numa leitura só, na ordem da tela (até 200 mil linhas). */
+  exportar: contrato({
+    metodo: "POST",
+    caminho: "/api/v1/comprovantes/lista/exportacao",
+    entrada: filtrosDaLista,
+    saida: z.object({ linhas: z.array(linhaDeComprovante) }),
   }),
 } as const;

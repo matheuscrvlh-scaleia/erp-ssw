@@ -3,7 +3,11 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirModulo, exigirTela } from "../../http/guardas";
-import { obterListaDeComprovantes, obterPainelDeComprovantes } from "./casos-de-uso";
+import {
+  exportarListaDeComprovantes,
+  obterListaDeComprovantes,
+  obterPainelDeComprovantes,
+} from "./casos-de-uso";
 
 /** Comprovantes: só leitura; sem restrição por unidade do usuário (Q26 do dono). */
 const ler = [exigirModulo("comprovantes"), exigirTela("comprovantes")];
@@ -24,6 +28,18 @@ export const rotasComprovantes: FastifyPluginCallbackZod = (app, _opcoes, pronto
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return obterListaDeComprovantes(request.db, empresa.id, request.body);
+    },
+  );
+
+  app.post(
+    c.exportar.caminho,
+    {
+      schema: { body: c.exportar.entrada, response: { 200: c.exportar.saida } },
+      preHandler: ler,
+    },
+    async (request) => {
+      const { empresa } = await empresaDaRequisicao(request);
+      return exportarListaDeComprovantes(request.db, empresa.id, request.body);
     },
   );
   pronto();

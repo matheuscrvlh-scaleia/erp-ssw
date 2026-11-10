@@ -1,12 +1,16 @@
 import { randomUUID } from "node:crypto";
 
 import { etapaDaSituacao } from "@erp/dominio/coletas/coletas";
-import { type CteEntregue } from "@erp/dominio/comprovantes/comprovantes";
+import {
+  classificarComprovantes,
+  type CteEntregue,
+  listarComprovantes,
+} from "@erp/dominio/comprovantes/comprovantes";
 
 import { type CodigoGravado } from "../modulos/codigos-ocorrencia/casos-de-uso";
 import { type ColetaLida } from "../modulos/coletas/casos-de-uso";
 import {
-  type DetalheDoComprovante,
+  type ComprovanteDaLista,
   type RepositorioComprovantes,
 } from "../modulos/comprovantes/casos-de-uso";
 import { type AnotacaoGravada, type RepositorioHistorico } from "../modulos/historico/casos-de-uso";
@@ -45,7 +49,10 @@ export class DadosDeOcorrencias {
   ctes: CteFalso[] = [];
   ocorrencias: OcorrenciaFalsa[] = [];
   conferentes: DaEmpresa<ConferenteDoCte>[] = [];
-  entregues: DaEmpresa<CteEntregue & DetalheDoComprovante>[] = [];
+  entregues: DaEmpresa<
+    CteEntregue &
+      Omit<ComprovanteDaLista, "dataEntrega" | "unidade" | "tipoEfetivo" | "digitalizado">
+  >[] = [];
   arquivos930: DaEmpresa<{ nome: string }>[] = [];
   coletas: DaEmpresa<ColetaLida & { relatorioEmitidoEm: Date; historico: unknown }>[] = [];
   anotacoes: AnotacaoFalsa[] = [];
@@ -132,7 +139,25 @@ export class DadosDeOcorrencias {
         Promise.resolve(
           this.arquivos930.filter((a) => a.empresaId === empresaId).map((a) => a.nome),
         ),
-      detalhes: (ids) => Promise.resolve(this.entregues.filter((e) => ids.includes(e.id))),
+      // Mesma regra do SQL do repositório, pelo domínio.
+      lista: (f, pedido, pagina) => {
+        const daEmpresa = this.entregues.filter(
+          (e) => e.empresaId === f.empresaId && e.dia >= f.inicio && e.dia <= f.fim,
+        );
+        const todos = listarComprovantes(
+          classificarComprovantes(daEmpresa, new Set(pedido.diasCobertos)),
+          pedido.tipos,
+          pedido.status,
+        );
+        const porId = new Map(daEmpresa.map((e) => [e.id, e]));
+        const linhas = todos
+          .slice(pagina.deslocamento, pagina.deslocamento + pagina.limite)
+          .flatMap((c) => {
+            const e = porId.get(c.id);
+            return e ? [{ ...e, tipoEfetivo: c.tipoEfetivo, digitalizado: c.digitalizado }] : [];
+          });
+        return Promise.resolve({ total: todos.length, linhas });
+      },
     };
   }
 
