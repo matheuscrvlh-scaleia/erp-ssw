@@ -36,3 +36,34 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   = 2). Para a FR nada muda na tela.
 - **Q54 — código de ocorrência com letra** na coluna do SSW conta como "sem código" na saída para
   entrega, em vez de derrubar a consulta.
+
+## Romaneio e Prazo do parceiro (spec 03)
+
+- **Q02 — CT-e por sigla + número.** Linha do tempo, lista, gaveta da aba Hoje e detalhe do Prazo do
+  parceiro não misturam mais CT-e de séries diferentes com o mesmo número.
+- **Q03 — a lista do Romaneio obedece à coluna clicada.** Sem coluna escolhida, continua pela
+  previsão de entrega (mais antiga primeiro).
+- **Q04 — limites certos.** Romaneio agrupado traz até 2.000 linhas, como o selo diz (antes cortava
+  em 500); a gaveta da aba Hoje ordena antes de cortar e mostra "N de M"; a lista do Prazo do parceiro
+  é paginada no banco (sem o teto de 8.000) e a exportação avisa quando passa de 20.000.
+- **Q05 — datas do Prazo do parceiro sem o dia a menos.** Embarque, Prazo de entrega e Mínimo 48h
+  aparecem no dia certo na tela, como já saíam na exportação.
+- **Q08 — parceiro sem cadastro abre o detalhe.** O ranking tem uma linha por CNPJ, com o nome do
+  cadastro mais recente; clicar num parceiro sem cadastro abre o detalhe pelo CNPJ em vez de dar erro.
+- **Q10 — pequenos defeitos.** Página depois da última mantém o total; filial que não é da empresa
+  devolve lista vazia (antes mostrava todas); `%` e `_` na busca da lista são texto, não curinga.
+- **Q12 — base Conclusão no dia certo.** Links antigos com `ver=conclusao`, `embarque` ou `prevista`
+  seguem funcionando; na Conclusão o CT-e não aparece mais um dia antes.
+- **Q13 — lista e exportação seguem o card.** "Em rota", "Travado" e "Somente romaneados" da lista
+  usam a regra dos cards; a lista do Prazo do parceiro usa o mesmo universo de filial dos cards.
+- **Q14 — prejuízo pela janela do período em todas as abas.** A aba Prejuízo deixa de contar
+  ocorrência penalizante lançada fora do período (ex.: emitido em 28/10, avaria em 03/11 só entra
+  em novembro).
+- **Q15 — frete uma vez por CT-e e prejuízo só de quem saiu.** "Frete romaneado" não soma em dobro
+  CT-e com duas saídas; Prejuízo (%), Entregas prejudicadas e Frete perdido contam só CT-e que saíram
+  para entrega. O percentual de prejuízo muda.
+- **Q18 — cancelados e cópias fora da aba Hoje e da lista do Prazo do parceiro.**
+- **Q38 — Romaneio atualizado na chegada do relatório.** As visões por viagem e por CT-e são
+  recalculadas quando o 036/930/306/038/455 chega, em vez de nos minutos :15 e :45.
+- **Q48 — valores fixos viram configuração** (peso e volume de "carga pesada"/"alto volume", prazo
+  padrão do parceiro, meta e alerta de SLA). Para a FR nada muda na tela.
