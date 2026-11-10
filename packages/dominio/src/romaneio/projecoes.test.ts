@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type ChaveCte,
   chaveDoCte,
+  conferenteDoCte,
   dadosRelatoriosDoCte,
   type LinhasDoCte,
   type ProjecaoDoCte,
@@ -148,6 +149,45 @@ describe("dados dos relatórios (5.5)", () => {
   });
 });
 
+describe("conferente do CT-e (tela Ocorrências)", () => {
+  it("ocorrência mais recente vence; cancelado e sem romaneio ficam de fora; vazio vira nulo", () => {
+    const c = conferenteDoCte(
+      [
+        linha036({ romaneio: "A", conferente: "ANA", dataOcorrCtrc: "2026-11-09" }),
+        linha036({ romaneio: "B", conferente: "  ", dataOcorrCtrc: "2026-11-10" }),
+        linha036({
+          romaneio: "C",
+          conferente: "CAIO",
+          situacao: "CANCELADO",
+          dataOcorrCtrc: "2026-11-11",
+        }),
+        linha036({ romaneio: null, conferente: "DUDA", dataOcorrCtrc: "2026-11-11" }),
+      ],
+      null,
+    );
+    expect(c).toEqual({ conferente: null, romaneio: "B" });
+  });
+
+  it("data da ocorrência nula por último; empate: BAIXADO depois de situação nula", () => {
+    const linhas = [
+      linha036({ romaneio: "A", conferente: "ANA", dataOcorrCtrc: null }),
+      linha036({
+        romaneio: "B",
+        conferente: "BIA",
+        dataOcorrCtrc: "2026-11-01",
+        situacao: "BAIXADO",
+      }),
+      linha036({ romaneio: "C", conferente: "CAIO", dataOcorrCtrc: "2026-11-01", situacao: null }),
+    ];
+    expect(conferenteDoCte(linhas, null)?.romaneio).toBe("C");
+  });
+
+  it("sem linha válida guardada, fica o gravado", () => {
+    const gravado = { conferente: "ANA", romaneio: "A" };
+    expect(conferenteDoCte([linha036({ situacao: "CANCELADO" })], gravado)).toBe(gravado);
+  });
+});
+
 class RepositorioFalso implements RepositorioProjecoesRomaneio {
   gravacoes: ProjecaoDoCte[][] = [];
   constructor(
@@ -160,6 +200,7 @@ class RepositorioFalso implements RepositorioProjecoesRomaneio {
     saidas: new Map(),
     atuais: new Map(),
     dados: new Map(),
+    conferentes: new Map(),
   };
   gravadas = () => Promise.resolve(this.estado);
   gravar = (p: readonly ProjecaoDoCte[]) => {
@@ -210,6 +251,7 @@ describe("caso de uso de recálculo", () => {
         ],
       ]),
       dados: new Map(),
+      conferentes: new Map([[k, { conferente: null, romaneio: "R1" }]]),
     };
     expect(await recalcularProjecoesDoRomaneio(repo, [chave])).toEqual({ ctes: 1, alterados: 0 });
   });
@@ -224,5 +266,62 @@ describe("caso de uso de recálculo", () => {
     }, 2);
     expect(r).toEqual({ ctes: 5, alterados: 0 });
     expect(lotes).toHaveLength(3);
+  });
+});
+
+describe("descarte de ciclo", () => {
+  const chave = { sigla: "CAP", numero: "38984" };
+  const k = chaveDoCte(chave);
+
+  it("tira o que veio das linhas apagadas e mantém o que as linhas que ficaram sustentam", async () => {
+    const ficou = linha036({ romaneio: "R1", dataEmissao: "2026-11-09", conferente: "ANA" });
+    const repo = new RepositorioFalso(
+      new Map([[k, { l036: [ficou], l306: [], l038: [], l455: [] }]]),
+      [],
+    );
+    await recalcularProjecoesDoRomaneio(repo, [chave]);
+    const antes = repo.gravacoes[0]?.[0];
+    if (!antes?.atual) throw new Error("sem projeção");
+    // Gravado como se o ciclo descartado tivesse trazido o romaneio R2 no dia 10 e o 038.
+    repo.estado = {
+      viagens: new Map([
+        [
+          k,
+          [
+            ...antes.viagens,
+            {
+              ...(antes.viagens[0] as (typeof antes.viagens)[number]),
+              romaneio: "R2",
+              dataSaida: "2026-11-10",
+            },
+          ],
+        ],
+      ]),
+      saidas: new Map([[k, ["2026-11-09", "2026-11-10"]]]),
+      atuais: new Map([[k, antes.atual]]),
+      dados: new Map([
+        [
+          k,
+          {
+            valorMercadoria: 5,
+            valorMercadoria455: null,
+            r038: { setor: "S", bairro: null, endereco: null, cep: null, valorMercadoria: 5 },
+          },
+        ],
+      ]),
+      conferentes: new Map([[k, { conferente: "BIA", romaneio: "R2" }]]),
+    };
+    const r = await recalcularProjecoesDoRomaneio(
+      repo,
+      [],
+      [{ ...chave, relatorios: ["036", "038"], romaneios: ["R2"], dias: ["2026-11-10"] }],
+    );
+    expect(r).toEqual({ ctes: 1, alterados: 1 });
+    const depois = repo.gravacoes[1]?.[0];
+    expect(depois?.viagens.map((v) => v.romaneio)).toEqual(["R1"]);
+    expect(depois?.saidas).toEqual(["2026-11-09"]);
+    expect(depois?.dados).toBeNull();
+    expect(depois?.conferente).toEqual({ conferente: "ANA", romaneio: "R1" });
+    expect(depois?.atual?.r036?.romaneio).toBe("R1");
   });
 });

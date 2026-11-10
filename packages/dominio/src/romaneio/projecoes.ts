@@ -335,6 +335,40 @@ export function dadosRelatoriosDoCte(
 }
 
 // ---------------------------------------------------------------------------------------------
+// Conferente e romaneio do CT-e (tela Ocorrências)
+
+export interface ConferenteDoCte {
+  conferente: string | null;
+  romaneio: string;
+}
+
+const baixado = (l: Linha036) => (l.situacao === null ? null : String(l.situacao === "BAIXADO"));
+
+/**
+ * Entre as linhas 036 com romaneio e situação diferente de CANCELADO, a primeira por data/hora da
+ * ocorrência do CT-e (nulas por último), BAIXADO primeiro (situação nula antes), emissão e
+ * importação. Sem linha válida guardada, fica o que estava gravado.
+ * origem: _ocorrencias_conferente_romaneio (sistema atual)
+ */
+export function conferenteDoCte(
+  linhas: readonly Linha036[],
+  gravado: ConferenteDoCte | null,
+): ConferenteDoCte | null {
+  const l = linhas
+    .filter((x) => x.romaneio !== null && x.situacao !== "CANCELADO" && sswNum(x.ctrc) !== null)
+    .sort(
+      (a, b) =>
+        descNulosUltimo(a.dataOcorrCtrc, b.dataOcorrCtrc) ||
+        descNulosUltimo(a.horaOcorrCtrc, b.horaOcorrCtrc) ||
+        descNulosPrimeiro(baixado(a), baixado(b)) ||
+        descNulosUltimo(a.dataEmissao, b.dataEmissao) ||
+        maisNovaPrimeiro(a, b),
+    )[0];
+  if (!l?.romaneio) return gravado;
+  return { conferente: l.conferente?.trim() || null, romaneio: l.romaneio };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Caso de uso: recálculo incremental e reconstrução completa
 
 /** Estado gravado das projeções de um conjunto de CT-e. */
@@ -343,6 +377,7 @@ export interface ProjecoesGravadas {
   saidas: ReadonlyMap<string, readonly string[]>;
   atuais: ReadonlyMap<string, RomaneioAtual>;
   dados: ReadonlyMap<string, DadosRelatorios>;
+  conferentes: ReadonlyMap<string, ConferenteDoCte>;
 }
 
 /** Estado novo de um CT-e (substitui o gravado dele). */
@@ -352,6 +387,52 @@ export interface ProjecaoDoCte {
   saidas: string[];
   atual: RomaneioAtual | null;
   dados: DadosRelatorios | null;
+  conferente: ConferenteDoCte | null;
+}
+
+/**
+ * O que as linhas apagadas de um CT-e (descarte de ciclo) podem ter trazido para as projeções:
+ * os relatórios delas e, do 036, os romaneios e os dias de saída.
+ */
+export interface LinhasDescartadas extends ChaveCte {
+  relatorios: readonly string[];
+  romaneios: readonly string[];
+  dias: readonly string[];
+}
+
+/** Estado gravado de um CT-e (o que o recálculo compara e usa como base). */
+interface EstadoDoCte {
+  viagens: readonly ViagemProjetada[];
+  saidas: readonly string[];
+  atual: RomaneioAtual | null;
+  dados: DadosRelatorios | null;
+  conferente: ConferenteDoCte | null;
+}
+
+/**
+ * Tira do estado gravado tudo o que pode ter vindo das linhas descartadas; o recálculo devolve o
+ * que as linhas que ficaram ainda sustentam (o gatilho de `romaneio_saida_ctrc` e o refresh das
+ * matviews faziam isso de hoje).
+ */
+function semODescartado(e: EstadoDoCte, d: LinhasDescartadas): EstadoDoCte {
+  const veio = (relatorio: string) => d.relatorios.includes(relatorio);
+  const atual: RomaneioAtual | null = e.atual && {
+    ...e.atual,
+    r036: veio("036") ? null : e.atual.r036,
+    r306: veio("306") ? null : e.atual.r306,
+  };
+  const dados: DadosRelatorios | null = e.dados && {
+    ...e.dados,
+    r038: veio("038") ? null : e.dados.r038,
+    valorMercadoria455: veio("455csv") ? null : e.dados.valorMercadoria455,
+  };
+  return {
+    viagens: e.viagens.filter((v) => !d.romaneios.includes(v.romaneio)),
+    saidas: e.saidas.filter((dia) => !d.dias.includes(dia)),
+    atual: atual?.r036 || atual?.r306 ? atual : null,
+    dados: dados?.r038 || dados?.valorMercadoria455 != null ? dados : null,
+    conferente: veio("036") ? null : e.conferente,
+  };
 }
 
 export interface RepositorioProjecoesRomaneio {
@@ -388,31 +469,39 @@ const igual = (a: unknown, b: unknown) =>
 
 /**
  * Recalcula as projeções dos CT-e (incremental: chamado pela ingestão com as chaves das linhas
- * que acabou de gravar). Roda na transação de quem chama.
+ * que acabou de gravar ou de apagar — `descartadas`). Roda na transação de quem chama.
  */
 export async function recalcularProjecoesDoRomaneio(
   repo: RepositorioProjecoesRomaneio,
   chaves: readonly ChaveCte[],
+  descartadas: readonly LinhasDescartadas[] = [],
 ): Promise<ResumoDoRecalculo> {
-  const unicas = [...new Map(chaves.map((c) => [chaveDoCte(c), c])).values()];
+  const unicas = [
+    ...new Map([...chaves, ...descartadas].map((c) => [chaveDoCte(c), c])).values(),
+  ].map(({ sigla, numero }) => ({ sigla, numero }));
   if (unicas.length === 0) return { ctes: 0, alterados: 0 };
+  const descarte = new Map(descartadas.map((d) => [chaveDoCte(d), d]));
   const linhas = await repo.linhasDosCtes(unicas);
   const gravadas = await repo.gravadas(unicas);
   const alteradas: ProjecaoDoCte[] = [];
   for (const chave of unicas) {
     const k = chaveDoCte(chave);
     const l = linhas.get(k) ?? { l036: [], l306: [], l038: [], l455: [] };
-    const antes = {
+    const antes: EstadoDoCte = {
       viagens: gravadas.viagens.get(k) ?? [],
       saidas: gravadas.saidas.get(k) ?? [],
       atual: gravadas.atuais.get(k) ?? null,
       dados: gravadas.dados.get(k) ?? null,
+      conferente: gravadas.conferentes.get(k) ?? null,
     };
+    const d = descarte.get(k);
+    const base = d ? semODescartado(antes, d) : antes;
     const depois = {
-      viagens: viagensDoCte(l.l036, antes.viagens),
-      saidas: saidasDoCte(l.l036, antes.saidas),
-      atual: romaneioAtualDoCte(l.l036, l.l306, antes.atual),
-      dados: dadosRelatoriosDoCte(l.l038, l.l455, antes.dados),
+      viagens: viagensDoCte(l.l036, base.viagens),
+      saidas: saidasDoCte(l.l036, base.saidas),
+      atual: romaneioAtualDoCte(l.l036, l.l306, base.atual),
+      dados: dadosRelatoriosDoCte(l.l038, l.l455, base.dados),
+      conferente: conferenteDoCte(l.l036, base.conferente),
     };
     if (!igual(antes, depois)) alteradas.push({ chave, ...depois });
   }

@@ -5,6 +5,9 @@
  * origem: ciclo.server.ts, aplicar_036_romaneio, aplicar_partes_455 (sistema atual)
  */
 import { ErroDeNegocio } from "@erp/dominio/erros";
+import { type LinhasDescartadas } from "@erp/dominio/romaneio/projecoes";
+import { JOB_PROJECOES_ROMANEIO } from "@erp/shared/ingestao";
+import { registro036 } from "@erp/shared/relatorios-ssw";
 
 import {
   avaliarCiclo,
@@ -28,6 +31,7 @@ import {
 import { regravarCte } from "./gravar-cte";
 import {
   type CicloRegistrado,
+  type LinhaApagada,
   type LinhaDaChave,
   type RepositorioIngestao,
   type Travas,
@@ -333,9 +337,47 @@ const formatarDataHora = (d: Date) =>
     timeStyle: "short",
   });
 
-/** Descarta um ciclo não aplicado: apaga as linhas e os erros de todos os arquivos dele (Q51 b). */
+/** Relatórios que alimentam as projeções do Romaneio. */
+const RELATORIOS_DAS_PROJECOES: ReadonlySet<string> = new Set(["036", "306", "038", "455csv"]);
+
+/** Agrupa por CT-e o que as linhas apagadas trouxeram para as projeções do Romaneio. */
+function descartadasPorCte(apagadas: readonly LinhaApagada[]): LinhasDescartadas[] {
+  const porCte = new Map<string, { sigla: string; numero: string; r: Set<string>; rom: Set<string>; dias: Set<string> }>();
+  for (const l of apagadas) {
+    if (!RELATORIOS_DAS_PROJECOES.has(l.relatorio) || l.sigla === null || l.numero === null) {
+      continue;
+    }
+    const k = chaveDoCte({ sigla: l.sigla, numero: l.numero });
+    const d = porCte.get(k) ?? {
+      sigla: l.sigla,
+      numero: l.numero,
+      r: new Set<string>(),
+      rom: new Set<string>(),
+      dias: new Set<string>(),
+    };
+    d.r.add(l.relatorio);
+    if (l.relatorio === "036") {
+      const { romaneio, data_emissao } = registro036.parse(l.dados);
+      if (romaneio !== null) d.rom.add(romaneio);
+      if (data_emissao !== null) d.dias.add(data_emissao);
+    }
+    porCte.set(k, d);
+  }
+  return [...porCte.values()].map((d) => ({
+    sigla: d.sigla,
+    numero: d.numero,
+    relatorios: [...d.r],
+    romaneios: [...d.rom],
+    dias: [...d.dias],
+  }));
+}
+
+/**
+ * Descarta um ciclo não aplicado: apaga as linhas e os erros de todos os arquivos dele (Q51 b) e
+ * pede às projeções do Romaneio que tirem o que essas linhas trouxeram.
+ */
 export async function descartarCiclo(
-  r: RepositorioIngestao,
+  deps: Pick<DependenciasDaAplicacao, "empresaId" | "executar" | "enfileirador">,
   cicloChave: string,
   motivo: string,
 ): Promise<{
@@ -343,30 +385,42 @@ export async function descartarCiclo(
   totalRemovido: number;
   porTabela: { linhas: number; erros: number };
 }> {
-  const ciclo = await r.ciclo(cicloChave);
-  if (!ciclo) throw new ErroDeNegocio("NAO_ENCONTRADO", `Ciclo ${cicloChave} não encontrado.`);
-  if (ciclo.status === "aplicado") {
-    const quando = ciclo.aplicadoEm ? formatarDataHora(ciclo.aplicadoEm) : "?";
-    throw new ErroDeNegocio(
-      "CONFLITO",
-      `Ciclo ${cicloChave} já foi aplicado à produção em ${quando} — descarte não permitido.`,
-    );
+  const { porTabela, apagadas } = await deps.executar(async (r) => {
+    const ciclo = await r.ciclo(cicloChave);
+    if (!ciclo) throw new ErroDeNegocio("NAO_ENCONTRADO", `Ciclo ${cicloChave} não encontrado.`);
+    if (ciclo.status === "aplicado") {
+      const quando = ciclo.aplicadoEm ? formatarDataHora(ciclo.aplicadoEm) : "?";
+      throw new ErroDeNegocio(
+        "CONFLITO",
+        `Ciclo ${cicloChave} já foi aplicado à produção em ${quando} — descarte não permitido.`,
+      );
+    }
+    const arquivos = await r.arquivosDoCiclo(cicloChave);
+    const lotes = arquivos.flatMap((a) => (a.loteId ? [a.loteId] : []));
+    const { apagadas, ...contagem } = await r.apagarLotes(lotes);
+    await r.marcarArquivosDescartados(cicloChave);
+    const total = contagem.linhas + contagem.erros;
+    await r.mudarCiclo(cicloChave, {
+      status: "descartado",
+      motivo: `${motivo} — removidas ${total} linhas de staging: linhas ${contagem.linhas}, erros ${contagem.erros}`,
+    });
+    await r.auditar({
+      acao: "ingestao.descartar_ciclo",
+      entidade: "ingestao_ciclos",
+      entidadeId: cicloChave,
+      resumo: `Ciclo ${cicloChave} descartado (${total} linhas removidas)`,
+      depois: { motivo, ...contagem },
+    });
+    return { porTabela: contagem, apagadas };
+  });
+  const descartadas = descartadasPorCte(apagadas);
+  for (let i = 0; i < descartadas.length; i += JOB_PROJECOES_ROMANEIO.maxChaves) {
+    const bloco = descartadas.slice(i, i + JOB_PROJECOES_ROMANEIO.maxChaves);
+    await deps.enfileirador.enfileirar(JOB_PROJECOES_ROMANEIO.fila, JOB_PROJECOES_ROMANEIO.nome, {
+      empresaId: deps.empresaId,
+      chaves: bloco.map(({ sigla, numero }) => ({ sigla, numero })),
+      descartadas: bloco,
+    });
   }
-  const arquivos = await r.arquivosDoCiclo(cicloChave);
-  const lotes = arquivos.flatMap((a) => (a.loteId ? [a.loteId] : []));
-  const porTabela = await r.apagarLotes(lotes);
-  await r.marcarArquivosDescartados(cicloChave);
-  const total = porTabela.linhas + porTabela.erros;
-  await r.mudarCiclo(cicloChave, {
-    status: "descartado",
-    motivo: `${motivo} — removidas ${total} linhas de staging: linhas ${porTabela.linhas}, erros ${porTabela.erros}`,
-  });
-  await r.auditar({
-    acao: "ingestao.descartar_ciclo",
-    entidade: "ingestao_ciclos",
-    entidadeId: cicloChave,
-    resumo: `Ciclo ${cicloChave} descartado (${total} linhas removidas)`,
-    depois: { motivo, ...porTabela },
-  });
-  return { cicloChave, totalRemovido: total, porTabela };
+  return { cicloChave, totalRemovido: porTabela.linhas + porTabela.erros, porTabela };
 }

@@ -96,6 +96,14 @@ export interface ErroNovo {
   motivo: string;
 }
 
+/** Linha apagada pelo descarte de ciclo: o que as projeções do Romaneio precisam saber dela. */
+export interface LinhaApagada {
+  relatorio: string;
+  sigla: string | null;
+  numero: string | null;
+  dados: unknown;
+}
+
 /** Linha guardada com a chave do CT-e. */
 export interface LinhaDaChave {
   id: number;
@@ -250,8 +258,10 @@ export interface RepositorioIngestao {
   linhasSemChave(relatorios: readonly RelatorioGuardado[]): Promise<number>;
   /** Chaves com linha do relatório importada desde `desde`. */
   chavesDesde(relatorio: RelatorioGuardado, desde: Date): Promise<ChaveCte[]>;
-  /** Apaga as linhas e erros dos lotes; devolve o total por tabela. */
-  apagarLotes(loteIds: readonly string[]): Promise<{ linhas: number; erros: number }>;
+  /** Apaga as linhas e erros dos lotes; devolve o total por tabela e as linhas apagadas. */
+  apagarLotes(
+    loteIds: readonly string[],
+  ): Promise<{ linhas: number; erros: number; apagadas: LinhaApagada[] }>;
 
   // CT-e e ocorrências
   cadastrosDoNucleo(): Promise<CadastrosDoNucleo>;

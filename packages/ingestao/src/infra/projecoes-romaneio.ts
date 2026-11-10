@@ -1,12 +1,14 @@
 /**
- * Projeções do Romaneio no banco: lê as linhas 036/306/038/455 guardadas e as projeções
- * gravadas dos CT-e, e regrava as que mudaram. Tudo por chave (sigla, número), em conjunto.
+ * Projeções do Romaneio no banco (worker e migrador): lê as linhas 036/306/038/455 guardadas e
+ * as projeções gravadas dos CT-e (inclusive o conferente da tela Ocorrências), e regrava as que
+ * mudaram. Tudo por chave (sigla, número), em conjunto.
  */
 import { type Transacao } from "@erp/db";
 import {
   cteDadosRelatorios,
   ingestaoArquivos,
   ingestaoLinhas,
+  romaneioConferenteCte,
   romaneioCteAtual,
   romaneioSaidasCte,
   romaneioViagensCte,
@@ -28,7 +30,7 @@ import {
 } from "@erp/dominio/romaneio/projecoes";
 import { and, type AnyColumn, asc, inArray, type SQL, sql } from "drizzle-orm";
 
-const RELATORIOS = ["036", "306", "038", "455"] as const;
+const RELATORIOS = ["036", "306", "038", "455csv"] as const;
 
 /** Linhas por insert (abaixo do limite de parâmetros do Postgres). */
 const LOTE_DE_INSERT = 1000;
@@ -142,7 +144,7 @@ export function criarRepositorioProjecoesRomaneio(
               ? [...atual.l038, linha038De(l.dados, l.importadoEm)]
               : atual.l038,
           l455:
-            l.relatorio === "455"
+            l.relatorio === "455csv"
               ? [...atual.l455, linha455De(l.dados, l.importadoEm)]
               : atual.l455,
         });
@@ -152,11 +154,15 @@ export function criarRepositorioProjecoesRomaneio(
 
     gravadas: async (chaves) => {
       const v = romaneioViagensCte;
-      const [viagens, saidas, atuais, dados] = await Promise.all([
+      const [viagens, saidas, atuais, dados, conferentes] = await Promise.all([
         tx.select().from(v).where(dasChaves(v, chaves)),
         tx.select().from(romaneioSaidasCte).where(dasChaves(romaneioSaidasCte, chaves)),
         tx.select().from(romaneioCteAtual).where(dasChaves(romaneioCteAtual, chaves)),
         tx.select().from(cteDadosRelatorios).where(dasChaves(cteDadosRelatorios, chaves)),
+        tx
+          .select()
+          .from(romaneioConferenteCte)
+          .where(dasChaves(romaneioConferenteCte, chaves)),
       ]);
       return {
         viagens: agrupar(viagens, (r): ViagemProjetada => ({
@@ -177,6 +183,9 @@ export function criarRepositorioProjecoesRomaneio(
         saidas: agrupar(saidas, (r) => r.dataSaida),
         atuais: new Map(atuais.map((r) => [chaveDoCte(r), atualDaLinha(r)])),
         dados: new Map(dados.map((r) => [chaveDoCte(r), dadosDaLinha(r)])),
+        conferentes: new Map(
+          conferentes.map((r) => [chaveDoCte(r), { conferente: r.conferente, romaneio: r.romaneio }]),
+        ),
       };
     },
 
@@ -187,6 +196,7 @@ export function criarRepositorioProjecoesRomaneio(
       await tx.delete(romaneioSaidasCte).where(dasChaves(romaneioSaidasCte, chaves));
       await tx.delete(romaneioCteAtual).where(dasChaves(romaneioCteAtual, chaves));
       await tx.delete(cteDadosRelatorios).where(dasChaves(cteDadosRelatorios, chaves));
+      await tx.delete(romaneioConferenteCte).where(dasChaves(romaneioConferenteCte, chaves));
 
       const viagens = projecoes.flatMap((p) =>
         p.viagens.map((v) => ({ empresaId, ...p.chave, ...v })),
@@ -240,10 +250,14 @@ export function criarRepositorioProjecoesRomaneio(
             ]
           : [],
       );
+      const conferentes = projecoes.flatMap(({ chave, conferente }) =>
+        conferente ? [{ empresaId, ...chave, ...conferente }] : [],
+      );
       for (const lote of emLotes(viagens)) await tx.insert(romaneioViagensCte).values(lote);
       for (const lote of emLotes(saidas)) await tx.insert(romaneioSaidasCte).values(lote);
       for (const lote of emLotes(atuais)) await tx.insert(romaneioCteAtual).values(lote);
       for (const lote of emLotes(dados)) await tx.insert(cteDadosRelatorios).values(lote);
+      for (const lote of emLotes(conferentes)) await tx.insert(romaneioConferenteCte).values(lote);
     },
 
     chavesComLinhas: async (apos, limite) => {

@@ -7,6 +7,7 @@ import {
   criarEnfileirador,
   criarFilaDeAplicacao,
   criarProgressos,
+  criarRepositorioProjecoesRomaneio,
   criarRepositorioDeRetencao,
   criarRepositorioIngestao,
   criarTravas,
@@ -42,7 +43,6 @@ import {
   recalcularProjecoesRomaneio,
   reconstruirProjecoesRomaneio,
 } from "./jobs/projecoes-romaneio/job";
-import { criarRepositorioProjecoesRomaneio } from "./jobs/projecoes-romaneio/repositorio";
 import { propagarClassificacao } from "./jobs/recalculo/job";
 import { criarRepositorioRecalculo } from "./jobs/recalculo/repositorio";
 import {

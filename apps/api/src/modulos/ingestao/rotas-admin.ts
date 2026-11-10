@@ -109,9 +109,7 @@ export const rotasAdminDaIngestao: FastifyPluginCallbackZod<{
     },
     async (request) => {
       const { deps } = await daEmpresa(request);
-      const r = await deps.executar((repo) =>
-        descartarCiclo(repo, request.params.chave, request.body.motivo),
-      );
+      const r = await descartarCiclo(deps, request.params.chave, request.body.motivo);
       return { cicloChave: r.cicloChave, totalRemovido: r.totalRemovido };
     },
   );

@@ -6,6 +6,7 @@
 import { randomUUID } from "node:crypto";
 
 import { ErroDeNegocio } from "@erp/dominio/erros";
+import { JOB_COLETAS_050 } from "@erp/shared/ingestao";
 
 import {
   type AnaliseDoRelatorio,
@@ -14,7 +15,6 @@ import {
   pareceRelatorio050,
   type Relatorio,
 } from "../relatorios";
-import { JOB_COLETAS_050 } from "./jobs";
 import { linhasParaGravar } from "./linhas";
 import {
   type Enfileirador,
@@ -100,7 +100,6 @@ export async function receberArquivo(
   }
 
   if (pareceRelatorio050(latin1)) {
-    // TODO(coletas): o job `coletas.importar-050` é do domínio de coletas (leitor e gravação do 050).
     await deps.enfileirador.enfileirar(JOB_COLETAS_050.fila, JOB_COLETAS_050.nome, {
       empresaId: deps.empresaId,
       nome,

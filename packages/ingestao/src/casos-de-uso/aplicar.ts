@@ -17,6 +17,7 @@ import {
   prepararGravacaoDoCte,
   prepararOcorrencia,
 } from "@erp/dominio/nucleo";
+import { JOB_PROJECOES_ROMANEIO } from "@erp/shared/ingestao";
 
 import {
   agregar455,
@@ -40,7 +41,6 @@ import {
 } from "../aplicacao";
 import { type Registro038, type Registro455Csv, type Registro930 } from "../relatorios";
 import { cteEmBranco, regravarCte } from "./gravar-cte";
-import { JOB_PROJECOES } from "./jobs";
 import {
   type CadastrosDoNucleo,
   type Enfileirador,
@@ -411,10 +411,10 @@ export async function avisarProjecoes(
   empresaId: string,
   chaves: readonly string[],
 ): Promise<void> {
-  for (let i = 0; i < chaves.length; i += JOB_PROJECOES.maxChaves) {
-    await enfileirador.enfileirar(JOB_PROJECOES.fila, JOB_PROJECOES.nome, {
+  for (let i = 0; i < chaves.length; i += JOB_PROJECOES_ROMANEIO.maxChaves) {
+    await enfileirador.enfileirar(JOB_PROJECOES_ROMANEIO.fila, JOB_PROJECOES_ROMANEIO.nome, {
       empresaId,
-      chaves: chaves.slice(i, i + JOB_PROJECOES.maxChaves).map(chaveDeTexto),
+      chaves: chaves.slice(i, i + JOB_PROJECOES_ROMANEIO.maxChaves).map(chaveDeTexto),
     });
   }
 }

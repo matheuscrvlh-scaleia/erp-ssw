@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CABECALHO_930 } from "../relatorios";
 import { EMPRESA } from "../testes/cte";
+import { r036 } from "../testes/registros";
 import {
   enfileiradorFalso,
   estadoFalso,
@@ -172,19 +173,49 @@ describe("ciclo automático", () => {
     expect(s.aplicacoes).toHaveLength(0);
   });
 
-  it("descartar apaga as linhas do ciclo; ciclo aplicado não descarta", async () => {
-    const { s, receber, deps } = montar();
+  it("descartar apaga as linhas do ciclo e avisa as projeções; ciclo aplicado não descarta", async () => {
+    const { s, receber, deps, enfileirador } = montar();
     await receber(arquivo930(linha930("1", "04/11/26", "10:00")));
-    await deps.executar((r) => descartarCiclo(r, "2026-11-05_1000", "teste"));
+    const lote = s.linhas[0]?.loteId ?? "";
+    s.linhas.push({
+      ...(s.linhas[0] as (typeof s.linhas)[number]),
+      id: 99,
+      relatorio: "036",
+      hash: "h036",
+      sigla: "CAP",
+      numero: "123",
+      dados: r036({ ctrc: "CAP000123-4", romaneio: "R9", data_emissao: "2026-11-05" }),
+      loteId: lote,
+    });
+    await descartarCiclo(deps, "2026-11-05_1000", "teste");
     expect(s.linhas).toHaveLength(0);
     expect(s.ciclos.get("2026-11-05_1000")?.status).toBe("descartado");
+    // Só a linha do 036 alimenta as projeções; a do 930 não gera aviso.
+    expect(enfileirador.jobs).toEqual([
+      {
+        nome: "projecoes-romaneio",
+        dados: {
+          empresaId: deps.empresaId,
+          chaves: [{ sigla: "CAP", numero: "123" }],
+          descartadas: [
+            {
+              sigla: "CAP",
+              numero: "123",
+              relatorios: ["036"],
+              romaneios: ["R9"],
+              dias: ["2026-11-05"],
+            },
+          ],
+        },
+      },
+    ]);
     s.ciclos.set("x", {
       ...(s.ciclos.get("2026-11-05_1000") as NonNullable<ReturnType<typeof s.ciclos.get>>),
       cicloChave: "x",
       status: "aplicado",
       aplicadoEm: s.agora,
     });
-    await expect(deps.executar((r) => descartarCiclo(r, "x", "teste"))).rejects.toThrow(
+    await expect(descartarCiclo(deps, "x", "teste")).rejects.toThrow(
       /já foi aplicado/,
     );
   });

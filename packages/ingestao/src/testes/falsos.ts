@@ -234,9 +234,9 @@ export function repositorioFalso(s: EstadoFalso): RepositorioIngestao {
       return Promise.resolve([...vistas.values()]);
     },
     apagarLotes: (lotes) => {
-      const antes = s.linhas.length;
+      const apagadas = s.linhas.filter((l) => lotes.includes(l.loteId));
       s.linhas = s.linhas.filter((l) => !lotes.includes(l.loteId));
-      return Promise.resolve({ linhas: antes - s.linhas.length, erros: 0 });
+      return Promise.resolve({ linhas: apagadas.length, erros: 0, apagadas });
     },
     cadastrosDoNucleo: () =>
       Promise.resolve({

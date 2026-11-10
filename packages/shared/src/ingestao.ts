@@ -140,3 +140,17 @@ export function ehJobDeIngestao(nome: string): nome is NomeDoJobDeIngestao {
 export function chaveDoTokenSsw(empresaId: string): string {
   return `${PREFIXO_DAS_FILAS}:ssw-api:token:${empresaId}`;
 }
+
+/**
+ * Jobs de outros domínios que a ingestão enfileira; o worker os registra com o mesmo nome e fila.
+ * Projeções do Romaneio: as chaves (sigla + número) que mudaram no 036/038/306/455 ou no CT-e,
+ * até `maxChaves` por job, e as linhas apagadas pelo descarte de ciclo.
+ */
+export const JOB_PROJECOES_ROMANEIO = {
+  fila: "projecoes",
+  nome: "projecoes-romaneio",
+  maxChaves: 50_000,
+} as const;
+
+/** Relatório 050 de coletas que chega pelo FTP (o mesmo caso de uso da importação da tela). */
+export const JOB_COLETAS_050 = { fila: "coletas", nome: "coletas.importar-050" } as const;

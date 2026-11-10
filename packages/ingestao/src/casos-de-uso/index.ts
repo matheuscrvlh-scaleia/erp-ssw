@@ -4,7 +4,6 @@ export * from "./ciclo";
 export * from "./empresa";
 export * from "./ftp";
 export * from "./gravar-cte";
-export * from "./jobs";
 export * from "./linhas";
 export * from "./manutencao";
 export * from "./portas";

@@ -467,16 +467,21 @@ export function criarRepositorioIngestao(
     },
 
     async apagarLotes(loteIds) {
-      if (loteIds.length === 0) return { linhas: 0, erros: 0 };
+      if (loteIds.length === 0) return { linhas: 0, erros: 0, apagadas: [] };
       const linhas = await tx
         .delete(ingestaoLinhas)
         .where(and(daEmpresa(ingestaoLinhas), inArray(ingestaoLinhas.loteId, [...loteIds])))
-        .returning({ id: ingestaoLinhas.id });
+        .returning({
+          relatorio: ingestaoLinhas.relatorio,
+          sigla: ingestaoLinhas.sigla,
+          numero: ingestaoLinhas.numero,
+          dados: ingestaoLinhas.dados,
+        });
       const erros = await tx
         .delete(ingestaoErros)
         .where(and(daEmpresa(ingestaoErros), inArray(ingestaoErros.loteId, [...loteIds])))
         .returning({ id: ingestaoErros.id });
-      return { linhas: linhas.length, erros: erros.length };
+      return { linhas: linhas.length, erros: erros.length, apagadas: linhas };
     },
 
     async cadastrosDoNucleo() {
