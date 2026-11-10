@@ -13,9 +13,9 @@ beforeEach(async () => {
   const empresa = cenario.banco.criarEmpresa();
   empresaId = empresa.id;
   cenario.banco.liberarModulo(empresaId, "historico");
-  cenario.banco.cargos.set("admin", { rotulo: "Admin", telas: ["calendario"] });
-  cenario.banco.cargos.set("operador", { rotulo: "Operador", telas: ["calendario"] });
-  cenario.banco.cargos.set("rh", { rotulo: "RH", telas: ["performance"] });
+  cenario.banco.definirCargo(empresaId, "admin", { rotulo: "Admin", telas: ["calendario"] });
+  cenario.banco.definirCargo(empresaId, "operador", { rotulo: "Operador", telas: ["calendario"] });
+  cenario.banco.definirCargo(empresaId, "rh", { rotulo: "RH", telas: ["performance"] });
 });
 afterEach(() => app.close());
 
@@ -209,6 +209,18 @@ describe("escrita de feriados", () => {
     expect(daPlataforma.statusCode).toBe(200);
   });
 
+  it("409 com mensagem para o operador ao repetir um feriado", async () => {
+    const headers = await comoPapel("admin");
+    const criar = () =>
+      app.inject({ method: "POST", url: "/api/v1/calendario/feriados", headers, payload: FERIADO });
+    expect((await criar()).statusCode).toBe(200);
+    const repetido = await criar();
+    expect(repetido.statusCode).toBe(409);
+    expect(repetido.json()).toEqual({
+      erro: { codigo: "CONFLITO", mensagem: "Já existe um feriado igual nesta data." },
+    });
+  });
+
   it("404 para feriado que não existe e 422 para id que não é uuid", async () => {
     const headers = await comoPapel("admin");
     const inexistente = await app.inject({
@@ -225,21 +237,26 @@ describe("escrita de feriados", () => {
     expect(invalido.statusCode).toBe(422);
   });
 
-  it("gera nacionais uma vez; na segunda, tudo já existia", async () => {
-    const headers = await comoPapel("admin");
-    const gerar = () =>
+  it("gerar nacionais: admin da empresa não pode (vale para todas, Q28); a Plataforma gera uma vez", async () => {
+    const gerar = (headers: Record<string, string>) =>
       app.inject({
         method: "POST",
         url: "/api/v1/calendario/feriados-nacionais",
         headers,
         payload: { ano: 2026 },
       });
-    expect((await gerar()).json()).toEqual({
+    const daEmpresa = await gerar(await comoPapel("admin"));
+    expect(daEmpresa.statusCode).toBe(403);
+
+    const plataforma = cenario.banco.criarUsuario({ email: "suporte@plataforma.com" });
+    cenario.banco.plataformaAdmins.add(plataforma.id);
+    const headers = await entrarComo(cenario, plataforma.id, empresaId);
+    expect((await gerar(headers)).json()).toEqual({
       inseridos: 65,
       existiam: 0,
       anos: [2026, 2027, 2028, 2029, 2030],
     });
-    expect((await gerar()).json()).toMatchObject({ inseridos: 0, existiam: 65 });
+    expect((await gerar(headers)).json()).toMatchObject({ inseridos: 0, existiam: 65 });
     expect(
       cenario.banco.feriados.every((f) => f.empresaId === null && f.geradoAutomaticamente),
     ).toBe(true);

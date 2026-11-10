@@ -7,5 +7,6 @@ export {
   CONTEXTO_VAZIO,
   type ContextoBanco,
   ehTempoEsgotado,
+  ehViolacaoDeUnicidade,
   type Transacao,
 } from "./cliente";

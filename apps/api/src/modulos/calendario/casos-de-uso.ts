@@ -5,6 +5,7 @@ import {
   contarPorTipo,
   datasDaRecorrencia,
   feriadosNacionaisDoAno,
+  type LocalDoFeriado,
   normalizarLocal,
 } from "@erp/dominio/calendario";
 import { type SaidaDe } from "@erp/shared/contrato";
@@ -17,9 +18,11 @@ import {
 } from "@erp/shared/contratos/calendario";
 import { hojeNoFuso } from "@erp/shared/datas";
 
-import { naoEncontrado, semPermissao } from "../../http/erros";
+import { conflito, naoEncontrado, semPermissao } from "../../http/erros";
 import { type Executor } from "../../repositorios";
 import { type Ator } from "../auditoria/auditoria";
+
+const FERIADO_REPETIDO = "Já existe um feriado igual nesta data.";
 
 export interface FeriadoGravado extends Feriado {
   empresaId: string | null;
@@ -109,7 +112,7 @@ export async function criarFeriado(
         descricao: entrada.descricao,
         geradoAutomaticamente: false,
       }));
-    if (novos.length === 0) return { inseridos: 0, atualizados: 0 };
+    if (novos.length === 0) throw conflito(FERIADO_REPETIDO);
     const inseridos = await calendario.inserir(novos);
     await auditoria.registrar(ator, {
       empresaId: ctx.empresaId,
@@ -136,6 +139,19 @@ async function feriadoEditavel(
   return feriado;
 }
 
+/** Mudar data/tipo/local para os de outro feriado do mesmo escopo daria duplicata. */
+async function garantirQueNaoRepete(
+  calendario: RepositorioCalendario,
+  ctx: ContextoCalendario,
+  antes: FeriadoGravado,
+  depois: { data: string; tipo: TipoFeriado } & LocalDoFeriado,
+): Promise<void> {
+  const chave = chaveDoFeriado(depois);
+  if (chave === chaveDoFeriado(antes)) return;
+  const existentes = await calendario.chavesExistentes(ctx.empresaId, [depois.data], depois.tipo);
+  if (existentes.has(chave)) throw conflito(FERIADO_REPETIDO);
+}
+
 export async function alterarFeriado(
   db: Db,
   ctx: ContextoCalendario,
@@ -146,6 +162,11 @@ export async function alterarFeriado(
   const local = normalizarLocal(dados.tipo, dados.cidade, dados.uf);
   return db(async ({ calendario, auditoria }) => {
     const antes = await feriadoEditavel(calendario, ctx, id);
+    await garantirQueNaoRepete(calendario, ctx, antes, {
+      data: dados.data,
+      tipo: dados.tipo,
+      ...local,
+    });
     const depois = {
       data: dados.data,
       tipo: dados.tipo,
@@ -195,7 +216,6 @@ export async function excluirFeriado(
  */
 export async function gerarNacionais(
   db: Db,
-  ctx: ContextoCalendario,
   ator: Ator,
   ano: number,
   anosAFrente: number,
@@ -211,8 +231,9 @@ export async function gerarNacionais(
   }));
   return db(async ({ calendario, auditoria }) => {
     const inseridos = await calendario.inserir(feriados);
+    // Nacional vale para todas as empresas: o registro é da Plataforma (empresa nula).
     await auditoria.registrar(ator, {
-      empresaId: ctx.empresaId,
+      empresaId: null,
       acao: "gerar_nacionais",
       entidade: "feriado",
       entidadeId: null,

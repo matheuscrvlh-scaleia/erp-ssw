@@ -58,7 +58,7 @@ describe("criarFeriado", () => {
 
 describe("obterCalendario", () => {
   it("o próximo feriado usa o dia no fuso da empresa", async () => {
-    await gerarNacionais(db, ctx, ator, 2026, 0);
+    await gerarNacionais(db, ator, 2026, 0);
     // 23h30 de 02/11 em São Paulo já é 03/11 em UTC: em SP, Finados ainda é hoje (o próximo).
     const r = await obterCalendario(db, ctx, 2026, new Date("2026-11-03T02:30:00Z"));
     expect(r.proximo?.descricao).toBe("Finados");

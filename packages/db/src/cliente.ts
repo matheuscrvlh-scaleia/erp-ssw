@@ -82,9 +82,21 @@ export async function comContexto<T>(
 /** Código do Postgres para consulta cancelada por `statement_timeout`. */
 const CONSULTA_CANCELADA = "57014";
 
-export function ehTempoEsgotado(erro: unknown): boolean {
+/** Código do Postgres para violação de chave única. */
+const VIOLACAO_DE_UNICIDADE = "23505";
+
+function temCodigo(erro: unknown, codigo: string): boolean {
   if (typeof erro !== "object" || erro === null) return false;
-  if ("code" in erro && erro.code === CONSULTA_CANCELADA) return true;
+  if ("code" in erro && erro.code === codigo) return true;
   // O driver às vezes embrulha o erro do pg (`cause`).
-  return "cause" in erro && ehTempoEsgotado(erro.cause);
+  return "cause" in erro && temCodigo(erro.cause, codigo);
+}
+
+export function ehTempoEsgotado(erro: unknown): boolean {
+  return temCodigo(erro, CONSULTA_CANCELADA);
+}
+
+/** Corrida entre duas gravações iguais: a checagem do caso de uso passou nas duas. */
+export function ehViolacaoDeUnicidade(erro: unknown): boolean {
+  return temCodigo(erro, VIOLACAO_DE_UNICIDADE);
 }

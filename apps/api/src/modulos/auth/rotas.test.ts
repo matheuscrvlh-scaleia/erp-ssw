@@ -121,7 +121,7 @@ describe("GET /api/v1/auth/me", () => {
   it("200 com telas do cargo, módulos e empresas; admin da plataforma ganha a seção Plataforma", async () => {
     const empresa = cenario.banco.criarEmpresa();
     cenario.banco.liberarModulo(empresa.id, "historico");
-    cenario.banco.cargos.set("operador", {
+    cenario.banco.definirCargo(empresa.id, "operador", {
       rotulo: "Operador",
       telas: ["calendario", "performance"],
     });

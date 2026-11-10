@@ -1,6 +1,14 @@
 import { SETORES } from "@erp/shared/acesso/papeis";
 import { sql } from "drizzle-orm";
-import { boolean, foreignKey, index, primaryKey, text, uuid } from "drizzle-orm/pg-core";
+import {
+  type AnyPgColumn,
+  boolean,
+  foreignKey,
+  index,
+  primaryKey,
+  text,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 import {
   atualizadoEm,
@@ -11,32 +19,53 @@ import {
   politicasDeEmpresaComPlataforma,
   usuarioDaSessao,
 } from "./base";
+import { unidades } from "./dominio/filiais";
 import { usuarios } from "./identidade";
 import { empresas, telas } from "./plataforma";
 
 /**
- * Cargos (papéis) são um catálogo global editado só pela Plataforma (decisão em aberto no
- * sistema atual: virar por empresa). Sem RLS: a API só expõe escrita à Plataforma.
+ * Cargos (papéis) por empresa: cada empresa edita os seus (decisão Q30 do dono). As chaves
+ * `super_admin`, `admin` e `gestor` têm significado fixo no código; a empresa nova recebe os
+ * cargos padrão quando é criada.
  */
-export const cargos = erp.table("cargos", {
-  chave: text("chave").primaryKey(),
-  rotulo: text("rotulo").notNull(),
-  protegido: boolean("protegido").notNull().default(false),
-  criadoEm: criadoEm(),
-  atualizadoEm: atualizadoEm(),
-});
+export const cargos = erp.table(
+  "cargos",
+  {
+    empresaId: uuid("empresa_id")
+      .notNull()
+      .references(() => empresas.id, { onDelete: "cascade" }),
+    chave: text("chave").notNull(),
+    rotulo: text("rotulo").notNull(),
+    protegido: boolean("protegido").notNull().default(false),
+    criadoEm: criadoEm(),
+    atualizadoEm: atualizadoEm(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.empresaId, t.chave] }),
+    ...politicasDeEmpresaComPlataforma("cargos", t.empresaId),
+  ],
+);
 
 export const cargoTelas = erp.table(
   "cargo_telas",
   {
-    cargoChave: text("cargo_chave")
-      .notNull()
-      .references(() => cargos.chave, { onDelete: "cascade", onUpdate: "cascade" }),
+    empresaId: uuid("empresa_id").notNull(),
+    cargoChave: text("cargo_chave").notNull(),
     telaChave: text("tela_chave")
       .notNull()
       .references(() => telas.chave, { onDelete: "cascade" }),
   },
-  (t) => [primaryKey({ columns: [t.cargoChave, t.telaChave] })],
+  (t) => [
+    primaryKey({ columns: [t.empresaId, t.cargoChave, t.telaChave] }),
+    foreignKey({
+      name: "cargo_telas_cargo_fk",
+      columns: [t.empresaId, t.cargoChave],
+      foreignColumns: [cargos.empresaId, cargos.chave],
+    })
+      .onDelete("cascade")
+      .onUpdate("cascade"),
+    ...politicasDeEmpresaComPlataforma("cargo_telas", t.empresaId),
+  ],
 );
 
 export const departamentos = erp.table(
@@ -83,7 +112,8 @@ export const departamentoTelas = erp.table(
 
 /**
  * Vínculo usuário × empresa: papel, departamento, setor legado e unidade valem por empresa.
- * `unidade_id` aponta para `unidades` (tabela de domínio); a FK entra com o schema de domínio.
+ * `unidade_id` é o escopo de dados por unidade (Q26: uma regra só, desligada até existir a tela
+ * que o grava; hoje todos veem tudo da própria empresa).
  */
 export const empresaUsuarios = erp.table(
   "empresa_usuarios",
@@ -94,10 +124,12 @@ export const empresaUsuarios = erp.table(
     usuarioId: uuid("usuario_id")
       .notNull()
       .references(() => usuarios.id, { onDelete: "cascade" }),
-    papel: text("papel").references(() => cargos.chave, { onUpdate: "cascade" }),
+    papel: text("papel"),
     departamentoChave: text("departamento_chave"),
     setor: text("setor", { enum: SETORES }),
-    unidadeId: uuid("unidade_id"),
+    unidadeId: uuid("unidade_id").references((): AnyPgColumn => unidades.id, {
+      onDelete: "set null",
+    }),
     ativo: boolean("ativo").notNull().default(true),
     criadoEm: criadoEm(),
     criadoPor: uuid("criado_por").references(() => usuarios.id),
@@ -105,6 +137,11 @@ export const empresaUsuarios = erp.table(
   (t) => [
     primaryKey({ columns: [t.empresaId, t.usuarioId] }),
     index("empresa_usuarios_usuario_idx").on(t.usuarioId),
+    foreignKey({
+      name: "empresa_usuarios_cargo_fk",
+      columns: [t.empresaId, t.papel],
+      foreignColumns: [cargos.empresaId, cargos.chave],
+    }).onUpdate("cascade"),
     foreignKey({
       name: "empresa_usuarios_departamento_fk",
       columns: [t.empresaId, t.departamentoChave],

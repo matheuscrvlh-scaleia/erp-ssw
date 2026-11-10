@@ -60,7 +60,7 @@ export class BancoEmMemoria {
   plataformaAdmins = new Set<string>();
   empresas: EmpresaGravada[] = [];
   vinculos: VinculoFalso[] = [];
-  cargos = new Map<string, { rotulo: string; telas: string[] }>();
+  private cargos = new Map<string, { rotulo: string; telas: string[] }>();
   departamentoTelas: { empresaId: string; departamento: string; tela: string }[] = [];
   excecoes: { empresaId: string; usuarioId: string; tela: string; permitido: boolean }[] = [];
   liberacoes: {
@@ -85,6 +85,10 @@ export class BancoEmMemoria {
     if (this.falharCom !== null) throw this.falharCom;
     return fn(this.repositorios());
   };
+
+  definirCargo(empresaId: string, chave: string, cargo: { rotulo: string; telas: string[] }) {
+    this.cargos.set(`${empresaId}:${chave}`, cargo);
+  }
 
   criarEmpresa(dados: Partial<EmpresaGravada> = {}): EmpresaGravada {
     const empresa: EmpresaGravada = {
@@ -167,7 +171,8 @@ export class BancoEmMemoria {
         empresa: (id) => Promise.resolve(this.empresas.find((e) => e.id === id) ?? null),
         todasAsEmpresas: () =>
           Promise.resolve(this.empresas.map((e) => ({ id: e.id, nome: e.nome }))),
-        cargo: (papel) => Promise.resolve(this.cargos.get(papel) ?? null),
+        cargo: (empresaId, papel) =>
+          Promise.resolve(this.cargos.get(`${empresaId}:${papel}`) ?? null),
         telasDoDepartamento: (empresaId, departamento) =>
           Promise.resolve(
             this.departamentoTelas

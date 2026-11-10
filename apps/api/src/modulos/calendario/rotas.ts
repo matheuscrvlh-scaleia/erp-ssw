@@ -4,7 +4,7 @@ import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { exigirAdminPlataforma, exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import {
   alterarFeriado,
@@ -15,9 +15,13 @@ import {
   obterCalendario,
 } from "./casos-de-uso";
 
-/** Ler: quem tem a tela; escrever: admin da empresa (ou Plataforma). Sempre com o módulo. */
+/**
+ * Ler: quem tem a tela; escrever: admin da empresa (ou Plataforma). Sempre com o módulo.
+ * Gerar nacionais grava para todas as empresas: só a Plataforma (Q28 do dono).
+ */
 const ler = [exigirModulo("historico"), exigirTela("calendario")];
 const escrever = [...ler, exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN)];
+const gerarParaTodas = [...ler, exigirAdminPlataforma];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoCalendario> {
   const { acesso, empresa } = await empresaDaRequisicao(request);
@@ -90,16 +94,10 @@ export const rotasCalendario: FastifyPluginCallbackZod<{ agora: () => Date }> = 
     c.gerarNacionais.caminho,
     {
       schema: { body: c.gerarNacionais.entrada, response: { 200: c.gerarNacionais.saida } },
-      preHandler: escrever,
+      preHandler: gerarParaTodas,
     },
     async (request) =>
-      gerarNacionais(
-        request.db,
-        await contextoDe(request),
-        await atorDa(request),
-        request.body.ano,
-        request.body.anosAFrente,
-      ),
+      gerarNacionais(request.db, await atorDa(request), request.body.ano, request.body.anosAFrente),
   );
   pronto();
 };

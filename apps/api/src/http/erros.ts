@@ -21,6 +21,8 @@ export const moduloNaoLiberado = (nomes: readonly string[]) =>
 
 export const naoEncontrado = (mensagem: string) => new ErroDeNegocio("NAO_ENCONTRADO", mensagem);
 
+export const conflito = (mensagem: string) => new ErroDeNegocio("CONFLITO", mensagem);
+
 export const muitasTentativas = () =>
   new ErroDeNegocio(
     "MUITAS_TENTATIVAS",

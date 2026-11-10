@@ -5,8 +5,7 @@
 ## Contexto
 A arquitetura pede RLS em toda tabela de dado de cliente, lendo `current_setting('app.*')`.
 As tabelas de identidade (`usuarios`, `sessoes`, `tokens_senha`, `identidades_externas`,
-`plataforma_admins`) e os catálogos globais (`cargos`, `cargo_telas`, `telas`, `modulos`,
-`modulo_telas`) são lidos **antes** de existir contexto: login, refresh, redefinição de senha.
+`plataforma_admins`) e os catálogos globais (`telas`, `modulos`, `modulo_telas`) são lidos **antes** de existir contexto: login, refresh, redefinição de senha.
 
 ## Decisão
 - RLS (`ENABLE` + políticas por operação para `erp_app`) em toda tabela com `empresa_id`. O
@@ -16,13 +15,14 @@ As tabelas de identidade (`usuarios`, `sessoes`, `tokens_senha`, `identidades_ex
   - `politicasDeEmpresa`: só a empresa da sessão (dado operacional — a Plataforma, mesmo com
     `app.plataforma = on`, não mistura empresas).
   - `politicasDeEmpresaComPlataforma`: empresa da sessão **ou** Plataforma (cadastros que a
-    equipe da Plataforma administra: departamentos, vínculos, exceções).
+    equipe da Plataforma administra: cargos, departamentos, vínculos, exceções).
 - Casos especiais declarados na própria tabela: `empresas` (o usuário vê as empresas em que tem
   vínculo, para o seletor), `empresa_usuarios` (o usuário lê os próprios vínculos),
   `empresa_modulos`/`empresa_integracoes` (empresa lê, só a Plataforma escreve), `auditoria`
-  (sem UPDATE/DELETE), `feriados` (nacional com `empresa_id` nulo, legível por todos).
+  (sem UPDATE/DELETE), `feriados` (nacional com `empresa_id` nulo, legível por todos e gravado
+  só pela Plataforma).
 - Identidade e catálogos globais **sem RLS**; quem protege é a API (e o catálogo só é escrito
-  pelo papel de migração — `REVOKE` na migration `0001_permissoes_app.sql`).
+  pelo papel de migração — `REVOKE` na migration `0002_permissoes_app.sql`).
 - Os papéis `erp_app` e `erp_migracao` são criados uma vez pelo DBA
   (`packages/db/bootstrap/papeis.sql`), não por migration, porque precisam de LOGIN e senha.
 

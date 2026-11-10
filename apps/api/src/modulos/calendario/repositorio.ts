@@ -83,7 +83,10 @@ export function criarRepositorioCalendario(tx: Transacao): RepositorioCalendario
     },
 
     alterar: async (id, dados) => {
-      await tx.update(feriados).set(dados).where(eq(feriados.id, id));
+      await tx
+        .update(feriados)
+        .set({ ...dados, atualizadoEm: new Date() })
+        .where(eq(feriados.id, id));
     },
 
     excluir: async (id) => {

@@ -5,15 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1794315436336,
-      "tag": "0000_identidade_plataforma",
+      "when": 1794317587251,
+      "tag": "0000_schema_erp",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1794315448180,
-      "tag": "0001_permissoes_app",
+      "when": 1794317588699,
+      "tag": "0001_dominio_complementar",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794317590036,
+      "tag": "0002_permissoes_app",
       "breakpoints": true
     }
   ]

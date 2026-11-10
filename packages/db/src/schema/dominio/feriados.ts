@@ -1,40 +1,54 @@
-import { TIPOS_FERIADO } from "@erp/shared/contratos/calendario";
-import { sql } from "drizzle-orm";
-import { boolean, check, date, index, text, unique, uuid } from "drizzle-orm/pg-core";
-
-import { criadoEm, daEmpresa, daEmpresaOuPlataforma, erp, politicas } from "../base";
-import { empresas } from "../plataforma";
-
 /**
- * Feriados. `empresa_id` nulo = nacional gerado para todas as empresas; só a Plataforma altera
- * ou apaga esses. A empresa pode gerar os nacionais (insert com empresa nula, tipo nacional e
- * marcado como automático), igual à função `gerar_feriados_nacionais` de hoje.
- * origem: tabela public.feriados (sistema atual)
+ * Agregado Calendário: feriados.
+ *
+ * `empresa_id` nulo = feriado nacional, que vale para todas as empresas. Preenchido = feriado só
+ * daquela empresa (municipal/estadual ou nacional cadastrado à mão por ela).
+ *
+ * RLS: a empresa lê os nacionais e os dela, e só grava os dela. Nacional só é gravado em sessão
+ * de Plataforma (geração automática anual) ou pela migration/seed. Segue o `public.feriados`
+ * atual coluna a coluna.
+ *
+ * Origem: public.feriados.
  */
+import { sql } from "drizzle-orm";
+import { type AnyPgColumn, boolean, date, index, text, unique, uuid } from "drizzle-orm/pg-core";
+
+import { daEmpresa, ehPlataforma, erp, politicas } from "../base";
+import { empresas } from "../plataforma";
+import { atualizadoEm, criadoEm } from "./_comum";
+
+function daEmpresaOuNacionalDaPlataforma(coluna: AnyPgColumn) {
+  return sql`(${daEmpresa(coluna)} or (${coluna} is null and ${ehPlataforma}))`;
+}
+
+export const tipoFeriado = erp.enum("tipo_feriado", ["nacional", "municipal", "estadual"]);
+
 export const feriados = erp.table(
   "feriados",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id").references(() => empresas.id, { onDelete: "cascade" }),
+    /** Nulo = feriado nacional (todas as empresas). */
+    empresaId: uuid("empresa_id").references(() => empresas.id, { onDelete: "restrict" }),
     data: date("data", { mode: "string" }).notNull(),
-    tipo: text("tipo", { enum: TIPOS_FERIADO }).notNull(),
+    tipo: tipoFeriado("tipo").notNull(),
     cidade: text("cidade"),
     uf: text("uf"),
     descricao: text("descricao").notNull(),
     geradoAutomaticamente: boolean("gerado_automaticamente").notNull().default(false),
     criadoEm: criadoEm(),
+    atualizadoEm: atualizadoEm(),
   },
   (t) => [
-    // NULLS NOT DISTINCT: nulo em cidade/uf/empresa conta como valor igual (sem COALESCE).
-    unique("feriados_unico").on(t.data, t.tipo, t.cidade, t.uf, t.empresaId).nullsNotDistinct(),
-    index("feriados_data_idx").on(t.data),
-    check("feriados_uf_formato", sql`${t.uf} is null or ${t.uf} ~ '^[A-Z]{2}$'`),
+    // Mesmo feriado não se repete no mesmo escopo. NULLS NOT DISTINCT: cidade/uf/empresa nulas
+    // contam como iguais (dois nacionais iguais colidem).
+    unique("feriados_escopo_uq").on(t.data, t.tipo, t.cidade, t.uf, t.empresaId).nullsNotDistinct(),
+    index("feriados_empresa_data_idx").on(t.empresaId, t.data),
+    // Nacional (empresa nula) vale para todas e só a Plataforma grava (Q28 do dono).
     ...politicas("feriados", {
       select: sql`(${t.empresaId} is null or ${daEmpresa(t.empresaId)})`,
-      insert: sql`(${daEmpresaOuPlataforma(t.empresaId)} or (${t.empresaId} is null
-        and ${t.tipo} = 'nacional' and ${t.geradoAutomaticamente}))`,
-      update: daEmpresaOuPlataforma(t.empresaId),
-      delete: daEmpresaOuPlataforma(t.empresaId),
+      insert: daEmpresaOuNacionalDaPlataforma(t.empresaId),
+      update: daEmpresaOuNacionalDaPlataforma(t.empresaId),
+      delete: daEmpresaOuNacionalDaPlataforma(t.empresaId),
     }),
   ],
 );

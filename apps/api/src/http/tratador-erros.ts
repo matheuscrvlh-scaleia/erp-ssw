@@ -1,4 +1,4 @@
-import { ehTempoEsgotado } from "@erp/db";
+import { ehTempoEsgotado, ehViolacaoDeUnicidade } from "@erp/db";
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import {
   type CodigoErro,
@@ -38,6 +38,9 @@ export function registrarTratadorDeErros(app: FastifyInstance): void {
     if (ehTempoEsgotado(erro)) {
       request.log.warn({ err: erro }, "consulta cancelada por tempo");
       return responder(reply, "TEMPO_ESGOTADO", MENSAGEM_TEMPO_ESGOTADO);
+    }
+    if (ehViolacaoDeUnicidade(erro)) {
+      return responder(reply, "CONFLITO", "Já existe um registro igual a este.");
     }
     if (erro.statusCode === 413) {
       return responder(reply, "ENTRADA_INVALIDA", "Conteúdo grande demais.");

@@ -49,7 +49,8 @@ export interface RepositorioAcesso {
   familiaAtiva(familiaId: string, agora: Date): Promise<boolean>;
   empresa(empresaId: string): Promise<EmpresaGravada | null>;
   todasAsEmpresas(): Promise<{ id: string; nome: string }[]>;
-  cargo(papel: string): Promise<{ rotulo: string; telas: string[] } | null>;
+  /** Cargo da empresa (cada empresa tem os seus, Q30). */
+  cargo(empresaId: string, papel: string): Promise<{ rotulo: string; telas: string[] } | null>;
   telasDoDepartamento(empresaId: string, departamento: string): Promise<string[]>;
   excecoes(empresaId: string, usuarioId: string): Promise<Excecao[]>;
   liberacoes(empresaId: string): Promise<LiberacaoDeModulo[]>;
@@ -144,7 +145,7 @@ export async function carregarAcesso(
       const empresa = empresaId ? await acesso.empresa(empresaId) : null;
       const vinculo = vinculos.find((v) => v.empresaId === empresaId) ?? null;
       const papel = papelNaEmpresa({ vinculo, adminPlataforma, empresaId: empresa?.id ?? null });
-      const cargo = papel ? await acesso.cargo(papel) : null;
+      const cargo = empresa && papel ? await acesso.cargo(empresa.id, papel) : null;
       const telasDoDepartamento =
         empresa && vinculo?.departamento
           ? await acesso.telasDoDepartamento(empresa.id, vinculo.departamento)

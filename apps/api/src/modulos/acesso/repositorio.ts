@@ -94,16 +94,16 @@ export function criarRepositorioAcesso(tx: Transacao): RepositorioAcesso {
         .from(empresas)
         .orderBy(asc(empresas.nome)),
 
-    cargo: async (papel) => {
+    cargo: async (empresaId, papel) => {
       const [linha] = await tx
         .select({ rotulo: cargos.rotulo })
         .from(cargos)
-        .where(eq(cargos.chave, papel));
+        .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, papel)));
       if (!linha) return null;
       const telas = await tx
         .select({ tela: cargoTelas.telaChave })
         .from(cargoTelas)
-        .where(eq(cargoTelas.cargoChave, papel));
+        .where(and(eq(cargoTelas.empresaId, empresaId), eq(cargoTelas.cargoChave, papel)));
       return { rotulo: linha.rotulo, telas: telas.map((t) => t.tela) };
     },
 
