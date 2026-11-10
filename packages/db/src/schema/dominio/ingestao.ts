@@ -177,6 +177,9 @@ export const ingestaoLinhas = erp.table(
       t.importadoEm.desc(),
     ),
     index("ingestao_linhas_lote_idx").on(t.empresaId, t.loteId),
+    // Linhas de um relatório num dia (aba Hoje do Romaneio: o 036 do dia, refeito a cada 60 s;
+    // sem o índice, varre os 60 dias de 036 guardados).
+    index("ingestao_linhas_relatorio_data_idx").on(t.empresaId, t.relatorio, t.dataReferencia),
     // Fila de aplicação: pendentes na ordem de chegada.
     index("ingestao_linhas_pendentes_idx")
       .on(t.empresaId, t.relatorio, t.id)
