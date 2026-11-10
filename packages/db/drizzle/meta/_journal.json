@@ -26,8 +26,15 @@
     {
       "idx": 3,
       "version": "7",
-      "when": 1794320076213,
-      "tag": "0003_projecoes_romaneio",
+      "when": 1794320487680,
+      "tag": "0003_previsao_ssw",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794320488680,
+      "tag": "0004_projecoes_romaneio",
       "breakpoints": true
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "id": "723fa4ac-e909-4c69-b576-1d69fbf50633",
+  "id": "3d0aef6f-f70f-4d0d-891d-2dcffd5b06da",
   "prevId": "52f88c7b-67a0-4ece-b6a1-855114109daf",
   "version": "7",
   "dialect": "postgresql",
@@ -3197,6 +3197,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "previsao_ssw_data": {
+          "name": "previsao_ssw_data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previsao_ssw_fonte": {
+          "name": "previsao_ssw_fonte",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previsao_ssw_data_base": {
+          "name": "previsao_ssw_data_base",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "prazo_padrao_dias": {
           "name": "prazo_padrao_dias",
           "type": "smallint",
@@ -5951,33 +5969,6 @@
           "method": "btree",
           "with": {}
         },
-        "ingestao_linhas_relatorio_data_idx": {
-          "name": "ingestao_linhas_relatorio_data_idx",
-          "columns": [
-            {
-              "expression": "empresa_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "relatorio",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "data_referencia",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "ingestao_linhas_pendentes_idx": {
           "name": "ingestao_linhas_pendentes_idx",
           "columns": [
@@ -7090,18 +7081,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "valor_mercadoria": {
-          "name": "valor_mercadoria",
-          "type": "numeric(14, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "tem_038": {
-          "name": "tem_038",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true
-        },
         "setor": {
           "name": "setor",
           "type": "text",
@@ -7126,15 +7105,51 @@
           "primaryKey": false,
           "notNull": false
         },
-        "valor_mercadoria_038": {
-          "name": "valor_mercadoria_038",
+        "prazo_entrega_038": {
+          "name": "prazo_entrega_038",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atraso_038": {
+          "name": "atraso_038",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "localizacao": {
+          "name": "localizacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valor_mercadoria": {
+          "name": "valor_mercadoria",
           "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
-        "valor_mercadoria_455": {
-          "name": "valor_mercadoria_455",
+        "frete_455": {
+          "name": "frete_455",
           "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peso_455": {
+          "name": "peso_455",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previsao_455": {
+          "name": "previsao_455",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pagador_455": {
+          "name": "pagador_455",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -7238,6 +7253,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "tem_036": {
+          "name": "tem_036",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
         "placa": {
           "name": "placa",
           "type": "text",
@@ -7250,11 +7271,11 @@
           "primaryKey": false,
           "notNull": false
         },
-        "tem_036": {
-          "name": "tem_036",
-          "type": "boolean",
+        "data": {
+          "name": "data",
+          "type": "date",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "romaneio": {
           "name": "romaneio",
@@ -7264,18 +7285,6 @@
         },
         "situacao": {
           "name": "situacao",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "placa_036": {
-          "name": "placa_036",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "motorista_036": {
-          "name": "motorista_036",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -7322,20 +7331,32 @@
           "primaryKey": false,
           "notNull": false
         },
-        "tem_306": {
-          "name": "tem_306",
-          "type": "boolean",
+        "frete_036": {
+          "name": "frete_036",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "placa_306": {
-          "name": "placa_306",
+        "unidade_destino_306": {
+          "name": "unidade_destino_306",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "motorista_306": {
-          "name": "motorista_306",
+        "setor_destino_306": {
+          "name": "setor_destino_306",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ocorrencia_mobile_306": {
+          "name": "ocorrencia_mobile_306",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ocorrencia_atual_306": {
+          "name": "ocorrencia_atual_306",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -7373,6 +7394,27 @@
           ],
           "isUnique": false,
           "where": "\"erp\".\"romaneio_cte_atual\".\"romaneio\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "romaneio_cte_atual_data_idx": {
+          "name": "romaneio_cte_atual_data_idx",
+          "columns": [
+            {
+              "expression": "empresa_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
