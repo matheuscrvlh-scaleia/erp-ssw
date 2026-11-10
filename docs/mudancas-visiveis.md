@@ -262,3 +262,32 @@ para explicar as diferenças da conferência lado a lado (Q52). Uma seção por 
   CSV) pelo botão "Importar 050" da própria tela; antes era só por Admin · Importação SSW.
 - **Histórico › Feriados com a regra do Calendário.** Municipal exige cidade e UF e a descrição tem
   ao menos 3 letras; o nacional cadastrado pela Plataforma aparece sem editar/excluir (Q28).
+
+## Segurança (revisão da onda 1)
+
+Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP) ou administra.
+
+- **Webhook SSW: recusa antes do corpo e só metadados.** Chamada sem token válido é recusada antes
+  de o corpo ser lido (JSON inválido sem token passa a receber 401, não 400) e grava só IP,
+  user-agent, motivo e o SHA-256 do token. A exceção é a quarentena de "token incorreto" (ADR 0009).
+  Mais de 30 falhas por minuto do mesmo IP recebem 429 sem gravar nada.
+- **Webhook SSW: "Reprocessar webhooks rejeitados por token" só reenvia o que confere.** Vale para o
+  evento cujo token é o segredo atual ou o anterior (o SSW trocou o token antes de nós, ou nós
+  antes dele). O cartão mostra "Total" (todos os recusados com conteúdo) e "Reenviados" (os que
+  conferem); os outros nunca viram dado. Eventos migrados do sistema atual não guardam o resumo do
+  token: não são reprocessáveis.
+- **Conta desativada não entra.** Com a senha certa, o login responde "Sua conta foi desativada por
+  um administrador." (antes entrava e via a tela "Sem acesso"); a sessão aberta deixa de renovar e
+  a conta desativada não usa as telas da Plataforma. Pelo Google, volta para o login com erro.
+- **Admin comum não desativa quem está acima.** Desativar ou reativar um Super Admin é só do Super
+  Admin ou da Plataforma; quem é da equipe da Plataforma, só a Plataforma (ADR 0007).
+- **Rotas públicas da ingestão com segredo por empresa** (ADR 0010). `x-ftp-ingest-secret` (e
+  `x-cron-token`) passam a ser o segredo da integração "Rotas públicas da ingestão" da empresa; o
+  `FTP_INGEST_SECRET` global e o `backfill_cron_token` saem. Cadastrando o valor de hoje para a FR,
+  quem chama não percebe; pedir outra empresa com esse segredo dá 404.
+- **SFTP confere a chave do servidor.** A integração SFTP ganha o campo "Impressão digital do
+  servidor" (SHA256:…), obrigatório: sem ele, ou com a chave do servidor diferente, a sincronização
+  do FTP falha com a mensagem do que cadastrar (antes conectava em qualquer servidor que
+  respondesse no endereço). Na transição com `usar_env`, vale `SFTP_IMPRESSAO_DIGITAL`.
+- **CSV sem fórmula.** Texto que começa com `=`, `+`, `-`, `@`, tab ou CR sai com `'` na frente no
+  CSV exportado (a planilha mostra o texto em vez de executar uma fórmula). Números não mudam.

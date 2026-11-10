@@ -291,8 +291,11 @@ echo "SEGREDOS_CHAVE_ATUAL=1"
 ```
 
 **Rotação**: acrescentar a nova (`SEGREDOS_CHAVES=1:<antiga>,2:<nova>`), `SEGREDOS_CHAVE_ATUAL=2`,
-`./deploy.sh <tag atual>`: gravação nova sai com a 2, leitura usa a versão da linha. Rodar o job de
-recifrar (onda 2) e só remover a `1:` quando nenhuma linha estiver mais na versão 1.
+`./deploy.sh <tag atual>`: gravação nova sai com a 2, leitura usa a versão da linha. Pedir o job de
+recifrar (`docker compose run --rm worker node dist/main.js --recifrar-segredos`: só enfileira; o
+worker no ar regrava cada segredo, e o segredo anterior do webhook, com a chave atual e loga
+"segredos recifrados com a chave atual" com o total e as falhas). Só remover a `1:` quando o log
+disser `falhas: []` e nenhuma linha estiver mais na versão 1.
 
 **Nunca perder a chave**: sem ela os segredos do banco não decifram (recadastrar integração por
 integração). Guardar no gerenciador de senhas, **separada** do backup do banco: backup + chave
@@ -517,6 +520,8 @@ usuários da janela.
    caddy` e `./deploy.sh <tag atual>` (a API passa a usar o `WEB_URL` novo nos e-mails e no CORS).
    O Caddy emite o certificado assim que o DNS responde com o IP da VPS (segundos). URLs, telas e
    rotas públicas (`/api/public/*`, webhook do SSW) são as mesmas: integrações externas não mudam.
+   Antes, em Plataforma → Empresa → Integrações, cadastrar e ligar "Rotas públicas da ingestão"
+   com o mesmo valor do `FTP_INGEST_SECRET` de hoje (ADR 0010); sem isso as rotas respondem 503.
 6. **Conferir**: login de usuários reais (senha antiga validada e regravada em argon2id),
    `/readyz`, telas principais, logs sem 5xx, primeiros jobs ok.
 

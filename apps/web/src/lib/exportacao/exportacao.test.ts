@@ -128,6 +128,31 @@ describe("CSV", () => {
       '"Texto; com ""aspas""";;10,00;;',
     ]);
   });
+
+  it("texto que começa com = + - @, tab ou CR sai com ' (sem virar fórmula); número não muda", () => {
+    const colunas = [
+      { chave: "nome", titulo: "Nome" },
+      { chave: "valor", titulo: "Valor", formato: "decimal" as const },
+    ];
+    const linhas = [
+      { nome: '=HYPERLINK("http://x")', valor: -5 },
+      { nome: "+1", valor: "-2.5" },
+      { nome: "-2+3", valor: null },
+      { nome: "@SOMA(A1)", valor: null },
+      { nome: "\tcmd", valor: null },
+      { nome: "\rcmd", valor: null },
+      { nome: "Normal - ok", valor: null },
+    ];
+    expect(montarCsv(colunas, linhas).split("\n").slice(1)).toEqual([
+      `"'=HYPERLINK(""http://x"")";-5`,
+      "'+1;-2,5",
+      "'-2+3;",
+      "'@SOMA(A1);",
+      "'\tcmd;",
+      `"'\rcmd";`,
+      "Normal - ok;",
+    ]);
+  });
 });
 
 describe("PDF", () => {

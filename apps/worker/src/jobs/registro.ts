@@ -15,6 +15,7 @@ import { type RepositorioBi2 } from "../fontes/bi2/job";
 import { type RepositorioIntegracoes } from "../fontes/comum/integracao";
 import { type RepositorioWebhook } from "../fontes/webhook/job";
 import { type RepositorioManutencao } from "./manutencao/job";
+import { type RepositorioSegredos } from "./manutencao/recifrar";
 import { type RepositorioPrazosDoWorker } from "./prazos/job";
 import { type RepositorioRecalculo } from "./recalculo/job";
 import { type RepositorioSlaArquivos } from "./sla-arquivos/job";
@@ -36,6 +37,8 @@ export interface RepositoriosDoWorker {
   /** Gravação do 050 de coletas (o mesmo da tela). */
   coletas050: RepositorioGravacao050;
   recalculo: RepositorioRecalculo;
+  /** Segredos cifrados das integrações (recifrar com a chave atual; contexto de Plataforma). */
+  segredos: RepositorioSegredos;
 }
 
 export type ExecutorDoWorker = <T>(

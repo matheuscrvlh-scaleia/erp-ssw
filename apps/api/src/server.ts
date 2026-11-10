@@ -1,7 +1,7 @@
 import { setTimeout as esperar } from "node:timers/promises";
 
 import { comContexto, conectarBanco } from "@erp/db";
-import { lerChavesDeSegredo } from "@erp/db/segredos";
+import { contextoDoSegredo, decifrarSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
 import {
   criarEnfileirador,
   criarFilaDeAplicacao,
@@ -68,15 +68,28 @@ const ingestao: ServicosDaIngestao | null =
           comContexto(conexao.banco, PLATAFORMA, (tx) =>
             criarRepositorioDaIngestaoPublica(tx).empresasParaIngestao(),
           ),
-        tokenDoCron: () =>
-          comContexto(conexao.banco, PLATAFORMA, (tx) =>
-            criarRepositorioDaIngestaoPublica(tx).tokenDoCron(),
-          ),
+        segredosDaIngestao: async () => {
+          if (chavesDeSegredo === null) return [];
+          const cifrados = await comContexto(conexao.banco, PLATAFORMA, (tx) =>
+            criarRepositorioDaIngestaoPublica(tx).segredosDaIngestao(),
+          );
+          return cifrados.flatMap(({ empresaId, segredo }) => {
+            try {
+              const texto = decifrarSegredo(
+                chavesDeSegredo,
+                segredo,
+                contextoDoSegredo(empresaId, "ingestao_publica"),
+              ).trim();
+              return texto ? [{ empresaId, segredo: texto }] : [];
+            } catch {
+              return [];
+            }
+          });
+        },
         fila: criarFilaDeAplicacao(redis),
         travas: criarTravas(redis),
         progressos: criarProgressos(redis),
         enfileirador,
-        segredoDoFtp: ambiente.FTP_INGEST_SECRET ?? null,
       }
     : null;
 

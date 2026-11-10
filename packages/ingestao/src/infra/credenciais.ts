@@ -11,6 +11,7 @@ export interface SftpDoAmbiente {
   SFTP_PORTA?: string | undefined;
   SFTP_USUARIO?: string | undefined;
   SFTP_SENHA?: string | undefined;
+  SFTP_IMPRESSAO_DIGITAL?: string | undefined;
 }
 
 const texto = (v: unknown) => (typeof v === "string" && v.trim() !== "" ? v.trim() : null);
@@ -33,6 +34,8 @@ export function montarConfiguracaoSftp(
     porta: Number.isInteger(porta) && porta > 0 ? porta : 22,
     usuario,
     senha,
+    impressaoDigital:
+      texto(p.impressao_digital) ?? (usarEnv ? texto(ambiente.SFTP_IMPRESSAO_DIGITAL) : null),
     relatoriosPath: texto(p.relatorios_path) ?? "/arquivos_import",
     importadosPath: texto(p.importados_path) ?? "/importados",
   };

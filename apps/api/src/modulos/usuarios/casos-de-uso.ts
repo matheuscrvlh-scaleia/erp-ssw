@@ -2,6 +2,7 @@ import {
   type AlvoDoLogin,
   exigirPodeAlterarLogin,
   exigirPodeMexerEmSuperAdmin,
+  exigirPodeMudarAtivo,
   setorLegado,
 } from "@erp/dominio/administracao";
 import { mudancaParaAuditoria, type Registro } from "@erp/dominio/auditoria";
@@ -414,6 +415,9 @@ export async function alterarUsuario(
       email: entrada.email,
       ativo: umVinculoSo ? entrada.ativo : conta.ativo,
     };
+    if (entrada.ativo !== antes.ativo || contaDepois.ativo !== conta.ativo) {
+      exigirPodeMudarAtivo(alvo);
+    }
     if (mudouEmail || mudouNome || contaDepois.ativo !== conta.ativo) {
       await usuarios.alterarConta(usuarioId, contaDepois);
       const mudanca = mudancaParaAuditoria({

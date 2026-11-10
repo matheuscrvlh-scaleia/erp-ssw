@@ -228,6 +228,17 @@ describe("integrações e segredos", () => {
     expect(t.banco.adm.integracoes.find((i) => i.tipo === "ssw_bi2")?.segredoCifrado).toBeNull();
   });
 
+  it("trocar o segredo do webhook guarda o anterior (para o reprocesso por token)", async () => {
+    const { headers } = await t.comoPlataforma();
+    const url = `/api/v1/plataforma/empresas/${t.empresaA.id}/integracoes/ssw_webhook/segredo`;
+    await t.app.inject({ method: "PUT", url, headers, payload: { segredo: "a".repeat(40) } });
+    const primeiro = t.banco.adm.integracoes.find((i) => i.tipo === "ssw_webhook")?.segredoCifrado;
+    await t.app.inject({ method: "PUT", url, headers, payload: { segredo: "b".repeat(40) } });
+    const gravada = t.banco.adm.integracoes.find((i) => i.tipo === "ssw_webhook");
+    expect(gravada?.segredoAnteriorCifrado).toBe(primeiro);
+    expect(gravada?.segredoCifrado).not.toBe(primeiro);
+  });
+
   it("parâmetro com cara de senha é recusado; integração sem segredo não aceita segredo", async () => {
     const { headers } = await t.comoPlataforma();
     const r = await t.app.inject({

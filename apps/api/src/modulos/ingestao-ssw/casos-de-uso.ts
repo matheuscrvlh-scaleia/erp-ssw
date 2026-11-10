@@ -26,7 +26,7 @@ import {
 import { conflito, naoEncontrado } from "../../http/erros";
 import { type Executor } from "../../repositorios";
 import { type Ator } from "../auditoria/auditoria";
-import { type EmpresaDoWebhook, type EventoRecebido } from "./webhook";
+import { type EmpresaDoWebhook, type EventoRecebido, resumoDoSegredo } from "./webhook";
 
 // --- Portas -----------------------------------------------------------------------------------
 
@@ -35,6 +35,8 @@ export interface IntegracaoLida {
   parametros: Record<string, unknown>;
   temSegredo: boolean;
   segredo: SegredoCifrado | null;
+  /** Segredo trocado por último (webhook): o reprocesso aceita eventos assinados com ele. */
+  segredoAnterior: SegredoCifrado | null;
   ultimoTesteEm: Date | null;
   ultimoTesteOk: boolean | null;
   ultimoTesteMsg: string | null;
@@ -51,6 +53,8 @@ export interface EventoLido {
   cteId: string | null;
   numeroCte: string | null;
   temPayload: boolean;
+  /** SHA-256 dos candidatos a token da chamada (nunca o token). */
+  tokenSha256: string[] | null;
 }
 
 export interface SincronizacaoLida extends Omit<SincronizacaoBi2, "iniciadoEm" | "finalizadoEm"> {
@@ -71,20 +75,28 @@ export interface RepositorioIngestaoSsw {
   sincronizacoesBi2(relatorio: string | null, limite: number): Promise<SincronizacaoLida[]>;
   eventosWebhook(limite: number): Promise<EventoLido[]>;
   evento(id: string): Promise<EventoLido | null>;
-  eventosComMotivo(motivo: string, limite: number): Promise<string[]>;
+  eventosComMotivo(
+    motivo: string,
+    limite: number,
+  ): Promise<{ id: string; tokenSha256: string[] | null }[]>;
   contagemWebhook(desde: Date): Promise<ContagemWebhook>;
   ultimaAtividadeWebhook(): Promise<Date | null>;
   semVinculo(desde: Date, limite: number): Promise<{ total: number; recentes: EventoLido[] }>;
   xmlOrfaos(): Promise<{ pendentes: number; expirados: number }>;
   /** Última aplicação do ciclo de arquivos do SSW (o "Dados atualizados em"). */
   ultimaAplicacao(): Promise<Date | null>;
-  /** Marca o evento como reenviado à fila (a tela mostra "processando" até o worker gravar). */
+  /**
+   * Marca o evento como reenviado à fila (a tela mostra "processando" até o worker gravar) e
+   * autenticado: só chega aqui o que passou pela conferência do token.
+   */
   marcarReprocesso(id: string): Promise<void>;
   // Recepção do webhook (rota pública).
   /** Todas as empresas com a integração do webhook (contexto da Plataforma). */
   empresasComWebhook(): Promise<EmpresaDoWebhook[]>;
   /** Grava o evento recebido (contexto da empresa do evento). */
   registrarEvento(evento: EventoRecebido): Promise<string>;
+  /** Eventos não autenticados com conteúdo guardado desde o instante (teto da quarentena). */
+  quarentenaDesde(desde: Date): Promise<number>;
   marcarEvento(eventoId: string, statusHttp: number, erro: string): Promise<void>;
 }
 
@@ -117,6 +129,8 @@ export interface FilasDeIngestao {
 
 export interface CifradorDeSegredos {
   cifrar(textoPuro: string, contexto: string): SegredoCifrado;
+  /** `null` se não decifra com as chaves atuais. */
+  decifrar(segredo: SegredoCifrado, contexto: string): string | null;
 }
 
 export interface DependenciasIngestaoSsw {
@@ -374,7 +388,7 @@ export async function testarConexaoSsw(
 
 // --- Webhook ----------------------------------------------------------------------------------
 
-const paraEvento = (e: EventoLido): EventoWebhook => ({
+const paraEvento = ({ tokenSha256: _resumos, ...e }: EventoLido): EventoWebhook => ({
   ...e,
   recebidoEm: e.recebidoEm.toISOString(),
 });
@@ -388,7 +402,11 @@ export async function eventosWebhook(
   }));
 }
 
-/** O processamento é o do worker: o evento volta para a fila com o payload gravado. */
+/**
+ * Reenvia um evento ao processamento do worker. Marca e audita na transação e só enfileira
+ * depois do commit: se o worker terminasse antes, a marca "reenviado" apagaria o resultado dele.
+ * Evento não autenticado só volta se o resumo do token bater com o segredo atual ou o anterior.
+ */
 export async function reprocessarEvento(
   db: Db,
   deps: DependenciasIngestaoSsw,
@@ -400,7 +418,14 @@ export async function reprocessarEvento(
   const evento = await db(({ ingestaoSsw }) => ingestaoSsw.evento(id));
   if (evento === null) throw naoEncontrado("Evento não encontrado.");
   if (!evento.temPayload) throw conflito("Este evento não guardou o conteúdo recebido.");
-  await enfileirarEvento(filas, empresaId, id);
+  if (!evento.autenticado) {
+    const aceitos = await resumosAceitos(db, deps, empresaId);
+    if (!assinadoPorSegredoConhecido(evento.tokenSha256, aceitos)) {
+      throw conflito(
+        "O token deste evento não confere com o segredo atual nem com o anterior: ele não é reprocessado.",
+      );
+    }
+  }
   await db(async ({ ingestaoSsw, auditoria }) => {
     await ingestaoSsw.marcarReprocesso(id);
     await auditoria.registrar(ator, {
@@ -413,10 +438,15 @@ export async function reprocessarEvento(
       depois: null,
     });
   });
+  await enfileirarEvento(filas, empresaId, id);
   return { enfileirado: true };
 }
 
-/** "Reprocessar webhooks rejeitados por token": os eventos `token_incorreto` com payload. */
+/**
+ * "Reprocessar webhooks rejeitados por token": os eventos `token_incorreto` com payload cujo
+ * token (pelo SHA-256 guardado) é o segredo atual ou o anterior — o SSW trocou o token antes de
+ * nós, ou nós antes dele. Os demais nunca viram dado.
+ */
 export async function reprocessarTokenIncorreto(
   db: Db,
   deps: DependenciasIngestaoSsw,
@@ -424,8 +454,13 @@ export async function reprocessarTokenIncorreto(
   empresaId: string,
 ): Promise<{ total: number; enfileirados: number }> {
   const filas = filasOuErro(deps.filas);
-  const ids = await db(({ ingestaoSsw }) => ingestaoSsw.eventosComMotivo("token_incorreto", 1000));
-  for (const id of ids) await enfileirarEvento(filas, empresaId, id);
+  const aceitos = await resumosAceitos(db, deps, empresaId);
+  const eventos = await db(({ ingestaoSsw }) =>
+    ingestaoSsw.eventosComMotivo("token_incorreto", 1000),
+  );
+  const ids = eventos
+    .filter((e) => assinadoPorSegredoConhecido(e.tokenSha256, aceitos))
+    .map((e) => e.id);
   await db(async ({ ingestaoSsw, auditoria }) => {
     for (const id of ids) await ingestaoSsw.marcarReprocesso(id);
     await auditoria.registrar(ator, {
@@ -438,7 +473,38 @@ export async function reprocessarTokenIncorreto(
       depois: null,
     });
   });
-  return { total: ids.length, enfileirados: ids.length };
+  for (const id of ids) await enfileirarEvento(filas, empresaId, id);
+  return { total: eventos.length, enfileirados: ids.length };
+}
+
+/** SHA-256 do segredo atual e do anterior do webhook, decifrados agora. */
+async function resumosAceitos(
+  db: Db,
+  deps: DependenciasIngestaoSsw,
+  empresaId: string,
+): Promise<ReadonlySet<string>> {
+  const cifrador = deps.cifrador;
+  if (cifrador === null) {
+    throw conflito("A chave dos segredos não está configurada no servidor. Fale com o suporte.");
+  }
+  const integracao = await db(({ ingestaoSsw }) =>
+    ingestaoSsw.integracao(empresaId, "ssw_webhook"),
+  );
+  const contexto = contextoDoSegredo(empresaId, "ssw_webhook");
+  const resumos = new Set<string>();
+  for (const segredo of [integracao?.segredo ?? null, integracao?.segredoAnterior ?? null]) {
+    if (segredo === null) continue;
+    const texto = cifrador.decifrar(segredo, contexto)?.trim() ?? "";
+    if (texto) resumos.add(resumoDoSegredo(texto));
+  }
+  return resumos;
+}
+
+function assinadoPorSegredoConhecido(
+  resumosDoEvento: readonly string[] | null,
+  aceitos: ReadonlySet<string>,
+): boolean {
+  return (resumosDoEvento ?? []).some((r) => aceitos.has(r));
 }
 
 /** Protocolo do reprocesso: novo, para não colidir com o da ocorrência gravada antes. */

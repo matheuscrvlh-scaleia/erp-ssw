@@ -2,9 +2,10 @@
  * Agregado Integração SSW (webhook e WebAPI).
  *
  * - `ssw_webhook_eventos`: cada chamada recebida em `/api/public/ssw-ocorrencias` de uma empresa
- *   identificada (autenticada ou rejeitada por regra). O payload fica para o reprocessamento
- *   manual da tela SSW Diagnóstico. Chamada sem empresa identificável (segredo inválido) não
- *   entra aqui: vai só para o log estruturado da API.
+ *   identificada (autenticada ou rejeitada por regra). O payload da autenticada fica para o
+ *   reprocessamento manual da tela SSW Diagnóstico; a recusada guarda só metadados, salvo a
+ *   quarentena de "token incorreto" (ADR 0009). Chamada sem empresa identificável não entra aqui:
+ *   vai só para o log estruturado da API.
  * - `ssw_sincronizacoes`: log das execuções contra a WebAPI do SSW; a tela Ingestão lê a última
  *   falha de autenticação daqui.
  *
@@ -36,6 +37,12 @@ export const sswWebhookEventos = erp.table(
     motivoRejeicao: text("motivo_rejeicao"),
     statusHttp: smallint("status_http").notNull(),
     payloadBruto: jsonb("payload_bruto"),
+    /**
+     * SHA-256 (hex) de cada candidato a segredo da credencial recebida; nunca o token em si. O
+     * reprocesso de "token incorreto" só aceita o evento se o resumo do segredo atual ou do
+     * anterior estiver aqui.
+     */
+    tokenSha256: text("token_sha256").array(),
     cteId: uuid("cte_id").references(() => ctes.id, { onDelete: "set null" }),
     ocorrenciaId: uuid("ocorrencia_id").references(() => ocorrencias.id, { onDelete: "set null" }),
     erroProcessamento: text("erro_processamento"),

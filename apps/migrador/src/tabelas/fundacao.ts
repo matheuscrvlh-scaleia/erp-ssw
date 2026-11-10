@@ -763,6 +763,8 @@ export function passoEmpresaIntegracoes(chaves: ChavesDeSegredo) {
         parametros: parametrosDaIntegracao(o),
         segredoCifrado: cifrado?.cifrado ?? null,
         segredoVersaoChave: cifrado?.versaoChave ?? null,
+        segredoAnteriorCifrado: null,
+        segredoAnteriorVersaoChave: null,
         segredoDefinidoEm:
           cifrado === null ? null : (o.segredo_definido_em ?? o.atualizado_em ?? filtros.instante),
         ultimoTesteEm: o.ultimo_teste_em,

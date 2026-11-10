@@ -1,4 +1,4 @@
-import { type ChavesDeSegredo, cifrarSegredo } from "@erp/db/segredos";
+import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/segredos";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -9,7 +9,11 @@ import type { Armazenamento } from "./infra/armazenamento";
 import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
 import type { FilaDeJobs } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
-import { type LimitadorDeFalhas } from "./infra/limitador";
+import {
+  criarContadorEmMemoria,
+  criarContadorRedis,
+  type LimitadorDeFalhas,
+} from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
 import { type EmissorDeTokens } from "./infra/tokens";
@@ -172,7 +176,16 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     deps: {
       filas: deps.filasDeIngestao,
       cifrador: chaves
-        ? { cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto) }
+        ? {
+            cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto),
+            decifrar: (segredo, contexto) => {
+              try {
+                return decifrarSegredo(chaves, segredo, contexto);
+              } catch {
+                return null;
+              }
+            },
+          }
         : null,
       agora: deps.agora,
     },
@@ -182,6 +195,9 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     filas: deps.filasDeIngestao,
     chaves,
     agora: deps.agora,
+    falhas: redis
+      ? criarContadorRedis(redis, "webhook:falhas", 60_000)
+      : criarContadorEmMemoria(60_000, () => deps.agora().getTime()),
   });
 
   const usuarios: DependenciasUsuarios = {

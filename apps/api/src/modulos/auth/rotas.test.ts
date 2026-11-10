@@ -69,6 +69,40 @@ describe("POST /api/v1/auth/login", () => {
   });
 });
 
+describe("conta desativada", () => {
+  it("não entra (com a senha certa), não renova a sessão e não usa a Plataforma", async () => {
+    const empresa = cenario.banco.criarEmpresa();
+    const usuario = await usuarioComSenha(cenario, "joana@fr.com.br", "senha-boa-123");
+    cenario.banco.vincular(usuario.id, empresa.id);
+    const entrar = () =>
+      app.inject({
+        method: "POST",
+        url: "/api/v1/auth/login",
+        payload: { email: "joana@fr.com.br", senha: "senha-boa-123" },
+      });
+    const login = await entrar();
+    const refresh = cookieDeRefresh(login)?.value ?? "";
+
+    usuario.ativo = false;
+    const negado = await entrar();
+    expect(negado.statusCode).toBe(403);
+    expect(negado.json()).toEqual({
+      erro: { codigo: "SEM_PERMISSAO", mensagem: "Sua conta foi desativada por um administrador." },
+    });
+    const renovado = await app.inject({
+      method: "POST",
+      url: "/api/v1/auth/refresh",
+      cookies: { erp_refresh: refresh },
+    });
+    expect(renovado.statusCode).toBe(401);
+
+    cenario.banco.plataformaAdmins.add(usuario.id);
+    const headers = await entrarComo(cenario, usuario.id, empresa.id);
+    const plataforma = await app.inject({ url: "/api/v1/plataforma/empresas", headers });
+    expect(plataforma.statusCode).toBe(403);
+  });
+});
+
 describe("refresh e logout", () => {
   it("refresh sem cookie: 401 e cookie apagado", async () => {
     const r = await app.inject({ method: "POST", url: "/api/v1/auth/refresh" });
@@ -218,5 +252,22 @@ describe("Google", () => {
 
     const semCookie = await app.inject({ url: "/api/v1/auth/google/retorno?code=abc" });
     expect(semCookie.headers.location).toBe("/login?erro=falhou");
+
+    // Tab entre as barras: o navegador descarta e "/<tab>/site" viraria "//site".
+    for (const redirect of [
+      "%2F%09%2Fevil.example",
+      "%2F%20%2Fevil.example",
+      "%2Fpainel%3Fa%3D1",
+    ]) {
+      const outraIda = await app.inject({ url: `/api/v1/auth/google?redirect=${redirect}` });
+      const outroDesafio = outraIda.cookies.find((c) => c.name === "erp_google")?.value ?? "";
+      const outraVolta = await app.inject({
+        url: "/api/v1/auth/google/retorno?code=abc&state=e",
+        cookies: { erp_google: outroDesafio },
+      });
+      expect(outraVolta.headers.location).toBe(
+        redirect.startsWith("%2Fpainel") ? "/painel?a=1" : "/",
+      );
+    }
   });
 });

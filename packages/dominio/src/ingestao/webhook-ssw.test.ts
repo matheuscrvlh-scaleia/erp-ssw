@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  candidatosDaCredencial,
   cnpjTransportadoraAceito,
   conferirSegredo,
   cteVigente,
@@ -189,5 +190,23 @@ describe("resposta ao SSW", () => {
     const p = gerarProtocolo(new Date("2026-11-10T12:00:00Z"), () => 0.5);
     expect(p).toHaveLength(14);
     expect(p).toMatch(/^[0-9a-z]+$/);
+  });
+});
+
+describe("candidatosDaCredencial", () => {
+  const segredo = "k".repeat(48);
+  it("traz o token do header, o ?secret= e o trecho do caso 'contém'", () => {
+    const embrulhado = `pre-${"0".repeat(22)}${segredo}`;
+    expect(candidatosDaCredencial(`Bearer ${segredo}`, "", [])).toContain(segredo);
+    expect(candidatosDaCredencial("", "q-secreto", [])).toEqual(["q-secreto"]);
+    expect(candidatosDaCredencial(embrulhado, "", [48])).toContain(segredo);
+    expect(candidatosDaCredencial(embrulhado, "", [])).not.toContain(segredo);
+  });
+
+  it("tem teto de candidatos e ignora comprimentos curtos demais para 'contém'", () => {
+    expect(candidatosDaCredencial("x".repeat(5000) + "y", "", [32]).length).toBeLessThanOrEqual(
+      128,
+    );
+    expect(candidatosDaCredencial("abcdefghij", "", [4])).toEqual(["abcdefghij"]);
   });
 });

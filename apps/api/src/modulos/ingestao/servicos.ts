@@ -18,14 +18,20 @@ export interface ServicosDaIngestao {
   executarNaEmpresa(empresaId: string, ator: AtorDaIngestao | null): Transacional;
   /** Empresas com status e integrações ligadas (contexto da Plataforma). */
   empresasParaIngestao(): Promise<EmpresaParaIngestao[]>;
-  /** `configuracoes.backfill_cron_token` global (segredo `x-cron-token`). */
-  tokenDoCron(): Promise<string | null>;
+  /**
+   * Segredos decifrados da integração `ingestao_publica` ligada, um por empresa: é o segredo que
+   * diz qual empresa chama as rotas públicas.
+   */
+  segredosDaIngestao(): Promise<SegredoDaIngestao[]>;
   fila: FilaDeAplicacao;
   travas: Travas;
   progressos: Progressos;
   enfileirador: Enfileirador;
-  /** `FTP_INGEST_SECRET`; sem ele as rotas de arquivo respondem 503. */
-  segredoDoFtp: string | null;
+}
+
+export interface SegredoDaIngestao {
+  empresaId: string;
+  segredo: string;
 }
 
 export function dependenciasDaEmpresa(

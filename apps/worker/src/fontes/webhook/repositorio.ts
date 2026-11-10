@@ -2,6 +2,7 @@ import { type Transacao } from "@erp/db";
 import {
   codigosOcorrencia,
   ctes,
+  empresaIntegracoes,
   filiaisApelidos,
   ocorrencias,
   sswWebhookEventos,
@@ -20,10 +21,26 @@ export function criarRepositorioWebhook(
   return {
     payloadDoEvento: async (eventoId) => {
       const [linha] = await tx
-        .select({ payload: sswWebhookEventos.payloadBruto })
+        .select({
+          payload: sswWebhookEventos.payloadBruto,
+          autenticado: sswWebhookEventos.autenticado,
+        })
         .from(sswWebhookEventos)
         .where(and(eq(sswWebhookEventos.empresaId, empresa()), eq(sswWebhookEventos.id, eventoId)));
-      return linha ? { payload: linha.payload } : null;
+      return linha ?? null;
+    },
+
+    cnpjsAceitos: async () => {
+      const [linha] = await tx
+        .select({ parametros: empresaIntegracoes.parametros })
+        .from(empresaIntegracoes)
+        .where(
+          and(
+            eq(empresaIntegracoes.empresaId, empresa()),
+            eq(empresaIntegracoes.tipo, "ssw_webhook"),
+          ),
+        );
+      return linha?.parametros.cnpjs_aceitos ?? [];
     },
 
     atualizarEvento: async (eventoId, r) => {

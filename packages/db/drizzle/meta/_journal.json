@@ -50,6 +50,13 @@
       "when": 1794333492405,
       "tag": "0006_cte_cancelado_em",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794338101222,
+      "tag": "0007_webhook_hash_do_token",
+      "breakpoints": true
     }
   ]
 }

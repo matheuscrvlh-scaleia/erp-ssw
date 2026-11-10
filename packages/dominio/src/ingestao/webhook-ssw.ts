@@ -130,6 +130,44 @@ export function conferirSegredo(
   };
 }
 
+/** Teto de candidatos por chamada (o header do SSW tem dezenas de caracteres, não milhares). */
+const MAXIMO_DE_CANDIDATOS = 128;
+
+/**
+ * Tudo o que, na credencial recebida, pode ser o segredo: os candidatos do header, o header
+ * inteiro, o `?secret=` e, para o caso "contém", cada trecho do header com o comprimento de um
+ * segredo conhecido. Quem grava guarda só o SHA-256 de cada um (nunca o texto): no reprocesso,
+ * o evento vale se o resumo do segredo atual ou do anterior estiver entre eles.
+ */
+export function candidatosDaCredencial(
+  cabecalho: string,
+  segredoNaQuery: string,
+  comprimentosConhecidos: readonly number[],
+): string[] {
+  const auth = cabecalho.trim();
+  const doHeader = auth
+    ? [...new Set([auth, semAspas(auth), ...extrairTokensAuthorization(auth).tokens])]
+    : [];
+  const candidatos = new Set(doHeader);
+  if (segredoNaQuery) candidatos.add(segredoNaQuery);
+  for (const comprimento of new Set(comprimentosConhecidos)) {
+    if (comprimento < MINIMO_PARA_CONTER) continue;
+    for (const texto of doHeader) {
+      for (let i = 0; i + comprimento <= texto.length; i++) {
+        if (candidatos.size >= MAXIMO_DE_CANDIDATOS) return [...candidatos];
+        candidatos.add(texto.slice(i, i + comprimento));
+      }
+    }
+  }
+  return [...candidatos];
+}
+
+/** `parametros.cnpjs_aceitos` como a tela grava (lista ou texto separado por vírgula). */
+export function cnpjsAceitosDosParametros(valor: unknown): string[] {
+  const itens = Array.isArray(valor) ? valor : typeof valor === "string" ? valor.split(",") : [];
+  return itens.filter((i): i is string => typeof i === "string" && i.trim() !== "");
+}
+
 /**
  * Allowlist de CNPJ da transportadora (`parametros.cnpjs_aceitos` da integração). Vazia aceita
  * qualquer CNPJ.

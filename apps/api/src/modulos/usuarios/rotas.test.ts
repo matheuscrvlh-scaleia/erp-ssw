@@ -255,6 +255,38 @@ describe("PUT /api/v1/admin/usuarios/:id", () => {
     expect(daPlataforma.email).toBe("time@scale.ia");
   });
 
+  it("admin comum não desativa Super Admin nem quem é da Plataforma; Super Admin desativa", async () => {
+    const { headers } = await t.comoPapel("admin");
+    const chefe = t.banco.criarUsuario({ email: "chefe@fr.com.br", nome: "Pessoa" });
+    t.banco.vincular(chefe.id, t.empresaA.id, { papel: "super_admin" });
+    const daPlataforma = t.banco.criarUsuario({ email: "time@scale.ia", nome: "Pessoa" });
+    t.banco.plataformaAdmins.add(daPlataforma.id);
+    t.banco.vincular(daPlataforma.id, t.empresaA.id, { papel: "operador" });
+    const desativar = (id: string, email: string, h: Record<string, string>, papel = "operador") =>
+      t.app.inject({
+        method: "PUT",
+        url: `/api/v1/admin/usuarios/${id}`,
+        headers: h,
+        payload: { ...edicao(email), papel, ativo: false },
+      });
+
+    const r1 = await desativar(chefe.id, "chefe@fr.com.br", headers, "super_admin");
+    expect(r1.statusCode).toBe(403);
+    expect(r1.json()).toMatchObject({
+      erro: { mensagem: "Apenas o Super Admin pode desativar ou reativar um Super Admin." },
+    });
+    const r2 = await desativar(daPlataforma.id, "time@scale.ia", headers);
+    expect(r2.statusCode).toBe(403);
+    expect(chefe.ativo).toBe(true);
+    expect(daPlataforma.ativo).toBe(true);
+    expect(t.banco.vinculos.filter((v) => !v.ativo)).toEqual([]);
+
+    const superAdmin = await t.comoPapel("super_admin");
+    const r3 = await desativar(chefe.id, "chefe@fr.com.br", superAdmin.headers, "super_admin");
+    expect(r3.statusCode).toBe(200);
+    expect(t.banco.vinculos.find((v) => v.usuarioId === chefe.id)?.ativo).toBe(false);
+  });
+
   it("altera papel, ativo e exceções da empresa e registra cada mudança", async () => {
     const { headers } = await t.comoPapel("admin");
     const pessoa = t.banco.criarUsuario({ email: "p@fr.com.br", nome: "Pessoa" });
