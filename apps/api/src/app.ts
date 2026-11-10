@@ -1,4 +1,5 @@
 import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/segredos";
+import { type FilasDeIngestao } from "@erp/shared/ingestao";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -38,7 +39,6 @@ import { rotasHistorico } from "./modulos/historico/rotas";
 import { rotasAdminDaIngestao } from "./modulos/ingestao/rotas-admin";
 import { rotasPublicasDaIngestao } from "./modulos/ingestao/rotas-publicas";
 import { type ServicosDaIngestao } from "./modulos/ingestao/servicos";
-import { type FilasDeIngestao } from "./modulos/ingestao-ssw/casos-de-uso";
 import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
 import { rotasPublicasSsw } from "./modulos/ingestao-ssw/rotas-publicas";
 import { rotasListagem } from "./modulos/listagem/rotas";

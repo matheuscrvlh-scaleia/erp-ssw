@@ -3,7 +3,6 @@ import { setTimeout as esperar } from "node:timers/promises";
 import { comContexto, conectarBanco } from "@erp/db";
 import { contextoDoSegredo, decifrarSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
 import {
-  criarEnfileirador,
   criarFilaDeAplicacao,
   criarProgressos,
   criarRepositorioIngestao,
@@ -15,8 +14,7 @@ import { construirApp } from "./app";
 import { carregarAmbiente } from "./config/env";
 import { criarArmazenamentoS3 } from "./infra/armazenamento";
 import { criarCorreioSmtp } from "./infra/correio";
-import { criarFilaBullmq, filaDesligada } from "./infra/fila";
-import { criarFilasDeIngestao } from "./infra/filas-ingestao";
+import { criarFilasBullmq, filaDesligada } from "./infra/fila";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
@@ -41,16 +39,14 @@ const redis = ambiente.REDIS_URL
   ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
   : null;
 // Só produz e consulta (não consome): pode dividir a conexão com o limite de taxa.
-const filasDeIngestao = redis ? criarFilasDeIngestao(redis, (ms) => esperar(ms)) : null;
-
-const fila = redis ? criarFilaBullmq(redis) : null;
+const filas = redis ? criarFilasBullmq(redis, (ms) => esperar(ms)) : null;
 
 const chavesDeSegredo = ambiente.SEGREDOS_CHAVES
   ? lerChavesDeSegredo(ambiente.SEGREDOS_CHAVES, ambiente.SEGREDOS_CHAVE_ATUAL)
   : null;
 
 const PLATAFORMA = { empresaId: null, usuarioId: null, plataforma: true } as const;
-const enfileirador = redis ? criarEnfileirador(redis) : null;
+const enfileirador = filas?.enfileirador ?? null;
 const ingestao: ServicosDaIngestao | null =
   redis && enfileirador
     ? {
@@ -132,8 +128,8 @@ const app = await construirApp({
           redirectUri: ambiente.GOOGLE_REDIRECT_URI,
         })
       : null,
-  filasDeIngestao,
-  fila: fila ?? filaDesligada,
+  filasDeIngestao: filas?.ingestao ?? null,
+  fila: filas?.jobs ?? filaDesligada,
   armazenamento:
     ambiente.S3_BUCKET && ambiente.S3_CHAVE_ACESSO && ambiente.S3_SEGREDO
       ? criarArmazenamentoS3({
@@ -156,9 +152,7 @@ const app = await construirApp({
 });
 
 app.addHook("onClose", async () => {
-  await enfileirador?.fechar();
-  await filasDeIngestao?.fechar();
-  await fila?.fechar();
+  await filas?.fechar();
   await conexao.encerrar();
   await redis?.quit();
 });

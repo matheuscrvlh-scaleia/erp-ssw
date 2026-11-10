@@ -129,6 +129,33 @@ export const OPCOES_PADRAO_DO_JOB = {
   removeOnFail: { age: 7 * 24 * 3600 },
 } as const;
 
+export type ResultadoDaExecucao =
+  { tipo: "concluido"; valor: unknown } | { tipo: "falhou"; erro: string } | { tipo: "pendente" };
+
+export interface StatusDaFila {
+  agendado: boolean;
+  proximaExecucao: Date | null;
+  aguardando: number;
+  ativos: number;
+  atrasados: number;
+  falhos: number;
+  ultimaConclusao: Date | null;
+  ultimasFalhas: { id: string; quando: Date | null; erro: string; tentativas: number }[];
+}
+
+/** Filas da ingestão vistas pela API e o token da SSW API no Redis. */
+export interface FilasDeIngestao {
+  enfileirar(
+    job: NomeDoJobDeIngestao,
+    dados: Readonly<Record<string, unknown>>,
+    opcoes: { deduplicar: string | null },
+  ): Promise<string>;
+  aguardar(job: NomeDoJobDeIngestao, jobId: string, prazoMs: number): Promise<ResultadoDaExecucao>;
+  status(job: NomeDoJobDeIngestao, empresaId: string): Promise<StatusDaFila>;
+  tokenSswGeradoEm(empresaId: string): Promise<Date | null>;
+  esquecerTokenSsw(empresaId: string): Promise<void>;
+}
+
 export function ehJobDeIngestao(nome: string): nome is NomeDoJobDeIngestao {
   return JOBS_DE_INGESTAO.some((j) => j.job === nome);
 }

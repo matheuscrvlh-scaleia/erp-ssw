@@ -18,9 +18,9 @@ import {
   type StatusDoJob,
 } from "@erp/shared/contratos/ingestao-ssw";
 import {
+  type FilasDeIngestao,
   type IntegracaoDaIngestao,
   JOBS_DE_INGESTAO,
-  type NomeDoJobDeIngestao,
 } from "@erp/shared/ingestao";
 
 import { conflito, naoEncontrado } from "../../http/erros";
@@ -100,32 +100,8 @@ export interface RepositorioIngestaoSsw {
   marcarEvento(eventoId: string, statusHttp: number, erro: string): Promise<void>;
 }
 
-export type ResultadoDaExecucao =
-  { tipo: "concluido"; valor: unknown } | { tipo: "falhou"; erro: string } | { tipo: "pendente" };
-
-export interface StatusDaFila {
-  agendado: boolean;
-  proximaExecucao: Date | null;
-  aguardando: number;
-  ativos: number;
-  atrasados: number;
-  falhos: number;
-  ultimaConclusao: Date | null;
-  ultimasFalhas: { id: string; quando: Date | null; erro: string; tentativas: number }[];
-}
-
 /** Filas do BullMQ e o token da SSW API no Redis. Nulo = API sem Redis (desenvolvimento). */
-export interface FilasDeIngestao {
-  enfileirar(
-    job: NomeDoJobDeIngestao,
-    dados: Readonly<Record<string, unknown>>,
-    opcoes: { deduplicar: string | null },
-  ): Promise<string>;
-  aguardar(job: NomeDoJobDeIngestao, jobId: string, prazoMs: number): Promise<ResultadoDaExecucao>;
-  status(job: NomeDoJobDeIngestao, empresaId: string): Promise<StatusDaFila>;
-  tokenSswGeradoEm(empresaId: string): Promise<Date | null>;
-  esquecerTokenSsw(empresaId: string): Promise<void>;
-}
+export type { FilasDeIngestao, ResultadoDaExecucao, StatusDaFila } from "@erp/shared/ingestao";
 
 export interface CifradorDeSegredos {
   cifrar(textoPuro: string, contexto: string): SegredoCifrado;
