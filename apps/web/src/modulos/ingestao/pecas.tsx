@@ -61,38 +61,6 @@ export function BarraDeProgresso({ valor, rotulo }: { valor: number; rotulo: str
   );
 }
 
-export function Abas<T extends string>({
-  abas,
-  ativa,
-  aoMudar,
-}: {
-  abas: readonly { valor: T; rotulo: string }[];
-  ativa: T;
-  aoMudar: (v: T) => void;
-}) {
-  return (
-    <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1">
-      {abas.map((a) => (
-        <button
-          key={a.valor}
-          type="button"
-          role="tab"
-          aria-selected={a.valor === ativa}
-          onClick={() => {
-            aoMudar(a.valor);
-          }}
-          className={cn(
-            "rounded px-3 py-1 text-[12px]",
-            a.valor === ativa ? "bg-background font-medium shadow-sm" : "text-muted-foreground",
-          )}
-        >
-          {a.rotulo}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 const COR_DO_STATUS: Record<string, string> = {
   aplicado: "bg-emerald-600 text-white",
   importado: "bg-emerald-600 text-white",
