@@ -7,9 +7,10 @@ import {
   criarEnfileirador,
   criarFilaDeAplicacao,
   criarProgressos,
-  criarRepositorioProjecoesRomaneio,
   criarRepositorioDeRetencao,
+  criarRepositorioGravacao050,
   criarRepositorioIngestao,
+  criarRepositorioProjecoesRomaneio,
   criarTravas,
 } from "@erp/ingestao/infra";
 import { filaDoJob, PREFIXO_DAS_FILAS } from "@erp/shared/ingestao";
@@ -34,6 +35,7 @@ import { criarCofreDeToken } from "./fontes/ssw-api/cofre-de-token";
 import { criarJobTokenSsw } from "./fontes/ssw-api/job";
 import { jobWebhookSsw } from "./fontes/webhook/job";
 import { criarRepositorioWebhook } from "./fontes/webhook/repositorio";
+import { importarColetas050 } from "./jobs/coletas/job";
 import { criarJobsDaIngestao } from "./jobs/ingestao/jobs";
 import { limparIngestaoSsw, limparSessoes } from "./jobs/manutencao/job";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
@@ -90,6 +92,7 @@ function repositorios(tx: Transacao, { empresaId }: ContextoBanco): Repositorios
     slaArquivos: criarRepositorioSlaArquivos(tx),
     prazos: criarRepositorioPrazosDoWorker(tx),
     projecoesRomaneio: criarRepositorioProjecoesRomaneio(tx, empresaId),
+    coletas050: criarRepositorioGravacao050(tx),
     recalculo: criarRepositorioRecalculo(tx),
   };
 }
@@ -144,6 +147,7 @@ const JOBS: readonly DefinicaoDeJob[] = [
   recalcularPrazos,
   recalcularProjecoesRomaneio,
   reconstruirProjecoesRomaneio,
+  importarColetas050,
   propagarClassificacao,
 ];
 

@@ -5,12 +5,9 @@ import {
   statusDoPrazo,
 } from "@erp/dominio/coletas/coletas";
 import {
-  chaveDaColeta,
-  type ColetaJaGravada,
-  type ColetaParaGravar,
-  planejarGravacao050,
+  importarRelatorio050 as importarColetas050,
+  type RepositorioGravacao050,
 } from "@erp/dominio/coletas/gravacao-050";
-import { lerRelatorio050 } from "@erp/dominio/coletas/leitor-050";
 import { tipoDocumentoEfetivo } from "@erp/dominio/nucleo";
 import { type SaidaDe } from "@erp/shared/contrato";
 import {
@@ -86,16 +83,10 @@ export interface DetalheDaColeta {
   historico: unknown;
 }
 
-export interface RepositorioColetas {
+export interface RepositorioColetas extends RepositorioGravacao050 {
   coletas(empresaId: string, filtros: FiltrosDeColetas, limite: number): Promise<ColetaLida[]>;
   resumo(empresaId: string, inicio: string, fim: string): Promise<ResumoDasColetas>;
   detalhe(empresaId: string, unidade: string, numero: number): Promise<DetalheDaColeta | null>;
-  jaGravadas(
-    empresaId: string,
-    chaves: { unidade: string; numero: number }[],
-  ): Promise<ColetaJaGravada[]>;
-  /** Insere ou substitui pela chave (empresa, unidade, número). */
-  gravar(empresaId: string, coletas: ColetaParaGravar[], agora: Date): Promise<void>;
 }
 
 export interface ContextoColetas {
@@ -236,11 +227,8 @@ export async function obterDetalheDaColeta(
   });
 }
 
-const BLOCO_DE_GRAVACAO = 500;
-
 /**
- * Importação do 050 (manual pela tela; a do FTP usa as mesmas regras no worker). Sem auditoria,
- * como hoje: o efeito é só a tabela de coletas.
+ * Importação do 050 pela tela (a do FTP usa o mesmo caso de uso no worker).
  * origem: importar-050.server.ts + importar_coletas_050 (sistema atual)
  */
 export async function importarRelatorio050(
@@ -249,30 +237,22 @@ export async function importarRelatorio050(
   entrada: z.output<typeof contratosColetas.importar050.entrada>,
   agora: Date,
 ): Promise<SaidaDe<typeof contratosColetas.importar050>> {
-  const relatorio = lerRelatorio050(entrada.conteudo, entrada.arquivoOrigem);
   return db(async ({ coletas }) => {
-    const chaves = [...new Map(relatorio.coletas.map((c) => [chaveDaColeta(c), c])).values()];
-    const jaGravadas = new Map<string, ColetaJaGravada>();
-    for (let i = 0; i < chaves.length; i += BLOCO_DE_GRAVACAO) {
-      for (const g of await coletas.jaGravadas(
-        ctx.empresaId,
-        chaves.slice(i, i + BLOCO_DE_GRAVACAO),
-      )) {
-        jaGravadas.set(chaveDaColeta(g), g);
-      }
-    }
-    const plano = planejarGravacao050(relatorio, entrada.arquivoOrigem, jaGravadas);
-    for (let i = 0; i < plano.gravar.length; i += BLOCO_DE_GRAVACAO) {
-      await coletas.gravar(ctx.empresaId, plano.gravar.slice(i, i + BLOCO_DE_GRAVACAO), agora);
-    }
+    const { relatorio, lidas, gravadas, ignoradas } = await importarColetas050(
+      coletas,
+      ctx.empresaId,
+      entrada.conteudo,
+      entrada.arquivoOrigem,
+      agora,
+    );
     return {
       emitidoEm: relatorio.emitidoEm,
       periodoCadastro: relatorio.periodoCadastro,
       periodoColeta: relatorio.periodoColeta,
       unidades: [...new Set(relatorio.coletas.map((c) => c.unidade))].sort(),
-      lidas: plano.lidas,
-      gravadas: plano.gravar.length,
-      ignoradas: plano.ignoradas,
+      lidas,
+      gravadas,
+      ignoradas,
       resumoSsw: relatorio.resumo,
       avisos: relatorio.avisos.slice(0, 50),
     };

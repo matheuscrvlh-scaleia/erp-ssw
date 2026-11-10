@@ -1,4 +1,5 @@
 import { type ContextoBanco } from "@erp/db";
+import { type RepositorioGravacao050 } from "@erp/dominio/coletas/gravacao-050";
 import { type RepositorioProjecoesRomaneio } from "@erp/dominio/romaneio/projecoes";
 import { type RepositorioDeRetencao, type RepositorioIngestao } from "@erp/ingestao/casos-de-uso";
 import { filaDoJob, JOBS_DE_INGESTAO, type NomeDoJobDeIngestao } from "@erp/shared/ingestao";
@@ -29,6 +30,8 @@ export interface RepositoriosDoWorker {
   slaArquivos: RepositorioSlaArquivos;
   prazos: RepositorioPrazosDoWorker;
   projecoesRomaneio: RepositorioProjecoesRomaneio;
+  /** Gravação do 050 de coletas (o mesmo da tela). */
+  coletas050: RepositorioGravacao050;
   recalculo: RepositorioRecalculo;
 }
 
@@ -38,7 +41,13 @@ export type ExecutorDoWorker = <T>(
 ) => Promise<T>;
 
 export type NomeDaFila =
-  "manutencao" | "agendador" | "projecoes" | "prazos" | "recalculo" | ReturnType<typeof filaDoJob>;
+  | "manutencao"
+  | "agendador"
+  | "projecoes"
+  | "coletas"
+  | "prazos"
+  | "recalculo"
+  | ReturnType<typeof filaDoJob>;
 
 export interface DefinicaoDeFila {
   nome: NomeDaFila;
@@ -63,6 +72,8 @@ export const FILAS: readonly DefinicaoDeFila[] = [
   { nome: "agendador", concorrencia: 1 },
   // Recalcular projeções do Romaneio é leve e por lote de CT-e: dois ao mesmo tempo.
   { nome: "projecoes", concorrencia: 2 },
+  // 050 de coletas do FTP: um por vez (o mais novo vence pela emissão, a ordem não importa).
+  { nome: "coletas", concorrencia: 1 },
   ...JOBS_DE_INGESTAO.map(({ job }) => ({
     nome: filaDoJob(job),
     concorrencia: 1,

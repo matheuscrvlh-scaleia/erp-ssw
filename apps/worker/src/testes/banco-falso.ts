@@ -5,6 +5,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type ContextoBanco } from "@erp/db";
+import { chaveDaColeta, type ColetaParaGravar } from "@erp/dominio/coletas/gravacao-050";
 import {
   type CodigoNovo,
   CONFIGURACAO_PADRAO,
@@ -46,6 +47,7 @@ export class BancoFalso {
   sincronizacoes: SincronizacaoNova[] = [];
   eventos = new Map<string, { payload: unknown; resultado: ResultadoDoEvento | null }>();
   codigosCadastrados: CodigoNovo[] = [];
+  coletas = new Map<string, ColetaParaGravar>();
   apelidos = new Map<string, string>();
   integracoes = new Map<IntegracaoDaIngestao, IntegracaoGravada>();
   verificacoes: (VerificacaoDaIntegracao & { tipo: string })[] = [];
@@ -185,6 +187,19 @@ export class BancoFalso {
         apagar038Superadas: (limite) => this.apagou(limite),
       },
       projecoesRomaneio: this.projecoes,
+      coletas050: {
+        jaGravadas: (_empresa, chaves) =>
+          Promise.resolve(
+            chaves.flatMap((c) => {
+              const g = this.coletas.get(chaveDaColeta(c));
+              return g ? [g] : [];
+            }),
+          ),
+        gravar: (_empresa, coletas) => {
+          for (const c of coletas) this.coletas.set(chaveDaColeta(c), c);
+          return Promise.resolve();
+        },
+      },
     };
   }
 

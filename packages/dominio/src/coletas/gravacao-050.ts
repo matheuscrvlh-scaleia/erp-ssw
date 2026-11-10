@@ -1,7 +1,7 @@
 import { type EtapaDeColeta } from "@erp/shared/contratos/coletas";
 
 import { etapaDaSituacao } from "./coletas";
-import { type Coleta050, type Relatorio050 } from "./leitor-050";
+import { type Coleta050, lerRelatorio050, type Relatorio050 } from "./leitor-050";
 
 /** O que já está gravado de uma coleta e pesa na nova gravação. */
 export interface ColetaJaGravada {
@@ -55,4 +55,48 @@ export function planejarGravacao050(
   });
   const lidas = relatorio.coletas.length;
   return { gravar, lidas, ignoradas: lidas - gravar.length };
+}
+
+/** Onde a importação do 050 lê e grava (a mesma para a tela e para o FTP). */
+export interface RepositorioGravacao050 {
+  jaGravadas(
+    empresaId: string,
+    chaves: { unidade: string; numero: number }[],
+  ): Promise<ColetaJaGravada[]>;
+  /** Insere ou substitui pela chave (empresa, unidade, número). */
+  gravar(empresaId: string, coletas: ColetaParaGravar[], agora: Date): Promise<void>;
+}
+
+const BLOCO_DE_GRAVACAO = 500;
+
+/**
+ * Importação de um 050 — pela tela de Coletas (API) ou pelo FTP (worker) —, em blocos de 500.
+ * Relatório que não é o 050 lança `ErroDeNegocio`. Sem auditoria, como hoje.
+ * origem: importar-050.server.ts + importar_coletas_050 (sistema atual)
+ */
+export async function importarRelatorio050(
+  repo: RepositorioGravacao050,
+  empresaId: string,
+  conteudo: string,
+  arquivoOrigem: string,
+  agora: Date,
+): Promise<{ relatorio: Relatorio050; lidas: number; gravadas: number; ignoradas: number }> {
+  const relatorio = lerRelatorio050(conteudo, arquivoOrigem);
+  const chaves = [...new Map(relatorio.coletas.map((c) => [chaveDaColeta(c), c])).values()];
+  const jaGravadas = new Map<string, ColetaJaGravada>();
+  for (let i = 0; i < chaves.length; i += BLOCO_DE_GRAVACAO) {
+    for (const g of await repo.jaGravadas(empresaId, chaves.slice(i, i + BLOCO_DE_GRAVACAO))) {
+      jaGravadas.set(chaveDaColeta(g), g);
+    }
+  }
+  const plano = planejarGravacao050(relatorio, arquivoOrigem, jaGravadas);
+  for (let i = 0; i < plano.gravar.length; i += BLOCO_DE_GRAVACAO) {
+    await repo.gravar(empresaId, plano.gravar.slice(i, i + BLOCO_DE_GRAVACAO), agora);
+  }
+  return {
+    relatorio,
+    lidas: plano.lidas,
+    gravadas: plano.gravar.length,
+    ignoradas: plano.ignoradas,
+  };
 }
