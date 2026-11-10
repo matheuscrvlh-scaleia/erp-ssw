@@ -75,3 +75,8 @@ export function decifrarSegredo(
     decifra.final(),
   ]).toString("utf8");
 }
+
+/** Dado autenticado do segredo de uma integração (o par empresa + tipo da linha). */
+export function contextoDoSegredo(empresaId: string, tipo: string): string {
+  return `${empresaId}:${tipo}`;
+}
