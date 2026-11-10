@@ -26,7 +26,7 @@ gatilho.
   num hash do Redis (some em 7 dias).
 - **Disparo manual e rota pública** enfileiram o job com deduplicação por empresa + tipo
   (singleton). O 050 e as projeções do romaneio são jobs de outros domínios
-  (`coletas.importar-050`, `projecoes.recalcular`).
+  (`coletas.importar-050`, `projecoes-romaneio`, que o Romaneio já consome).
 
 ## Consequências
 - Sem Redis a API não registra as rotas da ingestão (desenvolvimento sem Redis segue funcionando).

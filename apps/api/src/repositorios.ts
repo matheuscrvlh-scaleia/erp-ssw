@@ -30,10 +30,14 @@ import { type RepositorioPerformance } from "./modulos/performance/casos-de-uso"
 import { criarRepositorioPerformance } from "./modulos/performance/repositorio";
 import { type RepositorioPlataforma } from "./modulos/plataforma/casos-de-uso";
 import { criarRepositorioPlataforma } from "./modulos/plataforma/repositorio";
+import { type RepositorioPrazoParceiro } from "./modulos/prazo-parceiro/casos-de-uso";
+import { criarRepositorioPrazoParceiro } from "./modulos/prazo-parceiro/repositorio";
 import { type RepositorioPrazos } from "./modulos/prazos/casos-de-uso";
 import { criarRepositorioPrazos } from "./modulos/prazos/repositorio";
 import { type RepositorioRanking } from "./modulos/ranking/casos-de-uso";
 import { criarRepositorioRanking } from "./modulos/ranking/repositorio";
+import { type RepositorioRomaneio } from "./modulos/romaneio/casos-de-uso";
+import { criarRepositorioRomaneio } from "./modulos/romaneio/repositorio";
 import { type RepositorioUsuarios } from "./modulos/usuarios/casos-de-uso";
 import { criarRepositorioUsuarios } from "./modulos/usuarios/repositorio";
 
@@ -48,6 +52,8 @@ export interface Repositorios {
   auth: RepositorioAuth;
   bonificacaoEntrega: RepositorioBonificacaoEntrega;
   calendario: RepositorioCalendario;
+  prazoParceiro: RepositorioPrazoParceiro;
+  romaneio: RepositorioRomaneio;
   ingestaoSsw: RepositorioIngestaoSsw;
   ctrc: RepositorioCtrc;
   filtros: RepositorioFiltros;
@@ -70,6 +76,8 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     auth: criarRepositorioAuth(tx),
     bonificacaoEntrega: criarRepositorioBonificacaoEntrega(tx),
     calendario: criarRepositorioCalendario(tx),
+    prazoParceiro: criarRepositorioPrazoParceiro(tx),
+    romaneio: criarRepositorioRomaneio(tx),
     ingestaoSsw: criarRepositorioIngestaoSsw(tx),
     ctrc: criarRepositorioCtrc(tx),
     filtros: criarRepositorioFiltros(tx),

@@ -15,6 +15,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
 import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
+import { Route as AutenticadoPrazoParceiroRouteImport } from './routes/_autenticado/prazo-parceiro'
+import { Route as AutenticadoRomaneioRouteImport } from './routes/_autenticado/romaneio'
 import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
 import { Route as AutenticadoAdminAhgoraRouteImport } from './routes/_autenticado/admin.ahgora'
 import { Route as AutenticadoAdminBonificacaoEntregaRouteImport } from './routes/_autenticado/admin.bonificacao-entrega'
@@ -33,6 +35,7 @@ import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_auten
 import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
 import { Route as AutenticadoPlataformaAdministradoresRouteImport } from './routes/_autenticado/plataforma/administradores'
 import { Route as AutenticadoPlataformaLogsRouteImport } from './routes/_autenticado/plataforma/logs'
+import { Route as AutenticadoPrazoParceiroIdRouteImport } from './routes/_autenticado/prazo-parceiro_.$id'
 import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
 import { Route as AutenticadoRankingRegrasRouteImport } from './routes/_autenticado/ranking.regras'
 import { Route as RankingPublicoTokenRouteImport } from './routes/ranking.publico.$token'
@@ -67,6 +70,17 @@ const AutenticadoIndexRoute = AutenticadoIndexRouteImport.update({
 const AutenticadoCalendarioRoute = AutenticadoCalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoPrazoParceiroRoute =
+  AutenticadoPrazoParceiroRouteImport.update({
+    id: '/prazo-parceiro',
+    path: '/prazo-parceiro',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
+const AutenticadoRomaneioRoute = AutenticadoRomaneioRouteImport.update({
+  id: '/romaneio',
+  path: '/romaneio',
   getParentRoute: () => AutenticadoRoute,
 } as any)
 const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
@@ -170,6 +184,12 @@ const AutenticadoPlataformaLogsRoute =
     path: '/plataforma/logs',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoPrazoParceiroIdRoute =
+  AutenticadoPrazoParceiroIdRouteImport.update({
+    id: '/prazo-parceiro_/$id',
+    path: '/prazo-parceiro/$id',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoRankingIndexRoute = AutenticadoRankingIndexRouteImport.update({
   id: '/ranking/',
   path: '/ranking/',
@@ -211,6 +231,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
+  '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
   '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
@@ -228,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
   '/performance/': typeof AutenticadoPerformanceIndexRoute
@@ -241,6 +264,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/calendario': typeof AutenticadoCalendarioRoute
+  '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
+  '/romaneio': typeof AutenticadoRomaneioRoute
   '/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/': typeof AutenticadoIndexRoute
   '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
@@ -259,6 +284,7 @@ export interface FileRoutesByTo {
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
   '/performance': typeof AutenticadoPerformanceIndexRoute
@@ -274,6 +300,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
+  '/_autenticado/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
+  '/_autenticado/romaneio': typeof AutenticadoRomaneioRoute
   '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
   '/_autenticado/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
@@ -292,6 +320,7 @@ export interface FileRoutesById {
   '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/_autenticado/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
   '/_autenticado/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/_autenticado/prazo-parceiro_/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
   '/_autenticado/performance/': typeof AutenticadoPerformanceIndexRoute
@@ -308,6 +337,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/prazo-parceiro'
+    | '/romaneio'
     | '/sem-acesso'
     | '/admin/ahgora'
     | '/admin/bonificacao-entrega'
@@ -325,6 +356,7 @@ export interface FileRouteTypes {
     | '/performance/lista'
     | '/plataforma/administradores'
     | '/plataforma/logs'
+    | '/prazo-parceiro/$id'
     | '/ranking/regras'
     | '/ranking/publico/$token'
     | '/performance/'
@@ -338,6 +370,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/calendario'
+    | '/prazo-parceiro'
+    | '/romaneio'
     | '/sem-acesso'
     | '/'
     | '/admin/ahgora'
@@ -356,6 +390,7 @@ export interface FileRouteTypes {
     | '/performance/lista'
     | '/plataforma/administradores'
     | '/plataforma/logs'
+    | '/prazo-parceiro/$id'
     | '/ranking/regras'
     | '/ranking/publico/$token'
     | '/performance'
@@ -370,6 +405,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/_autenticado/calendario'
+    | '/_autenticado/prazo-parceiro'
+    | '/_autenticado/romaneio'
     | '/_autenticado/sem-acesso'
     | '/_autenticado/'
     | '/_autenticado/admin/ahgora'
@@ -388,6 +425,7 @@ export interface FileRouteTypes {
     | '/_autenticado/performance/lista'
     | '/_autenticado/plataforma/administradores'
     | '/_autenticado/plataforma/logs'
+    | '/_autenticado/prazo-parceiro_/$id'
     | '/_autenticado/ranking/regras'
     | '/ranking/publico/$token'
     | '/_autenticado/performance/'
@@ -447,6 +485,20 @@ declare module '@tanstack/react-router' {
       path: '/calendario'
       fullPath: '/calendario'
       preLoaderRoute: typeof AutenticadoCalendarioRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/prazo-parceiro': {
+      id: '/_autenticado/prazo-parceiro'
+      path: '/prazo-parceiro'
+      fullPath: '/prazo-parceiro'
+      preLoaderRoute: typeof AutenticadoPrazoParceiroRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/romaneio': {
+      id: '/_autenticado/romaneio'
+      path: '/romaneio'
+      fullPath: '/romaneio'
+      preLoaderRoute: typeof AutenticadoRomaneioRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/sem-acesso': {
@@ -575,6 +627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoPlataformaLogsRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/prazo-parceiro_/$id': {
+      id: '/_autenticado/prazo-parceiro_/$id'
+      path: '/prazo-parceiro/$id'
+      fullPath: '/prazo-parceiro/$id'
+      preLoaderRoute: typeof AutenticadoPrazoParceiroIdRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/ranking/': {
       id: '/_autenticado/ranking/'
       path: '/ranking'
@@ -622,6 +681,8 @@ declare module '@tanstack/react-router' {
 
 interface AutenticadoRouteChildren {
   AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
+  AutenticadoPrazoParceiroRoute: typeof AutenticadoPrazoParceiroRoute
+  AutenticadoRomaneioRoute: typeof AutenticadoRomaneioRoute
   AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
   AutenticadoAdminAhgoraRoute: typeof AutenticadoAdminAhgoraRoute
@@ -640,6 +701,7 @@ interface AutenticadoRouteChildren {
   AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
   AutenticadoPlataformaAdministradoresRoute: typeof AutenticadoPlataformaAdministradoresRoute
   AutenticadoPlataformaLogsRoute: typeof AutenticadoPlataformaLogsRoute
+  AutenticadoPrazoParceiroIdRoute: typeof AutenticadoPrazoParceiroIdRoute
   AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
   AutenticadoPerformanceIndexRoute: typeof AutenticadoPerformanceIndexRoute
   AutenticadoRankingIndexRoute: typeof AutenticadoRankingIndexRoute
@@ -650,6 +712,8 @@ interface AutenticadoRouteChildren {
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
+  AutenticadoPrazoParceiroRoute: AutenticadoPrazoParceiroRoute,
+  AutenticadoRomaneioRoute: AutenticadoRomaneioRoute,
   AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
   AutenticadoAdminAhgoraRoute: AutenticadoAdminAhgoraRoute,
@@ -670,6 +734,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoPlataformaAdministradoresRoute:
     AutenticadoPlataformaAdministradoresRoute,
   AutenticadoPlataformaLogsRoute: AutenticadoPlataformaLogsRoute,
+  AutenticadoPrazoParceiroIdRoute: AutenticadoPrazoParceiroIdRoute,
   AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,
   AutenticadoPerformanceIndexRoute: AutenticadoPerformanceIndexRoute,
   AutenticadoRankingIndexRoute: AutenticadoRankingIndexRoute,

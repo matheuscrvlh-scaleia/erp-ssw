@@ -411,12 +411,12 @@ export async function avisarProjecoes(
   empresaId: string,
   chaves: readonly string[],
 ): Promise<void> {
-  if (chaves.length === 0) return;
-  // TODO(romaneio): consumidor do job é o domínio de Romaneio (projeções por chave).
-  await enfileirador.enfileirar(JOB_PROJECOES.fila, JOB_PROJECOES.nome, {
-    empresaId,
-    chaves: chaves.map(chaveDeTexto),
-  });
+  for (let i = 0; i < chaves.length; i += JOB_PROJECOES.maxChaves) {
+    await enfileirador.enfileirar(JOB_PROJECOES.fila, JOB_PROJECOES.nome, {
+      empresaId,
+      chaves: chaves.slice(i, i + JOB_PROJECOES.maxChaves).map(chaveDeTexto),
+    });
+  }
 }
 
 /**

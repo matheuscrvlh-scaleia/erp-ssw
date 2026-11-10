@@ -101,7 +101,7 @@ describe("aplicação em blocos", () => {
     expect(s.ctes[0]?.ocorrEfetivaCodigoNum).toBe(1);
     expect(s.linhas.every((l) => l.aplicadoEm !== null)).toBe(true);
     expect(fila.itens).toEqual([]);
-    expect(enfileirador.jobs.some((j) => j.nome === "projecoes.recalcular")).toBe(true);
+    expect(enfileirador.jobs.some((j) => j.nome === "projecoes-romaneio")).toBe(true);
     expect(s.aplicacoes[0]?.status).toBe("concluido");
     expect(s.auditoria).toContain("ingestao.aplicar_bloco");
   });

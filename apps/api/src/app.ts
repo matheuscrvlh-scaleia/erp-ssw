@@ -34,8 +34,10 @@ import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasLogs } from "./modulos/logs/rotas";
 import { rotasPerformance } from "./modulos/performance/rotas";
 import { rotasPlataforma } from "./modulos/plataforma/rotas";
+import { rotasPrazoParceiro } from "./modulos/prazo-parceiro/rotas";
 import { rotasPrazos } from "./modulos/prazos/rotas";
 import { rotasRanking } from "./modulos/ranking/rotas";
+import { rotasRomaneio } from "./modulos/romaneio/rotas";
 import { type DependenciasUsuarios } from "./modulos/usuarios/casos-de-uso";
 import { rotasUsuarios } from "./modulos/usuarios/rotas";
 import {
@@ -133,6 +135,8 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     await app.register(rotasPublicasDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
     await app.register(rotasAdminDaIngestao, { servicos: deps.ingestao, agora: deps.agora });
   }
+  await app.register(rotasRomaneio, { agora: deps.agora });
+  await app.register(rotasPrazoParceiro);
   await app.register(rotasFiltros);
   await app.register(rotasListagem, { agora: deps.agora });
   await app.register(rotasCtrc, { agora: deps.agora });

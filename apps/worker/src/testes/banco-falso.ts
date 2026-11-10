@@ -20,6 +20,7 @@ import { type ContextoDaEmpresa, type CteGravado, cteVazio } from "../fontes/com
 import { type IntegracaoGravada, type VerificacaoDaIntegracao } from "../fontes/comum/integracao";
 import { type OcorrenciaDoWebhook, type ResultadoDoEvento } from "../fontes/webhook/job";
 import { type ExecutorDoWorker, type RepositoriosDoWorker } from "../jobs/registro";
+import { ProjecoesFalsas } from "./projecoes-falsas";
 
 export const EMPRESA = "0b9a2c3e-1d4f-4a5b-8c6d-7e8f9a0b1c2d";
 
@@ -60,6 +61,7 @@ export class BancoFalso {
   ingestao = estadoFalso();
   /** Limites recebidos pela retenção da ingestão. */
   retencoes: Date[] = [];
+  projecoes = new ProjecoesFalsas();
   /** Faz a próxima transação falhar com este erro. */
   falharCom: Error | null = null;
 
@@ -181,6 +183,7 @@ export class BancoFalso {
         apagarSincronizacoesAntesDe: (limite) => this.apagou(limite),
         apagar038Superadas: (limite) => this.apagou(limite),
       },
+      projecoesRomaneio: this.projecoes,
     };
   }
 

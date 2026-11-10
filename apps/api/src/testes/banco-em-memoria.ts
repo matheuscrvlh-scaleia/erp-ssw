@@ -19,6 +19,8 @@ import { CtrcFalso, FiltrosFalso, ListagemFalsa } from "./falsos-ctrc";
 import { DadosDoRanking } from "./falsos-ranking";
 import { IngestaoEmMemoria } from "./ingestao-em-memoria";
 import { criarPerformanceFalsa } from "./leituras-falsas";
+import { PrazoParceiroEmMemoria } from "./prazo-parceiro-em-memoria";
+import { RomaneioEmMemoria } from "./romaneio-em-memoria";
 
 /*
  * Banco falso para os testes: implementa as interfaces dos repositórios sobre arrays. Não
@@ -112,6 +114,8 @@ export class BancoEmMemoria {
   auditoria: (EventoDeAuditoria & { ator: Ator })[] = [];
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
+  romaneio = new RomaneioEmMemoria();
+  prazoParceiro = new PrazoParceiroEmMemoria();
   contextos: ContextoBanco[] = [];
   readonly ingestao = new IngestaoEmMemoria();
   /** Telas de CT-e: repositórios falsos próprios (ver falsos-ctrc.ts). */
@@ -418,6 +422,8 @@ export class BancoEmMemoria {
           return Promise.resolve();
         },
       },
+      prazoParceiro: this.prazoParceiro.repositorio(),
+      romaneio: this.romaneio.repositorio(),
 
       ingestaoSsw: this.ingestao.repositorio(),
     };
