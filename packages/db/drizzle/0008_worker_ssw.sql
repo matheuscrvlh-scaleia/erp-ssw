@@ -1,3 +1,5 @@
+CREATE POLICY "configuracoes_insert_worker" ON "erp"."configuracoes" AS RESTRICTIVE FOR INSERT TO "erp_worker" WITH CHECK ("erp"."configuracoes"."chave" = 'ftp_sync_ativo');--> statement-breakpoint
+CREATE POLICY "configuracoes_update_worker" ON "erp"."configuracoes" AS RESTRICTIVE FOR UPDATE TO "erp_worker" USING ("erp"."configuracoes"."chave" = 'ftp_sync_ativo') WITH CHECK ("erp"."configuracoes"."chave" = 'ftp_sync_ativo');--> statement-breakpoint
 ALTER POLICY "cargo_telas_select" ON "erp"."cargo_telas" TO erp_app,erp_worker USING (("erp"."cargo_telas"."empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on'));--> statement-breakpoint
 ALTER POLICY "cargo_telas_insert" ON "erp"."cargo_telas" TO erp_app,erp_worker WITH CHECK (("erp"."cargo_telas"."empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on'));--> statement-breakpoint
 ALTER POLICY "cargo_telas_update" ON "erp"."cargo_telas" TO erp_app,erp_worker USING (("erp"."cargo_telas"."empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')) WITH CHECK (("erp"."cargo_telas"."empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on'));--> statement-breakpoint
@@ -199,32 +201,40 @@ ALTER POLICY "empresas_select" ON "erp"."empresas" TO erp_app,erp_worker USING (
 ALTER POLICY "empresas_insert" ON "erp"."empresas" TO erp_app,erp_worker WITH CHECK (coalesce(current_setting('app.plataforma', true), 'off') = 'on');--> statement-breakpoint
 ALTER POLICY "empresas_update" ON "erp"."empresas" TO erp_app,erp_worker USING (coalesce(current_setting('app.plataforma', true), 'off') = 'on') WITH CHECK (coalesce(current_setting('app.plataforma', true), 'off') = 'on');--> statement-breakpoint
 ALTER POLICY "empresas_delete" ON "erp"."empresas" TO erp_app,erp_worker USING (coalesce(current_setting('app.plataforma', true), 'off') = 'on');--> statement-breakpoint
--- Papel do worker-ssw (ADR 0012): só DML nas tabelas que a ingestão lê e grava, conferidas no
--- código que saiu deste repositório. Sem default privileges: tabela nova só entra com GRANT aqui.
+-- Papel do worker-ssw (ADR 0012): só DML nas tabelas que a ingestão lê e grava (lista do README do
+-- worker-ssw). SELECT mesmo onde só se grava: UPDATE/DELETE com WHERE, RETURNING e ON CONFLICT
+-- leem as colunas, e o boot do worker-ssw confere o schema pelo information_schema. Sem default
+-- privileges: tabela nova só entra com GRANT aqui.
 GRANT USAGE ON SCHEMA "erp" TO "erp_worker";--> statement-breakpoint
--- Ingestão (arquivos, XML, webhook, SSW API, BI2), projeções do Romaneio, CT-e e ocorrências.
-GRANT SELECT, INSERT, UPDATE, DELETE ON
-  "erp"."ingestao_linhas", "erp"."ingestao_erros", "erp"."ingestao_arquivos",
-  "erp"."ingestao_ciclos", "erp"."ingestao_aplicacoes",
-  "erp"."xml_cte_arquivos", "erp"."xml_cte_itens", "erp"."xml_cte_orfaos",
-  "erp"."xml_ftp_sincronizacoes", "erp"."ssw_webhook_eventos", "erp"."ssw_sincronizacoes",
-  "erp"."bi2_sincronizacoes", "erp"."bi2_bruto",
-  "erp"."cte_dados_relatorios", "erp"."romaneio_cte_atual", "erp"."romaneio_saidas_cte",
-  "erp"."romaneio_viagens_cte", "erp"."romaneio_conferente_cte",
-  "erp"."ctes", "erp"."ocorrencias"
-  TO "erp_worker";--> statement-breakpoint
--- Coletas do 050: INSERT ... ON CONFLICT DO UPDATE (nunca apaga).
-GRANT SELECT, INSERT, UPDATE ON "erp"."coletas" TO "erp_worker";--> statement-breakpoint
--- Histórico de previsão e código novo visto no SSW: só entram, nunca mudam.
-GRANT SELECT, INSERT ON "erp"."cte_prazo_historico", "erp"."codigos_ocorrencia" TO "erp_worker";--> statement-breakpoint
--- Auditoria da ingestão: só inserção (o histórico não muda).
-GRANT INSERT ON "erp"."auditoria" TO "erp_worker";--> statement-breakpoint
--- Leitura: empresas, integrações, configurações e os cadastros que o núcleo do CT-e usa.
+-- Leitura: empresas e os cadastros que o núcleo do CT-e usa.
 GRANT SELECT ON
-  "erp"."empresas", "erp"."empresa_integracoes", "erp"."configuracoes",
-  "erp"."ingestao_relatorios_esperados", "erp"."filiais", "erp"."filiais_apelidos",
-  "erp"."feriados", "erp"."prazos_configurados"
+  "erp"."empresas", "erp"."filiais", "erp"."filiais_apelidos", "erp"."prazos_configurados",
+  "erp"."feriados", "erp"."ingestao_relatorios_esperados"
   TO "erp_worker";--> statement-breakpoint
--- Resultado da verificação da integração (token da SSW API): só estas colunas.
+-- Integrações: o ERP grava; o worker-ssw lê e anota só o resultado da verificação.
+GRANT SELECT ON "erp"."empresa_integracoes" TO "erp_worker";--> statement-breakpoint
 GRANT UPDATE ("ultimo_teste_em", "ultimo_teste_ok", "ultimo_teste_msg") ON "erp"."empresa_integracoes" TO "erp_worker";--> statement-breakpoint
+-- Pausa do FTP (`ftp_sync_ativo`, as políticas restritivas acima limitam a esta chave).
+GRANT SELECT, INSERT ON "erp"."configuracoes" TO "erp_worker";--> statement-breakpoint
+GRANT UPDATE ("valor", "atualizado_em", "atualizado_por") ON "erp"."configuracoes" TO "erp_worker";--> statement-breakpoint
+-- Auditoria (o worker-ssw grava como "sistema") e histórico de previsão: só entram.
+GRANT INSERT ON "erp"."auditoria", "erp"."cte_prazo_historico" TO "erp_worker";--> statement-breakpoint
+-- Código novo visto no relatório ou no webhook.
+GRANT SELECT, INSERT ON "erp"."codigos_ocorrencia" TO "erp_worker";--> statement-breakpoint
+-- CT-e, coletas do 050 e itens do XML: INSERT ... ON CONFLICT DO UPDATE (nunca apaga).
+GRANT SELECT, INSERT, UPDATE ON "erp"."ctes", "erp"."coletas", "erp"."xml_cte_itens" TO "erp_worker";--> statement-breakpoint
+-- Logs e projeções do Romaneio: regravados por apagar e inserir.
+GRANT SELECT, INSERT, DELETE ON
+  "erp"."ingestao_erros", "erp"."xml_ftp_sincronizacoes", "erp"."bi2_sincronizacoes",
+  "erp"."romaneio_viagens_cte", "erp"."romaneio_saidas_cte", "erp"."romaneio_cte_atual",
+  "erp"."romaneio_conferente_cte", "erp"."cte_dados_relatorios"
+  TO "erp_worker";--> statement-breakpoint
+-- Ocorrências, ciclo da ingestão, XML, webhook e BI2 bruto.
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+  "erp"."ocorrencias", "erp"."ingestao_ciclos", "erp"."ingestao_arquivos",
+  "erp"."ingestao_linhas", "erp"."ingestao_aplicacoes", "erp"."xml_cte_arquivos",
+  "erp"."xml_cte_orfaos", "erp"."ssw_webhook_eventos", "erp"."bi2_bruto"
+  TO "erp_worker";--> statement-breakpoint
+-- Execuções do SSW: só a limpeza por idade.
+GRANT SELECT, DELETE ON "erp"."ssw_sincronizacoes" TO "erp_worker";--> statement-breakpoint
 GRANT USAGE ON SEQUENCE "erp"."ingestao_linhas_id_seq", "erp"."ingestao_erros_id_seq", "erp"."auditoria_id_seq" TO "erp_worker";

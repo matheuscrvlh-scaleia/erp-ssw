@@ -8,6 +8,7 @@ import {
   index,
   integer,
   jsonb,
+  pgPolicy,
   primaryKey,
   text,
   timestamp,
@@ -22,6 +23,7 @@ import {
   ehPlataforma,
   empresaDaSessao,
   erp,
+  papelWorker,
   politicas,
   usuarioDaSessao,
 } from "./base";
@@ -210,6 +212,20 @@ export const configuracoes = erp.table(
       insert: daEmpresaOuPlataforma(t.empresaId),
       update: daEmpresaOuPlataforma(t.empresaId),
       delete: daEmpresaOuPlataforma(t.empresaId),
+    }),
+    // O worker-ssw só grava a pausa do FTP (ADR 0012): restritivas, somam à regra da empresa.
+    pgPolicy("configuracoes_insert_worker", {
+      as: "restrictive",
+      for: "insert",
+      to: papelWorker,
+      withCheck: sql`${t.chave} = 'ftp_sync_ativo'`,
+    }),
+    pgPolicy("configuracoes_update_worker", {
+      as: "restrictive",
+      for: "update",
+      to: papelWorker,
+      using: sql`${t.chave} = 'ftp_sync_ativo'`,
+      withCheck: sql`${t.chave} = 'ftp_sync_ativo'`,
     }),
   ],
 );

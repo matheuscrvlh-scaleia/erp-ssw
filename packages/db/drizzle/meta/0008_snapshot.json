@@ -1,5 +1,5 @@
 {
-  "id": "1b582810-b485-43eb-aa66-17186aa2be95",
+  "id": "52797ba3-470c-4b46-998b-65b95c377737",
   "prevId": "43fce809-a60a-42d6-9302-542c6c455e70",
   "version": "7",
   "dialect": "postgresql",
@@ -10341,6 +10341,25 @@
             "erp_worker"
           ],
           "using": "(\"erp\".\"configuracoes\".\"empresa_id\" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on')"
+        },
+        "configuracoes_insert_worker": {
+          "name": "configuracoes_insert_worker",
+          "as": "RESTRICTIVE",
+          "for": "INSERT",
+          "to": [
+            "erp_worker"
+          ],
+          "withCheck": "\"erp\".\"configuracoes\".\"chave\" = 'ftp_sync_ativo'"
+        },
+        "configuracoes_update_worker": {
+          "name": "configuracoes_update_worker",
+          "as": "RESTRICTIVE",
+          "for": "UPDATE",
+          "to": [
+            "erp_worker"
+          ],
+          "using": "\"erp\".\"configuracoes\".\"chave\" = 'ftp_sync_ativo'",
+          "withCheck": "\"erp\".\"configuracoes\".\"chave\" = 'ftp_sync_ativo'"
         }
       },
       "checkConstraints": {},
