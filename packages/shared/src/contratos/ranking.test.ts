@@ -41,11 +41,11 @@ describe("contratos do ranking, bonificação e ponto", () => {
 
   it("ponto: batidas exigem funcionário e até 30 dias; apuração até um mês", () => {
     const b = contratosAhgora.batidas.entrada;
-    expect(b.safeParse({ start: "2026-10-01", end: "2026-10-05" }).error?.issues[0]?.message).toBe(
-      "Informe o funcionário (employeeId, employeeRegister ou employeePis)",
+    expect(b.safeParse({ inicio: "2026-10-01", fim: "2026-10-05" }).error?.issues[0]?.message).toBe(
+      "Informe o funcionário (id, matrícula ou PIS)",
     );
     expect(
-      b.safeParse({ employeeId: "1", start: "2026-10-01", end: "2026-11-05" }).error?.issues[0]
+      b.safeParse({ funcionarioId: "1", inicio: "2026-10-01", fim: "2026-11-05" }).error?.issues[0]
         ?.message,
     ).toBe("O período máximo por consulta é de 30 dias");
     const ap = contratosAhgora.apuracao.entrada.parse({ inicio: "2026-10-01", fim: "2026-10-31" });
