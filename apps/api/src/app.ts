@@ -9,10 +9,16 @@ import { type ProvedorGoogle } from "./infra/google";
 import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
+import { type FilaDeRecalculo } from "./infra/fila";
 import { type EmissorDeTokens } from "./infra/tokens";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
 import { rotasAuth } from "./modulos/auth/rotas";
 import { rotasCalendario } from "./modulos/calendario/rotas";
+import { rotasCodigosOcorrencia } from "./modulos/codigos-ocorrencia/rotas";
+import { rotasColetas } from "./modulos/coletas/rotas";
+import { rotasComprovantes } from "./modulos/comprovantes/rotas";
+import { rotasHistorico } from "./modulos/historico/rotas";
+import { rotasOcorrencias } from "./modulos/ocorrencias/rotas";
 import {
   registrarDocumentacao,
   registrarMetricas,
@@ -34,6 +40,8 @@ export interface Dependencias {
   /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
   correio: Correio | null;
   google: ProvedorGoogle | null;
+  /** Recálculos em lote no worker; sem Redis (desenvolvimento/teste), tudo vai na transação. */
+  filaDeRecalculo?: FilaDeRecalculo;
   agora: () => Date;
 }
 
@@ -92,6 +100,14 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
+  await app.register(rotasOcorrencias, { agora: deps.agora });
+  await app.register(rotasComprovantes);
+  await app.register(rotasColetas, { agora: deps.agora });
+  await app.register(rotasHistorico, { agora: deps.agora });
+  await app.register(rotasCodigosOcorrencia, {
+    agora: deps.agora,
+    fila: deps.filaDeRecalculo ?? null,
+  });
 
   return app;
 }

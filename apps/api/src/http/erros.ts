@@ -1,5 +1,6 @@
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import { mensagemModuloDesligado } from "@erp/shared/acesso/modulos";
+import { MENSAGEM_TEMPO_ESGOTADO } from "@erp/shared/erros";
 
 export const naoAutenticado = () =>
   new ErroDeNegocio("NAO_AUTENTICADO", "Entre com sua conta para continuar.");
@@ -28,3 +29,7 @@ export const muitasTentativas = () =>
     "MUITAS_TENTATIVAS",
     "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
   );
+
+/** Consulta que traria linhas demais para a memória: mesma orientação do timeout do banco. */
+export const consultaAmplaDemais = () =>
+  new ErroDeNegocio("TEMPO_ESGOTADO", MENSAGEM_TEMPO_ESGOTADO);

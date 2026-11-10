@@ -8,6 +8,16 @@ import { type RepositorioAuth } from "./modulos/auth/casos-de-uso";
 import { criarRepositorioAuth } from "./modulos/auth/repositorio";
 import { type RepositorioCalendario } from "./modulos/calendario/casos-de-uso";
 import { criarRepositorioCalendario } from "./modulos/calendario/repositorio";
+import { type RepositorioCodigosOcorrencia } from "./modulos/codigos-ocorrencia/casos-de-uso";
+import { criarRepositorioCodigosOcorrencia } from "./modulos/codigos-ocorrencia/repositorio";
+import { type RepositorioColetas } from "./modulos/coletas/casos-de-uso";
+import { criarRepositorioColetas } from "./modulos/coletas/repositorio";
+import { type RepositorioComprovantes } from "./modulos/comprovantes/casos-de-uso";
+import { criarRepositorioComprovantes } from "./modulos/comprovantes/repositorio";
+import { type RepositorioHistorico } from "./modulos/historico/casos-de-uso";
+import { criarRepositorioHistorico } from "./modulos/historico/repositorio";
+import { type RepositorioOcorrencias } from "./modulos/ocorrencias/casos-de-uso";
+import { criarRepositorioOcorrencias } from "./modulos/ocorrencias/repositorio";
 
 /**
  * Repositórios de todos os módulos, presos a uma transação com contexto. Módulo novo entra aqui
@@ -18,6 +28,11 @@ export interface Repositorios {
   auditoria: RepositorioAuditoria;
   auth: RepositorioAuth;
   calendario: RepositorioCalendario;
+  codigosOcorrencia: RepositorioCodigosOcorrencia;
+  coletas: RepositorioColetas;
+  comprovantes: RepositorioComprovantes;
+  historico: RepositorioHistorico;
+  ocorrencias: RepositorioOcorrencias;
 }
 
 export function criarRepositorios(tx: Transacao): Repositorios {
@@ -26,6 +41,11 @@ export function criarRepositorios(tx: Transacao): Repositorios {
     auditoria: criarRepositorioAuditoria(tx),
     auth: criarRepositorioAuth(tx),
     calendario: criarRepositorioCalendario(tx),
+    codigosOcorrencia: criarRepositorioCodigosOcorrencia(tx),
+    coletas: criarRepositorioColetas(tx),
+    comprovantes: criarRepositorioComprovantes(tx),
+    historico: criarRepositorioHistorico(tx),
+    ocorrencias: criarRepositorioOcorrencias(tx),
   };
 }
 

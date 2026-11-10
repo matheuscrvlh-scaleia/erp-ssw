@@ -4,6 +4,7 @@ import { Redis } from "ioredis";
 import { construirApp } from "./app";
 import { carregarAmbiente } from "./config/env";
 import { criarCorreioSmtp } from "./infra/correio";
+import { criarFilaDeRecalculo } from "./infra/fila";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
@@ -24,6 +25,8 @@ const conexao = conectarBanco({
 const redis = ambiente.REDIS_URL
   ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
   : null;
+
+const filaDeRecalculo = redis ? criarFilaDeRecalculo(redis) : null;
 
 const app = await construirApp({
   ambiente,
@@ -58,10 +61,12 @@ const app = await construirApp({
           redirectUri: ambiente.GOOGLE_REDIRECT_URI,
         })
       : null,
+  ...(filaDeRecalculo ? { filaDeRecalculo } : {}),
   agora: () => new Date(),
 });
 
 app.addHook("onClose", async () => {
+  await filaDeRecalculo?.fechar();
   await conexao.encerrar();
   await redis?.quit();
 });
