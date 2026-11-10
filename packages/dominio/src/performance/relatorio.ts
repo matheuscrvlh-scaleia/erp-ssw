@@ -163,7 +163,7 @@ export function derivadosDoBloco(b: BlocoProducao): DerivadosDoBloco {
   };
 }
 
-export type TomDoDelta = "good" | "bad" | "neutral";
+export type TomDoDelta = "bom" | "ruim" | "neutro";
 export interface Delta {
   texto: string;
   tom: TomDoDelta;
@@ -179,26 +179,26 @@ export function deltaPP(
 ): Delta | null {
   if (atual == null || comparado == null) return null;
   const diff = atual - comparado;
-  if (Math.abs(diff) < 0.05) return { texto: "0,0 pp", tom: "neutral" };
+  if (Math.abs(diff) < 0.05) return { texto: "0,0 pp", tom: "neutro" };
   const subiu = diff > 0;
   return {
     texto: `${subiu ? "▲" : "▼"} ${umaCasa(diff)} pp`,
-    tom: subiu === maiorMelhor ? "good" : "bad",
+    tom: subiu === maiorMelhor ? "bom" : "ruim",
   };
 }
 
 /** Variação relativa (%) de contagens e valores. origem: deltaPctAbs (RelatorioPeriodoPanel.tsx) */
 export function deltaPctAbs(atual: number, comparado: number, maiorMelhor = true): Delta {
   if (comparado === 0) {
-    if (atual === 0) return { texto: "0,0%", tom: "neutral" };
-    return { texto: atual > 0 ? "▲ n/a" : "▼ n/a", tom: "neutral" };
+    if (atual === 0) return { texto: "0,0%", tom: "neutro" };
+    return { texto: atual > 0 ? "▲ n/a" : "▼ n/a", tom: "neutro" };
   }
   const diff = ((atual - comparado) / Math.abs(comparado)) * 100;
-  if (Math.abs(diff) < 0.05) return { texto: "0,0%", tom: "neutral" };
+  if (Math.abs(diff) < 0.05) return { texto: "0,0%", tom: "neutro" };
   const subiu = diff > 0;
   return {
     texto: `${subiu ? "▲" : "▼"} ${umaCasa(diff)}%`,
-    tom: subiu === maiorMelhor ? "good" : "bad",
+    tom: subiu === maiorMelhor ? "bom" : "ruim",
   };
 }
 

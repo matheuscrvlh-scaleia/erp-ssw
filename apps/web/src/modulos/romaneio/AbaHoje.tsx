@@ -305,7 +305,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
           sub={<PrejuizoSubtitulo />}
           valor={r ? fmtMoedaInteira(r.prejuizoFrete) : "—"}
           dica={r ? `${nfInt.format(r.prejuizoCtes)} CT-e` : undefined}
-          tom={r && r.prejuizoFrete > 0 ? "bad" : undefined}
+          tom={r && r.prejuizoFrete > 0 ? "ruim" : undefined}
         />
       </GradeCards>
 
@@ -318,7 +318,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
           <FaixaChip
             rotulo="Vencida"
             valor={r?.prazo.vencida ?? 0}
-            tom="danger"
+            tom="ruim"
             aoClicar={() => {
               abrir("vencida", false);
             }}
@@ -326,7 +326,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
           <FaixaChip
             rotulo="Vencendo no dia"
             valor={r?.prazo.hoje ?? 0}
-            tom="warn"
+            tom="alerta"
             aoClicar={() => {
               abrir("hoje", false);
             }}
@@ -358,7 +358,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
           <FaixaChip
             rotulo="Vencida"
             valor={r?.prazoNaoEntregue.vencida ?? 0}
-            tom="danger"
+            tom="ruim"
             aoClicar={() => {
               abrir("vencida", true);
             }}
@@ -366,7 +366,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
           <FaixaChip
             rotulo="Vencendo no dia"
             valor={r?.prazoNaoEntregue.hoje ?? 0}
-            tom="warn"
+            tom="alerta"
             aoClicar={() => {
               abrir("hoje", true);
             }}

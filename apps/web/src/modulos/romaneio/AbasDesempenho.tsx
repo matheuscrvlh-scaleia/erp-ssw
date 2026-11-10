@@ -300,7 +300,7 @@ export function AbaPerformanceRomaneio({
           sub={<PrejuizoSubtitulo codigos={codigos} />}
           valor={k ? nfInt.format(k.prejudicada) : "—"}
           dica={k ? pctBase(k.prejudicada) : undefined}
-          tom="warn"
+          tom="alerta"
           explicacao="Cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo número da aba Prejuízo, dos cards do topo e da tela de Performance."
           aoClicar={() => {
             aoAbrir({ recorte: "prejuizo" });
@@ -315,7 +315,7 @@ export function AbaPerformanceRomaneio({
               ? `${nfPct.format((k.fretePerdido / k.freteRomaneado) * 100)}% do frete da base desta aba`
               : undefined
           }
-          tom={k && k.fretePerdido > 0 ? "bad" : undefined}
+          tom={k && k.fretePerdido > 0 ? "ruim" : undefined}
           explicacao="Frete das cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo valor da aba Prejuízo e da tela de Performance."
           aoClicar={() => {
             aoAbrir({ recorte: "prejuizo" });
@@ -330,7 +330,7 @@ export function AbaPerformanceRomaneio({
               ? `${nfInt.format(k.prejudicada)} de ${nfInt.format(base)} CTRC prejudicados`
               : undefined
           }
-          tom={pPrejuizo !== null && pPrejuizo > 0 ? "warn" : undefined}
+          tom={pPrejuizo !== null && pPrejuizo > 0 ? "alerta" : undefined}
           explicacao="Mesmo cálculo de Entregas prejudicadas, em percentual: cargas com prejuízo atribuído ao(s) código(s) indicado(s) ÷ CTRC total da aba."
           aoClicar={() => {
             aoAbrir({ recorte: "prejuizo" });
@@ -353,7 +353,7 @@ export function AbaPerformanceRomaneio({
         <CardAba
           destaque
           rotulo="Não entregues"
-          tom="bad"
+          tom="ruim"
           valor={k ? nfInt.format(k.naoEntregue) : "—"}
           dica={k ? pctBase(k.naoEntregue) : undefined}
           explicacao="Cargas que saíram para entrega e até agora não foram entregues. Esta aba conta só quem já saiu para entrega — por isso o número é menor que o da tela de Performance, que conta todos os CTRCs do período."
@@ -376,7 +376,7 @@ export function AbaPerformanceRomaneio({
         <CardAba
           destaque
           rotulo="Performance negativa"
-          tom="bad"
+          tom="ruim"
           valor={positiva !== null ? `${nfPct.format(100 - positiva)}%` : "—"}
           dica={
             k && positiva !== null
@@ -634,7 +634,7 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
               ? `${nfInt.format(retornos)} CTRC sem entrega · de ${nfInt.format(total)} da aba`
               : undefined
           }
-          tom={retornos > 0 ? "bad" : undefined}
+          tom={retornos > 0 ? "ruim" : undefined}
           explicacao={TIP_RETORNO}
         />
       </div>

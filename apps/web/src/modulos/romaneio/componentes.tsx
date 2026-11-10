@@ -80,12 +80,12 @@ export function TotCard({
   );
 }
 
-export type Tom = "ok" | "bad" | "warn";
+export type Tom = "ok" | "ruim" | "alerta";
 
 const COR_DO_TOM: Record<Tom | "neutro", string> = {
   ok: "var(--status-good)",
-  warn: "var(--status-warn)",
-  bad: "var(--status-bad)",
+  alerta: "var(--status-warn)",
+  ruim: "var(--status-bad)",
   neutro: "var(--kpi-positive)",
 };
 
@@ -148,13 +148,13 @@ export function FaixaChip({
 }: {
   rotulo: string;
   valor: number;
-  tom: "danger" | "warn" | "ok";
+  tom: "ruim" | "alerta" | "ok";
   aoClicar: () => void;
 }) {
   const classe =
-    tom === "danger"
+    tom === "ruim"
       ? "border-destructive/40 bg-destructive/10 text-destructive"
-      : tom === "warn"
+      : tom === "alerta"
         ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
         : "border-border/70 bg-muted text-foreground";
   return (

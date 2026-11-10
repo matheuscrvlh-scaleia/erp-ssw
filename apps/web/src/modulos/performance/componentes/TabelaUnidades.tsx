@@ -119,14 +119,14 @@ function LinhaDeUnidade({
   onPenalizados: () => void;
 }) {
   const sla = linha.slaOp;
-  const status = sla != null ? statusDoSla(sla, meta, alerta) : "good";
-  const ruim = sla != null && status === "bad";
+  const status = sla != null ? statusDoSla(sla, meta, alerta) : "bom";
+  const ruim = sla != null && status === "ruim";
   const abertos = linha.penalizadosAbertos;
   const rotulo = `${abertos} penalizado${abertos === 1 ? "" : "s"} em aberto`;
   return (
     <li
       className="flex cursor-pointer items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/40"
-      style={ruim ? { background: fundoDoStatus.bad } : undefined}
+      style={ruim ? { background: fundoDoStatus.ruim } : undefined}
       title="Ver CTRCs com atraso, ocorrências e NFs desta unidade"
       {...clicavel(onClick)}
     >
@@ -138,7 +138,7 @@ function LinhaDeUnidade({
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span
             className="text-[13px] font-medium tabular-nums"
-            style={ruim ? { color: textoDoStatus.bad } : undefined}
+            style={ruim ? { color: textoDoStatus.ruim } : undefined}
           >
             {linha.sigla}
           </span>
@@ -168,7 +168,7 @@ function LinhaDeUnidade({
                 onPenalizados();
               }}
               className="text-[11px] font-medium underline decoration-dotted underline-offset-2 hover:opacity-80 focus:outline-none"
-              style={{ color: textoDoStatus.bad }}
+              style={{ color: textoDoStatus.ruim }}
               title="Ver os CTRCs penalizados desta unidade que ainda estão em aberto"
             >
               · agir agora

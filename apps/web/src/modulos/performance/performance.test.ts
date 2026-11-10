@@ -164,8 +164,8 @@ describe("relatório de período (Q01)", () => {
     expect(porNome.get("SLA de Pontualidade")?.valor).toBe("97,5%");
     expect(porNome.get("SLA Operacional")).toMatchObject({
       valor: "95,0%",
-      tom: "good",
-      comparativo: { valor: "96,5%", delta: { tom: "bad" } },
+      tom: "bom",
+      comparativo: { valor: "96,5%", delta: { tom: "ruim" } },
     });
     expect(porNome.get("% Produção")?.valor).toBe("75,0%");
     expect(porNome.get("Prejuízo")?.sub).toContain("código 13");

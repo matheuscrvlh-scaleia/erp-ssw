@@ -23,13 +23,13 @@ export function fmtPP(n: number | null | undefined): string {
   return `${v > 0 ? "+" : ""}${v.toFixed(1).replace(".", ",")} pp`;
 }
 
-export type Tom = "good" | "warn" | "bad" | "neutral";
+export type Tom = "bom" | "alerta" | "ruim" | "neutro";
 
 const COR: Record<Tom, string> = {
-  good: "var(--status-good)",
-  warn: "var(--status-warn)",
-  bad: "var(--status-bad)",
-  neutral: "var(--kpi-positive)",
+  bom: "var(--status-good)",
+  alerta: "var(--status-warn)",
+  ruim: "var(--status-bad)",
+  neutro: "var(--kpi-positive)",
 };
 
 /** Meta e alerta do SLA da empresa (frações). */
@@ -39,9 +39,9 @@ export interface Sla {
 }
 
 export function tomDoSla(p: number, sla: Sla): Tom {
-  if (p >= sla.meta) return "good";
-  if (p >= sla.alerta) return "warn";
-  return "bad";
+  if (p >= sla.meta) return "bom";
+  if (p >= sla.alerta) return "alerta";
+  return "ruim";
 }
 
 export function classeDoSla(p: number, sla: Sla): string {
@@ -57,7 +57,7 @@ export function CartaoMetrica({
   dica,
   selo,
   seloDaMarca,
-  tom = "neutral",
+  tom = "neutro",
   carregando,
   destaque,
   tamanho = "grande",

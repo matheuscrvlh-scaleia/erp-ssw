@@ -121,7 +121,14 @@ export async function listarBatidas(
   cliente: ClienteAhgora,
   entrada: EntradaDe<C["batidas"]>,
 ): Promise<SaidaDe<C["batidas"]>> {
-  return cliente.batidas(entrada);
+  // Os nomes em inglês são os do filtro da API do Ahgora (/punches/between).
+  return cliente.batidas({
+    employeeId: entrada.funcionarioId,
+    employeeRegister: entrada.matricula,
+    employeePis: entrada.pis,
+    start: entrada.inicio,
+    end: entrada.fim,
+  });
 }
 
 /**

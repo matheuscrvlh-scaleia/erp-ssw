@@ -498,7 +498,7 @@ export function PaginaPerformance() {
       {erro && (
         <div
           className="flex items-start gap-2 rounded-[10px] border border-amber-200 bg-[var(--status-warn-bg)] px-4 py-3 text-[12px]"
-          style={{ color: textoDoStatus.warn }}
+          style={{ color: textoDoStatus.alerta }}
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
@@ -514,7 +514,7 @@ export function PaginaPerformance() {
           <div className="flex items-start gap-2 rounded-[10px] border border-border/70 bg-muted/40 px-4 py-2.5 text-[12px] text-muted-foreground">
             <AlertTriangle
               className="mt-0.5 h-3.5 w-3.5 shrink-0"
-              style={{ color: textoDoStatus.warn }}
+              style={{ color: textoDoStatus.alerta }}
             />
             <span>
               {r.totais.totalCtrcs === 0 ? (
@@ -653,14 +653,14 @@ export function PaginaPerformance() {
           href="/admin/codigos"
           className="flex items-center justify-between gap-3 rounded-[10px] border border-amber-200 bg-[var(--status-warn-bg)] px-4 py-3 text-[12px] transition-colors hover:bg-amber-100"
         >
-          <span className="flex items-center gap-2" style={{ color: textoDoStatus.warn }}>
+          <span className="flex items-center gap-2" style={{ color: textoDoStatus.alerta }}>
             <AlertTriangle className="h-4 w-4" />
             <strong className="font-medium">{r.totais.ocorrenciasPendentes}</strong> ocorrências
             precisam de classificação para os números ficarem 100% exatos.
           </span>
           <span
             className="flex items-center gap-1 font-medium"
-            style={{ color: textoDoStatus.warn }}
+            style={{ color: textoDoStatus.alerta }}
           >
             Classificar agora <ArrowRight className="h-3 w-3" />
           </span>

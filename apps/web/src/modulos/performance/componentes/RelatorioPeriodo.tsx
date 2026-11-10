@@ -480,7 +480,7 @@ function CorpoDoRelatorio({
 
 function CartaoDoIndicador({ i }: { i: Indicador }) {
   const tom = (t: string) =>
-    t === "good" ? "text-emerald-600" : t === "bad" ? "text-red-600" : "text-foreground";
+    t === "bom" ? "text-emerald-600" : t === "ruim" ? "text-red-600" : "text-foreground";
   return (
     <div className="rounded-lg border border-border/70 bg-card p-3" title={i.dica}>
       <div className="text-[10px] tracking-wide text-muted-foreground uppercase">{i.rotulo}</div>
@@ -496,7 +496,7 @@ function CartaoDoIndicador({ i }: { i: Indicador }) {
             <span
               className={
                 "ml-auto font-medium tabular-nums " +
-                (i.comparativo.delta.tom === "neutral"
+                (i.comparativo.delta.tom === "neutro"
                   ? "text-muted-foreground"
                   : tom(i.comparativo.delta.tom))
               }

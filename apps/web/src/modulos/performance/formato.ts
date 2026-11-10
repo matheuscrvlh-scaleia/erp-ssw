@@ -19,17 +19,17 @@ export function fmtPeso(kg: number): string {
 }
 
 export const corDoStatus: Record<Status, string> = {
-  good: "var(--status-good)",
-  warn: "var(--status-warn)",
-  bad: "var(--status-bad)",
+  bom: "var(--status-good)",
+  alerta: "var(--status-warn)",
+  ruim: "var(--status-bad)",
 };
 export const textoDoStatus: Record<Status, string> = {
-  good: "var(--status-good-fg)",
-  warn: "var(--status-warn-fg)",
-  bad: "var(--status-bad-fg)",
+  bom: "var(--status-good-fg)",
+  alerta: "var(--status-warn-fg)",
+  ruim: "var(--status-bad-fg)",
 };
 export const fundoDoStatus: Record<Status, string> = {
-  good: "var(--status-good-bg)",
-  warn: "var(--status-warn-bg)",
-  bad: "var(--status-bad-bg)",
+  bom: "var(--status-good-bg)",
+  alerta: "var(--status-warn-bg)",
+  ruim: "var(--status-bad-bg)",
 };

@@ -40,16 +40,16 @@ function diasAtras(dias: number): string {
   return isoLocal(d);
 }
 
-function periodoDeBatidasValido(start: string, end: string): boolean {
-  return ehDataIso(start) && ehDataIso(end) && end >= start && diferencaEmDias(start, end) <= 30;
+function periodoDeBatidasValido(inicio: string, fim: string): boolean {
+  return ehDataIso(inicio) && ehDataIso(fim) && fim >= inicio && diferencaEmDias(inicio, fim) <= 30;
 }
 
 /** origem: features/ahgora/components/AhgoraPontoScreen.tsx (sistema atual) */
 export function BatidasPorColaborador() {
   const [busca, setBusca] = useState("");
   const [funcionarioId, setFuncionarioId] = useState<string | null>(null);
-  const [start, setStart] = useState(() => diasAtras(7));
-  const [end, setEnd] = useState(() => isoLocal(new Date()));
+  const [inicio, setInicio] = useState(() => diasAtras(7));
+  const [fim, setFim] = useState(() => isoLocal(new Date()));
 
   const funcionariosQ = useQuery(consultaFuncionarios);
   const funcionarios = useMemo(() => funcionariosQ.data ?? [], [funcionariosQ.data]);
@@ -66,8 +66,8 @@ export function BatidasPorColaborador() {
   }, [funcionarios, busca]);
 
   const selecionado = funcionarios.find((f) => f.id === funcionarioId) ?? null;
-  const periodoValido = periodoDeBatidasValido(start, end);
-  const batidasQ = useQuery(consultaBatidas(funcionarioId, start, end, periodoValido));
+  const periodoValido = periodoDeBatidasValido(inicio, fim);
+  const batidasQ = useQuery(consultaBatidas(funcionarioId, inicio, fim, periodoValido));
 
   return (
     <div className="space-y-4">
@@ -124,9 +124,9 @@ export function BatidasPorColaborador() {
               id="ponto-de"
               type="date"
               className="h-8 text-[12px]"
-              value={start}
+              value={inicio}
               onChange={(e) => {
-                setStart(e.target.value);
+                setInicio(e.target.value);
               }}
             />
           </div>
@@ -138,9 +138,9 @@ export function BatidasPorColaborador() {
               id="ponto-ate"
               type="date"
               className="h-8 text-[12px]"
-              value={end}
+              value={fim}
               onChange={(e) => {
-                setEnd(e.target.value);
+                setFim(e.target.value);
               }}
             />
           </div>

@@ -61,9 +61,9 @@ export function KpiBox({
   const s = statusDoSelo ?? status;
   const destaque = neutro
     ? "border-l-kpi-volume text-kpi-volume"
-    : status === "good"
+    : status === "bom"
       ? "border-l-kpi-positive text-kpi-positive"
-      : status === "warn"
+      : status === "alerta"
         ? "border-l-kpi-alert text-kpi-alert"
         : "border-l-kpi-volume text-kpi-volume";
   return (
@@ -129,21 +129,21 @@ export function DistribuicaoPontualidade({
       chave: "no_prazo",
       rotulo: "No prazo",
       valor: noPrazo,
-      cor: corDoStatus.good,
+      cor: corDoStatus.bom,
       dica: "Entregas que chegaram até a data combinada.",
     },
     {
       chave: "fora_prazo",
       rotulo: "Fora do prazo",
       valor: foraPrazo,
-      cor: corDoStatus.bad,
+      cor: corDoStatus.ruim,
       dica: "Entregas que chegaram depois da data combinada.",
     },
     {
       chave: "excluido",
       rotulo: "Excluído (resp. cliente/parceiro)",
       valor: excluidoCliente,
-      cor: corDoStatus.warn,
+      cor: corDoStatus.alerta,
       dica: `Atraso que não é culpa da ${nomeCurto} — o cliente ou parceiro causou o atraso, então não conta contra nós.`,
     },
     {
@@ -290,7 +290,7 @@ export function LinhaDeKpis({
         rotulo="SLA Operacional"
         titulo="CT-e emitidos menos os entregues fora do prazo, sobre os CT-e emitidos. Fora do prazo exclui responsabilidade do cliente."
         valor={slaOp != null ? fmtPct(slaOp) : "—"}
-        status={slaOp != null ? statusDoSla(slaOp, meta, alerta) : "good"}
+        status={slaOp != null ? statusDoSla(slaOp, meta, alerta) : "bom"}
         neutro={slaOp == null}
         progresso={slaOp}
         sub={
@@ -311,7 +311,7 @@ export function LinhaDeKpis({
         rotulo="Nascidos em atraso"
         titulo={`CTRCs emitidos a menos de 48 horas da previsão de entrega (horas corridas: fim de semana e feriado contam). Ex.: emitido na terça com previsão para quarta. Nesses casos a ${nomeCurto} não tinha como cumprir: o atraso é do parceiro. CTRCs da TROCA ficam fora da conta. Só compara prazos — ocorrências, inclusive as de responsabilidade do cliente, não entram.`}
         valor={nascPct != null ? fmtPct(nascPct) : "—"}
-        status="good"
+        status="bom"
         neutro
         progresso={nascPct}
         sub={nascSub}
@@ -340,7 +340,7 @@ export function LinhaDeKpis({
         valor={fmtPct(taxa)}
         status={statusDoRetorno(taxa, metaTaxa)}
         selo={acimaDaMeta ? "acima" : metaTaxa != null ? "ok" : undefined}
-        statusDoSelo={acimaDaMeta ? "bad" : "good"}
+        statusDoSelo={acimaDaMeta ? "ruim" : "bom"}
         sub={`${metaTaxa != null ? `meta ≤ ${fmtPct(metaTaxa)}` : "sem meta definida"} · base: ${fmtInt(resumo.totais.ctrcsConcluidos)} CT-e concluídos`}
         titulo="CTRCs com ocorrência 13 (Entrega prejudicada pelo horário) sobre os CT-e concluídos no período (entregues + finalizados sem entrega). CT-e em aberto não entram na conta."
       />
@@ -384,7 +384,7 @@ function CaixaEmAtraso({
               e.stopPropagation();
             }}
             className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-            style={{ background: fundoDoStatus.warn, color: textoDoStatus.warn }}
+            style={{ background: fundoDoStatus.alerta, color: textoDoStatus.alerta }}
           >
             +{t.ocorrenciasPendentes} pendentes
           </a>

@@ -154,7 +154,7 @@ export function CardsDoPeriodo({
         <FaixaChip
           rotulo="Vencida"
           valor={t?.emRotaVencida ?? 0}
-          tom="danger"
+          tom="ruim"
           aoClicar={() => {
             aoAbrir("em_rota_vencida");
           }}
@@ -162,7 +162,7 @@ export function CardsDoPeriodo({
         <FaixaChip
           rotulo="Vencendo no dia"
           valor={t?.emRotaHoje ?? 0}
-          tom="warn"
+          tom="alerta"
           aoClicar={() => {
             aoAbrir("em_rota_hoje");
           }}

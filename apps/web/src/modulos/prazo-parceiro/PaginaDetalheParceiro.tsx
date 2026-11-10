@@ -189,7 +189,7 @@ export function PaginaDetalheParceiro() {
           tamanho="medio"
           rotulo="Diferença"
           valor={fmtPP(diferenca)}
-          tom={diferenca > 0 ? "good" : "neutral"}
+          tom={diferenca > 0 ? "bom" : "neutro"}
           dica={`${nfInt.format(r?.nascidosAtrasados ?? 0)} CTRC(s) nasceram em atraso`}
           carregando={q.isLoading}
         />

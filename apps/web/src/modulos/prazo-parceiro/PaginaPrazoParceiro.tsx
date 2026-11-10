@@ -317,7 +317,7 @@ export function PaginaPrazoParceiro() {
           rotulo="Diferença"
           selo="atribuído a parceiros"
           valor={t ? fmtPP(t.diferencaPp) : "—"}
-          tom={t && t.diferencaPp > 0 ? "good" : "neutral"}
+          tom={t && t.diferencaPp > 0 ? "bom" : "neutro"}
           dica="o quanto sua performance está sendo puxada para baixo por prazos herdados"
           carregando={visao.isLoading}
         />

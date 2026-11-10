@@ -15,14 +15,14 @@ export type CardDeProducao =
   | "producao_pct"
   | "tde";
 
-type Tom = "good" | "bad" | "neutral" | "info";
+type Tom = "bom" | "ruim" | "neutro" | "info";
 
 function CartaoDeProducao({
   rotulo,
   valor,
   sub,
   legenda,
-  tom = "neutral",
+  tom = "neutro",
   dica,
   onClick,
 }: {
@@ -35,9 +35,9 @@ function CartaoDeProducao({
   onClick: () => void;
 }) {
   const destaque =
-    tom === "good" || tom === "info"
+    tom === "bom" || tom === "info"
       ? "border-l-kpi-positive text-kpi-positive"
-      : tom === "bad"
+      : tom === "ruim"
         ? "border-l-kpi-alert text-kpi-alert"
         : "border-l-kpi-volume text-kpi-volume";
   const botao = (
@@ -114,7 +114,7 @@ export function LinhaDeProducao({
         valor={fmtInt(bloco.noPrazo)}
         legenda="Entregues até a data combinada"
         sub={noPrazoPct != null ? `${fmtPct100(noPrazoPct)} dos entregues` : "aguardando entregas"}
-        tom={noPrazoPct != null && noPrazoPct >= slaMetaPct ? "good" : "neutral"}
+        tom={noPrazoPct != null && noPrazoPct >= slaMetaPct ? "bom" : "neutro"}
         dica="Entregas que chegaram até a data combinada."
         onClick={() => {
           onCard("no_prazo");
@@ -125,7 +125,7 @@ export function LinhaDeProducao({
         valor={fmtInt(bloco.foraPrazo)}
         legenda="Entregues depois da data combinada"
         sub="exclui resp. cliente"
-        tom={bloco.foraPrazo > 0 ? "bad" : "neutral"}
+        tom={bloco.foraPrazo > 0 ? "ruim" : "neutro"}
         dica="Entregas que chegaram depois da data combinada. Já exclui os atrasos de responsabilidade do cliente/parceiro."
         onClick={() => {
           onCard("fora_prazo");
@@ -149,7 +149,7 @@ export function LinhaDeProducao({
         rotulo="% Produção"
         valor={fmtPct100(producaoPct)}
         sub={`entregues / emitidos · meta ${fmtPct100(slaMetaPct)}`}
-        tom={producaoPct != null && producaoPct >= slaMetaPct ? "good" : "neutral"}
+        tom={producaoPct != null && producaoPct >= slaMetaPct ? "bom" : "neutro"}
         onClick={() => {
           onCard("producao_pct");
         }}
@@ -163,7 +163,7 @@ export function LinhaDeProducao({
             ? `${fmtBRL(tde.valor)} de TDE · ${fmtInt(tde.total)} CT-e com TDE no período`
             : "carregando"
         }
-        tom={tde && tde.aguardando > 0 ? "bad" : "neutral"}
+        tom={tde && tde.aguardando > 0 ? "ruim" : "neutro"}
         dica="Cargas com TDE (taxa de dificuldade de entrega, do relatório 455) que ainda não saíram para entrega: travadas em ocorrência ou paradas na unidade. A lista mostra cliente, destino, prazo e última ocorrência para montar a programação. As que já saíram estão no card “TDE romaneado” da tela Romaneio."
         onClick={() => {
           onCard("tde");
