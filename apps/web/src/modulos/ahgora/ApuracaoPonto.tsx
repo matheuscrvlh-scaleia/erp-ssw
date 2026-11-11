@@ -7,26 +7,48 @@ import {
 import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarDiaMes } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
-import { useState } from "react";
-
-import { Badge } from "@/componentes/ui/badge";
-import { Button } from "@/componentes/ui/button";
-import { Input } from "@/componentes/ui/input";
-import { Label } from "@/componentes/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/componentes/ui/select";
+  AlertTriangle,
+  CalendarCheck,
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Play,
+  RefreshCw,
+  UsersRound,
+} from "lucide-react";
+import { type KeyboardEvent, type ReactNode, useState } from "react";
+
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
+import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
+import { Pagina } from "@/componentes/layout/Pagina";
+import { Button } from "@/componentes/ui/button";
+import { Select, SelectContent, SelectItem } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
 
+import {
+  CampoRotulado,
+  CLASSE_DO_CAMPO,
+  GatilhoRotulado,
+  InterruptorRotulado,
+} from "../ranking/campos-do-filtro";
 import { mesDe, periodoDoMes } from "../ranking/periodo";
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "../ranking/tabela-propria";
 import { consultaApuracaoDoPonto, consultaDepartamentos } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 
@@ -45,41 +67,49 @@ function formatarHoras(minutos: number): string {
 
 const dataBr = (iso: string) => iso.split("-").reverse().join("/");
 
+const TH_DO_DIA = "py-1.5 pr-3 label-xs";
+
 function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
   const [aberto, setAberto] = useState(false);
+  const alternar = () => {
+    setAberto((v) => !v);
+  };
+  const tecla = (e: KeyboardEvent<HTMLTableRowElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    alternar();
+  };
   return (
     <>
       <tr
-        className="cursor-pointer hover:bg-muted/30"
-        onClick={() => {
-          setAberto((v) => !v);
-        }}
+        tabIndex={0}
+        className={cn(
+          CLASSE_LINHA,
+          "cursor-pointer focus-visible:bg-accent focus-visible:outline-none",
+          aberto && "bg-muted/40",
+        )}
+        onClick={alternar}
+        onKeyDown={tecla}
         aria-expanded={aberto}
       >
-        <td className="px-3 py-1.5">
+        <td className={CLASSE_TD}>
           <div className="flex items-center gap-1.5">
             {aberto ? (
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
             )}
-            <span className="font-medium">{f.name}</span>
-            {f.demitido && (
-              <Badge variant="destructive" className="text-[10px]">
-                demitido
-              </Badge>
-            )}
+            <span className="font-semibold">{f.name}</span>
+            {f.demitido && <SeloStatus tom="erro">demitido</SeloStatus>}
           </div>
         </td>
-        <td className="px-3 py-1.5 font-mono text-[11px] text-muted-foreground">{f.register}</td>
-        <td className="px-3 py-1.5 text-muted-foreground">{f.department || "—"}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{f.diasComRegistro}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{formatarHoras(f.minutosApurados)}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">
+        <td className={cn(CLASSE_TD, "font-mono text-xs text-muted-foreground")}>{f.register}</td>
+        <td className={cn(CLASSE_TD, "text-muted-foreground")}>{f.department || "—"}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>{f.diasComRegistro}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>{formatarHoras(f.minutosApurados)}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>
           {f.diasARevisar > 0 ? (
-            <Badge variant="outline" className="border-amber-500/60 text-[10px] text-amber-600">
-              {f.diasARevisar}
-            </Badge>
+            <SeloStatus tom="alerta">{f.diasARevisar}</SeloStatus>
           ) : (
             <span className="text-muted-foreground">—</span>
           )}
@@ -87,35 +117,36 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
       </tr>
 
       {aberto && (
-        <tr>
-          <td colSpan={6} className="bg-muted/20 px-3 py-2">
+        <tr className="border-b border-border">
+          <td colSpan={6} className="bg-superficie px-4 py-2">
             {f.dias.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="py-1 text-xs text-muted-foreground">
                 Nenhuma batida registrada no período.
               </p>
             ) : (
-              <table className="w-full text-[11px]">
-                <thead className="text-[10px] uppercase text-muted-foreground">
-                  <tr>
-                    <th className="py-1 text-left font-medium">Dia</th>
-                    <th className="py-1 text-left font-medium">Batidas</th>
-                    <th className="py-1 text-right font-medium">Horas</th>
+              <table className="w-full text-[12.5px] tabular-nums">
+                <thead>
+                  <tr className="text-left">
+                    <th className={TH_DO_DIA}>Dia</th>
+                    <th className={TH_DO_DIA}>Batidas</th>
+                    <th className={cn(TH_DO_DIA, "pr-0 text-right")}>Horas</th>
                   </tr>
                 </thead>
                 <tbody>
                   {f.dias.map((d) => (
-                    <tr key={d.data} className="border-t border-border/30">
-                      <td className="py-1 align-top font-mono">{formatarDiaMes(d.data)}</td>
-                      <td className="py-1">
+                    <tr key={d.data} className="border-t border-border">
+                      <td className="py-1.5 pr-3 align-top">{formatarDiaMes(d.data)}</td>
+                      <td className="py-1.5 pr-3">
                         <div className="flex flex-wrap gap-1">
                           {d.batidas.map((b, i) => (
                             <span
                               key={`${b.hora}-${i}`}
-                              className={`rounded px-1 font-mono ${
+                              className={cn(
+                                "rounded-md border px-1.5 font-mono",
                                 b.tipo === "DELETADA"
-                                  ? "text-destructive line-through"
-                                  : "bg-background"
-                              }`}
+                                  ? "border-status-bad/30 text-status-bad-fg line-through"
+                                  : "border-border bg-card",
+                              )}
                               title={b.tipo}
                             >
                               {b.hora}
@@ -123,15 +154,15 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
                           ))}
                         </div>
                         {d.motivoRevisao && (
-                          <p className="mt-0.5 flex items-start gap-1 text-[10px] text-amber-600">
-                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                          <p className="mt-1 flex items-start gap-1 text-xs text-status-warn-fg">
+                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
                             {MOTIVO_LABEL[d.motivoRevisao]}
                           </p>
                         )}
                       </td>
-                      <td className="py-1 text-right align-top tabular-nums">
+                      <td className="py-1.5 text-right align-top">
                         {d.minutosTrabalhados === null ? (
-                          <span className="text-amber-600">revisar</span>
+                          <span className="font-semibold text-status-warn-fg">revisar</span>
                         ) : (
                           formatarHoras(d.minutosTrabalhados)
                         )}
@@ -149,7 +180,7 @@ function LinhaFuncionario({ f }: { f: FuncionarioApurado }) {
 }
 
 /** origem: features/ahgora/components/ApuracaoPontoScreen.tsx (sistema atual) */
-export function ApuracaoPonto() {
+export function ApuracaoPonto({ abas }: { abas: ReactNode }) {
   const hoje = hojeNoFuso(useFusoDaEmpresa());
   const [mes, setMes] = useState(() => mesDe(hoje));
   const [departamento, setDepartamento] = useState<string>(TODOS);
@@ -174,41 +205,27 @@ export function ApuracaoPonto() {
   const totalRevisar = funcionarios.reduce((acc, f) => acc + f.diasARevisar, 0);
 
   return (
-    <div className="space-y-4">
-      <header>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-[22px] font-medium tracking-tight">Apuração de ponto (Ahgora)</h1>
-          <ComoFuncionaPonto />
-        </div>
-        <p className="text-[12px] text-muted-foreground">
-          Marcações de ponto por colaborador e período, consolidadas direto do Ahgora. Dias que não
-          fecham com segurança aparecem como “revisar” em vez de receberem um total estimado.
-        </p>
-      </header>
-
-      <section className="rounded-[10px] border border-border/70 bg-card p-3">
-        <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto_auto]">
-          <div className="space-y-1">
-            <Label htmlFor="ponto-mes" className="text-[11px]">
-              Mês
-            </Label>
-            <Input
-              id="ponto-mes"
-              type="month"
-              className="h-8 text-[12px]"
-              value={mes}
-              onChange={(e) => {
-                setMes(e.target.value);
-              }}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-[11px]">Departamento</Label>
+    <Pagina
+      titulo="Apuração de ponto (Ahgora)"
+      descricao="Marcações de ponto por colaborador e período, consolidadas direto do Ahgora. Dias que não fecham com segurança aparecem como “revisar” em vez de receberem um total estimado."
+      acoes={<ComoFuncionaPonto />}
+      abas={abas}
+      filtros={
+        <>
+          <FiltrosAvancados>
+            <CampoRotulado rotulo="Mês" htmlFor="ponto-mes">
+              <input
+                id="ponto-mes"
+                type="month"
+                className={CLASSE_DO_CAMPO}
+                value={mes}
+                onChange={(e) => {
+                  setMes(e.target.value);
+                }}
+              />
+            </CampoRotulado>
             <Select value={departamento} onValueChange={setDepartamento}>
-              <SelectTrigger className="h-8 text-[12px]" aria-label="Departamento">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
+              <GatilhoRotulado rotulo="Departamento" placeholder="Todos" className="max-w-80" />
               <SelectContent>
                 <SelectItem value={TODOS}>Todos os departamentos</SelectItem>
                 {(departamentos.data ?? []).map((d) => (
@@ -218,96 +235,117 @@ export function ApuracaoPonto() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="flex items-end gap-2 pb-1.5">
-            <Switch
-              id="incluir-demitidos"
-              checked={incluirDemitidos}
-              onCheckedChange={setIncluirDemitidos}
-            />
-            <Label htmlFor="incluir-demitidos" className="text-[11px]">
-              Incluir demitidos
-            </Label>
-          </div>
-
-          <div className="flex items-end">
-            <Button size="sm" className="h-8" onClick={apurar} disabled={apuracao.isFetching}>
-              <Play className="mr-1.5 h-3 w-3" />
+            <InterruptorRotulado id="incluir-demitidos" rotulo="Incluir demitidos">
+              <Switch
+                id="incluir-demitidos"
+                checked={incluirDemitidos}
+                onCheckedChange={setIncluirDemitidos}
+              />
+            </InterruptorRotulado>
+            <Button onClick={apurar} disabled={apuracao.isFetching}>
+              <Play aria-hidden />
               {apuracao.isFetching ? "Apurando…" : "Apurar"}
             </Button>
-          </div>
-        </div>
-
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          A consulta busca as batidas de um colaborador por vez no Ahgora, então apurar um
-          departamento leva alguns segundos. Períodos maiores que um mês não são aceitos pela API.
-        </p>
-      </section>
-
+          </FiltrosAvancados>
+          <p className="text-xs text-muted-foreground">
+            A consulta busca as batidas de um colaborador por vez no Ahgora, então apurar um
+            departamento leva alguns segundos. Períodos maiores que um mês não são aceitos pela API.
+          </p>
+        </>
+      }
+    >
       {apuracao.error && (
-        <div className="rounded-[10px] border border-destructive/40 bg-destructive/5 p-3 text-[12px] text-destructive">
+        <Aviso
+          tom="erro"
+          acao={
+            <Button size="sm" variant="outline" onClick={() => void apuracao.refetch()}>
+              <RefreshCw aria-hidden /> Tentar novamente
+            </Button>
+          }
+        >
           {mensagemAmigavel(apuracao.error)}
-        </div>
+        </Aviso>
       )}
 
       {apuracao.isFetching ? (
-        <div className="space-y-2 rounded-[10px] border border-border/70 bg-card p-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} className="h-8 w-full" />
-          ))}
+        <div className="space-y-4" aria-busy>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-2xl bg-muted" />
+            ))}
+          </div>
+          <Skeleton className="h-64 w-full rounded-2xl bg-muted" />
         </div>
       ) : apuracao.data ? (
         <>
-          <section className="grid gap-3 sm:grid-cols-4">
-            {[
-              { rotulo: "Colaboradores", valor: String(funcionarios.length), alerta: false },
-              {
-                rotulo: "Dias com registro",
-                valor: String(funcionarios.reduce((a, f) => a + f.diasComRegistro, 0)),
-                alerta: false,
-              },
-              { rotulo: "Horas apuradas", valor: formatarHoras(totalMinutos), alerta: false },
-              { rotulo: "Dias a revisar", valor: String(totalRevisar), alerta: totalRevisar > 0 },
-            ].map((card) => (
-              <div key={card.rotulo} className="rounded-[10px] border border-border/70 bg-card p-3">
-                <p className="text-[11px] text-muted-foreground">{card.rotulo}</p>
-                <p
-                  className={`text-[20px] font-medium tabular-nums ${
-                    card.alerta ? "text-amber-600" : ""
-                  }`}
-                >
-                  {card.valor}
-                </p>
-              </div>
-            ))}
-          </section>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiCard
+              rotulo="Colaboradores"
+              valor={String(funcionarios.length)}
+              status="bom"
+              neutro
+              icone={UsersRound}
+              detalhe="na apuração"
+            />
+            <KpiCard
+              rotulo="Dias com registro"
+              valor={String(funcionarios.reduce((a, f) => a + f.diasComRegistro, 0))}
+              status="bom"
+              neutro
+              icone={CalendarCheck}
+              detalhe="somados de todos"
+            />
+            <KpiCard
+              rotulo="Horas apuradas"
+              valor={formatarHoras(totalMinutos)}
+              status="bom"
+              neutro
+              icone={Clock}
+              detalhe="só dias que fecharam"
+            />
+            <KpiCard
+              rotulo="Dias a revisar"
+              valor={String(totalRevisar)}
+              status={totalRevisar > 0 ? "alerta" : "bom"}
+              icone={CalendarClock}
+              detalhe={totalRevisar > 0 ? "fora das horas apuradas" : "nenhum dia pendente"}
+            />
+          </div>
 
-          <section className="rounded-[10px] border border-border/70 bg-card">
-            <header className="border-b border-border/70 px-3 py-2">
-              <h2 className="text-[13px] font-medium">
-                Colaboradores · {dataBr(apuracao.data.inicio)} a {dataBr(apuracao.data.fim)}
-              </h2>
-            </header>
-
+          <Painel
+            titulo={`Colaboradores · ${dataBr(apuracao.data.inicio)} a ${dataBr(apuracao.data.fim)}`}
+          >
             {funcionarios.length === 0 ? (
-              <p className="p-6 text-center text-[12px] text-muted-foreground">
-                Nenhum colaborador encontrado para os filtros selecionados.
-              </p>
+              <EstadoVazio
+                mensagem="Nenhum colaborador encontrado para os filtros selecionados."
+                detalhe="Escolha outro departamento ou ligue “Incluir demitidos”."
+              />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-[12px]">
-                  <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Colaborador</th>
-                      <th className="px-3 py-2 text-left">Matrícula</th>
-                      <th className="px-3 py-2 text-left">Departamento</th>
-                      <th className="px-3 py-2 text-right">Dias</th>
-                      <th className="px-3 py-2 text-right">Horas apuradas</th>
-                      <th className="px-3 py-2 text-right">A revisar</th>
+              <div className="rolagem-fina relative overflow-x-auto rounded-b-xl">
+                <table className={CLASSE_TABELA}>
+                  <thead>
+                    <tr className={CLASSE_CABECALHO}>
+                      <th scope="col" className={CLASSE_TH}>
+                        Colaborador
+                      </th>
+                      <th scope="col" className={CLASSE_TH}>
+                        Matrícula
+                      </th>
+                      <th scope="col" className={CLASSE_TH}>
+                        Departamento
+                      </th>
+                      <th scope="col" className={cn(CLASSE_TH, "text-right")}>
+                        Dias
+                      </th>
+                      <th scope="col" className={cn(CLASSE_TH, "text-right")}>
+                        Horas apuradas
+                      </th>
+                      <th scope="col" className={cn(CLASSE_TH, "text-right")}>
+                        A revisar
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/40">
+                  <tbody>
                     {funcionarios.map((f) => (
                       <LinhaFuncionario key={f.register} f={f} />
                     ))}
@@ -315,13 +353,18 @@ export function ApuracaoPonto() {
                 </table>
               </div>
             )}
-          </section>
+          </Painel>
         </>
       ) : (
-        <div className="rounded-[10px] border border-dashed border-border/70 p-8 text-center text-[12px] text-muted-foreground">
-          Escolha o mês e o departamento e clique em “Apurar”.
-        </div>
+        !apuracao.error && (
+          <Painel>
+            <EstadoVazio
+              icone={Play}
+              mensagem="Escolha o mês e o departamento e clique em “Apurar”."
+            />
+          </Painel>
+        )
       )}
-    </div>
+    </Pagina>
   );
 }

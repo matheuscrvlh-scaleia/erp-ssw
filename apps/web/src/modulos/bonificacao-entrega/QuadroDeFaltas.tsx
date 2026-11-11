@@ -5,10 +5,14 @@ import {
 } from "@erp/shared/contratos/bonificacao-entrega";
 import { formatarDiaMes } from "@erp/shared/formatacao";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { CalendarX, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
+import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
+import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
@@ -21,8 +25,16 @@ import {
 } from "@/componentes/ui/select";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
 
 import { periodoDoMes } from "../ranking/periodo";
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "../ranking/tabela-propria";
 import { CHAVE_DAS_FALTAS, consultaFaltas } from "./api";
 
 type TipoDeFalta = (typeof TIPOS_DE_FALTA)[number];
@@ -77,45 +89,43 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
   const lista = faltas.data ?? [];
 
   return (
-    <section className="space-y-3 rounded-[10px] border border-border/70 bg-card p-3">
-      <div>
-        <h2 className="text-[14px] font-medium">Faltas do mês</h2>
-        <p className="text-[11px] text-muted-foreground">
-          Uma falta zera o bônus do último dia bonificado antes dela. Use o nome como aparece no
-          romaneio.
-        </p>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_1fr_auto]">
-        <div className="space-y-1">
-          <Label htmlFor="falta-nome" className="text-[11px]">
+    <Painel
+      titulo="Faltas do mês"
+      descricao="Uma falta zera o bônus do último dia bonificado antes dela. Use o nome como aparece no romaneio."
+      icone={CalendarX}
+    >
+      <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_1fr_auto]">
+        <div className="space-y-1.5">
+          <Label htmlFor="falta-nome" className="text-xs">
             Colaborador
           </Label>
           <Input
             id="falta-nome"
-            className="h-8 text-[12px]"
+            className="text-[13px]"
             value={nome}
             onChange={(e) => {
               setNome(e.target.value);
             }}
           />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="falta-data" className="text-[11px]">
+        <div className="space-y-1.5">
+          <Label htmlFor="falta-data" className="text-xs">
             Dia
           </Label>
           <Input
             id="falta-data"
             type="date"
-            className="h-8 text-[12px]"
+            className="text-[13px] tabular-nums"
             value={data}
             onChange={(e) => {
               setData(e.target.value);
             }}
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-[11px]">Tipo</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="falta-tipo" className="text-xs">
+            Tipo
+          </Label>
           <Select
             value={tipo}
             onValueChange={(v) => {
@@ -123,7 +133,7 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
               if (escolhido) setTipo(escolhido);
             }}
           >
-            <SelectTrigger className="h-8 w-[210px] text-[12px]" aria-label="Tipo de falta">
+            <SelectTrigger id="falta-tipo" className="text-[13px] lg:w-[220px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -135,13 +145,13 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="falta-observacao" className="text-[11px]">
+        <div className="space-y-1.5">
+          <Label htmlFor="falta-observacao" className="text-xs">
             Observação
           </Label>
           <Input
             id="falta-observacao"
-            className="h-8 text-[12px]"
+            className="text-[13px]"
             value={observacao}
             onChange={(e) => {
               setObservacao(e.target.value);
@@ -150,62 +160,80 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
         </div>
         <div className="flex items-end">
           <Button
-            size="sm"
-            className="h-8"
             disabled={nome.trim().length < 3 || !data || registrar.isPending}
             onClick={() => {
               registrar.mutate();
             }}
           >
-            <Plus className="mr-1.5 h-3 w-3" /> Registrar
+            <Plus aria-hidden /> Registrar
           </Button>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border/70">
-        <table className="w-full text-[12px]">
-          <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 text-left">Dia</th>
-              <th className="px-3 py-2 text-left">Colaborador</th>
-              <th className="px-3 py-2 text-left">Tipo</th>
-              <th className="px-3 py-2 text-left">Observação</th>
-              <th className="px-3 py-2" />
+      <div className="rolagem-fina relative overflow-x-auto rounded-b-xl">
+        <table className={CLASSE_TABELA}>
+          <thead>
+            <tr className={CLASSE_CABECALHO}>
+              <th scope="col" className={CLASSE_TH}>
+                Dia
+              </th>
+              <th scope="col" className={CLASSE_TH}>
+                Colaborador
+              </th>
+              <th scope="col" className={CLASSE_TH}>
+                Tipo
+              </th>
+              <th scope="col" className={CLASSE_TH}>
+                Observação
+              </th>
+              <th scope="col" className={CLASSE_TH}>
+                <span className="sr-only">Ações</span>
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/40">
+          <tbody>
+            {faltas.isLoading && <LinhasCarregando linhas={3} colunas={5} />}
+            {faltas.error && (
+              <tr>
+                <td colSpan={5}>
+                  <MensagemErro erro={faltas.error} aoTentarDeNovo={() => void faltas.refetch()} />
+                </td>
+              </tr>
+            )}
             {lista.map((f) => (
-              <tr key={f.id}>
-                <td className="px-3 py-1.5 font-mono">{formatarDiaMes(f.dataFalta)}</td>
-                <td className="px-3 py-1.5">{f.colaboradorNome}</td>
-                <td className="px-3 py-1.5">{ROTULO_DO_TIPO_DE_FALTA[f.tipo]}</td>
-                <td className="px-3 py-1.5 text-muted-foreground">{f.observacao ?? "—"}</td>
-                <td className="px-3 py-1.5 text-right">
+              <tr key={f.id} className={CLASSE_LINHA}>
+                <td className={CLASSE_TD}>{formatarDiaMes(f.dataFalta)}</td>
+                <td className={cn(CLASSE_TD, "font-semibold")}>{f.colaboradorNome}</td>
+                <td className={CLASSE_TD}>{ROTULO_DO_TIPO_DE_FALTA[f.tipo]}</td>
+                <td className={cn(CLASSE_TD, "text-muted-foreground")}>{f.observacao ?? "—"}</td>
+                <td className={cn(CLASSE_TD, "py-1 text-right")}>
                   <Button
-                    size="sm"
+                    size="icon"
                     variant="ghost"
+                    className="h-8 w-8 text-status-bad-fg hover:text-status-bad-fg"
                     aria-label={`Excluir falta de ${f.colaboradorNome}`}
+                    title={`Excluir falta de ${f.colaboradorNome}`}
                     onClick={() => {
                       if (window.confirm(`Excluir a falta de ${f.colaboradorNome}?`)) {
                         excluir.mutate(f.id);
                       }
                     }}
                   >
-                    <Trash2 className="h-4 w-4 text-rose-400" />
+                    <Trash2 aria-hidden />
                   </Button>
                 </td>
               </tr>
             ))}
-            {lista.length === 0 && (
+            {!faltas.isLoading && !faltas.error && lista.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-4 text-center text-muted-foreground">
-                  {faltas.isLoading ? "Carregando…" : "Nenhuma falta registrada no mês."}
+                <td colSpan={5}>
+                  <EstadoVazio mensagem="Nenhuma falta registrada no mês." />
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-    </section>
+    </Painel>
   );
 }
