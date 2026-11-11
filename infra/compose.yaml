@@ -4,7 +4,7 @@
 # .env.example).
 #
 #   docker compose config --quiet                 # confere a interpolação
-#   ./deploy.sh <tag> [--migrar]                  # deploy sem queda (rola web e api)
+#   ./deploy.sh [--migrar]                        # git pull + build + troca sem queda
 #   docker compose run --rm migrador migrar       # migrations com o papel erp_migracao
 #
 # Redes:
@@ -40,7 +40,7 @@ x-endurecido: &endurecido
 services:
   caddy:
     <<: *endurecido
-    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-caddy:${CADDY_TAG:?defina CADDY_TAG no .env}
+    image: erp-caddy:local
     build:
       context: ./docker
       dockerfile: caddy.Dockerfile
@@ -74,7 +74,7 @@ services:
 
   web:
     <<: *endurecido
-    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-web:${IMAGEM_TAG:?defina IMAGEM_TAG no .env}
+    image: erp-web:local
     build:
       context: ..
       dockerfile: infra/docker/web.Dockerfile
@@ -89,7 +89,7 @@ services:
 
   api:
     <<: *endurecido
-    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-api:${IMAGEM_TAG:?defina IMAGEM_TAG no .env}
+    image: erp-api:local
     build:
       context: ..
       dockerfile: infra/docker/api.Dockerfile
@@ -183,7 +183,7 @@ services:
 
   migrador:
     <<: *endurecido
-    image: ${REGISTRO:-ghcr.io/dono/erp-ssw}/erp-migrador:${IMAGEM_TAG:?defina IMAGEM_TAG no .env}
+    image: erp-migrador:local
     build:
       context: ..
       dockerfile: infra/docker/migrador.Dockerfile

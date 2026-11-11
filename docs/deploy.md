@@ -1,8 +1,9 @@
 # Runbook — deploy do ERP SSW na VPS
 
 Arquivos: `infra/compose.yaml`, `infra/Caddyfile`, `infra/redis.conf`, `infra/deploy.sh`,
-`infra/.env.example`, `infra/docker/*.Dockerfile`. CI: `.github/workflows/ci.yml` (todo push/PR) e
-`release.yml` (manual, publica no GHCR). Validado localmente em 10/11/2026 (§1.3).
+`infra/.env.example`, `infra/docker/*.Dockerfile`. CI: `.github/workflows/ci.yml` (todo push/PR).
+As imagens são montadas na própria VPS (`git pull` + build; sem registro de imagens). Validado
+localmente em 10/11/2026 (§1.3).
 
 A ingestão do SSW (FTP, BI2, webhook, XML, projeções do Romaneio) é o **worker-ssw**, sistema
 separado com compose, Redis e deploy próprios (ADR 0012). Este runbook cobre o ERP e o que liga os
@@ -81,7 +82,7 @@ Nela ficam o caddy e a api do ERP e o worker-ssw (contêiner `worker-ssw`, porta
   Importação SSW) em `WORKER_SSW_URL` (ex.
   `http://worker-ssw:3003`), com `Authorization: Bearer <WORKER_SSW_TOKEN>`. O token é um dos
   `INTERNO_TOKENS` do worker-ssw: para girar, pôr o novo lá como `atual,anterior`, trocar aqui
-  (`./deploy.sh <tag atual>`) e só depois tirar o antigo de lá.
+  (`SEM_PULL=1 ./deploy.sh`) e só depois tirar o antigo de lá.
 
 Sem `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` a API sobe e as telas de ingestão leem o banco; as ações
 (rodar FTP/BI2, testar SSW, reprocessar, retomar/descartar ciclo, importar, aplicar, pausar o
@@ -279,7 +280,7 @@ docker compose run --rm migrador migrar   # drizzle-kit migrate (tabela drizzle.
 docker compose run --rm migrador semear   # catálogo global (telas, módulos), idempotente
 ```
 
-Em deploy com migration: `./deploy.sh <tag> --migrar` roda o `migrar` da tag nova **antes** de
+Em deploy com migration: `./deploy.sh --migrar` roda o `migrar` da versão nova **antes** de
 trocar a API. A migration tem de ser compatível com a versão que ainda está no ar (expandir antes,
 contrair num deploy seguinte): as réplicas antigas continuam atendendo até as novas ficarem
 saudáveis.
@@ -305,7 +306,7 @@ shred -u jwt-2026-11.pem   # depois de copiar para o .env e o gerenciador de sen
 **Rotação planejada** (ex.: a cada 6 meses): gerar o par novo; no `.env`, trocar
 `JWT_CHAVE_PRIVADA` e `JWT_KID` pelos novos e pôr a pública antiga em
 `JWT_CHAVES_ANTERIORES='{"2026-11":"-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n"}'`;
-`./deploy.sh <tag atual>`. Depois de 15 min (vida do access token) a antiga pode sair do `.env`
+`SEM_PULL=1 ./deploy.sh`. Depois de 15 min (vida do access token) a antiga pode sair do `.env`
 no próximo deploy. O refresh token é opaco (no banco) e não depende da chave.
 
 **Vazamento**: trocar sem manter a anterior. Todo access token em uso vira 401, e o front renova
@@ -317,7 +318,7 @@ vazamento for do banco (sessões), revogar as sessões lá.
 - `COOKIE_SEGREDO`: `openssl rand -base64 48`. Assina só o cookie de passagem do login pelo Google;
   trocar derruba apenas quem estiver no meio desse login.
 - `REDIS_SENHA`: `openssl rand -hex 32` (hex porque vai dentro da URL `redis://`). Trocar: editar o
-  `.env`, `docker compose up -d redis` e `./deploy.sh <tag atual>`. O Redis reinicia (segundos),
+  `.env`, `docker compose up -d redis` e `SEM_PULL=1 ./deploy.sh`. O Redis reinicia (segundos),
   então fazer fora do horário.
 
 ### 5.3 Chave mestra dos segredos de integração (AES-256-GCM)
@@ -333,7 +334,7 @@ echo "SEGREDOS_CHAVE_ATUAL=1"
 ```
 
 **Rotação**: acrescentar a nova (`SEGREDOS_CHAVES=1:<antiga>,2:<nova>`), `SEGREDOS_CHAVE_ATUAL=2`,
-`./deploy.sh <tag atual>` e o mesmo par no worker-ssw (deploy dele): gravação nova sai com a 2,
+`SEM_PULL=1 ./deploy.sh` e o mesmo par no worker-ssw (deploy dele): gravação nova sai com a 2,
 leitura usa a versão da linha. Pedir o job de recifrar
 (`docker compose run --rm --no-deps api dist/server.js --recifrar-segredos`: só enfileira; uma
 réplica da API no ar com `JOBS_LIGADOS=true` regrava cada segredo, e o segredo anterior do webhook,
@@ -350,25 +351,18 @@ juntos equivalem aos segredos em texto.
 ### 6.1 Primeiro deploy
 
 Pré-requisitos (§13): VPS endurecida (§3), DNS do domínio apontando para ela, papéis do banco
-criados (§4.2), imagens publicadas no GHCR (`release.yml`), token de leitura do GHCR, rede
-`erp-interna` criada (§1.4).
+criados (§4.2), rede `erp-interna` criada (§1.4).
 
 ```bash
-# Login no GHCR (token com read:packages)
-echo "<token>" | docker login ghcr.io -u <usuario-github> --password-stdin
-
-# Só a pasta infra/ do commit publicado (compose, Caddyfile e deploy.sh andam com as imagens)
-git clone --filter=blob:none --sparse <url-do-repositorio> ~/erp
-cd ~/erp && git sparse-checkout set infra && git checkout <sha-publicado>
-
-cd infra
+git clone https://github.com/matheuscrvlh-scaleia/erp-ssw.git ~/erp
+cd ~/erp/infra
 cp .env.example .env && chmod 600 .env
-$EDITOR .env      # §4 e §5; IMAGEM_TAG=CADDY_TAG=<sha7>; AGENDAMENTOS_LIGADOS=false;
+$EDITOR .env      # §4 e §5; AGENDAMENTOS_LIGADOS=false;
                   # WORKER_SSW_URL/WORKER_SSW_TOKEN quando o worker-ssw estiver no ar (§1.4)
 # CA do Supabase em certs/supabase-ca.crt (§4.1)
 
 docker compose config --quiet              # falha se faltar variável obrigatória
-docker compose pull
+docker compose --profile ferramentas build # web, api, caddy e migrador, a partir do código
 docker compose run --rm migrador migrar    # §4.3
 docker compose run --rm migrador semear
 docker compose up -d
@@ -387,26 +381,21 @@ dele), o sistema atual seguindo no domínio de hoje.
 
 ### 6.2 Deploy sem queda
 
-1. GitHub → Actions → **Release** → _Run workflow_ com o `ref`. Sai
-   `ghcr.io/<dono>/<repo>/erp-{api,web,migrador,caddy}:<sha7>`, cada uma escaneada pelo Trivy
-   antes do push, com SBOM e proveniência.
-2. Na VPS:
+Na VPS:
 
 ```bash
-cd ~/erp && git fetch && git checkout <sha7>    # infra/ da mesma versão das imagens
-./infra/deploy.sh <sha7>             # ou: ./infra/deploy.sh <sha7> --migrar
+~/erp/infra/deploy.sh               # git pull + build + troca; ou: ./deploy.sh --migrar
 ```
 
-O `deploy.sh`, para web e depois api: sobe réplicas novas ao lado das antigas, espera o
+O `deploy.sh` faz `git pull --ff-only`, monta as imagens (`erp-*:local`) e, para web e depois api: sobe réplicas novas ao lado das antigas, espera o
 HEALTHCHECK de todas (até 180 s) e só então manda SIGTERM nas antigas, que terminam o que estão
 atendendo. O Caddy enxerga as réplicas pelo DNS interno do Docker (relido a cada 5 s) e refaz em
 outra réplica a requisição que bater em porta fechada (`lb_try_duration`). Se as novas não ficarem
 saudáveis, o script as remove e para — as antigas nunca saíram. Os jobs do ERP rodam nas
 réplicas da API: a antiga devolve à fila o job interrompido e uma nova o retoma. Depois recarrega o
-Caddyfile e grava a tag no `.env` e em
-`infra/.deploy-historico`.
+Caddyfile e grava o commit em `infra/.deploy-historico`.
 
-Mudou só o `.env` (segredo novo, limite)? `./infra/deploy.sh <tag atual>`: as réplicas novas nascem
+Mudou só o `.env` (segredo novo, limite)? `SEM_PULL=1 ./infra/deploy.sh`: as réplicas novas nascem
 com o ambiente novo.
 
 Cuidado: durante a troca do web convivem por segundos duas versões; uma aba que pegar o
@@ -417,22 +406,22 @@ o app pede recarga.
 
 - **Só o `Caddyfile`**: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile` —
   sem queda (o `deploy.sh` já faz).
-- **Imagem nova (`CADDY_TAG`) ou variável do caddy no `.env`**: o contêiner é recriado, alguns
+- **Imagem do caddy mudou (`infra/docker/caddy.Dockerfile`) ou variável dele no `.env`**: o
+  `deploy.sh` recria o contêiner, alguns
   segundos sem atender. Fazer fora do horário: `docker compose up -d caddy`.
 
 ### 6.4 Rollback
 
 ```bash
 cd ~/erp/infra
-./deploy.sh voltar                    # volta para a tag anterior do histórico
-tail -5 .deploy-historico             # "<data> <tag no ar> <- <tag anterior>"
-./deploy.sh <tag-mais-antiga>         # qualquer tag publicada
+tail -5 .deploy-historico             # "<data> <commit no ar> <- <commit anterior>"
+git -C .. checkout <commit-anterior>
+SEM_PULL=1 ./deploy.sh                # monta e troca sem queda com o código desse commit
+git -C .. checkout main               # depois de corrigir, volta à main e ./deploy.sh
 ```
 
-Mesma rolagem sem queda. Fazer `git checkout` da tag também, se o `infra/` mudou entre as
-versões. O banco **não** volta junto: se a versão nova trouxe migration, conferir se a anterior
-convive com ela (por isso migrations em duas etapas, §4.3). As imagens ficam no GHCR (não apagar
-tags dos últimos 30 dias) e as últimas na VPS (§11).
+O banco **não** volta junto: se a versão nova trouxe migration, conferir se a anterior convive com
+ela (por isso migrations em duas etapas, §4.3).
 
 ### 6.5 CSP quebrando uma tela
 
@@ -488,7 +477,7 @@ docker compose run -d --name redis-restauro redis \
 docker exec redis-restauro sh -c 'export REDISCLI_AUTH="$REDIS_SENHA"; redis-cli dbsize; redis-cli config set appendonly yes'
 docker exec redis-restauro sh -c 'REDISCLI_AUTH="$REDIS_SENHA" redis-cli info persistence' | grep aof_rewrite_in_progress   # esperar :0
 docker stop redis-restauro && docker rm redis-restauro
-docker compose up -d redis && ./deploy.sh <tag atual>
+docker compose up -d redis && SEM_PULL=1 ./deploy.sh
 ```
 
 Recuperação de desastre (VPS perdida): nova VPS → §3 → `.env` do gerenciador de senhas → restaurar
@@ -556,7 +545,7 @@ usuários da janela.
 
 0. **worker-ssw no ar antes**: subido pelo runbook dele, na `erp-interna` (§1.4), com a ingestão
    ainda desligada, `/saude/pronto` ok e o contrato do schema aceito no boot. No `.env` daqui,
-   `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` e `./deploy.sh <tag atual>`; Plataforma › Diagnóstico SSW
+   `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` e `SEM_PULL=1 ./deploy.sh`; Plataforma › Diagnóstico SSW
    mostra a situação dos jobs vinda do worker-ssw.
 1. **Congelar o atual**: desligar a ingestão do sistema atual (crons e funções que puxam FTP/BI2/
    SSW) para não processar duas vezes. Usuários fora (janela combinada).
@@ -567,11 +556,11 @@ usuários da janela.
    (as projeções do Romaneio são dele; o relatório do migrador lembra).
 4. **Ligar a ingestão e os agendamentos**: no worker-ssw, ligar a ingestão (runbook dele) e
    acompanhar o primeiro ciclo de cada uma; aqui, `AGENDAMENTOS_LIGADOS=true` no `.env` →
-   `./deploy.sh <tag atual>` (jobs do ERP: limpar sessões, prazos configurados). No log da API,
+   `SEM_PULL=1 ./deploy.sh` (jobs do ERP: limpar sessões, prazos configurados). No log da API,
    "agendamentos" por fila; `job falhou` = parar e olhar.
 5. **Trocar o DNS**: registro A/AAAA do domínio de hoje para o IP da VPS. Em seguida, no `.env`,
    `DOMINIO=<domínio de hoje>` (e `GOOGLE_REDIRECT_URI`, se usar Google), `docker compose up -d
-   caddy` e `./deploy.sh <tag atual>` (a API passa a usar o `WEB_URL` novo nos e-mails e no CORS).
+   caddy` e `SEM_PULL=1 ./deploy.sh` (a API passa a usar o `WEB_URL` novo nos e-mails e no CORS).
    O Caddy emite o certificado assim que o DNS responde com o IP da VPS (segundos). URLs, telas e
    rotas públicas (`/api/public/*`, webhook do SSW, agora atendidas pelo worker-ssw atrás da
    mesma borda) são as mesmas: integrações externas não mudam. Antes, em Plataforma → Empresa →
@@ -581,7 +570,7 @@ usuários da janela.
    `/readyz`, telas principais, logs sem 5xx, primeiros jobs ok.
 
 **Voltar** (se algo grave aparecer): DNS de volta para o sistema atual (até 5 min com TTL 300 s),
-desligar a ingestão do worker-ssw, `AGENDAMENTOS_LIGADOS=false` + `./deploy.sh <tag atual>` na
+desligar a ingestão do worker-ssw, `AGENDAMENTOS_LIGADOS=false` + `SEM_PULL=1 ./deploy.sh` na
 VPS, religar a ingestão do atual. O que
 entrou só no ERP SSW durante a janela (cadastros, ajustes feitos por usuários) não volta sozinho:
 anotar e refazer no atual. Por isso a janela de decisão é curta (mesmo dia).
@@ -627,8 +616,8 @@ worker-ssw. Na virada, depois do `dados`, roda o `reconstruir-projecoes` do work
 4. **SMTP** de envio (host, porta, usuário, senha, remetente) para convite e "esqueci minha senha".
 5. **Supabase DEVELOP**: senha do `postgres` para o DBA criar os papéis (§4.2), certificado CA,
    Pool Size adequado (§4.1) e liberação do IP da VPS em Network Restrictions.
-6. **Repositório no GitHub** (hoje não há remoto) com Actions ligado; o `release.yml` publica no
-   GHCR com o `GITHUB_TOKEN`; para a VPS puxar, um token só com `read:packages`.
+6. **Repositório no GitHub** (`matheuscrvlh-scaleia/erp-ssw`): a VPS faz `git clone`/`git pull`
+   dele (repositório público, sem token).
 7. Opcional: Google OAuth (client id/secret), bucket S3 dos logos (`LOGO_URL_BASE`/`LOGO_ORIGEM`),
    monitor externo (§9) e destino do backup fora da VPS (§7).
 8. Gerenciador de senhas para o `infra/.env` e as chaves (§5).

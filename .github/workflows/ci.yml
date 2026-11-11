@@ -174,9 +174,6 @@ jobs:
         run: |
           cp .env.example .env
           cat >> .env <<'EOF'
-          REGISTRO=ghcr.io/exemplo/erp-ssw
-          IMAGEM_TAG=ci
-          CADDY_TAG=ci
           DOMINIO=erp.exemplo.com.br
           ACME_EMAIL=ti@exemplo.com.br
           DATABASE_URL=postgres://erp_app:x@banco.invalido:5432/postgres

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Deploy sem queda na VPS (rodar em infra/ ou de qualquer lugar):
-#   ./deploy.sh <tag>            publica a tag (SHA curto do release.yml)
-#   ./deploy.sh <tag> --migrar   roda as migrations da tag ANTES de trocar a API
-#   ./deploy.sh voltar           volta para a tag anterior do histórico (rollback)
+# Deploy na VPS com build na própria máquina (rodar de qualquer lugar):
+#   ./deploy.sh              git pull + build + troca sem queda
+#   ./deploy.sh --migrar     idem, rodando as migrations ANTES de trocar a API
+#   SEM_PULL=1 ./deploy.sh   usa o código já presente (voltar: git checkout <commit> antes)
 #
 # Para web e api, uma de cada vez:
-#   1. sobe réplicas NOVAS da tag ao lado das antigas (--scale 2N --no-recreate);
+#   1. sobe réplicas NOVAS da imagem recém-montada ao lado das antigas (--scale 2N --no-recreate);
 #   2. espera todas as novas ficarem `healthy` (HEALTHCHECK da imagem); se não ficarem, remove
 #      as novas e para — as antigas nunca saíram do ar;
 #   3. manda SIGTERM nas antigas: param de aceitar conexão e terminam o que está em andamento;
 #      o Caddy já vê as novas pelo DNS e refaz noutra réplica o que bater em porta fechada.
 # Os jobs do ERP rodam na api: a réplica antiga devolve à fila o job interrompido. Depois: caddy
-# (só recria se a CADDY_TAG mudou) e `caddy reload`. Grava a tag no .env e no histórico. O
-# worker-ssw tem deploy próprio (outro compose).
+# (só recria se a imagem ou o ambiente dele mudaram) e `caddy reload`. Grava o commit no
+# histórico. O worker-ssw tem deploy próprio (outro repositório).
 # Runbook: docs/deploy.md §6.
 set -euo pipefail
 
@@ -27,20 +27,19 @@ falhar() { printf '[deploy] %s\n' "$*" >&2; exit 1; }
 docker network inspect erp-interna >/dev/null 2>&1 ||
   falhar "falta a rede erp-interna: docker network create erp-interna (docs/deploy.md §1)"
 
-TAG="${1:?uso: ./deploy.sh <tag> [--migrar] | ./deploy.sh voltar}"
 MIGRAR=0
-if [[ "${2:-}" == "--migrar" ]]; then MIGRAR=1; fi
+case "${1:-}" in
+  "") ;;
+  --migrar) MIGRAR=1 ;;
+  *) falhar "uso: ./deploy.sh [--migrar]" ;;
+esac
 
-if [[ "$TAG" == voltar ]]; then
-  [[ -s "$HISTORICO" ]] || falhar "sem histórico de deploy para voltar"
-  # Linha: "<data> <tag no ar> <- <tag anterior>"
-  TAG="$(tail -n 1 "$HISTORICO" | awk '{print $4}')"
-  [[ -n "$TAG" && "$TAG" != "?" ]] || falhar "histórico sem tag anterior"
-  log "voltando para $TAG (migration não é desfeita: conferir se a versão convive com o banco)"
+if [[ "${SEM_PULL:-0}" != 1 ]]; then
+  log "git pull"
+  git -C .. pull --ff-only
 fi
-[[ "$TAG" =~ ^[A-Za-z0-9._-]+$ ]] || falhar "tag inválida: $TAG"
+TAG="$(git -C .. rev-parse --short HEAD)"
 
-export IMAGEM_TAG="$TAG"
 compose() { docker compose "$@"; }
 saude() {
   docker inspect --format \
@@ -90,16 +89,14 @@ rolar() {
   log "$servico: ok"
 }
 
-log "baixando imagens da tag $TAG"
-if [[ "${SEM_PULL:-0}" != 1 ]]; then
-  compose pull --quiet web api
-  if [[ "$MIGRAR" -eq 1 ]]; then compose --profile ferramentas pull --quiet migrador; fi
-fi
+log "montando as imagens de $TAG"
+compose build web api caddy
+if [[ "$MIGRAR" -eq 1 ]]; then compose --profile ferramentas build migrador; fi
 
 if [[ "$MIGRAR" -eq 1 ]]; then
   # Migration tem de ser compatível com a versão no ar (expandir antes, contrair depois): as
   # réplicas antigas seguem atendendo até as novas ficarem saudáveis.
-  log "migrations (erp_migracao) da tag $TAG"
+  log "migrations (erp_migracao) de $TAG"
   compose run --rm migrador migrar
 fi
 
@@ -111,15 +108,10 @@ log "caddy: recarregando o Caddyfile"
 # Espera o Caddy reler o DNS (refresh 5 s) antes do reload: o reload cancela as novas tentativas
 # de quem estiver no meio de uma, e o cache ainda pode ter o IP de uma réplica que acabou de sair.
 sleep 7
-# Recria o caddy só se a CADDY_TAG ou o ambiente dele mudaram (queda de segundos; §6.3).
+# Recria o caddy só se a imagem ou o ambiente dele mudaram (queda de segundos; §6.3).
 compose up -d --no-deps caddy
 compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 
-anterior="$(grep -E '^IMAGEM_TAG=' .env | cut -d= -f2- || true)"
-if grep -qE '^IMAGEM_TAG=' .env; then
-  sed -i "s/^IMAGEM_TAG=.*/IMAGEM_TAG=$TAG/" .env
-else
-  printf 'IMAGEM_TAG=%s\n' "$TAG" >>.env
-fi
+anterior="$(tail -n 1 "$HISTORICO" 2>/dev/null | awk '{print $2}' || true)"
 printf '%s %s <- %s\n' "$(date -u +%FT%TZ)" "$TAG" "${anterior:-?}" >>"$HISTORICO"
-log "pronto: $TAG no ar (anterior: ${anterior:-?}; rollback: ./deploy.sh voltar)"
+log "pronto: $TAG no ar (anterior: ${anterior:-?}; voltar: git checkout <commit> && SEM_PULL=1 ./deploy.sh)"
