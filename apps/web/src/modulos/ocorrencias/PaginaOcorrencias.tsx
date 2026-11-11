@@ -11,12 +11,11 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { type ComponentProps, type ReactNode, useMemo } from "react";
+import { useMemo } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { Aviso } from "@/componentes/comum/Aviso";
 import { etiquetasQueLimpam, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
-import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
@@ -216,7 +215,7 @@ export function PaginaOcorrencias() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiComCodigos
+        <KpiCard
           rotulo="Total de ocorrências"
           valor={formatarInteiro(m.total)}
           status="bom"
@@ -232,7 +231,7 @@ export function PaginaOcorrencias() {
           aoClicar={() => {
             mudar({ resp: "todas" });
           }}
-          codigos={
+          extra={
             <CodigosDoCard
               card="todas"
               filtros={filtros}
@@ -241,7 +240,7 @@ export function PaginaOcorrencias() {
             />
           }
         />
-        <KpiComCodigos
+        <KpiCard
           rotulo="Penalizantes"
           selo="CT-e distintos"
           status="ruim"
@@ -253,7 +252,7 @@ export function PaginaOcorrencias() {
           aoClicar={() => {
             alternarCard("penalizantes");
           }}
-          codigos={
+          extra={
             <CodigosDoCard
               card="penalizantes"
               filtros={filtros}
@@ -262,7 +261,7 @@ export function PaginaOcorrencias() {
             />
           }
         />
-        <KpiComCodigos
+        <KpiCard
           rotulo="Não penalizantes"
           selo="CT-e distintos"
           status="bom"
@@ -274,7 +273,7 @@ export function PaginaOcorrencias() {
           aoClicar={() => {
             alternarCard("externas");
           }}
-          codigos={
+          extra={
             <CodigosDoCard
               card="externas"
               filtros={filtros}
@@ -283,7 +282,7 @@ export function PaginaOcorrencias() {
             />
           }
         />
-        <KpiComCodigos
+        <KpiCard
           rotulo="Pendentes de classificação"
           valor={formatarInteiro(m.pendentes)}
           status="alerta"
@@ -295,7 +294,7 @@ export function PaginaOcorrencias() {
           aoClicar={() => {
             alternarCard("pendentes");
           }}
-          codigos={
+          extra={
             <CodigosDoCard
               card="pendentes"
               filtros={filtros}
@@ -350,25 +349,5 @@ export function PaginaOcorrencias() {
         aoAbrirCte={(numero) => void navegar({ href: `/ctrc/${encodeURIComponent(numero)}` })}
       />
     </Pagina>
-  );
-}
-
-/**
- * Card de responsabilidade: o `KpiCard` filtra a tela; embaixo, a regra do número (i) e o
- * "ver códigos" (ficam fora do botão do card para não aninhar botões).
- */
-function KpiComCodigos({
-  dica,
-  codigos,
-  ...kpi
-}: ComponentProps<typeof KpiCard> & { dica: string; codigos: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <KpiCard {...kpi} />
-      <div className="flex items-center justify-between gap-2 pr-2 pl-1">
-        {codigos}
-        <InfoTip texto={dica} className="p-1.5" />
-      </div>
-    </div>
   );
 }
