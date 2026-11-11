@@ -35,7 +35,7 @@ import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaRelatorio } from "./api";
 import { DistribuicaoPontualidade } from "./Kpis";
-import { type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "./relatorio";
+import { abaSlaPorUnidade, type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "./relatorio";
 
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
@@ -243,7 +243,10 @@ export function DialogoRelatorio({
             variant="outline"
             size="sm"
             onClick={() => {
-              if (data) exportarExcel(exportacao(data)).catch(falhou);
+              if (data)
+                exportarExcel({ ...exportacao(data), abasExtras: [abaSlaPorUnidade(data)] }).catch(
+                  falhou,
+                );
             }}
             disabled={!data}
           >

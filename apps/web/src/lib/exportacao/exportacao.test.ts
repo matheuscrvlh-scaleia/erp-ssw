@@ -235,4 +235,52 @@ describe("Excel", () => {
       "&L&8FR Transportes — Logística e Locações&R&8Página &P de &N",
     );
   }, 30_000);
+  it("abas extras no mesmo desenho, com nome único e o título próprio", async () => {
+    const ExcelJS = await carregarExcelJs();
+    const wb = montarPlanilha(
+      ExcelJS,
+      {
+        arquivo: "x",
+        titulo: "Relatório de período",
+        subtitulo: "Período",
+        colunas: COLUNAS,
+        linhas: LINHAS,
+        empresa: FR,
+        abasExtras: [
+          {
+            nome: "SLA por unidade",
+            titulo: "SLA por unidade",
+            colunas: [
+              { chave: "unidade", titulo: "Unidade" },
+              { chave: "status", titulo: "Status" },
+            ],
+            linhas: [{ unidade: "CAP", status: "Verde" }],
+          },
+          { nome: "sla por unidade", colunas: [], linhas: [] },
+        ],
+      },
+      null,
+    );
+    expect(wb.worksheets.map((w) => w.name)).toEqual([
+      "Relatório de período",
+      "SLA por unidade",
+      "sla por unidade (2)",
+    ]);
+    const ws = wb.getWorksheet("SLA por unidade");
+    expect(ws).toBeDefined();
+    if (!ws) return;
+    expect(ws.getCell(1, 2).value).toBe("SLA por unidade");
+    expect(ws.getCell(2, 2).value).toBe("Período");
+    expect(ws.getCell(3, 2).text).toContain("FR Transportes · Painel BI");
+    expect(ws.getRow(6).values).toEqual([undefined, "Unidade", "Status"]);
+    expect(ws.getRow(7).values).toEqual([undefined, "CAP", "Verde"]);
+    expect(ws.getCell(6, 1).fill).toEqual({
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF212A63" },
+    });
+    expect(wb.getWorksheet("sla por unidade (2)")?.getCell(1, 2).value).toBe(
+      "Relatório de período",
+    );
+  }, 30_000);
 });

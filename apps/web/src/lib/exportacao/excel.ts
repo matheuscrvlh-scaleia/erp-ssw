@@ -16,7 +16,7 @@ import {
   SISTEMA,
 } from "./marca";
 import { ehLinkSsw, TEXTO_LINK_SSW } from "./ssw";
-import { type OpcoesExcel } from "./tipos";
+import { type ColunaExportacao, type LinhaExportacao, type OpcoesExcel } from "./tipos";
 
 /**
  * Excel padrão: logo + título + contexto no topo, faixa na cor principal com acento de
@@ -55,16 +55,32 @@ export async function carregarExcelJs(): Promise<ModuloExcel> {
   );
 }
 
-function nomeDaAba(titulo: string): string {
-  return (
-    titulo
-      .replace(/[[\]:*?/\\]/g, " ")
-      .trim()
-      .slice(0, 31) || "Dados"
-  );
+/** Uma aba: título no topo e a tabela. */
+interface Folha {
+  nome: string;
+  titulo: string;
+  subtitulo?: string | undefined;
+  colunas: readonly ColunaExportacao[];
+  linhas: readonly LinhaExportacao[];
 }
 
-function larguras(o: OpcoesExcel, marca: Marca): number[] {
+/** Nome válido e único (o Excel recusa nome repetido, mesmo mudando só a caixa). */
+function nomeDaAba(nome: string, usados: Set<string>): string {
+  const base =
+    nome
+      .replace(/[[\]:*?/\\]/g, " ")
+      .trim()
+      .slice(0, 31) || "Dados";
+  let candidato = base;
+  for (let n = 2; usados.has(candidato.toLowerCase()); n++) {
+    const sufixo = ` (${String(n)})`;
+    candidato = `${base.slice(0, 31 - sufixo.length)}${sufixo}`;
+  }
+  usados.add(candidato.toLowerCase());
+  return candidato;
+}
+
+function larguras(o: Folha, marca: Marca): number[] {
   return o.colunas.map((coluna) => {
     if (coluna.largura) return coluna.largura;
     let maior = coluna.titulo.length + 2;
@@ -79,7 +95,7 @@ function larguras(o: OpcoesExcel, marca: Marca): number[] {
   });
 }
 
-function desenharTopo(ws: Worksheet, o: OpcoesExcel, marca: Marca, logoId: number | null): void {
+function desenharTopo(ws: Worksheet, o: Folha, marca: Marca, logoId: number | null): void {
   const suave = argb(CORES.textoSuave);
   ws.getRow(1).height = 24;
   ws.getRow(2).height = 16;
@@ -115,7 +131,7 @@ function desenharTopo(ws: Worksheet, o: OpcoesExcel, marca: Marca, logoId: numbe
 
 const LINHA_CABECALHO = 6;
 
-function desenharTabela(ws: Worksheet, o: OpcoesExcel, marca: Marca): void {
+function desenharTabela(ws: Worksheet, o: Folha, marca: Marca): void {
   const primaria = argb(marca.primaria);
   const cabecalho = ws.getRow(LINHA_CABECALHO);
   cabecalho.values = o.colunas.map((c) => c.titulo);
@@ -170,10 +186,26 @@ export function montarPlanilha(
   const formato = logo ? formatoDoLogo(logo) : null;
   const logoId = logo && formato ? wb.addImage({ base64: logo, extension: formato }) : null;
 
-  const ws = wb.addWorksheet(nomeDaAba(o.titulo));
-  ws.columns = larguras(o, marca).map((width) => ({ width }));
-  desenharTopo(ws, o, marca, logoId);
-  desenharTabela(ws, o, marca);
+  const folhas: Folha[] = [
+    { ...o, nome: o.titulo },
+    ...(o.abasExtras ?? []).map((aba) => ({
+      ...aba,
+      titulo: aba.titulo ?? o.titulo,
+      subtitulo: o.subtitulo,
+    })),
+  ];
+  const usados = new Set<string>();
+  for (const folha of folhas) {
+    const ws = wb.addWorksheet(nomeDaAba(folha.nome, usados));
+    ws.columns = larguras(folha, marca).map((width) => ({ width }));
+    desenharTopo(ws, folha, marca, logoId);
+    desenharTabela(ws, folha, marca);
+    configurarImpressao(ws, folha, marca);
+  }
+  return wb;
+}
+
+function configurarImpressao(ws: Worksheet, o: Folha, marca: Marca): void {
   ws.pageSetup = {
     orientation: o.colunas.length > 8 ? "landscape" : "portrait",
     // A4. `PaperSize` é const enum só de tipo: com isolatedModules não dá para lê-lo.
@@ -186,7 +218,6 @@ export function montarPlanilha(
     margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.6, header: 0.2, footer: 0.3 },
   };
   ws.headerFooter = { oddFooter: `&L&8${rodapeDaMarca(marca)}&R&8Página &P de &N` };
-  return wb;
 }
 
 export async function exportarExcel(o: OpcoesExcel): Promise<void> {
