@@ -181,6 +181,8 @@ describe("senha do Supabase Auth", () => {
 describe("instanteDoPostgres", () => {
   it("escreve como o Postgres devolve em UTC, fração só quando há", () => {
     expect(instanteDoPostgres(new Date("2026-09-23T03:00:00.000Z"))).toBe("2026-09-23 03:00:00+00");
-    expect(instanteDoPostgres(new Date("2026-09-23T03:00:00.120Z"))).toBe("2026-09-23 03:00:00.12+00");
+    expect(instanteDoPostgres(new Date("2026-09-23T03:00:00.120Z"))).toBe(
+      "2026-09-23 03:00:00.12+00",
+    );
   });
 });

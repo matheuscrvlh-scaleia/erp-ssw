@@ -330,7 +330,15 @@ describe("linha repetida na origem (mesma chave de conflito)", () => {
 
   it("grava uma vez por chave no lote e a conferência conta como o upsert", async () => {
     const infra = ambiente(origem);
-    await migrarTabela(porNome, infra, filtros, opcoes, undefined, () => Promise.resolve(), logMudo);
+    await migrarTabela(
+      porNome,
+      infra,
+      filtros,
+      opcoes,
+      undefined,
+      () => Promise.resolve(),
+      logMudo,
+    );
     expect(infra.destino.gravacoes[0]?.linhas).toHaveLength(1);
     const ficou = infra.destino.tabelas.get('"erp"."unidades"')?.get(JSON.stringify(["Igual"]));
     expect(ficou?.id).toBe("u04");

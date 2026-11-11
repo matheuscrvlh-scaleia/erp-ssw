@@ -184,6 +184,10 @@ export const ingestaoLinhas = erp.table(
     index("ingestao_linhas_pendentes_idx")
       .on(t.empresaId, t.relatorio, t.id)
       .where(sql`${t.aplicadoEm} is null`),
+    // FK com ON DELETE SET NULL: a limpeza de `ingestao_arquivos` (worker) não varre a tabela.
+    index("ingestao_linhas_arquivo_idx")
+      .on(t.arquivoId)
+      .where(sql`${t.arquivoId} is not null`),
     // Retenção.
     index("ingestao_linhas_aplicado_idx")
       .on(t.aplicadoEm)

@@ -51,6 +51,10 @@ export const sswWebhookEventos = erp.table(
     // Últimos eventos e contagens por período (cards da tela).
     index("ssw_webhook_eventos_recebido_idx").on(t.empresaId, t.recebidoEm.desc()),
     index("ssw_webhook_eventos_status_idx").on(t.empresaId, t.statusHttp, t.recebidoEm.desc()),
+    // FK com ON DELETE SET NULL: apagar um CT-e não varre a tabela.
+    index("ssw_webhook_eventos_cte_idx")
+      .on(t.cteId)
+      .where(sql`${t.cteId} is not null`),
     ...politicasDeEmpresa("ssw_webhook_eventos", t.empresaId),
   ],
 );
