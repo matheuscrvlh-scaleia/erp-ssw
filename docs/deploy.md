@@ -13,13 +13,13 @@ dois: a rede `erp-interna` (§1.4), as conexões do Postgres (§4.1) e a ordem n
 
 ```
 internet ──80/443 tcp, 443 udp──▶ caddy (borda: TLS automático, HTTP/2 e 3, cabeçalhos, limites, log)
-                                   │  rede "interna" (sem saída para a internet)
-                                   ├──▶ web:8080   SPA estática (Caddy sem TLS, N réplicas)
-                                   ├──▶ api:3001   Fastify + jobs do ERP no BullMQ (N réplicas) ─┐
+internet ──8081 (host) ────────────┼──▶ web:80     SPA estática (Caddy sem TLS, 1 réplica)
+internet ──3001 (host) ────────────┼──▶ api:3000   Fastify + jobs do ERP no BullMQ (1 réplica) ──┐
+                                   │  rede "interna" (sem saída para a internet)                 │
                                    │                                                             │ rede "dados" (sem saída)
                                    │                                                             ├──▶ redis:6379 (senha, AOF)
                                    │  rede externa "erp-interna" (§1.4)                          │ rede "saida"
-                                   └──▶ worker-ssw:3003 (/api/public/*; outro compose)           ├──▶ Postgres (Supabase),
+                                   └──▶ worker-ssw:3000 (/api/public/*; outro compose)           ├──▶ Postgres (Supabase),
                                         ▲ api ──▶ /interno/v1/* (WORKER_SSW_URL)                 │    SMTP, Google, Ahgora
                                        migrador (execução única) ────────────────────────────────┘
 ```
@@ -74,13 +74,13 @@ uma vez na VPS antes do primeiro `up` de qualquer um deles (o `deploy.sh` recusa
 docker network create erp-interna
 ```
 
-Nela ficam o caddy e a api do ERP e o worker-ssw (contêiner `worker-ssw`, porta 3003):
+Nela ficam o caddy e a api do ERP e o worker-ssw (contêiner `worker-ssw`, porta 3000):
 
 - borda → worker-ssw: `/api/public/*` (webhook SSW2181, `ftp-relatorio-import`,
-  `ssw-ciclo-aplicar`, `xml-orfaos-retry`), em `WORKER_SSW_PUBLICO` (padrão `worker-ssw:3003`);
+  `ssw-ciclo-aplicar`, `xml-orfaos-retry`), em `WORKER_SSW_PUBLICO` (padrão `worker-ssw:3000`);
 - api → worker-ssw: HTTP interno `/interno/v1/*` (execuções, situação e as operações manuais da
   Importação SSW) em `WORKER_SSW_URL` (ex.
-  `http://worker-ssw:3003`), com `Authorization: Bearer <WORKER_SSW_TOKEN>`. O token é um dos
+  `http://worker-ssw:3000`), com `Authorization: Bearer <WORKER_SSW_TOKEN>`. O token é um dos
   `INTERNO_TOKENS` do worker-ssw: para girar, pôr o novo lá como `atual,anterior`, trocar aqui
   (`SEM_PULL=1 ./deploy.sh`) e só depois tirar o antigo de lá.
 
@@ -104,13 +104,13 @@ Mínimo para operar depois da virada: 2 vCPU / 4 GB, sem folga para pico nem par
   ≈ 6,5 GB → 8 GB. As listas detalhadas e as exportações montam JSON grande em memória (objeto +
   string + compressão) e o worker-ssw lê CSV de ~39 MB; é a memória que limita, não a CPU.
 - **CPU**: a agregação pesada roda no Postgres. Na VPS gasta CPU o argon2id do login (proposital:
-  dezenas de ms por tentativa), serializar JSON, TLS e compressão. 2 réplicas × 1,5 + worker-ssw 1
+  dezenas de ms por tentativa), serializar JSON, TLS e compressão. 1 réplica × 1,5 + worker-ssw 1
   + borda 1 cabem em 4 vCPU com folga.
 - **Disco**: imagens (api ~300 MB, worker-ssw ~270 MB, web/caddy ~90 MB, migrador ~900 MB, sem
   compressão), 3 versões guardadas para rollback ≈ 5 GB; logs rotacionados (100 MB por contêiner);
   AOF do Redis (pequeno). 40 GB bastam; 80 GB é conforto.
 - **Rede**: IPv4 público obrigatório (o pooler do Supabase é IPv4); IPv6 desejável (§4.1).
-- **Crescer**: primeiro vertical (16 GB, `API_REPLICAS=3`), depois segunda VPS atrás de um
+- **Crescer**: primeiro vertical (16 GB, mais CPU e memória para a api), depois segunda VPS atrás de um
   balanceador — a API não guarda estado e o limite de taxa já está no Redis.
 
 ## 3. Endurecimento do host (uma vez)
@@ -141,7 +141,8 @@ EOF
 sshd -t && systemctl reload ssh
 # Testar `ssh deploy@<ip>` NOUTRO terminal antes de fechar esta sessão.
 
-# 3.2 Firewall: 22, 80, 443/tcp e 443/udp (HTTP/3)
+# 3.2 Firewall: 22, 80, 443/tcp e 443/udp (HTTP/3). As portas 3001 (api) e 8081 (web) o Docker
+# publica por fora do ufw (§3.3).
 apt-get update && apt-get install -y ufw fail2ban unattended-upgrades
 ufw default deny incoming
 ufw default allow outgoing
@@ -212,8 +213,9 @@ usermod -aG docker deploy
   (rootlesskit), e o limite de taxa por IP viraria global.
 - `live-restore`: atualizar o Docker não derruba os contêineres.
 - Grupo `docker` equivale a root no host: só o `deploy` entra nele.
-- **Docker ignora o ufw para porta publicada.** Por isso só o caddy publica porta. Nunca publicar
-  porta de api, web, redis ou worker-ssw.
+- **Docker ignora o ufw para porta publicada.** Publicadas: caddy (80/443), api (host 3001 →
+  contêiner 3000), web (host 8081 → contêiner 80) e worker-ssw (host 3002 → 3000), todas abertas
+  para a internet. Nunca publicar a do redis.
 
 ## 4. Banco (Postgres do Supabase, projeto DEVELOP)
 
@@ -236,13 +238,11 @@ do sistema atual e não se escreve nele.
   e terminar a URL com `?sslmode=verify-full&sslrootcert=/etc/erp/certs/supabase-ca.crt`.
 - **Restrição de rede** (Dashboard → Database → Network Restrictions): liberar só o IPv4 da VPS e o
   de quem aplica SQL à mão. Ativar depois de listar quem conecta hoje, ou alguém fica trancado fora.
-- **Orçamento de conexões**: `API_REPLICAS × API_DB_MAX_CONEXOES` + as do worker-ssw (o
-  `DB_MAX_CONEXOES` do compose dele, papel `erp_worker`) (+1 do migrador) = 2 × 10 + 5 + 1 = 26 no
+- **Orçamento de conexões**: `API_DB_MAX_CONEXOES` (uma réplica) + as do worker-ssw (o
+  `DB_MAX_CONEXOES` do compose dele, papel `erp_worker`) (+1 do migrador) = 10 + 5 + 1 = 16 no
   padrão (worker-ssw com 5). Os dois sistemas somam no mesmo Postgres. Tem de caber no _Pool Size_ do pooler (Dashboard →
   Database → Connection pooling; depende do tamanho da instância) somado ao que o sistema atual já
-  usa. Se não couber: subir o Pool Size ou baixar `API_DB_MAX_CONEXOES`. Deploy sem queda dobra as
-  réplicas da API por alguns segundos: deixar folga de mais `API_REPLICAS × API_DB_MAX_CONEXOES`
-  (as réplicas novas só abrem conexão quando atendem).
+  usa. Se não couber: subir o Pool Size ou baixar `API_DB_MAX_CONEXOES`.
 - Conferência: `/readyz` 200 depois do primeiro `up` (§6.1) prova DNS, TLS, papel e senha.
 
 ### 4.2 Papéis (uma vez, pelo DBA)
@@ -282,8 +282,7 @@ docker compose run --rm migrador semear   # catálogo global (telas, módulos), 
 
 Em deploy com migration: `./deploy.sh --migrar` roda o `migrar` da versão nova **antes** de
 trocar a API. A migration tem de ser compatível com a versão que ainda está no ar (expandir antes,
-contrair num deploy seguinte): as réplicas antigas continuam atendendo até as novas ficarem
-saudáveis.
+contrair num deploy seguinte): a API antiga continua atendendo até ser trocada.
 
 ## 5. Chaves e segredos
 
@@ -379,7 +378,7 @@ Fase lado a lado: subdomínio próprio (ex.: `novo.<dominio>`), API com
 `AGENDAMENTOS_LIGADOS=false`, worker-ssw com a ingestão desligada (não ingere nada; ver o runbook
 dele), o sistema atual seguindo no domínio de hoje.
 
-### 6.2 Deploy sem queda
+### 6.2 Deploy
 
 Na VPS:
 
@@ -387,20 +386,15 @@ Na VPS:
 ~/erp/infra/deploy.sh               # git pull + build + troca; ou: ./deploy.sh --migrar
 ```
 
-O `deploy.sh` faz `git pull --ff-only`, monta as imagens (`erp-*:local`) e, para web e depois api: sobe réplicas novas ao lado das antigas, espera o
-HEALTHCHECK de todas (até 180 s) e só então manda SIGTERM nas antigas, que terminam o que estão
-atendendo. O Caddy enxerga as réplicas pelo DNS interno do Docker (relido a cada 5 s) e refaz em
-outra réplica a requisição que bater em porta fechada (`lb_try_duration`). Se as novas não ficarem
-saudáveis, o script as remove e para — as antigas nunca saíram. Os jobs do ERP rodam nas
-réplicas da API: a antiga devolve à fila o job interrompido e uma nova o retoma. Depois recarrega o
-Caddyfile e grava o commit em `infra/.deploy-historico`.
+O `deploy.sh` faz `git pull --ff-only`, monta as imagens (`erp-*:local`) e recria web e depois
+api, esperando o HEALTHCHECK de cada uma (até 180 s). Como as duas publicam porta fixa no host
+(8081 e 3001), não dá para subir a nova ao lado da antiga: cada troca deixa o serviço alguns
+segundos fora do ar. A api antiga recebe SIGTERM, termina o que está atendendo e devolve à fila o
+job interrompido. Se a nova não ficar saudável, o script mostra o log e para (voltar: §6.4).
+Depois recarrega o Caddyfile e grava o commit em `infra/.deploy-historico`.
 
-Mudou só o `.env` (segredo novo, limite)? `SEM_PULL=1 ./infra/deploy.sh`: as réplicas novas nascem
+Mudou só o `.env` (segredo novo, limite)? `SEM_PULL=1 ./infra/deploy.sh`: os contêineres nascem
 com o ambiente novo.
-
-Cuidado: durante a troca do web convivem por segundos duas versões; uma aba que pegar o
-`index.html` novo e pedir um asset à réplica velha recebe 404 (nunca `index.html` no lugar de JS) e
-o app pede recarga.
 
 ### 6.3 Atualizar a borda (Caddy)
 
@@ -416,7 +410,7 @@ o app pede recarga.
 cd ~/erp/infra
 tail -5 .deploy-historico             # "<data> <commit no ar> <- <commit anterior>"
 git -C .. checkout <commit-anterior>
-SEM_PULL=1 ./deploy.sh                # monta e troca sem queda com o código desse commit
+SEM_PULL=1 ./deploy.sh                # monta e troca com o código desse commit
 git -C .. checkout main               # depois de corrigir, volta à main e ./deploy.sh
 ```
 
@@ -531,7 +525,7 @@ coletar, um agente (Grafana Alloy ou Prometheus em modo agent) num contêiner li
 scrape_configs:
   - job_name: erp-api
     authorization: { credentials_file: /run/secrets/metricas_token }
-    dns_sd_configs: [{ names: [api], type: A, port: 3001 }] # uma série por réplica
+    dns_sd_configs: [{ names: [api], type: A, port: 3000 }] # uma série por réplica
 ```
 
 Vale alertar também: memória do Redis (`INFO memory`, `used_memory` > 80% de `maxmemory`: com

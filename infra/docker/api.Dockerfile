@@ -66,7 +66,7 @@ LABEL org.opencontainers.image.title="erp-api" \
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORTA=3001
+    PORTA=3000
 WORKDIR /app
 # package.json só pelo "type": "module" (o dist é ESM). Tudo de dono root: o processo só lê.
 COPY apps/api/package.json ./package.json
@@ -75,12 +75,12 @@ COPY --from=build /repo/apps/api/dist ./dist
 
 # 65532 = nonroot da distroless. O compose ainda monta a raiz como somente leitura.
 USER 65532:65532
-EXPOSE 3001
+EXPOSE 3000
 
 # Sem shell nem curl: o próprio Node checa. /healthz não toca no banco (vivo ≠ pronto; o /readyz
 # é do monitoramento externo).
 HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \
-    CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORTA||3001)+'/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+    CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORTA||3000)+'/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 
 # A distroless já tem ENTRYPOINT ["/nodejs/bin/node"].
 CMD ["--enable-source-maps", "dist/server.js"]
