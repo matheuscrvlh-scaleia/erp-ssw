@@ -10,7 +10,7 @@
  *   --ilustra-dir     faces voltadas para a direita (as mais escuras) #d7dbe2
  *   --ilustra-linha   frisos, esteira, aros e detalhes               #c5cad3
  *   --ilustra-sombra  sombras, aberturas e vidros (com opacidade)    #94a3b8
- *   --marca           cor da empresa nos elementos de destaque        #1e40af
+ *   --brand           cor da empresa nos elementos de destaque        #1e40af
  *
  * Com `prefers-reduced-motion: no-preference`, as caixas andam na esteira e o cartão flutua;
  * caso contrário tudo fica parado nas mesmas posições.
@@ -22,7 +22,7 @@ const COR = {
   dir: "var(--ilustra-dir, #d7dbe2)",
   linha: "var(--ilustra-linha, #c5cad3)",
   sombra: "var(--ilustra-sombra, #94a3b8)",
-  marca: "var(--marca, #1e40af)",
+  marca: "var(--brand, #1e40af)",
 } as const;
 
 /** Ponto do mundo: x desce para a direita, y desce para a esquerda, z sobe. */
