@@ -2,17 +2,43 @@ import {
   type LinhaDeOcorrencia,
   type OrdemDaLista,
   ORDENS_DA_LISTA,
+  type ResponsavelDoEvento,
   TAMANHOS_DE_PAGINA,
 } from "@erp/shared/contratos/ocorrencias";
 import { formatarInteiro } from "@erp/shared/formatacao";
 import { AlertTriangle, Clock } from "lucide-react";
+import { type ReactNode } from "react";
 
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/componentes/ui/select";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 
 import { type BuscaOcorrencias } from "./busca";
-import { classeDoResponsavel, identificacaoDoCte, rotulosDoResponsavel } from "./rotulos";
+import { identificacaoDoCte, rotulosDoResponsavel, tomDoResponsavel } from "./rotulos";
+
+/** Responsável do código em pílula (transportador em vermelho, pendente em alerta). */
+export function SeloDoResponsavel({
+  responsavel,
+  children,
+}: {
+  responsavel: ResponsavelDoEvento;
+  children: ReactNode;
+}) {
+  const tom = tomDoResponsavel(responsavel);
+  return (
+    <SeloStatus tom={tom} semIcone={tom === "neutro"} className="shrink-0">
+      {children}
+    </SeloStatus>
+  );
+}
 
 const ehOrdem = (chave: string): chave is OrdemDaLista => ORDENS_DA_LISTA.some((o) => o === chave);
 
@@ -32,7 +58,7 @@ export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrenci
       chave: "codigo",
       titulo: "Código",
       valor: (l) => l.codigo,
-      celula: (l) => <span className="font-mono text-[11px]">#{l.codigo}</span>,
+      celula: (l) => <span className="font-mono text-xs">#{l.codigo}</span>,
     },
     { chave: "descricao", titulo: "Descrição", classe: "max-w-[280px] truncate", ordenavel: false },
     {
@@ -40,11 +66,7 @@ export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrenci
       titulo: "Responsável",
       valor: (l) => rotulos[l.responsavel],
       celula: (l) => (
-        <span
-          className={`rounded-full px-1.5 py-px text-[10px] ${classeDoResponsavel(l.responsavel)}`}
-        >
-          {rotulos[l.responsavel]}
-        </span>
+        <SeloDoResponsavel responsavel={l.responsavel}>{rotulos[l.responsavel]}</SeloDoResponsavel>
       ),
     },
     {
@@ -57,13 +79,10 @@ export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrenci
         l.pendente ? (
           <Clock
             aria-label="Pendente de classificação"
-            className="inline h-3.5 w-3.5 text-amber-600"
+            className="inline h-3.5 w-3.5 text-status-warn"
           />
         ) : l.penaliza ? (
-          <AlertTriangle
-            aria-label="Penaliza"
-            className="inline h-3.5 w-3.5 text-[var(--status-bad)]"
-          />
+          <AlertTriangle aria-label="Penaliza" className="inline h-3.5 w-3.5 text-status-bad" />
         ) : null,
     },
     {
@@ -74,12 +93,12 @@ export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrenci
         const id = identificacaoDoCte(l.numeroNf, l.numeroCtrc);
         return (
           <span className="leading-tight whitespace-nowrap">
-            <span className="font-mono text-[11px] font-medium text-[var(--brand)]">
+            <span className="font-mono text-xs font-medium text-brand">
               <span className="mr-1 font-sans text-muted-foreground">{id.rotulo}</span>
               {id.principal}
             </span>
             {id.secundario && (
-              <span className="block font-mono text-[10px] text-muted-foreground">
+              <span className="block font-mono text-xs text-muted-foreground">
                 CTRC {id.secundario}
               </span>
             )}
@@ -99,7 +118,7 @@ export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrenci
             {l.conferente ?? "Não informado"}
           </span>
           {l.romaneio && (
-            <span className="block truncate text-[10px] text-muted-foreground">
+            <span className="block truncate text-xs text-muted-foreground">
               Romaneio {l.romaneio}
             </span>
           )}
@@ -124,7 +143,7 @@ export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrenci
     {
       chave: "unidadeResp",
       titulo: "Unidade resp.",
-      classe: "font-mono text-[11px]",
+      classe: "font-mono text-xs",
       ordenavel: false,
     },
     { chave: "dataPrevistaEntrega", titulo: "Prev. entrega", formato: "data", ordenavel: false },
@@ -135,7 +154,7 @@ export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrenci
       valor: (l) => l.atrasoDias,
       celula: (l) =>
         l.atrasoDias !== null && l.atrasoDias > 0 ? (
-          <span className="text-[var(--status-bad)]">{l.atrasoDias}d</span>
+          <span className="font-semibold text-status-bad-fg">{l.atrasoDias}d</span>
         ) : null,
     },
     { chave: "pagador", titulo: "Pagador", classe: "max-w-[160px] truncate", ordenavel: false },
@@ -208,22 +227,26 @@ export function ListaDeOcorrencias({
         carregarLinhas: carregarTodas,
       }}
       acoes={
-        <label className="flex items-center gap-1 text-[12px] font-medium text-muted-foreground">
+        <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
           Linhas por página
-          <select
-            className="rounded border border-border/70 bg-background px-1 py-0.5 text-[12px]"
-            value={busca.size}
-            onChange={(e) => {
-              aoMudarTamanho(Number(e.target.value));
+          <Select
+            value={String(busca.size)}
+            onValueChange={(v) => {
+              aoMudarTamanho(Number(v));
             }}
           >
-            {TAMANHOS_DE_PAGINA.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
+            <SelectTrigger className="h-9 w-[76px] text-[13px]" aria-label="Linhas por página">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TAMANHOS_DE_PAGINA.map((t) => (
+                <SelectItem key={t} value={String(t)} className="text-[13px]">
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </span>
       }
     />
   );

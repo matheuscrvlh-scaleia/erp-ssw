@@ -8,6 +8,7 @@ import { z } from "@erp/shared/zod";
 
 import { type EtiquetaDaBusca, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { type AtalhoPeriodo, type Intervalo } from "@/componentes/comum/periodo";
+import { type Tom } from "@/componentes/comum/SeloStatus";
 import { campoFiltro } from "@/hooks/use-filtros-na-url";
 
 export const ATALHOS_DE_COLETAS: readonly AtalhoPeriodo[] = ["7d", "30d", "mes", "mes_anterior"];
@@ -50,13 +51,13 @@ export const ROTULO_DO_STATUS: Record<StatusDaLista, string> = {
   prejudicadas: "Prejudicadas pelo horário",
 };
 
-export const ROTULO_DO_PRAZO: Record<StatusDePrazo, { texto: string; cor: string }> = {
-  no_prazo: { texto: "No prazo", cor: "var(--status-good)" },
-  atrasada: { texto: "Atrasada", cor: "var(--status-bad)" },
-  cancelada: { texto: "Cancelada", cor: "var(--muted-foreground)" },
-  vencida: { texto: "Vencida", cor: "var(--status-bad)" },
-  vence_hoje: { texto: "Vence hoje", cor: "var(--status-warn)" },
-  a_vencer: { texto: "A vencer", cor: "var(--muted-foreground)" },
+export const ROTULO_DO_PRAZO: Record<StatusDePrazo, { texto: string; tom: Tom }> = {
+  no_prazo: { texto: "No prazo", tom: "sucesso" },
+  atrasada: { texto: "Atrasada", tom: "erro" },
+  cancelada: { texto: "Cancelada", tom: "neutro" },
+  vencida: { texto: "Vencida", tom: "erro" },
+  vence_hoje: { texto: "Vence hoje", tom: "alerta" },
+  a_vencer: { texto: "A vencer", tom: "neutro" },
 };
 
 export const SEM_SOLICITANTE = "(sem solicitante)";

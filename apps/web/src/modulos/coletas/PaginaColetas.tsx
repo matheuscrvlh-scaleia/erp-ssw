@@ -15,11 +15,27 @@ import {
   formatarParticipacao,
 } from "@erp/shared/formatacao";
 import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { FileUp, RefreshCw } from "lucide-react";
+import {
+  AlarmClockOff,
+  Ban,
+  Boxes,
+  CalendarCheck,
+  CalendarClock,
+  CalendarX,
+  ChartColumnStacked,
+  FileText,
+  FileUp,
+  Hourglass,
+  type LucideIcon,
+  RefreshCw,
+} from "lucide-react";
 import { useState } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Aviso } from "@/componentes/comum/Aviso";
 import { CampoDetalhe, DrawerDetalhe, GradeDetalhe } from "@/componentes/comum/Detalhe";
+import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import {
   etiquetasQueLimpam,
@@ -30,15 +46,24 @@ import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard, type StatusKpi } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { SeloAtualizacao } from "@/componentes/comum/SeloAtualizacao";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/componentes/ui/select";
 import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
-import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
 import { BuscaDocumento } from "@/modulos/filtros/componentes";
 
 import { carregarListaInteira, consultaDetalhe, consultaLista, consultaPainel } from "./api";
@@ -57,6 +82,12 @@ import { Importador050 } from "./Importador050";
 
 const TAMANHO_DA_PAGINA = 50;
 
+const OPCOES_DE_TIPO = [
+  { valor: "", rotulo: "Normal e reversa" },
+  { valor: "NORMAL", rotulo: "Só normal" },
+  { valor: "REVERSA", rotulo: "Só reversa" },
+] as const satisfies readonly { valor: BuscaColetas["tipo"]; rotulo: string }[];
+
 interface Cartao {
   status: StatusDaLista;
   rotulo: string;
@@ -64,11 +95,13 @@ interface Cartao {
   detalhe: (t: TotaisDeColetas) => string;
   dica: string;
   tom: StatusKpi;
+  icone: LucideIcon;
 }
 
 const CARTOES: Cartao[] = [
   {
     status: "todas",
+    icone: Boxes,
     rotulo: "Coletas",
     valor: (t) => t.total,
     detalhe: (t) => `${formatarInteiro(t.reversas)} reversa(s)`,
@@ -77,6 +110,7 @@ const CARTOES: Cartao[] = [
   },
   {
     status: "no_prazo",
+    icone: CalendarCheck,
     rotulo: "Coletadas no prazo",
     valor: (t) => t.noPrazo,
     detalhe: (t) =>
@@ -86,6 +120,7 @@ const CARTOES: Cartao[] = [
   },
   {
     status: "atrasadas",
+    icone: CalendarX,
     rotulo: "Coletadas atrasadas",
     valor: (t) => t.atrasadas,
     detalhe: (t) => `${formatarParticipacao(t.atrasadas, t.coletadas)} das coletadas`,
@@ -94,6 +129,7 @@ const CARTOES: Cartao[] = [
   },
   {
     status: "abertas",
+    icone: Hourglass,
     rotulo: "Em aberto",
     valor: (t) => t.abertas,
     detalhe: (t) =>
@@ -103,6 +139,7 @@ const CARTOES: Cartao[] = [
   },
   {
     status: "vencidas",
+    icone: AlarmClockOff,
     rotulo: "Vencidas",
     valor: (t) => t.vencidas,
     detalhe: () => "Em aberto com o limite já passado",
@@ -111,6 +148,7 @@ const CARTOES: Cartao[] = [
   },
   {
     status: "vence_hoje",
+    icone: CalendarClock,
     rotulo: "Vencem hoje",
     valor: (t) => t.venceHoje,
     detalhe: (t) => `${formatarInteiro(t.aVencer)} a vencer depois de hoje`,
@@ -119,6 +157,7 @@ const CARTOES: Cartao[] = [
   },
   {
     status: "com_ctrc",
+    icone: FileText,
     rotulo: "Com CT-e gerado",
     valor: (t) => t.comCtrc,
     detalhe: (t) => `${formatarParticipacao(t.comCtrc, t.coletadas)} das coletadas`,
@@ -127,6 +166,7 @@ const CARTOES: Cartao[] = [
   },
   {
     status: "canceladas",
+    icone: Ban,
     rotulo: "Canceladas",
     valor: (t) => t.canceladas,
     detalhe: (t) => `${formatarInteiro(t.prejudicadas)} prejudicada(s) pelo horário`,
@@ -154,9 +194,9 @@ function colunasDaLista(fuso: string): ColunaTabela<LinhaDeColeta>[] {
       titulo: "Prazo",
       valor: (l) => ROTULO_DO_PRAZO[l.statusPrazo].texto,
       celula: (l) => (
-        <span style={{ color: ROTULO_DO_PRAZO[l.statusPrazo].cor }} className="font-semibold">
+        <SeloStatus tom={ROTULO_DO_PRAZO[l.statusPrazo].tom}>
           {ROTULO_DO_PRAZO[l.statusPrazo].texto}
-        </span>
+        </SeloStatus>
       ),
     },
     {
@@ -203,15 +243,6 @@ function colunasDaLista(fuso: string): ColunaTabela<LinhaDeColeta>[] {
   ];
 }
 
-function Quadro({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-[10px] border border-border/70 bg-card p-4">
-      <h2 className="label-xs mb-2">{titulo}</h2>
-      {children}
-    </section>
-  );
-}
-
 function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string }) {
   const detalhe = useQuery(consultaDetalhe(coleta.unidade, coleta.numero));
   const d = detalhe.data;
@@ -247,16 +278,16 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
         />
       </GradeDetalhe>
       {d?.observacao && (
-        <p className="rounded-md bg-muted/40 p-2 text-[12px] whitespace-pre-line">{d.observacao}</p>
+        <p className="rounded-lg bg-muted p-3 text-[13px] whitespace-pre-line">{d.observacao}</p>
       )}
       <section>
-        <h3 className="label-xs mb-1">Histórico no SSW</h3>
-        {detalhe.isLoading && <p className="text-[12px] text-muted-foreground">Carregando…</p>}
+        <h3 className="label-xs mb-2">Histórico no SSW</h3>
+        {detalhe.isLoading && <p className="text-[13px] text-muted-foreground">Carregando…</p>}
         {detalhe.error && <MensagemErro erro={detalhe.error} />}
-        <ol className="space-y-1.5 text-[12px]">
+        <ol className="space-y-2 text-[13px]">
           {d?.historico.map((e, i) => (
-            <li key={i} className="border-l-2 border-border pl-2">
-              <span className="text-muted-foreground">
+            <li key={i} className="border-l-2 border-brand/40 pl-3">
+              <span className="text-xs text-muted-foreground">
                 {formatarDataHora(e.em, fuso)} · {e.unidade} · {e.usuario}
               </span>
               <p>{e.texto}</p>
@@ -264,7 +295,7 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
           ))}
         </ol>
         {d && (
-          <p className="mt-2 text-[11px] text-muted-foreground">
+          <p className="mt-3 text-xs text-muted-foreground">
             Posição do relatório 050 de {formatarDataHora(d.relatorioEmitidoEm, fuso)}
           </p>
         )}
@@ -302,107 +333,99 @@ export function PaginaColetas() {
   };
   const d: PainelDeColetas | undefined = painel.data;
 
+  const atualizando = painel.isFetching;
+  const unidades = d?.opcoes.unidades ?? [];
+
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[24px] font-medium tracking-tight">Coletas</h1>
-          {d && <SeloAtualizacao atualizadoEm={d.posicaoEm} fuso={fuso} className="mt-0.5" />}
-          <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Ordens de coleta do SSW (relatório 050)
-            {d?.cobertura.inicio && d.cobertura.fim && (
-              <>
-                {" "}
-                · coletas importadas de {formatarData(d.cobertura.inicio)} a{" "}
-                {formatarData(d.cobertura.fim)}
-              </>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {podeImportar && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setImportando(true);
-              }}
-            >
-              <FileUp className="mr-1.5 h-3.5 w-3.5" /> Importar 050
-            </Button>
+    <Pagina
+      titulo="Coletas"
+      descricao={
+        <>
+          Ordens de coleta do SSW (relatório 050)
+          {d?.cobertura.inicio && d.cobertura.fim && (
+            <>
+              {" "}
+              · coletas importadas de {formatarData(d.cobertura.inicio)} a{" "}
+              {formatarData(d.cobertura.fim)}
+            </>
           )}
+        </>
+      }
+      meta={d && <SeloAtualizacao atualizadoEm={d.posicaoEm} fuso={fuso} />}
+      acoes={
+        <>
           <Button
             size="sm"
             variant="ghost"
-            disabled={painel.isFetching}
+            disabled={atualizando}
             onClick={() => {
               void painel.refetch();
               void lista.refetch();
             }}
           >
-            <RefreshCw className={`mr-1.5 h-3 w-3 ${painel.isFetching ? "animate-spin" : ""}`} />{" "}
+            <RefreshCw className={atualizando ? "animate-spin" : undefined} aria-hidden />
             Atualizar
           </Button>
-        </div>
-      </header>
-
-      <FiltrosAvancados
-        ativos={temFiltro(ativos, busca.periodo)}
-        aoLimpar={() => {
-          setPagina(1);
-          limpar(busca.periodo === "custom" ? [] : ["periodo"]);
-        }}
-      >
-        <FiltroPeriodo
-          periodo={busca.periodo}
-          de={busca.de}
-          ate={busca.ate}
-          atalhos={ATALHOS_DE_COLETAS}
-          padrao="30d"
-          rotulo="Cadastro"
-          aoMudar={mudar}
-        />
-        <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
-          por data de cadastro
-          <InfoTip texto="O período filtra pela data em que a coleta foi cadastrada no SSW, a mesma do 'período de cadastramento' da opção 050." />
-        </span>
-        {(d?.opcoes.unidades ?? []).length > 1 && (
-          <div
-            role="group"
-            aria-label="Unidade"
-            className="flex rounded-md border border-border/70 p-0.5"
+          {podeImportar && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setImportando(true);
+              }}
+            >
+              <FileUp aria-hidden />
+              Importar 050
+            </Button>
+          )}
+        </>
+      }
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={temFiltro(ativos, busca.periodo)}
+            aoLimpar={() => {
+              setPagina(1);
+              limpar(busca.periodo === "custom" ? [] : ["periodo"]);
+            }}
           >
-            {d?.opcoes.unidades.map((u) => (
-              <button
-                key={u}
-                type="button"
-                aria-pressed={busca.unidades.includes(u)}
-                onClick={() => {
-                  mudar({ unidades: alternar(busca.unidades, u) });
+            <FiltroPeriodo
+              periodo={busca.periodo}
+              de={busca.de}
+              ate={busca.ate}
+              atalhos={ATALHOS_DE_COLETAS}
+              padrao="30d"
+              rotulo="Cadastro"
+              aoMudar={mudar}
+            />
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              por data de cadastro
+              <InfoTip texto="O período filtra pela data em que a coleta foi cadastrada no SSW, a mesma do 'período de cadastramento' da opção 050." />
+            </span>
+            {unidades.length > 1 && (
+              <FiltroMultiplo
+                rotulo="Unidade"
+                opcoes={unidades.map((u) => ({ valor: u }))}
+                selecionados={busca.unidades}
+                busca={false}
+                monoespacado
+                aoMudar={(selecionadas) => {
+                  mudar({ unidades: selecionadas });
                 }}
-                className={`${classeDoSegmento(busca.unidades.includes(u))} font-mono`}
-              >
-                {u}
-              </button>
-            ))}
-          </div>
-        )}
-        <select
-          value={busca.tipo}
-          aria-label="Tipo de coleta"
-          onChange={(e) => {
-            const tipo = e.target.value;
-            mudar({ tipo: tipo === "NORMAL" || tipo === "REVERSA" ? tipo : "" });
-          }}
-          className="h-7 rounded-md border border-border/70 bg-background px-2 text-[12px]"
-        >
-          <option value="">Normal e reversa</option>
-          <option value="NORMAL">Só normal</option>
-          <option value="REVERSA">Só reversa</option>
-        </select>
-      </FiltrosAvancados>
-      <FiltrandoPor etiquetas={etiquetasQueLimpam(etiquetasDaBusca(busca), mudar)} />
-
+              />
+            )}
+            <Alternador
+              rotulo="Tipo de coleta"
+              opcoes={OPCOES_DE_TIPO}
+              valor={busca.tipo}
+              aoMudar={(tipo) => {
+                mudar({ tipo });
+              }}
+            />
+          </FiltrosAvancados>
+          <FiltrandoPor etiquetas={etiquetasQueLimpam(etiquetasDaBusca(busca), mudar)} />
+        </>
+      }
+    >
       {painel.isError && (
         <MensagemErro
           erro={painel.error}
@@ -413,17 +436,16 @@ export function PaginaColetas() {
         />
       )}
       {d && d.posicaoEm === null && (
-        <div className="rounded-[10px] border border-border/70 bg-card p-6 text-[12px] text-muted-foreground">
-          Nenhuma coleta importada ainda.{" "}
+        <Aviso tom="info" titulo="Nenhuma coleta importada ainda.">
           {podeImportar
             ? "Importe o relatório 050 pelo botão “Importar 050”."
             : "Peça a um administrador para importar o relatório 050."}
-        </div>
+        </Aviso>
       )}
 
       {!painel.isError && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {CARTOES.map((c) => (
               <KpiCard
                 key={c.status}
@@ -431,6 +453,8 @@ export function PaginaColetas() {
                 valor={d ? formatarInteiro(c.valor(d.totais)) : "—"}
                 detalhe={d ? c.detalhe(d.totais) : c.dica}
                 status={c.tom}
+                neutro={c.status === "todas"}
+                icone={c.icone}
                 ativo={busca.status === c.status && c.status !== "todas"}
                 aoClicar={() => {
                   mudar({ status: busca.status === c.status ? "todas" : c.status });
@@ -439,41 +463,43 @@ export function PaginaColetas() {
             ))}
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Quadro titulo="Coletas por dia de cadastro">
-              <GraficoBarras
-                descricao="Coletas por dia de cadastro"
-                dados={(d?.porDia ?? []).map((p) => ({
-                  ...p,
-                  rotulo: formatarDiaMes(p.dia),
-                  demais: p.total - p.noPrazo - p.atrasadas,
-                }))}
-                eixoX="rotulo"
-                formato="inteiro"
-                carregando={painel.isLoading}
-                series={[
-                  {
-                    chave: "noPrazo",
-                    nome: "Coletadas no prazo",
-                    cor: "var(--status-good)",
-                    pilha: "a",
-                  },
-                  {
-                    chave: "atrasadas",
-                    nome: "Coletadas atrasadas",
-                    cor: "var(--status-bad)",
-                    pilha: "a",
-                  },
-                  {
-                    chave: "demais",
-                    nome: "Em aberto ou canceladas",
-                    cor: "var(--muted-foreground)",
-                    pilha: "a",
-                  },
-                ]}
-              />
-            </Quadro>
+          <Painel titulo="Coletas por dia de cadastro" icone={ChartColumnStacked}>
+            <GraficoBarras
+              descricao="Coletas por dia de cadastro"
+              dados={(d?.porDia ?? []).map((p) => ({
+                ...p,
+                rotulo: formatarDiaMes(p.dia),
+                demais: p.total - p.noPrazo - p.atrasadas,
+              }))}
+              eixoX="rotulo"
+              formato="inteiro"
+              carregando={painel.isLoading}
+              series={[
+                {
+                  chave: "noPrazo",
+                  nome: "Coletadas no prazo",
+                  cor: "var(--status-good)",
+                  pilha: "a",
+                },
+                {
+                  chave: "atrasadas",
+                  nome: "Coletadas atrasadas",
+                  cor: "var(--status-bad)",
+                  pilha: "a",
+                },
+                {
+                  chave: "demais",
+                  nome: "Em aberto ou canceladas",
+                  cor: "var(--grafico-comparacao)",
+                  pilha: "a",
+                },
+              ]}
+            />
+          </Painel>
+
+          <div className="grid items-start gap-4 xl:grid-cols-3">
             <TabelaDados
+              className="xl:col-span-2"
               titulo="Coletas por solicitante"
               colunas={[
                 {
@@ -500,36 +526,6 @@ export function PaginaColetas() {
                 subtitulo,
               }}
             />
-          </div>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <TabelaDados
-              titulo="Por unidade"
-              colunas={[
-                { chave: "unidade", titulo: "Unidade", classe: "font-mono" },
-                { chave: "total", titulo: "Coletas", formato: "inteiro" },
-                { chave: "coletadas", titulo: "Coletadas", formato: "inteiro" },
-                { chave: "noPrazo", titulo: "No prazo", formato: "inteiro" },
-                { chave: "atrasadas", titulo: "Atrasadas", formato: "inteiro" },
-                {
-                  chave: "pctNoPrazo",
-                  titulo: "% no prazo",
-                  formato: "percentual",
-                  valor: (l) => (l.coletadas > 0 ? l.noPrazo / l.coletadas : null),
-                },
-                { chave: "abertas", titulo: "Em aberto", formato: "inteiro" },
-                { chave: "vencidas", titulo: "Vencidas", formato: "inteiro" },
-                { chave: "canceladas", titulo: "Canceladas", formato: "inteiro" },
-              ]}
-              linhas={d?.porUnidade ?? []}
-              chaveDaLinha={(l) => l.unidade}
-              carregando={painel.isLoading}
-              porPagina={0}
-              exportacao={{
-                arquivo: "coletas-por-unidade",
-                titulo: "Coletas por unidade",
-                subtitulo,
-              }}
-            />
             <TabelaDados
               titulo="CT-e gerado pela coleta, por tipo de documento"
               colunas={[
@@ -543,6 +539,34 @@ export function PaginaColetas() {
               porPagina={0}
             />
           </div>
+          <TabelaDados
+            titulo="Por unidade"
+            colunas={[
+              { chave: "unidade", titulo: "Unidade", classe: "font-mono" },
+              { chave: "total", titulo: "Coletas", formato: "inteiro" },
+              { chave: "coletadas", titulo: "Coletadas", formato: "inteiro" },
+              { chave: "noPrazo", titulo: "No prazo", formato: "inteiro" },
+              { chave: "atrasadas", titulo: "Atrasadas", formato: "inteiro" },
+              {
+                chave: "pctNoPrazo",
+                titulo: "% no prazo",
+                formato: "percentual",
+                valor: (l) => (l.coletadas > 0 ? l.noPrazo / l.coletadas : null),
+              },
+              { chave: "abertas", titulo: "Em aberto", formato: "inteiro" },
+              { chave: "vencidas", titulo: "Vencidas", formato: "inteiro" },
+              { chave: "canceladas", titulo: "Canceladas", formato: "inteiro" },
+            ]}
+            linhas={d?.porUnidade ?? []}
+            chaveDaLinha={(l) => l.unidade}
+            carregando={painel.isLoading}
+            porPagina={0}
+            exportacao={{
+              arquivo: "coletas-por-unidade",
+              titulo: "Coletas por unidade",
+              subtitulo,
+            }}
+          />
         </>
       )}
 
@@ -574,22 +598,24 @@ export function PaginaColetas() {
           carregarLinhas: () => carregarListaInteira(filtros, busca.status, termo),
         }}
         acoes={
-          <div className="flex items-center gap-2">
-            <select
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
               value={busca.status}
-              aria-label="Situação"
-              onChange={(e) => {
-                const status = STATUS_DA_LISTA.find((s) => s === e.target.value) ?? "todas";
-                mudar({ status });
+              onValueChange={(v) => {
+                mudar({ status: STATUS_DA_LISTA.find((s) => s === v) ?? "todas" });
               }}
-              className="h-7 rounded-md border border-border/70 bg-background px-2 text-[12px]"
             >
-              {STATUS_DA_LISTA.map((s) => (
-                <option key={s} value={s}>
-                  {ROTULO_DO_STATUS[s]}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-9 w-[210px] text-[13px]" aria-label="Situação">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_DA_LISTA.map((s) => (
+                  <SelectItem key={s} value={s} className="text-[13px]">
+                    {ROTULO_DO_STATUS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <BuscaDocumento
               valor={termo}
               placeholder="Coleta, CT-e, NF, remetente…"
@@ -621,6 +647,6 @@ export function PaginaColetas() {
       {podeImportar && (
         <Importador050 aberto={importando} aoMudarAberto={setImportando} fuso={fuso} />
       )}
-    </div>
+    </Pagina>
   );
 }

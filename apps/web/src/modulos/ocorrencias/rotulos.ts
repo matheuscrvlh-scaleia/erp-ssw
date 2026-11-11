@@ -1,5 +1,7 @@
 import { type ResponsavelDoEvento } from "@erp/shared/contratos/ocorrencias";
 
+import { type Tom } from "@/componentes/comum/SeloStatus";
+
 /** Rótulos do responsável; "FR" (valor gravado) aparece com o nome curto da empresa. */
 export function rotulosDoResponsavel(nomeCurto: string): Record<ResponsavelDoEvento, string> {
   return {
@@ -13,10 +15,11 @@ export function rotulosDoResponsavel(nomeCurto: string): Record<ResponsavelDoEve
   };
 }
 
-export function classeDoResponsavel(r: ResponsavelDoEvento): string {
-  if (r === "transportador") return "bg-[var(--status-bad-bg)] text-[var(--status-bad)]";
-  if (r === "pendente") return "bg-amber-100 text-amber-800";
-  return "bg-muted text-muted-foreground";
+/** Tom do selo do responsável: transportador em vermelho, pendente em alerta, o resto neutro. */
+export function tomDoResponsavel(r: ResponsavelDoEvento): Tom {
+  if (r === "transportador") return "erro";
+  if (r === "pendente") return "alerta";
+  return "neutro";
 }
 
 /** NF em destaque quando houver; senão o CT-e. */
