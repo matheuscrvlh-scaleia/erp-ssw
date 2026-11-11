@@ -86,6 +86,16 @@ describe("filtros — Parceiros agrupados (matriz e filiais pelo nome)", () => {
       nomesDosPagadoresAgrupados(comFiliais, ["11222333000181", "11222333000262", "999"]),
     ).toEqual(["Zeta Ltda", "999"]);
     expect(nomesDosPagadoresAgrupados(comFiliais, [])).toEqual([]);
+    // Seletor "Parceiros" (por CNPJ): matriz e filial de nome igual sem acento/caixa contam como
+    // um, na ordem das opções (não alfabética), como hoje.
+    expect(
+      nomesDosPagadoresAgrupados(comFiliais, [
+        "77888999000155",
+        "11222333000262",
+        "44555666000199",
+        "11222333000181",
+      ]),
+    ).toEqual(["Zeta Ltda", "Água Limpa"]);
     expect(
       unirParceiros(["12345678000100", "11222333000181"], ["11222333000181", "11222333000262"]),
     ).toEqual(["11222333000181", "11222333000262", "12345678000100"]);

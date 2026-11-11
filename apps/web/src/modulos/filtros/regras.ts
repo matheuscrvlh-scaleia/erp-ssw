@@ -29,11 +29,14 @@ export interface GrupoDePagadores {
   cnpjFormatado: string | null;
 }
 
-/** Nome sem acento, minúsculo, com espaços únicos: a chave do agrupamento. */
+/**
+ * Nome sem acento, minúsculo, com espaços únicos: a chave do agrupamento. Tira só as marcas
+ * combinantes (U+0300–U+036F), como hoje: "^" e "`" soltos continuam no nome.
+ */
 function chaveDoNome(nome: string): string {
   return nome
     .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim()
     .replace(/\s+/g, " ");
@@ -44,14 +47,7 @@ function chaveDoNome(nome: string): string {
  * Ordem alfabética sem acento. origem: agruparPagadoresPorNome (PagadorPicker.tsx, sistema atual)
  */
 export function agruparPagadoresPorNome(opcoes: readonly PagadorOpcao[]): GrupoDePagadores[] {
-  const grupos = new Map<string, { nome: string; opcoes: PagadorOpcao[] }>();
-  for (const o of opcoes) {
-    const chave = chaveDoNome(o.nome || o.id);
-    const grupo = grupos.get(chave);
-    if (grupo) grupo.opcoes.push(o);
-    else grupos.set(chave, { nome: o.nome || o.id, opcoes: [o] });
-  }
-  return [...grupos.entries()]
+  return [...gruposNaOrdemDasOpcoes(opcoes).entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, g]) => ({
       valor: g.opcoes.map((o) => o.id).join(","),
@@ -59,6 +55,20 @@ export function agruparPagadoresPorNome(opcoes: readonly PagadorOpcao[]): GrupoD
       ids: g.opcoes.map((o) => o.id),
       cnpjFormatado: g.opcoes.length === 1 ? (g.opcoes[0]?.cnpjFormatado ?? null) : null,
     }));
+}
+
+/** Grupos pela chave do nome, na ordem em que o primeiro CNPJ de cada um aparece nas opções. */
+function gruposNaOrdemDasOpcoes(
+  opcoes: readonly PagadorOpcao[],
+): Map<string, { nome: string; opcoes: PagadorOpcao[] }> {
+  const grupos = new Map<string, { nome: string; opcoes: PagadorOpcao[] }>();
+  for (const o of opcoes) {
+    const chave = chaveDoNome(o.nome || o.id);
+    const grupo = grupos.get(chave);
+    if (grupo) grupo.opcoes.push(o);
+    else grupos.set(chave, { nome: o.nome || o.id, opcoes: [o] });
+  }
+  return grupos;
 }
 
 /** Opções marcadas no seletor agrupado a partir dos CNPJs marcados (CNPJ fora do período fica). */
@@ -88,8 +98,10 @@ export function cnpjsDosGrupos(
 }
 
 /**
- * Nomes (agrupados) dos parceiros marcados no seletor agrupado, para a etiqueta; CNPJ fora do
- * período aparece como CNPJ. origem: nomesPagadoresSelecionados (PagadorPicker.tsx)
+ * Nomes dos parceiros marcados com os CNPJs de mesmo nome (sem acento/caixa/espaço extra) contados
+ * como um, na ordem das opções; CNPJ fora do período aparece como CNPJ. Vale para os dois
+ * seletores do Ranking e para o escopo do gráfico mês a mês.
+ * origem: nomesPagadoresSelecionados (PagadorPicker.tsx)
  */
 export function nomesDosPagadoresAgrupados(
   opcoes: readonly PagadorOpcao[],
@@ -97,8 +109,8 @@ export function nomesDosPagadoresAgrupados(
 ): string[] {
   if (marcados.length === 0) return [];
   const marcado = new Set(marcados);
-  const nomes = agruparPagadoresPorNome(opcoes)
-    .filter((g) => g.ids.some((id) => marcado.has(id)))
+  const nomes = [...gruposNaOrdemDasOpcoes(opcoes).values()]
+    .filter((g) => g.opcoes.some((o) => marcado.has(o.id)))
     .map((g) => g.nome);
   const conhecidos = new Set(opcoes.map((o) => o.id));
   return [...nomes, ...marcados.filter((id) => !conhecidos.has(id))];
