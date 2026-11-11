@@ -44,23 +44,6 @@
         "tsx": "^4.20.5",
       },
     },
-    "apps/migrador": {
-      "name": "@erp/migrador",
-      "version": "0.0.0",
-      "dependencies": {
-        "@erp/db": "workspace:*",
-        "@erp/dominio": "workspace:*",
-        "@erp/shared": "workspace:*",
-        "drizzle-orm": "^0.45.4",
-        "pg": "^8.16.3",
-        "pino": "^9.11.0",
-      },
-      "devDependencies": {
-        "@erp/config": "workspace:*",
-        "@types/pg": "^8.15.5",
-        "tsx": "^4.20.5",
-      },
-    },
     "apps/web": {
       "name": "@erp/web",
       "version": "0.0.0",
@@ -273,8 +256,6 @@
     "@erp/db": ["@erp/db@workspace:packages/db"],
 
     "@erp/dominio": ["@erp/dominio@workspace:packages/dominio"],
-
-    "@erp/migrador": ["@erp/migrador@workspace:apps/migrador"],
 
     "@erp/shared": ["@erp/shared@workspace:packages/shared"],
 

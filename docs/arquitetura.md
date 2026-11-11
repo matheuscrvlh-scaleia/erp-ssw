@@ -51,13 +51,12 @@ apps/
   web/                    SPA
   api/                    HTTP (Fastify) + jobs do ERP no BullMQ (src/jobs: limpar sessões, prazos
                           configurados, classificação de códigos, recifrar segredos)
-  migrador/               carga única public → erp
 packages/
   config/                 tsconfig, eslint, prettier
   shared/                 contratos zod (entrada/saída de cada endpoint), tipos, permissões, formatação
   dominio/                regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
                           atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
-                          leitores dos relatórios SSW (prévia da importação e migrador)...
+                          leitores dos relatórios SSW (prévia da importação)...
   db/                     Drizzle: schema, migrations, políticas RLS, client com contexto de empresa
 docs/
   arquitetura.md          este arquivo
@@ -74,8 +73,7 @@ repositorio.ts    acesso a dados (Drizzle). Consultas set-based; nenhuma regra d
 *.test.ts         testes dos casos de uso com repositório falso.
 ```
 
-Regras puras (cálculos) ficam em `packages/dominio` e são usadas pela API, pela web e pelo
-migrador. O worker-ssw leva a sua cópia do núcleo do CT-e (ADR 0012).
+Regras puras (cálculos) ficam em `packages/dominio` e são usadas pela API e pela web. O worker-ssw leva a sua cópia do núcleo do CT-e (ADR 0012).
 
 ## Ingestão do SSW: o worker-ssw (ADR 0012)
 
@@ -96,8 +94,8 @@ RLS valendo). O ERP:
 - cadastra as integrações (`empresa_integracoes`, cifradas): o ERP grava, o worker-ssw lê, com as
   mesmas `SEGREDOS_CHAVES`.
 
-A borda do ERP encaminha `/api/public/*` (menos o link público do ranking) ao worker-ssw pela rede
-Docker `erp-interna`: as URLs das integrações externas não mudam (docs/deploy.md §1.4).
+O web do ERP (Caddy) encaminha `/api/public/*` (menos o link público do ranking) ao worker-ssw pela rede
+Docker `erp-interna`: as URLs das integrações externas não mudam (docs/deploy.md §1).
 
 **Agregação pesada** (ex.: performance de 250 mil CT-e) é feita por consulta SQL montada no backend
 (Drizzle/`sql` parametrizado), com a regra expressa em TypeScript: o backend decide o que filtrar,

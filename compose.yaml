@@ -1,0 +1,92 @@
+# ERP SSW em produção: api, web e redis. Variáveis em .env na raiz (fora do git; modelo em
+# .env.example). Desenvolvimento usa o docker-compose.dev.yml.
+#
+#   docker network create erp-interna      # uma vez; o worker-ssw entra nela também
+#   docker compose up -d --build
+#
+# Portas no host: api 3001 (→ 3000), web 8081 (→ 80). O web repassa /api para a api e
+# /api/public/* para o worker-ssw, então o sistema inteiro responde na 8081.
+
+name: erp
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORTA: "3000"
+      # O web (Caddy) fica na frente: o IP do cliente sai do X-Forwarded-For.
+      PROXIES_CONFIAVEIS: "1"
+      LOG_NIVEL: ${LOG_NIVEL:-info}
+      DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL (papel erp_app) no .env}
+      DB_MAX_CONEXOES: ${API_DB_MAX_CONEXOES:-10}
+      DB_TIMEOUT_CONSULTA_MS: ${API_DB_TIMEOUT_CONSULTA_MS:-30000}
+      REDIS_URL: redis://redis:6379/0
+      WEB_URL: https://${DOMINIO:?defina DOMINIO no .env}
+      CORS_ORIGENS: ${CORS_ORIGENS:-}
+      JWT_CHAVE_PRIVADA: ${JWT_CHAVE_PRIVADA:?defina JWT_CHAVE_PRIVADA no .env}
+      JWT_KID: ${JWT_KID:?defina JWT_KID no .env}
+      COOKIE_SEGREDO: ${COOKIE_SEGREDO:?defina COOKIE_SEGREDO no .env}
+      SMTP_HOST: ${SMTP_HOST:?defina SMTP_HOST no .env}
+      SMTP_PORTA: ${SMTP_PORTA:-587}
+      SMTP_SEGURO: ${SMTP_SEGURO:-false}
+      EMAIL_REMETENTE: ${EMAIL_REMETENTE:?defina EMAIL_REMETENTE no .env}
+      JOBS_LIGADOS: ${JOBS_LIGADOS:-true}
+      AGENDAMENTOS_LIGADOS: ${AGENDAMENTOS_LIGADOS:-false}
+      # Opcionais: só entram se estiverem no .env (ausente ≠ vazio).
+      JWT_CHAVES_ANTERIORES:
+      REFRESH_DIAS:
+      SMTP_USUARIO:
+      SMTP_SENHA:
+      GOOGLE_CLIENT_ID:
+      GOOGLE_CLIENT_SECRET:
+      GOOGLE_REDIRECT_URI:
+      LOGO_URL_BASE:
+      METRICAS_TOKEN:
+      SEGREDOS_CHAVES:
+      SEGREDOS_CHAVE_ATUAL:
+      # HTTP interno do worker-ssw (ex.: http://worker-ssw:3000) e o token de serviço.
+      WORKER_SSW_URL:
+      WORKER_SSW_TOKEN:
+    volumes:
+      # CA do Supabase para sslmode=verify-full.
+      - ./certs:/etc/erp/certs:ro
+    ports:
+      - "${API_PORTA_HOST:-3001}:3000"
+    networks: [default, erp-interna]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORTA_HOST:-8081}:80"
+    networks: [default, erp-interna]
+    depends_on: [api]
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_dados:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  # Criada fora dos dois compose: api e web chegam ao worker-ssw por ela.
+  erp-interna:
+    external: true
+
+volumes:
+  redis_dados: {}

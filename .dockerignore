@@ -1,4 +1,4 @@
-# Contexto do build das imagens (infra/docker/*.Dockerfile) = raiz do repositório.
+# Contexto do build das imagens (apps/api/Dockerfile, apps/web/Dockerfile) = raiz do repositório.
 # Lista de permissão: entra só o que algum build usa.
 *
 !package.json
@@ -6,8 +6,6 @@
 !bunfig.toml
 !apps/
 !packages/
-!infra/docker/web.Caddyfile
-!infra/docker/migrador.sh
 
 # Dentro do que entrou, nunca: dependências, saídas de build, cobertura, segredos.
 **/node_modules

@@ -1,0 +1,39 @@
+# Servidor da imagem do web (apps/web/Dockerfile): SPA estática, /api/public/* para o worker-ssw
+# e o resto de /api para a api.
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode zstd gzip
+
+	# Integrações do SSW (webhook, FTP, XML) ficam no worker-ssw, pela rede erp-interna. O link
+	# público do ranking é da api.
+	@publico {
+		path /api/public/*
+		not path /api/public/ranking/*
+	}
+	handle @publico {
+		reverse_proxy worker-ssw:3000
+	}
+
+	handle /api/* {
+		reverse_proxy api:3000
+	}
+
+	# Assets com hash no nome: 1 ano, imutável. Asset inexistente é 404 (nunca o index.html).
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		root * /srv
+		file_server
+	}
+
+	# Resto: arquivo da raiz ou o index.html (fallback da SPA), sempre revalidado.
+	handle {
+		header Cache-Control "no-cache"
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

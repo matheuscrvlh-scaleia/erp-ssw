@@ -22,7 +22,6 @@ export function configurarEslint({ tsconfigRootDir, web, ignorar = [], shadcn = 
         "**/coverage/**",
         "**/node_modules/**",
         "**/.worktrees/**",
-        "**/.migrador/**",
         "**/*.gen.ts",
         "**/drizzle/**",
         "**/*.js",

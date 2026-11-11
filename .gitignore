@@ -7,14 +7,5 @@ coverage/
 .worktrees/
 *.log
 .turbo/
-.migrador/
-.migrador-*/
-.migrador-*.log
-# VPS (infra/): estado local do deploy, CA do banco e variáveis do migrador.
-infra/.deploy-historico
-infra/migrador.env
-infra/certs/*
-!infra/certs/.gitkeep
-
-# Verificadores SCRAM dos papéis (só para criar os papéis no banco; apagar depois)
-.migrador-papeis.json
+# CA do Supabase (montada na api pelo compose.yaml).
+certs/
