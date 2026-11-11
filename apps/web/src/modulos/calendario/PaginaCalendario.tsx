@@ -2,12 +2,20 @@ import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
 import { contratosCalendario as c, type Feriado } from "@erp/shared/contratos/calendario";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Sparkles } from "lucide-react";
+import { CalendarClock, CalendarDays, Flag, MapPin, Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { Abas } from "@/componentes/comum/Abas";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
+import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
@@ -15,9 +23,11 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { CHAVE_DO_CALENDARIO, consultaCalendario } from "./api";
 import { formatarDiaCurto, porData } from "./calendario";
 import { type FeriadoParaGravar, ModalDeFeriado } from "./ModalDeFeriado";
+import { SeletorDeAno } from "./SeletorDeAno";
 import { VisaoAno, VisaoLista, VisaoMes } from "./Visoes";
 
-type Visao = "mes" | "ano" | "lista";
+const VISOES = ["mes", "ano", "lista"] as const;
+type Visao = (typeof VISOES)[number];
 
 const ROTULO_DA_VISAO: Record<Visao, string> = {
   mes: "Mês a mês",
@@ -35,13 +45,14 @@ export function PaginaCalendario() {
   const podeGerarNacionais = acesso.adminPlataforma;
   const queryClient = useQueryClient();
 
-  const [ano, setAno] = useState(() => Number(hoje.slice(0, 4)));
+  const anoAtual = Number(hoje.slice(0, 4));
+  const [ano, setAno] = useState(anoAtual);
   const [mes, setMes] = useState(() => Number(hoje.slice(5, 7)) - 1);
   const [visao, setVisao] = useState<Visao>("mes");
   const [editando, setEditando] = useState<Feriado | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
 
-  const { data, isLoading } = useQuery(consultaCalendario(ano));
+  const { data, isLoading, error, refetch } = useQuery(consultaCalendario(ano));
   const feriados = data?.feriados ?? [];
   const unidades = data?.unidades ?? [];
   const feriadosPorData = useMemo(() => porData(data?.feriados ?? []), [data]);
@@ -99,55 +110,19 @@ export function PaginaCalendario() {
 
   const contagens = data?.contagens ?? { nacional: 0, municipal: 0, estadual: 0 };
   const proximo = data?.proximo ?? null;
+  const botaoGerar = (texto: string, variante: "outline" | "default") => (
+    <Button variant={variante} size="sm" onClick={() => void gerarNacionais()}>
+      <Sparkles aria-hidden /> {texto}
+    </Button>
+  );
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-[20px] font-semibold">
-            <CalendarDays className="h-5 w-5 text-primary" /> Calendário de feriados
-          </h1>
-          <p className="text-[12px] text-muted-foreground">
-            Feriados nacionais e municipais que impactam o prazo de entrega.
-          </p>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <div className="flex items-center gap-1 rounded border border-border/60 bg-card/40 p-1">
-            <button
-              type="button"
-              aria-label="Ano anterior"
-              onClick={() => {
-                setAno(ano - 1);
-              }}
-              className="rounded p-1 hover:bg-muted"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <input
-              type="number"
-              aria-label="Ano"
-              value={ano}
-              onChange={(e) => {
-                setAno(Number(e.target.value) || Number(hoje.slice(0, 4)));
-              }}
-              className="w-20 bg-transparent text-center text-[13px] tabular-nums"
-            />
-            <button
-              type="button"
-              aria-label="Próximo ano"
-              onClick={() => {
-                setAno(ano + 1);
-              }}
-              className="rounded p-1 hover:bg-muted"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-          {podeGerarNacionais && (
-            <Button variant="outline" size="sm" onClick={() => void gerarNacionais()}>
-              <Sparkles className="mr-1 h-4 w-4" /> Gerar nacionais {ano}+
-            </Button>
-          )}
+    <Pagina
+      titulo="Calendário de feriados"
+      descricao="Feriados nacionais e municipais que impactam o prazo de entrega."
+      acoes={
+        <>
+          {podeGerarNacionais && botaoGerar(`Gerar nacionais ${String(ano)}+`, "outline")}
           {podeEditar && (
             <Button
               size="sm"
@@ -155,27 +130,49 @@ export function PaginaCalendario() {
                 abrirModal(null);
               }}
             >
-              <Plus className="mr-1 h-4 w-4" /> Novo feriado
+              <Plus aria-hidden /> Novo feriado
             </Button>
           )}
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <Indicador
-          rotulo={`Feriados nacionais em ${ano}`}
-          valor={contagens.nacional}
-          dica="Inclui pontos facultativos (Carnaval, Corpus Christi)"
+        </>
+      }
+      abas={
+        <Abas
+          abas={VISOES.map((v) => ({ valor: v, rotulo: ROTULO_DA_VISAO[v] }))}
+          valor={visao}
+          aoMudar={setVisao}
+          rotulo="Visão do calendário"
         />
-        <Indicador
-          rotulo={`Feriados municipais em ${ano}`}
-          valor={contagens.municipal}
-          dica={`${contagens.estadual} estaduais cadastrados`}
+      }
+      filtros={
+        <FiltrosAvancados>
+          <SeletorDeAno ano={ano} anoAtual={anoAtual} aoMudar={setAno} />
+        </FiltrosAvancados>
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
+          rotulo={`Feriados nacionais em ${String(ano)}`}
+          valor={String(contagens.nacional)}
+          status="bom"
+          neutro
+          icone={Flag}
+          detalhe="Inclui pontos facultativos (Carnaval, Corpus Christi)"
         />
-        <Indicador
+        <KpiCard
+          rotulo={`Feriados municipais em ${String(ano)}`}
+          valor={String(contagens.municipal)}
+          status="bom"
+          neutro
+          icone={MapPin}
+          detalhe={`${String(contagens.estadual)} estaduais cadastrados`}
+        />
+        <KpiCard
           rotulo="Próximo feriado"
-          valor={proximo ? `${diferencaEmDias(hoje, proximo.data)}d` : "—"}
-          dica={
+          valor={proximo ? `${String(diferencaEmDias(hoje, proximo.data))}d` : "—"}
+          status="bom"
+          neutro
+          icone={CalendarClock}
+          detalhe={
             proximo
               ? `${formatarDiaCurto(proximo.data)} · ${proximo.descricao}`
               : "Nenhum feriado futuro cadastrado"
@@ -183,35 +180,28 @@ export function PaginaCalendario() {
         />
       </div>
 
-      <div className="flex items-center gap-1 rounded border border-border/60 bg-card/40 p-1 text-[12px]">
-        {(["mes", "ano", "lista"] as const).map((v) => (
-          <button
-            type="button"
-            key={v}
-            onClick={() => {
-              setVisao(v);
-            }}
-            aria-pressed={visao === v}
-            className={`rounded px-3 py-1 ${visao === v ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-          >
-            {ROTULO_DA_VISAO[v]}
-          </button>
-        ))}
-      </div>
-
       {isLoading ? (
-        <div className="rounded border border-border/60 bg-card/40 p-10 text-center text-[12px] text-muted-foreground">
-          Carregando…
-        </div>
+        <Painel classeDoCorpo="space-y-2 p-4">
+          <Skeleton className="h-6 w-40 rounded-md bg-muted" />
+          <Skeleton className="h-72 w-full rounded-lg bg-muted" />
+        </Painel>
+      ) : error ? (
+        <Painel>
+          <MensagemErro
+            erro={error}
+            aoTentarDeNovo={() => {
+              void refetch();
+            }}
+          />
+        </Painel>
       ) : feriados.length === 0 ? (
-        <div className="rounded border border-border/60 bg-card/40 p-10 text-center text-[13px]">
-          <p className="text-muted-foreground">Nenhum feriado cadastrado para {ano}.</p>
-          {podeGerarNacionais && (
-            <Button size="sm" className="mt-3" onClick={() => void gerarNacionais()}>
-              <Sparkles className="mr-1 h-4 w-4" /> Gerar feriados nacionais
-            </Button>
-          )}
-        </div>
+        <Painel>
+          <EstadoVazio
+            icone={CalendarDays}
+            mensagem={`Nenhum feriado cadastrado para ${String(ano)}.`}
+            acao={podeGerarNacionais && botaoGerar("Gerar feriados nacionais", "default")}
+          />
+        </Painel>
       ) : visao === "mes" ? (
         <VisaoMes
           ano={ano}
@@ -224,6 +214,7 @@ export function PaginaCalendario() {
       ) : visao === "ano" ? (
         <VisaoAno
           ano={ano}
+          hoje={hoje}
           feriadosPorData={feriadosPorData}
           aoEscolherMes={(m) => {
             setMes(m);
@@ -248,24 +239,6 @@ export function PaginaCalendario() {
         hoje={hoje}
         aoGravar={gravar}
       />
-    </div>
-  );
-}
-
-function Indicador({
-  rotulo,
-  valor,
-  dica,
-}: {
-  rotulo: string;
-  valor: number | string;
-  dica: string;
-}) {
-  return (
-    <div className="rounded-lg border border-l-[5px] border-border/60 border-l-kpi-positive bg-card p-4">
-      <p className="text-[11px] tracking-wide text-muted-foreground uppercase">{rotulo}</p>
-      <p className="mt-1 text-2xl font-semibold text-kpi-positive tabular-nums">{valor}</p>
-      <p className="mt-1 text-[11px] text-muted-foreground">{dica}</p>
-    </div>
+    </Pagina>
   );
 }

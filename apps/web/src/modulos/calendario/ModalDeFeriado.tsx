@@ -12,11 +12,11 @@ import { type KeyboardEvent, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { ErroDoCampo } from "@/acesso/componentes/CartaoDeEntrada";
+import { Alternador } from "@/componentes/comum/Alternador";
 import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/componentes/ui/dialog";
+import { Input } from "@/componentes/ui/input";
 import { Switch } from "@/componentes/ui/switch";
-
-import { corDoTipo } from "./calendario";
 
 const esquema = z
   .object({
@@ -76,7 +76,11 @@ function paraGravar(c: Campos): FeriadoParaGravar {
   };
 }
 
-const CAMPO = "rounded border border-border bg-background px-2 py-1";
+/** Campo nativo (data, UF) com o mesmo desenho do `Input`. */
+const CAMPO =
+  "h-9 w-full rounded-lg border border-input bg-card px-3 text-[13px] text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none";
+const ROTULO = "grid gap-1.5 text-[13px]";
+const TEXTO_DO_ROTULO = "font-medium text-foreground";
 
 export function ModalDeFeriado({
   aberto,
@@ -122,66 +126,70 @@ export function ModalDeFeriado({
     <Dialog open={aberto} onOpenChange={aoMudarAberto}>
       <DialogContent className="sm:max-w-md" onKeyDown={atalho} aria-describedby={undefined}>
         <DialogTitle>{editando ? "Editar feriado" : "Novo feriado"}</DialogTitle>
-        <form onSubmit={(e) => void salvar(e)} className="space-y-3 pt-2 text-[13px]" noValidate>
+        <form onSubmit={(e) => void salvar(e)} className="space-y-4 pt-2 text-[13px]" noValidate>
           <Controller
             control={formulario.control}
             name="tipo"
             render={({ field }) => (
-              <div className="flex gap-2">
-                {TIPOS_FERIADO.map((t) => (
-                  <button
-                    type="button"
-                    key={t}
-                    onClick={() => {
-                      field.onChange(t);
-                    }}
-                    aria-pressed={field.value === t}
-                    className={`rounded border px-2 py-1 text-[11px] capitalize ${field.value === t ? corDoTipo(t) : "border-border/60 text-muted-foreground"}`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
+              <Alternador
+                rotulo="Tipo"
+                opcoes={TIPOS_FERIADO.map((t) => ({
+                  valor: t,
+                  rotulo: <span className="capitalize">{t}</span>,
+                }))}
+                valor={field.value}
+                aoMudar={field.onChange}
+              />
             )}
           />
-          <label className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Data</span>
-            <input type="date" className={CAMPO} {...formulario.register("data")} />
-          </label>
-          <ErroDoCampo mensagem={errors.data?.message} />
-          {tipo !== "nacional" && (
-            <>
-              <label className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">UF</span>
-                <select className={CAMPO} {...formulario.register("uf")}>
-                  <option value="">—</option>
-                  {UFS.map((u) => (
-                    <option key={u} value={u}>
-                      {u}
-                    </option>
-                  ))}
-                </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={ROTULO}>
+                <span className={TEXTO_DO_ROTULO}>Data</span>
+                <input type="date" className={CAMPO} {...formulario.register("data")} />
               </label>
-              <ErroDoCampo mensagem={errors.uf?.message} />
-            </>
-          )}
+              <ErroDoCampo mensagem={errors.data?.message} />
+            </div>
+            {tipo !== "nacional" && (
+              <div>
+                <label className={ROTULO}>
+                  <span className={TEXTO_DO_ROTULO}>UF</span>
+                  <select className={CAMPO} {...formulario.register("uf")}>
+                    <option value="">—</option>
+                    {UFS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <ErroDoCampo mensagem={errors.uf?.message} />
+              </div>
+            )}
+          </div>
           {tipo === "municipal" && (
-            <>
-              <label className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Cidade</span>
-                <input className={CAMPO} {...formulario.register("cidade")} />
+            <div>
+              <label className={ROTULO}>
+                <span className={TEXTO_DO_ROTULO}>Cidade</span>
+                <Input className="text-[13px] md:text-[13px]" {...formulario.register("cidade")} />
               </label>
               <ErroDoCampo mensagem={errors.cidade?.message} />
-            </>
+            </div>
           )}
-          <label className="block">
-            <span className="block text-muted-foreground">Descrição</span>
-            <input autoFocus className={`w-full ${CAMPO}`} {...formulario.register("descricao")} />
-          </label>
-          <ErroDoCampo mensagem={errors.descricao?.message} />
+          <div>
+            <label className={ROTULO}>
+              <span className={TEXTO_DO_ROTULO}>Descrição</span>
+              <Input
+                autoFocus
+                className="text-[13px] md:text-[13px]"
+                {...formulario.register("descricao")}
+              />
+            </label>
+            <ErroDoCampo mensagem={errors.descricao?.message} />
+          </div>
           {!editando && !semRecorrencia && (
-            <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-2 py-2">
-              <span className="text-[12px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2.5">
+              <span className="text-[12.5px] text-muted-foreground">
                 Recorrente todo ano (próximos 5 anos)
               </span>
               <Controller
@@ -197,7 +205,7 @@ export function ModalDeFeriado({
               />
             </div>
           )}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button
               type="button"
               variant="outline"

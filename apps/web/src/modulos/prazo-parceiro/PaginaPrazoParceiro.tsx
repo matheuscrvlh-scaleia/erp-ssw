@@ -2,7 +2,10 @@
  * Prazo próprio × Prazo do parceiro (`/prazo-parceiro`): cards, origem do prazo, nascidos em
  * atraso, ranking de parceiros e lista de CT-e. origem: routes/_authenticated/prazo-parceiro.tsx
  */
+import { type SaidaDe } from "@erp/shared/contrato";
 import {
+  type contratosPrazoParceiro,
+  type FiltroDaLista,
   FILTROS_DA_LISTA,
   type LinhaPrazo,
   TAMANHOS_DA_LISTA,
@@ -17,19 +20,23 @@ import {
 import { useIsFetching, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  AlertTriangle,
   ArrowRight,
+  ChartPie,
   ChevronRight,
-  Info,
+  Clock4,
+  Gauge,
   RefreshCw,
   Scale,
+  ShieldCheck,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
-import { BotoesDePagina } from "@/componentes/comum/BotoesDePagina";
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import {
@@ -38,9 +45,22 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
-import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
+import { InfoTip } from "@/componentes/comum/InfoTip";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { Painel } from "@/componentes/comum/Painel";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
+import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
+import { TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
@@ -65,8 +85,13 @@ import {
   ROTULO_PERIODO,
   tamanhoDaLista,
 } from "./busca";
-import { BotoesDePeriodo, CartaoMetrica, classeDoSla, tomDoSla } from "./componentes";
+import { AlternadorDePeriodo, COR_DA_ORIGEM, EtiquetaDeOrigem, NumeroDoCtrc } from "./pecas";
+import { SELO_DO_SLA, tomDoSla } from "./sla";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
+
+type VisaoGeral = SaidaDe<typeof contratosPrazoParceiro.visaoGeral>;
+type LinhaDoRanking = VisaoGeral["ranking"][number];
+type TotaisDoPrazo = VisaoGeral["totais"];
 
 const COLUNAS_DA_EXPORTACAO: readonly ColunaExportacao[] = [
   { chave: "numero", titulo: "CTRC" },
@@ -116,7 +141,6 @@ export function PaginaPrazoParceiro() {
   const a = visao.data?.comparacao;
   const sla = visao.data?.sla ?? { meta: 0.95, alerta: 0.9 };
   const ranking = visao.data?.ranking ?? [];
-  const totalDePaginas = Math.max(1, Math.ceil((lista.data?.total ?? 0) / b.size));
   const mudar = (m: Partial<typeof b>) => {
     definir({ ...m, page: 1 });
   };
@@ -161,8 +185,9 @@ export function PaginaPrazoParceiro() {
     },
   ];
 
-  const verLista = () => {
-    mudar({ filtro: "nascidos" });
+  /** Muda o filtro da lista e rola até ela (botão "Ver lista", barra da origem do prazo). */
+  const irParaLista = (filtro: FiltroDaLista) => {
+    mudar({ filtro });
     requestAnimationFrame(() => {
       document
         .getElementById("lista-ctrcs")
@@ -180,489 +205,500 @@ export function PaginaPrazoParceiro() {
     return r.linhas.map(paraExportar);
   };
 
+  const colunasDoRanking: ColunaTabela<LinhaDoRanking>[] = [
+    {
+      chave: "nome",
+      titulo: "Parceiro",
+      celula: (p) => (
+        <span className="flex flex-col">
+          <span className="font-semibold text-foreground">{p.nome}</span>
+          {p.usaSsw && <span className="text-xs text-muted-foreground">usa SSW</span>}
+        </span>
+      ),
+    },
+    { chave: "total", titulo: "CTRCs", formato: "inteiro" },
+    {
+      chave: "qtdParceiro",
+      titulo: "Prazo do parceiro",
+      alinhamento: "direita",
+      celula: (p) => (
+        <>
+          {formatarInteiro(p.qtdParceiro)}{" "}
+          <span className="text-muted-foreground">
+            ({formatarPercentual(p.pctParceiro, { casas: 0 })})
+          </span>
+        </>
+      ),
+    },
+    {
+      chave: "nascidosAtrasados",
+      titulo: "Nascidos em atraso",
+      alinhamento: "direita",
+      celula: (p) => (
+        <span className={cn(p.pctNascidos > 0.1 && "font-semibold text-status-bad-fg")}>
+          {formatarInteiro(p.nascidosAtrasados)}{" "}
+          <span className="opacity-75">({formatarPercentual(p.pctNascidos, { casas: 0 })})</span>
+        </span>
+      ),
+    },
+    {
+      chave: "performanceComParceiro",
+      titulo: "Performance",
+      alinhamento: "direita",
+      celula: (p) => (
+        <SeloStatus tom={SELO_DO_SLA[tomDoSla(p.performanceComParceiro, sla)]}>
+          {formatarPercentual(p.performanceComParceiro)}
+        </SeloStatus>
+      ),
+    },
+    {
+      chave: "abrir",
+      titulo: "",
+      ordenavel: false,
+      alinhamento: "direita",
+      celula: () => <ChevronRight className="inline h-4 w-4 text-muted-foreground" aria-hidden />,
+    },
+  ];
+
+  const colunasDaLista = (
+    [
+      { chave: "numero", titulo: "CTRC", celula: (l) => <NumeroDoCtrc numero={l.numero} /> },
+      {
+        chave: "parceiroNome",
+        titulo: "Parceiro",
+        classe: "max-w-[180px] truncate",
+        celula: (l) => l.parceiroNome ?? "—",
+      },
+      { chave: "dataEmbarque", titulo: "Embarque", celula: (l) => formatarData(l.dataEmbarque) },
+      {
+        chave: "dataPrevista",
+        titulo: "Prazo entrega",
+        celula: (l) => formatarData(l.dataPrevista),
+      },
+      {
+        chave: "prazoPadraoData",
+        titulo: "Mínimo 48h",
+        classe: "text-muted-foreground",
+        celula: (l) => formatarData(l.prazoPadraoData),
+      },
+      {
+        chave: "diasAbaixoDoPadrao",
+        titulo: "Abaixo do padrão (dias)",
+        alinhamento: "direita",
+        classe: "whitespace-nowrap",
+        celula: (l) => (
+          <span className={cn(l.nasceuAtrasado && "font-semibold text-status-bad-fg")}>
+            {l.diasAbaixoDoPadrao ?? "—"}
+          </span>
+        ),
+      },
+      {
+        chave: "origem",
+        titulo: "Origem",
+        celula: (l) => <EtiquetaDeOrigem origem={l.prazoOrigem} />,
+      },
+      {
+        chave: "statusAtual",
+        titulo: "Status",
+        classe: "max-w-[160px] truncate text-muted-foreground",
+        celula: (l) => l.statusAtual ?? "—",
+      },
+      { chave: "setor", titulo: "Setor", classe: "font-mono", celula: (l) => l.setor ?? "—" },
+      {
+        chave: "unidadeNome",
+        titulo: "Unidade",
+        classe: "max-w-[160px] truncate",
+        celula: (l) => l.unidadeNome ?? "—",
+      },
+    ] satisfies ColunaTabela<LinhaPrazo>[]
+  ).map((c): ColunaTabela<LinhaPrazo> => ({ ...c, ordenavel: false }));
+
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-[24px] font-medium tracking-tight">
-            <Scale className="h-5 w-5" /> Prazo próprio × Prazo do parceiro
-          </h1>
-          <SeloDosDados mostrarXml />
-          <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Entenda quanto do seu atraso veio de fora
-          </p>
-        </div>
+    <Pagina
+      titulo="Prazo próprio × Prazo do parceiro"
+      descricao="Entenda quanto do seu atraso veio de fora"
+      meta={<SeloDosDados mostrarXml className="" />}
+      acoes={
         <Button
           size="sm"
           variant="ghost"
           disabled={atualizando}
           onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DO_PRAZO })}
         >
-          <RefreshCw className={cn("mr-1.5 h-3 w-3", atualizando && "animate-spin")} /> Atualizar
+          <RefreshCw className={cn(atualizando && "animate-spin")} aria-hidden /> Atualizar
         </Button>
-      </header>
-
-      <FiltrosAvancados
-        ativos={b.unidades.length > 0 || b.parceiros.length > 0 || b.tipos.length > 0}
-        aoLimpar={() => {
-          mudar({ unidades: [], parceiros: [], tipos: [] });
-        }}
-      >
-        <BotoesDePeriodo
-          atual={b.periodo}
-          aoMudar={(periodo) => {
-            mudar({ periodo });
-          }}
-        />
-        <FiltroMultiplo
-          rotulo="Unidades"
-          opcoes={opcoes?.unidades.map((u) => ({ valor: u.id, rotulo: u.nome }))}
-          selecionados={b.unidades}
-          aoMudar={(unidades) => {
-            mudar({ unidades });
-          }}
-          textoVazio="todos"
-        />
-        <FiltroMultiplo
-          rotulo="Parceiros"
-          opcoes={opcoes?.parceiros.map((p) => ({ valor: p.id, rotulo: p.nome }))}
-          selecionados={b.parceiros}
-          aoMudar={(parceiros) => {
-            mudar({ parceiros });
-          }}
-          textoVazio="todos"
-        />
-        <FiltroMultiplo
-          rotulo="Tipo documento"
-          opcoes={opcoes && opcoesDeTipo(opcoes.tipos)}
-          selecionados={b.tipos}
-          aoMudar={(tipos) => {
-            mudar({ tipos });
-          }}
-          textoVazio="todos"
-        />
-        <span className="ml-auto text-[11px] text-muted-foreground">
-          {ROTULO_PERIODO[b.periodo]}
-        </span>
-      </FiltrosAvancados>
-
-      <FiltrandoPor etiquetas={etiquetas} />
-
+      }
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={b.unidades.length > 0 || b.parceiros.length > 0 || b.tipos.length > 0}
+            aoLimpar={() => {
+              mudar({ unidades: [], parceiros: [], tipos: [] });
+            }}
+          >
+            <AlternadorDePeriodo
+              atual={b.periodo}
+              aoMudar={(periodo) => {
+                mudar({ periodo });
+              }}
+            />
+            <FiltroMultiplo
+              rotulo="Unidades"
+              opcoes={opcoes?.unidades.map((u) => ({ valor: u.id, rotulo: u.nome }))}
+              selecionados={b.unidades}
+              aoMudar={(unidades) => {
+                mudar({ unidades });
+              }}
+              textoVazio="todos"
+            />
+            <FiltroMultiplo
+              rotulo="Parceiros"
+              opcoes={opcoes?.parceiros.map((p) => ({ valor: p.id, rotulo: p.nome }))}
+              selecionados={b.parceiros}
+              aoMudar={(parceiros) => {
+                mudar({ parceiros });
+              }}
+              textoVazio="todos"
+            />
+            <FiltroMultiplo
+              rotulo="Tipo documento"
+              opcoes={opcoes && opcoesDeTipo(opcoes.tipos)}
+              selecionados={b.tipos}
+              aoMudar={(tipos) => {
+                mudar({ tipos });
+              }}
+              textoVazio="todos"
+            />
+            <span className="ml-auto text-[12.5px] text-muted-foreground">
+              {ROTULO_PERIODO[b.periodo]}
+            </span>
+          </FiltrosAvancados>
+          <FiltrandoPor etiquetas={etiquetas} />
+        </>
+      }
+    >
       {visao.isError && (
-        <p className="rounded-[10px] border border-[var(--status-bad)]/40 bg-[var(--status-bad-bg)] px-3 py-2 text-[12px] text-[var(--status-bad-fg)]">
+        <Aviso
+          tom="erro"
+          acao={
+            <Button size="sm" variant="outline" onClick={() => void visao.refetch()}>
+              <RefreshCw aria-hidden /> Tentar novamente
+            </Button>
+          }
+        >
           {mensagemAmigavel(visao.error)}
-        </p>
+        </Aviso>
       )}
       {bannerPositivo && (
-        <div className="flex items-start gap-2 rounded-[10px] border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-900">
-          <TrendingUp className="mt-0.5 h-3.5 w-3.5" />
-          <span>
-            Sua performance real é <strong>{formatarPontos(t.diferencaPp)}</strong> melhor do que
-            aparece. <strong>{formatarInteiro(t.nascidosAtrasados)}</strong> CTRC(s) foram emitidos
-            a menos de 48 horas da previsão de entrega neste período.
-          </span>
-        </div>
+        <Aviso tom="sucesso" icone={TrendingUp}>
+          Sua performance real é <strong>{formatarPontos(t.diferencaPp)}</strong> melhor do que
+          aparece. <strong>{formatarInteiro(t.nascidosAtrasados)}</strong> CTRC(s) foram emitidos a
+          menos de 48 horas da previsão de entrega neste período.
+        </Aviso>
       )}
       {parceiroProblema && (
-        <div className="flex items-start gap-2 rounded-[10px] border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5" />
-          <span>
-            Atenção: o parceiro <strong>{parceiroProblema.nome}</strong> está enviando muitas cargas
-            com menos de 48 horas de prazo (
-            <strong>{formatarPercentual(parceiroProblema.pctNascidos, { casas: 0 })}</strong> neste
-            período). Vale uma conversa comercial.
-          </span>
-        </div>
+        <Aviso tom="alerta">
+          Atenção: o parceiro <strong>{parceiroProblema.nome}</strong> está enviando muitas cargas
+          com menos de 48 horas de prazo (
+          <strong>{formatarPercentual(parceiroProblema.pctNascidos, { casas: 0 })}</strong> neste
+          período). Vale uma conversa comercial.
+        </Aviso>
       )}
       {bannerVariacao && a.deltaGapPp !== null && (
-        <div className="flex items-start gap-2 rounded-[10px] border border-border/70 bg-card px-3 py-2 text-[12px]">
-          {a.deltaGapPp > 0 ? (
-            <TrendingUp className="mt-0.5 h-3.5 w-3.5 text-amber-700" />
-          ) : (
-            <TrendingDown className="mt-0.5 h-3.5 w-3.5 text-emerald-700" />
-          )}
-          <span>
-            O impacto de prazos herdados {a.deltaGapPp > 0 ? "aumentou" : "diminuiu"}{" "}
-            <strong>{formatarPontos(Math.abs(a.deltaGapPp))}</strong> em relação ao período
-            anterior.
-          </span>
-        </div>
+        <Aviso tom="info" icone={a.deltaGapPp > 0 ? TrendingUp : TrendingDown}>
+          O impacto de prazos herdados {a.deltaGapPp > 0 ? "aumentou" : "diminuiu"}{" "}
+          <strong>{formatarPontos(Math.abs(a.deltaGapPp))}</strong> em relação ao período anterior.
+        </Aviso>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <CartaoMetrica
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
           rotulo="Performance total"
-          selo="como o SSW mostra"
           valor={t ? formatarPercentual(t.performanceTotal) : "—"}
-          tom={t && tomDoSla(t.performanceTotal, sla)}
-          dica="considerando todos os CTRCs"
-          carregando={visao.isLoading}
+          status={t ? tomDoSla(t.performanceTotal, sla) : "bom"}
+          neutro={!t}
+          icone={Gauge}
+          detalhe="como o SSW mostra · considerando todos os CTRCs"
         />
-        <CartaoMetrica
+        <KpiCard
           rotulo="Performance própria"
-          selo="responsabilidade real"
-          seloDaMarca
           valor={t ? formatarPercentual(t.performancePropria) : "—"}
-          tom={t && tomDoSla(t.performancePropria, sla)}
-          dica="apenas CTRCs com prazo próprio"
-          carregando={visao.isLoading}
-          destaque
+          status={t ? tomDoSla(t.performancePropria, sla) : "bom"}
+          neutro={!t}
+          icone={ShieldCheck}
+          detalhe="responsabilidade real · apenas CTRCs com prazo próprio"
         />
-        <CartaoMetrica
+        <KpiCard
           rotulo="Diferença"
-          selo="atribuído a parceiros"
           valor={t ? formatarPontos(t.diferencaPp) : "—"}
-          tom={t && t.diferencaPp > 0 ? "bom" : "neutro"}
-          dica="o quanto sua performance está sendo puxada para baixo por prazos herdados"
-          carregando={visao.isLoading}
+          status="bom"
+          neutro={!(t && t.diferencaPp > 0)}
+          icone={Scale}
+          detalhe="atribuído a parceiros · o quanto sua performance está sendo puxada para baixo por prazos herdados"
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="rounded-[10px] border border-border/70 bg-card p-3">
-          <h2 className="text-[14px] font-medium">Origem do prazo</h2>
-          <p className="text-[11px] text-muted-foreground">Distribuição dos CTRCs no período</p>
-          {visao.isLoading ? (
-            <Skeleton className="mt-4 h-16 rounded bg-muted/60" />
-          ) : t && t.totalCtes > 0 ? (
-            <>
-              <div className="mt-4 flex h-4 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full bg-[var(--brand)]"
-                  style={{ width: `${t.pctPrazoProprio * 100}%` }}
-                />
-                <div
-                  className="h-full bg-amber-400"
-                  style={{ width: `${t.pctPrazoParceiro * 100}%` }}
-                />
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[var(--brand)]" /> Prazo próprio
-                  </div>
-                  <div className="mt-0.5 text-[18px] font-medium tabular-nums">
-                    {formatarInteiro(t.totalProprio)}{" "}
-                    <span className="text-[11px] text-muted-foreground">
-                      ({formatarPercentual(t.pctPrazoProprio, { casas: 0 })})
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-amber-400" /> Prazo do parceiro
-                  </div>
-                  <div className="mt-0.5 text-[18px] font-medium tabular-nums">
-                    {formatarInteiro(t.totalParceiro)}{" "}
-                    <span className="text-[11px] text-muted-foreground">
-                      ({formatarPercentual(t.pctPrazoParceiro, { casas: 0 })})
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Painel
+          titulo="Origem do prazo"
+          descricao="Distribuição dos CTRCs no período"
+          icone={ChartPie}
+          classeDoCorpo="px-5 py-4"
+          rodape={
+            t &&
+            t.totalCtes > 0 && (
+              <span>
                 {formatarInteiro(t.totalParceiro)} CTRC(s) usaram o prazo importado do parceiro
                 neste período.
-              </p>
-            </>
-          ) : (
-            <p className="mt-4 text-[12px] text-muted-foreground">Sem CTRCs no período filtrado.</p>
-          )}
-        </div>
-
-        <div className="rounded-[10px] border border-border/70 bg-card p-3">
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-[14px] font-medium">Nascidos em atraso</h2>
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="O que conta como nascido em atraso"
-                  >
-                    <Info className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[300px] text-[11px] leading-snug">
-                  CTRCs emitidos a menos de 48 horas (corridas) da previsão de entrega. A{" "}
-                  {nomeCurto} não teria como cumprir: o atraso é do parceiro. CTRCs da TROCA ficam
-                  fora da conta. Só compara prazos — ocorrências, inclusive as de responsabilidade
-                  do cliente, não entram.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Emitido a menos de 48 horas da previsão de entrega
-          </p>
+              </span>
+            )
+          }
+        >
           {visao.isLoading ? (
-            <Skeleton className="mt-4 h-16 rounded bg-muted/60" />
+            <Skeleton className="h-20 rounded-lg bg-muted" />
+          ) : t && t.totalCtes > 0 ? (
+            <OrigemDoPrazo
+              totais={t}
+              aoVerParceiro={() => {
+                irParaLista("prazo_parceiro");
+              }}
+            />
+          ) : (
+            <EstadoVazio className="py-6" mensagem="Sem CTRCs no período filtrado." />
+          )}
+        </Painel>
+
+        <Painel
+          titulo={
+            <span className="inline-flex items-center gap-1.5">
+              Nascidos em atraso
+              <InfoTip
+                texto={`CTRCs emitidos a menos de 48 horas (corridas) da previsão de entrega. A ${nomeCurto} não teria como cumprir: o atraso é do parceiro. CTRCs da TROCA ficam fora da conta. Só compara prazos — ocorrências, inclusive as de responsabilidade do cliente, não entram.`}
+              />
+            </span>
+          }
+          descricao="Emitido a menos de 48 horas da previsão de entrega"
+          icone={Clock4}
+          classeDoCorpo="px-5 py-4"
+          rodape={
+            <Button
+              size="sm"
+              variant="ghost"
+              className="-ml-2 text-brand"
+              onClick={() => {
+                irParaLista("nascidos");
+              }}
+            >
+              Ver lista <ArrowRight aria-hidden />
+            </Button>
+          }
+        >
+          {visao.isLoading ? (
+            <Skeleton className="h-20 rounded-lg bg-muted" />
           ) : (
             <>
-              <div className="mt-3 text-[36px] font-medium tabular-nums">
-                {formatarInteiro(t?.nascidosAtrasados ?? 0)}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="num-hero text-foreground">
+                  {formatarInteiro(t?.nascidosAtrasados ?? 0)}
+                </span>
+                {a && a.deltaNascidos !== 0 && (
+                  <SeloStatus
+                    tom={a.deltaNascidos > 0 ? "erro" : "sucesso"}
+                    icone={a.deltaNascidos > 0 ? TrendingUp : TrendingDown}
+                  >
+                    {a.deltaNascidos > 0 ? `+${String(a.deltaNascidos)}` : a.deltaNascidos} vs
+                    período anterior
+                  </SeloStatus>
+                )}
               </div>
-              <div className="text-[11px] text-muted-foreground">
+              <p className="mt-1.5 text-[13px] text-muted-foreground">
                 CTRC(s) no período
                 {t?.pctNascidos != null && (
                   <> · {formatarPercentual(t.pctNascidos, { casas: 0 })} dos CTRCs avaliados</>
                 )}
-                {a && a.deltaNascidos !== 0 && (
-                  <span
-                    className={cn(
-                      "ml-2",
-                      a.deltaNascidos > 0 ? "text-[var(--status-bad)]" : "text-emerald-700",
-                    )}
-                  >
-                    {a.deltaNascidos > 0 ? `+${a.deltaNascidos}` : a.deltaNascidos} vs período
-                    anterior
-                  </span>
-                )}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-3 h-7 text-[12px]"
-                onClick={verLista}
-              >
-                Ver lista <ArrowRight className="ml-1.5 h-3 w-3" />
-              </Button>
+              </p>
             </>
           )}
-        </div>
+        </Painel>
       </div>
 
-      <div className="rounded-[10px] border border-border/70 bg-card">
-        <div className="border-b border-border/70 p-3">
-          <h2 className="text-[14px] font-medium">
-            Parceiros com mais prazos inviáveis no período
-          </h2>
-          <p className="text-[11px] text-muted-foreground">
-            Top 10 — clique para abrir o detalhe do parceiro
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr className="border-b border-border/70">
-                <th className="px-3 py-1.5 text-left font-normal">Parceiro</th>
-                <th className="px-3 py-1.5 text-right font-normal">CTRCs</th>
-                <th className="px-3 py-1.5 text-right font-normal">Prazo do parceiro</th>
-                <th className="px-3 py-1.5 text-right font-normal">Nascidos em atraso</th>
-                <th className="px-3 py-1.5 text-right font-normal">Performance</th>
-                <th className="px-3 py-1.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {visao.isLoading && <LinhasCarregando linhas={5} colunas={6} />}
-              {visao.isSuccess && ranking.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-3 py-10 text-center text-muted-foreground">
-                    Sem dados no período.
-                  </td>
-                </tr>
-              )}
-              {ranking.slice(0, 10).map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() =>
-                    void navigate({
-                      to: "/prazo-parceiro/$id",
-                      params: { id: p.id },
-                      search: { periodo: b.periodo, unidades: b.unidades, tipos: b.tipos },
-                    })
-                  }
-                  className="cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/40"
-                >
-                  <td className="px-3 py-1.5">
-                    <div className="font-medium">{p.nome}</div>
-                    {p.usaSsw && <span className="text-[10px] text-muted-foreground">usa SSW</span>}
-                  </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">
-                    {formatarInteiro(p.total)}
-                  </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">
-                    {formatarInteiro(p.qtdParceiro)}{" "}
-                    <span className="text-muted-foreground">
-                      ({formatarPercentual(p.pctParceiro, { casas: 0 })})
-                    </span>
-                  </td>
-                  <td
-                    className={cn(
-                      "px-3 py-1.5 text-right tabular-nums",
-                      p.pctNascidos > 0.1 && "font-medium text-[var(--status-bad)]",
-                    )}
-                  >
-                    {formatarInteiro(p.nascidosAtrasados)}{" "}
-                    <span className="opacity-75">
-                      ({formatarPercentual(p.pctNascidos, { casas: 0 })})
-                    </span>
-                  </td>
-                  <td
-                    className={cn(
-                      "px-3 py-1.5 text-right tabular-nums",
-                      classeDoSla(p.performanceComParceiro, sla),
-                    )}
-                  >
-                    {formatarPercentual(p.performanceComParceiro)}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    <ChevronRight className="inline h-3.5 w-3.5 text-muted-foreground" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <TabelaDados
+        titulo="Parceiros com mais prazos inviáveis no período"
+        colunas={colunasDoRanking}
+        linhas={ranking.slice(0, 10)}
+        chaveDaLinha={(p) => p.id}
+        aoClicarLinha={(p) =>
+          void navigate({
+            to: "/prazo-parceiro/$id",
+            params: { id: p.id },
+            search: { periodo: b.periodo, unidades: b.unidades, tipos: b.tipos },
+          })
+        }
+        carregando={visao.isLoading}
+        erro={visao.error}
+        aoTentarDeNovo={() => void visao.refetch()}
+        mensagemVazia="Sem dados no período."
+        porPagina={0}
+        rotuloTotal={() => "Top 10 — clique para abrir o detalhe do parceiro"}
+      />
 
-      <div id="lista-ctrcs" className="scroll-mt-4 rounded-[10px] border border-border/70 bg-card">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/70 p-2">
-          <div role="group" className="flex rounded-md border border-border/70 p-0.5">
-            {FILTROS_DA_LISTA.map((f) => (
-              <button
-                key={f}
-                type="button"
-                aria-pressed={b.filtro === f}
-                onClick={() => {
-                  mudar({ filtro: f });
+      <div id="lista-ctrcs" className="scroll-mt-36">
+        <TabelaDados
+          colunas={colunasDaLista}
+          linhas={lista.data?.linhas ?? []}
+          chaveDaLinha={(l) => l.id}
+          aoClicarLinha={(l) => {
+            abrirCte(l.numero);
+          }}
+          carregando={lista.isLoading}
+          erro={lista.error}
+          aoTentarDeNovo={() => void lista.refetch()}
+          mensagemVazia="Não há CTRCs com prazo do parceiro no período filtrado. Tente ampliar o período."
+          paginacaoServidor={{
+            pagina: b.page,
+            porPagina: b.size,
+            total: lista.data?.total ?? 0,
+            aoMudarPagina: (page) => {
+              definir({ page });
+            },
+          }}
+          rotuloTotal={(n) => `${formatarInteiro(n)} CTRC(s)`}
+          acoes={
+            <>
+              <Alternador
+                rotulo="Filtro da lista"
+                tamanho="pequeno"
+                opcoes={FILTROS_DA_LISTA.map((f) => ({ valor: f, rotulo: ROTULO_FILTRO[f] }))}
+                valor={b.filtro}
+                aoMudar={(filtro) => {
+                  mudar({ filtro });
                 }}
-                className={cn(
-                  "rounded-[5px] px-3 py-1 text-[12px] transition-colors",
-                  b.filtro === f
-                    ? "bg-[var(--brand)] text-white"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {ROTULO_FILTRO[f]}
-              </button>
-            ))}
-          </div>
-          <ExportMenu
-            className="ml-auto"
-            arquivo={`prazo-parceiro-${b.periodo}`}
-            titulo="Prazo do parceiro"
-            subtitulo={ROTULO_PERIODO[b.periodo]}
-            colunas={COLUNAS_DA_EXPORTACAO}
-            linhas={[]}
-            carregarLinhas={carregarParaExportar}
-            formatos={["csv", "excel"]}
-            desabilitado={lista.isLoading}
-          />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr className="border-b border-border/70">
-                <th className="px-3 py-1.5 text-left font-normal">CTRC</th>
-                <th className="px-3 py-1.5 text-left font-normal">Parceiro</th>
-                <th className="px-3 py-1.5 text-left font-normal">Embarque</th>
-                <th className="px-3 py-1.5 text-left font-normal">Prazo entrega</th>
-                <th className="px-3 py-1.5 text-left font-normal">Mínimo 48h</th>
-                <th className="px-3 py-1.5 text-right font-normal">Abaixo do padrão (dias)</th>
-                <th className="px-3 py-1.5 text-left font-normal">Origem</th>
-                <th className="px-3 py-1.5 text-left font-normal">Status</th>
-                <th className="px-3 py-1.5 text-left font-normal">Setor</th>
-                <th className="px-3 py-1.5 text-left font-normal">Unidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lista.isLoading && <LinhasCarregando linhas={6} colunas={10} />}
-              {lista.isError && (
-                <tr>
-                  <td colSpan={10} className="px-3 py-8 text-center text-destructive">
-                    {mensagemAmigavel(lista.error)}
-                  </td>
-                </tr>
-              )}
-              {lista.isSuccess && lista.data.linhas.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-3 py-10 text-center text-muted-foreground">
-                    Não há CTRCs com prazo do parceiro no período filtrado. Tente ampliar o período.
-                  </td>
-                </tr>
-              )}
-              {lista.data?.linhas.map((l) => (
-                <tr
-                  key={l.id}
-                  onClick={() => {
-                    abrirCte(l.numero);
-                  }}
-                  className="cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/40"
-                >
-                  <td className="px-3 py-1.5 font-mono text-[11px] text-[var(--brand)]">
-                    {l.numero}
-                  </td>
-                  <td className="max-w-[160px] truncate px-3 py-1.5">{l.parceiroNome ?? "—"}</td>
-                  <td className="px-3 py-1.5">{formatarData(l.dataEmbarque)}</td>
-                  <td className="px-3 py-1.5">{formatarData(l.dataPrevista)}</td>
-                  <td className="px-3 py-1.5 text-muted-foreground">
-                    {formatarData(l.prazoPadraoData)}
-                  </td>
-                  <td
-                    className={cn(
-                      "px-3 py-1.5 text-right tabular-nums",
-                      l.nasceuAtrasado && "font-medium text-[var(--status-bad)]",
-                    )}
+              />
+              <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+                <label className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+                  <span>Linhas por página:</span>
+                  <Select
+                    value={String(b.size)}
+                    onValueChange={(v) => {
+                      mudar({ size: tamanhoDaLista(Number(v)) });
+                    }}
                   >
-                    {l.diasAbaixoDoPadrao ?? "—"}
-                  </td>
-                  <td className="px-3 py-1.5">
-                    <span
-                      className={cn(
-                        "rounded-full px-1.5 py-px text-[10px]",
-                        l.prazoOrigem === "parceiro"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-muted text-muted-foreground",
-                      )}
+                    <SelectTrigger
+                      aria-label="Linhas por página"
+                      className="h-8 w-[76px] text-[13px] font-medium text-foreground"
                     >
-                      {l.prazoOrigem === "parceiro" ? "Parceiro" : "Próprio"}
-                    </span>
-                  </td>
-                  <td className="max-w-[140px] truncate px-3 py-1.5 text-muted-foreground">
-                    {l.statusAtual ?? "—"}
-                  </td>
-                  <td className="px-3 py-1.5 font-mono">{l.setor ?? "—"}</td>
-                  <td className="max-w-[140px] truncate px-3 py-1.5">{l.unidadeNome ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 px-3 py-2 text-[12px]">
-          <label className="flex items-center gap-2 text-muted-foreground">
-            <span>Linhas por página:</span>
-            <select
-              className="rounded border border-border/70 bg-background px-1 py-0.5 text-[12px]"
-              value={b.size}
-              onChange={(e) => {
-                mudar({ size: tamanhoDaLista(Number(e.target.value)) });
-              }}
-            >
-              {TAMANHOS_DA_LISTA.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <span className="ml-2">{formatarInteiro(lista.data?.total ?? 0)} CTRC(s)</span>
-          </label>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">
-              Página {b.page} de {totalDePaginas}
-            </span>
-            <BotoesDePagina
-              pagina={b.page}
-              totalDePaginas={totalDePaginas}
-              aoMudar={(page) => {
-                definir({ page });
-              }}
-              className="h-7"
-            />
-          </div>
-        </div>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TAMANHOS_DA_LISTA.map((s) => (
+                        <SelectItem key={s} value={String(s)} className="text-[13px]">
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <ExportMenu
+                  arquivo={`prazo-parceiro-${b.periodo}`}
+                  titulo="Prazo do parceiro"
+                  subtitulo={ROTULO_PERIODO[b.periodo]}
+                  colunas={COLUNAS_DA_EXPORTACAO}
+                  linhas={[]}
+                  carregarLinhas={carregarParaExportar}
+                  formatos={["csv", "excel"]}
+                  desabilitado={lista.isLoading}
+                />
+              </div>
+            </>
+          }
+        />
       </div>
-    </div>
+    </Pagina>
+  );
+}
+
+/**
+ * Barra 100% empilhada da origem do prazo (2 partes): dica no passar do mouse e no foco; a parte
+ * do parceiro filtra a lista abaixo.
+ */
+function OrigemDoPrazo({
+  totais: t,
+  aoVerParceiro,
+}: {
+  totais: TotaisDoPrazo;
+  aoVerParceiro: () => void;
+}) {
+  const partes = [
+    {
+      chave: "proprio" as const,
+      rotulo: "Prazo próprio",
+      qtd: t.totalProprio,
+      pct: t.pctPrazoProprio,
+    },
+    {
+      chave: "parceiro" as const,
+      rotulo: "Prazo do parceiro",
+      qtd: t.totalParceiro,
+      pct: t.pctPrazoParceiro,
+    },
+  ];
+  const dica = (p: (typeof partes)[number]) =>
+    `${p.rotulo}: ${formatarInteiro(p.qtd)} (${formatarPercentual(p.pct, { casas: 0 })})`;
+  return (
+    <TooltipProvider delayDuration={80}>
+      <div className="flex h-4 w-full gap-0.5 overflow-hidden rounded-full bg-muted">
+        {partes.map((p) => {
+          const estilo = { width: `${String(p.pct * 100)}%`, background: COR_DA_ORIGEM[p.chave] };
+          const classe =
+            "h-full min-w-1 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+          return (
+            <Tooltip key={p.chave}>
+              <TooltipTrigger asChild>
+                {p.chave === "parceiro" ? (
+                  <button
+                    type="button"
+                    aria-label={dica(p)}
+                    onClick={aoVerParceiro}
+                    className={cn(classe, "cursor-pointer")}
+                    style={estilo}
+                  />
+                ) : (
+                  <span
+                    role="img"
+                    tabIndex={0}
+                    aria-label={dica(p)}
+                    className={classe}
+                    style={estilo}
+                  />
+                )}
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-[12px]">
+                {dica(p)}
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        {partes.map((p) => (
+          <div key={p.chave}>
+            <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+              <span
+                aria-hidden
+                className="h-2.5 w-2.5 rounded-[3px]"
+                style={{ background: COR_DA_ORIGEM[p.chave] }}
+              />
+              {p.rotulo}
+            </div>
+            <div className="mt-1 text-[18px] font-bold text-foreground tabular-nums">
+              {formatarInteiro(p.qtd)}{" "}
+              <span className="text-[12.5px] font-medium text-muted-foreground">
+                ({formatarPercentual(p.pct, { casas: 0 })})
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }

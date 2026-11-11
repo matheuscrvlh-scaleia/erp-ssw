@@ -1,30 +1,52 @@
 import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
+import { type Feriado } from "@erp/shared/contratos/calendario";
 import {
   type Anotacao,
   contratosHistorico as c,
   type DadosDaAnotacao,
   ROTULO_DO_TIPO_DE_ANOTACAO,
-  type TipoAnotacao,
   TIPOS_ANOTACAO,
 } from "@erp/shared/contratos/historico";
 import { diaDaSemana, hojeNoFuso, somarDias } from "@erp/shared/datas";
 import { formatarData, formatarInteiro } from "@erp/shared/formatacao";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Bookmark, CalendarDays, Plus, Search } from "lucide-react";
+import {
+  Bookmark,
+  CalendarCheck,
+  CalendarDays,
+  NotebookPen,
+  Pencil,
+  Plus,
+  Search,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { Abas } from "@/componentes/comum/Abas";
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
-import { etiquetasQueLimpam, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
+import {
+  etiquetasQueLimpam,
+  FiltrandoPor,
+  FiltrosAvancados,
+} from "@/componentes/comum/FiltrosAvancados";
+import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
+import { corDoTipo } from "@/modulos/calendario/calendario";
 
 import { CHAVE_DO_HISTORICO, consultaHistorico } from "./api";
 import {
@@ -39,20 +61,9 @@ import {
   ROTULO_DA_PRESENCA,
   ROTULO_DO_PERIODO,
 } from "./busca";
+import { FiltroUnico } from "./FiltroUnico";
 import { type AberturaDoModal, ModalDeAnotacao } from "./ModalDeAnotacao";
-
-const COR_DO_TIPO: Record<TipoAnotacao, string> = {
-  clima: "bg-sky-50 border-sky-200 text-sky-900",
-  operacional: "bg-slate-50 border-slate-200 text-slate-900",
-  feriado: "bg-amber-50 border-amber-200 text-amber-900",
-  outro: "bg-zinc-50 border-zinc-200 text-zinc-900",
-};
-const PONTO_DO_TIPO: Record<TipoAnotacao, string> = {
-  clima: "bg-sky-500",
-  operacional: "bg-slate-500",
-  feriado: "bg-amber-500",
-  outro: "bg-zinc-500",
-};
+import { COR_DO_TIPO, ICONE_DO_TIPO } from "./tipos";
 
 function diaPorExtenso(iso: string): string {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -86,34 +97,48 @@ function useAtalhoNovaAnotacao(abrir: () => void) {
   }, [abrir]);
 }
 
-function CartaoTotal({ rotulo, valor }: { rotulo: string; valor: number }) {
-  return (
-    <div className="rounded-lg border border-l-[5px] border-border/60 border-l-kpi-positive bg-card p-4">
-      <p className="text-[11px] tracking-wide text-muted-foreground uppercase">{rotulo}</p>
-      <p className="mt-1 text-[24px] font-semibold text-kpi-positive tabular-nums">
-        {formatarInteiro(valor)}
-      </p>
-    </div>
-  );
-}
-
 function ItemDeAnotacao({ a, aoEditar }: { a: Anotacao; aoEditar: (() => void) | null }) {
+  const Icone = ICONE_DO_TIPO[a.tipo];
   const conteudo = (
     <>
-      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${PONTO_DO_TIPO[a.tipo]}`} />
-      <span className="flex-1">
-        <span className="block whitespace-pre-line">{a.texto}</span>
-        <span className="text-[11px] opacity-70">
-          {ROTULO_DO_TIPO_DE_ANOTACAO[a.tipo]}
+      <span
+        aria-hidden
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+          COR_DO_TIPO[a.tipo].icone,
+        )}
+      >
+        <Icone className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block whitespace-pre-line text-foreground">{a.texto}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">
+            {ROTULO_DO_TIPO_DE_ANOTACAO[a.tipo]}
+          </span>
           {a.unidadeNome && ` · ${a.unidadeNome}`}
           {a.autorNome && ` · ${a.autorNome}`}
         </span>
       </span>
+      {aoEditar && (
+        <Pencil
+          className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          aria-hidden
+        />
+      )}
     </>
   );
-  const classe = `flex w-full items-start gap-2 rounded-md border px-3 py-2 text-left text-[13px] ${COR_DO_TIPO[a.tipo]}`;
+  const classe =
+    "group flex w-full items-start gap-3 rounded-xl border border-border bg-card px-3.5 py-3 text-left text-[13px] shadow-cartao";
   return aoEditar ? (
-    <button type="button" onClick={aoEditar} className={`${classe} hover:brightness-95`}>
+    <button
+      type="button"
+      onClick={aoEditar}
+      className={cn(
+        classe,
+        "transition-[border-color,box-shadow] hover:border-brand/40 hover:shadow-flutuante",
+      )}
+    >
       {conteudo}
     </button>
   ) : (
@@ -121,6 +146,33 @@ function ItemDeAnotacao({ a, aoEditar }: { a: Anotacao; aoEditar: (() => void) |
   );
 }
 
+function ItemDeFeriado({ f }: { f: Feriado }) {
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 rounded-xl border px-3.5 py-3 text-[13px]",
+        corDoTipo(f.tipo),
+      )}
+    >
+      <span
+        aria-hidden
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-card/70"
+      >
+        <CalendarDays className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold">{f.descricao}</div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          {f.tipo === "nacional"
+            ? "Nacional"
+            : [f.cidade, f.uf].filter(Boolean).join("/") || "Municipal"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Linha do tempo por dia, do mais recente ao mais antigo (30 dias por vez). */
 function Linha({
   dias,
   editavel,
@@ -131,44 +183,44 @@ function Linha({
   aoEditar: (a: Anotacao) => void;
 }) {
   const [limite, setLimite] = useState(30);
+  const visiveis = dias.slice(0, limite);
   return (
-    <div className="space-y-6">
-      {dias.slice(0, limite).map((d) => (
-        <section key={d.dia} className="space-y-2">
-          <h3 className="text-[12px] font-semibold tracking-wide text-muted-foreground uppercase">
-            {diaPorExtenso(d.dia)}
-          </h3>
-          {d.feriados.map((f) => (
-            <div
-              key={f.id}
-              className={`flex items-start gap-2 rounded-md border px-3 py-2 text-[13px] ${COR_DO_TIPO.feriado}`}
-            >
-              <CalendarDays className="mt-0.5 h-4 w-4" />
-              <div className="flex-1">
-                <div className="font-medium">{f.descricao}</div>
-                <div className="text-[11px] opacity-70">
-                  {f.tipo === "nacional"
-                    ? "Nacional"
-                    : [f.cidade, f.uf].filter(Boolean).join("/") || "Municipal"}
-                </div>
-              </div>
-            </div>
-          ))}
-          {d.anotacoes.map((a) => (
-            <ItemDeAnotacao
-              key={a.id}
-              a={a}
-              aoEditar={
-                editavel(a)
-                  ? () => {
-                      aoEditar(a);
-                    }
-                  : null
-              }
+    <div className="space-y-4">
+      <ol>
+        {visiveis.map((d, i) => (
+          <li key={d.dia} className="relative pb-6 pl-8 last:pb-0">
+            {i < visiveis.length - 1 && (
+              <span
+                aria-hidden
+                className="absolute top-5 -bottom-0.5 left-[8.5px] w-0.5 rounded-full bg-muted-foreground/35"
+              />
+            )}
+            <span
+              aria-hidden
+              className="absolute top-1 left-[3px] h-[13px] w-[13px] rounded-full border-[3px] border-brand bg-card"
             />
-          ))}
-        </section>
-      ))}
+            <h3 className="label-xs pt-0.5">{diaPorExtenso(d.dia)}</h3>
+            <div className="mt-2.5 space-y-2">
+              {d.feriados.map((f) => (
+                <ItemDeFeriado key={f.id} f={f} />
+              ))}
+              {d.anotacoes.map((a) => (
+                <ItemDeAnotacao
+                  key={a.id}
+                  a={a}
+                  aoEditar={
+                    editavel(a)
+                      ? () => {
+                          aoEditar(a);
+                        }
+                      : null
+                  }
+                />
+              ))}
+            </div>
+          </li>
+        ))}
+      </ol>
       {dias.length > limite && (
         <Button
           variant="outline"
@@ -191,6 +243,7 @@ function Calendario({
   dias,
   inicio,
   fim,
+  hoje,
   editavel,
   aoEditar,
   aoCriar,
@@ -198,6 +251,7 @@ function Calendario({
   dias: readonly DiaDoHistorico[];
   inicio: string;
   fim: string;
+  hoje: string;
   editavel: (a: Anotacao) => boolean;
   aoEditar: (a: Anotacao) => void;
   aoCriar: (dia: string) => void;
@@ -207,10 +261,10 @@ function Calendario({
   const celulas: string[] = [];
   for (let d = primeiro; d <= fim || diaDaSemana(d) !== 0; d = somarDias(d, 1)) celulas.push(d);
   return (
-    <div className="overflow-x-auto">
-      <div className="grid min-w-[700px] grid-cols-7 gap-1 text-[12px]">
+    <div className="rolagem-fina overflow-x-auto">
+      <div className="grid min-w-[700px] grid-cols-7 gap-1.5 text-[12.5px]">
         {DIAS_DA_SEMANA.map((d) => (
-          <div key={d} className="px-1 font-semibold text-muted-foreground">
+          <div key={d} className="label-xs px-1.5 pb-1">
             {d}
           </div>
         ))}
@@ -220,7 +274,12 @@ function Calendario({
           return (
             <div
               key={dia}
-              className={`min-h-[84px] rounded border p-1 ${noPeriodo ? "border-border/60 bg-card" : "border-transparent opacity-40"}`}
+              aria-current={dia === hoje ? "date" : undefined}
+              className={cn(
+                "flex min-h-24 flex-col gap-1 rounded-lg border p-1.5",
+                noPeriodo ? "border-border bg-card" : "border-transparent bg-muted/50 opacity-50",
+                dia === hoje && "border-brand ring-1 ring-brand",
+              )}
             >
               <button
                 type="button"
@@ -229,12 +288,22 @@ function Calendario({
                   aoCriar(dia);
                 }}
                 title="Nova anotação neste dia"
-                className="w-full text-left font-semibold tabular-nums hover:text-primary"
+                className="group/novo flex w-full items-center justify-between rounded-md px-1 text-left font-semibold tabular-nums hover:bg-muted hover:text-brand disabled:hover:bg-transparent disabled:hover:text-inherit"
               >
                 {dia.slice(8)}/{dia.slice(5, 7)}
+                {noPeriodo && (
+                  <Plus
+                    className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/novo:opacity-100"
+                    aria-hidden
+                  />
+                )}
               </button>
               {d?.feriados.map((f) => (
-                <div key={f.id} className="truncate rounded bg-amber-100 px-1 text-amber-900">
+                <div
+                  key={f.id}
+                  title={f.descricao}
+                  className={cn("truncate rounded-md border px-1.5 py-0.5", corDoTipo(f.tipo))}
+                >
                   {f.descricao}
                 </div>
               ))}
@@ -247,9 +316,12 @@ function Calendario({
                     aoEditar(a);
                   }}
                   title={a.texto}
-                  className={`mt-0.5 flex w-full items-center gap-1 truncate rounded border px-1 text-left ${COR_DO_TIPO[a.tipo]}`}
+                  className="flex w-full items-center gap-1.5 rounded-md border border-border bg-superficie px-1.5 py-0.5 text-left hover:border-brand/40 disabled:hover:border-border"
                 >
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PONTO_DO_TIPO[a.tipo]}`} />
+                  <span
+                    aria-hidden
+                    className={cn("h-2 w-2 shrink-0 rounded-full", COR_DO_TIPO[a.tipo].ponto)}
+                  />
                   <span className="truncate">{a.texto}</span>
                 </button>
               ))}
@@ -266,12 +338,18 @@ export function PaginaHistorico() {
   const fuso = useFusoDaEmpresa();
   const hoje = hojeNoFuso(fuso);
   const admin = ehAdminDaEmpresa(acesso.papel);
-  const { filtros: busca, definir } = useFiltrosNaUrl(esquemaDaBusca);
+  const { filtros: busca, definir, limpar } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = intervaloDoPeriodo(busca.periodo, hoje);
   const queryClient = useQueryClient();
   const consulta = useQuery(consultaHistorico(periodo.inicio, periodo.fim, busca.unidades));
   const d = consulta.data;
   const dias = diasDoHistorico(d?.anotacoes ?? [], d?.feriados ?? [], busca);
+  const filtrosLigados =
+    busca.tipos.length > 0 ||
+    busca.presenca !== "todos" ||
+    busca.autor !== "" ||
+    busca.q !== "" ||
+    busca.unidades.length > 0;
 
   const [modalAberto, setModalAberto] = useState(false);
   const [abertura, setAbertura] = useState<AberturaDoModal>({});
@@ -335,30 +413,26 @@ export function PaginaHistorico() {
     })),
   ]);
 
+  const textoDoPeriodo = `${formatarData(periodo.inicio)} a ${formatarData(periodo.fim)}`;
+  const nomeDaUnidade = (id: string) => d?.unidades.find((u) => u.id === id)?.nome;
+
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-[20px] font-semibold">
-            <Bookmark className="h-5 w-5 text-primary" /> Histórico contextual
-          </h1>
-          <p className="text-[13px] text-muted-foreground">
-            Anotações e feriados que explicam variações na operação
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <Pagina
+      titulo="Histórico contextual"
+      descricao="Anotações e feriados que explicam variações na operação"
+      acoes={
+        <>
           {acesso.telas.includes("admin_historico") && (
-            <Link
-              to="/historico/feriados"
-              className="inline-flex h-8 items-center gap-1 rounded-md border border-border px-3 text-[13px] hover:bg-muted"
-            >
-              <CalendarDays className="h-4 w-4" /> Feriados
-            </Link>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/historico/feriados">
+                <CalendarDays aria-hidden /> Feriados
+              </Link>
+            </Button>
           )}
           <ExportMenu
             arquivo={`historico-${periodo.inicio}_a_${periodo.fim}`}
             titulo="Histórico"
-            subtitulo={`Período: ${formatarData(periodo.inicio)} a ${formatarData(periodo.fim)}`}
+            subtitulo={`Período: ${textoDoPeriodo}`}
             colunas={[
               { chave: "data", titulo: "Data", formato: "data" },
               { chave: "tipo", titulo: "Tipo" },
@@ -375,189 +449,192 @@ export function PaginaHistorico() {
               abrir();
             }}
           >
-            <Plus className="mr-1 h-4 w-4" /> Nova anotação
+            <Plus aria-hidden /> Nova anotação
           </Button>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <CartaoTotal rotulo="Anotações no período" valor={d?.totais.anotacoes ?? 0} />
-        <CartaoTotal rotulo="Feriados no período" valor={d?.totais.feriados ?? 0} />
-        <CartaoTotal rotulo="Dias com contexto" valor={d?.totais.diasComContexto ?? 0} />
-      </div>
-      {d?.truncado && (
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-          O período tem mais registros do que a tela mostra de uma vez. Reduza o período para ver
-          todos.
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-card/40 p-3 text-[12px]">
-        <div role="group" aria-label="Período" className="flex items-center gap-1">
-          {PERIODOS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-pressed={busca.periodo === p}
-              onClick={() => {
+        </>
+      }
+      abas={
+        <Abas
+          abas={[
+            { valor: "timeline", rotulo: "Linha do tempo" },
+            { valor: "calendario", rotulo: "Calendário" },
+          ]}
+          valor={busca.visao}
+          aoMudar={(visao) => {
+            definir({ visao });
+          }}
+          rotulo="Visão"
+        />
+      }
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={filtrosLigados}
+            aoLimpar={() => {
+              limpar(["periodo", "visao"]);
+            }}
+          >
+            <Alternador
+              rotulo="Período"
+              opcoes={PERIODOS.map((p) => ({ valor: p, rotulo: ROTULO_DO_PERIODO[p] }))}
+              valor={busca.periodo}
+              aoMudar={(p) => {
                 definir({ periodo: p });
               }}
-              className={`rounded px-2 py-1 ${busca.periodo === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {ROTULO_DO_PERIODO[p]}
-            </button>
-          ))}
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <div role="group" aria-label="Visão" className="flex items-center gap-1">
-          {(["timeline", "calendario"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={busca.visao === v}
-              onClick={() => {
-                definir({ visao: v });
+            />
+            <FiltroMultiplo
+              rotulo="Tipo"
+              opcoes={TIPOS_ANOTACAO.map((t) => ({
+                valor: t,
+                rotulo: ROTULO_DO_TIPO_DE_ANOTACAO[t],
+              }))}
+              selecionados={busca.tipos}
+              aoMudar={(tipos) => {
+                definir({ tipos: TIPOS_ANOTACAO.filter((t) => tipos.includes(t)) });
               }}
-              className={`rounded px-2 py-1 ${busca.visao === v ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {v === "timeline" ? "Linha do tempo" : "Calendário"}
-            </button>
-          ))}
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <div role="group" aria-label="Tipo" className="flex flex-wrap items-center gap-1">
-          {TIPOS_ANOTACAO.map((t) => {
-            const ativo = busca.tipos.includes(t);
-            return (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={ativo}
-                onClick={() => {
-                  definir({
-                    tipos: ativo ? busca.tipos.filter((x) => x !== t) : [...busca.tipos, t],
-                  });
+              textoVazio="todos"
+            />
+            <FiltroUnico
+              rotulo="Dias"
+              valor={busca.presenca === "todos" ? "" : busca.presenca}
+              todos={ROTULO_DA_PRESENCA.todos}
+              opcoes={PRESENCAS.filter((p) => p !== "todos").map((p) => ({
+                valor: p,
+                rotulo: ROTULO_DA_PRESENCA[p],
+              }))}
+              aoMudar={(v) => {
+                definir({ presenca: PRESENCAS.find((p) => p === v) ?? "todos" });
+              }}
+            />
+            <FiltroUnico
+              rotulo="Autor"
+              valor={busca.autor}
+              todos="Todos autores"
+              opcoes={(d?.autores ?? []).map((a) => ({ valor: a.id, rotulo: a.nome }))}
+              aoMudar={(autor) => {
+                definir({ autor });
+              }}
+            />
+            <FiltroUnico
+              rotulo="Unidade"
+              valor={busca.unidades[0] ?? ""}
+              todos="Todas as unidades"
+              opcoes={(d?.unidades ?? []).map((u) => ({ valor: u.id, rotulo: u.nome }))}
+              aoMudar={(u) => {
+                definir({ unidades: u ? [u] : [] });
+              }}
+            />
+            <label className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] shadow-cartao focus-within:border-ring">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <input
+                aria-label="Buscar no texto"
+                placeholder="Buscar no texto…"
+                value={busca.q}
+                onChange={(e) => {
+                  definir({ q: e.target.value });
                 }}
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${ativo ? COR_DO_TIPO[t] : "border-border text-muted-foreground hover:text-foreground"}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${PONTO_DO_TIPO[t]}`} />
-                {ROTULO_DO_TIPO_DE_ANOTACAO[t]}
-              </button>
-            );
-          })}
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <select
-          aria-label="Dias"
-          value={busca.presenca}
-          onChange={(e) => {
-            definir({ presenca: PRESENCAS.find((p) => p === e.target.value) ?? "todos" });
-          }}
-          className="rounded border border-border bg-background px-2 py-1"
-        >
-          {PRESENCAS.map((p) => (
-            <option key={p} value={p}>
-              {ROTULO_DA_PRESENCA[p]}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Autor"
-          value={busca.autor}
-          onChange={(e) => {
-            definir({ autor: e.target.value });
-          }}
-          className="rounded border border-border bg-background px-2 py-1"
-        >
-          <option value="">Todos autores</option>
-          {d?.autores.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.nome}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Unidade"
-          value={busca.unidades[0] ?? ""}
-          onChange={(e) => {
-            definir({ unidades: e.target.value ? [e.target.value] : [] });
-          }}
-          className="rounded border border-border bg-background px-2 py-1"
-        >
-          <option value="">Todas as unidades</option>
-          {d?.unidades.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.nome}
-            </option>
-          ))}
-        </select>
-        <label className="flex items-center gap-1 rounded border border-border bg-background px-2 py-1">
-          <Search className="h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            aria-label="Buscar no texto"
-            placeholder="Buscar no texto…"
-            value={busca.q}
-            onChange={(e) => {
-              definir({ q: e.target.value });
-            }}
-            className="w-40 bg-transparent outline-none"
+                className="w-44 bg-transparent outline-none placeholder:text-muted-foreground"
+              />
+            </label>
+          </FiltrosAvancados>
+          <FiltrandoPor
+            etiquetas={etiquetasQueLimpam(
+              etiquetasDaBusca(busca, {
+                unidade: nomeDaUnidade,
+                autor: (id) => d?.autores.find((a) => a.id === id)?.nome,
+              }),
+              definir,
+            )}
           />
-        </label>
-      </div>
-      <FiltrandoPor
-        etiquetas={etiquetasQueLimpam(
-          etiquetasDaBusca(busca, {
-            unidade: (id) => d?.unidades.find((u) => u.id === id)?.nome,
-            autor: (id) => d?.autores.find((a) => a.id === id)?.nome,
-          }),
-          definir,
-        )}
-      />
-
-      {consulta.isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-16 rounded-lg bg-muted/40" />
-          ))}
-        </div>
-      ) : consulta.error ? (
-        <MensagemErro
-          erro={consulta.error}
-          aoTentarDeNovo={() => {
-            void consulta.refetch();
-          }}
-        />
-      ) : busca.visao === "calendario" ? (
-        <Calendario
-          dias={dias}
-          inicio={periodo.inicio}
-          fim={periodo.fim}
-          editavel={editavel}
-          aoEditar={(a) => {
-            abrir({ editando: a });
-          }}
-          aoCriar={(dia) => {
-            abrir({ data: dia });
-          }}
-        />
-      ) : dias.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-card/40 p-10 text-center">
-          <Bookmark className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-          <p className="text-[14px] text-foreground">Nenhuma anotação no período.</p>
-          <p className="mt-1 text-[12px] text-muted-foreground">
-            Que tal registrar algo que aconteceu? Pressione{" "}
-            <kbd className="rounded border px-1">N</kbd> a qualquer momento.
-          </p>
-        </div>
-      ) : (
-        <Linha
-          dias={dias}
-          editavel={editavel}
-          aoEditar={(a) => {
-            abrir({ editando: a });
-          }}
-        />
+        </>
+      }
+    >
+      {d?.truncado && (
+        <Aviso tom="alerta">
+          O período tem mais registros do que a tela mostra de uma vez. Reduza o período para ver
+          todos.
+        </Aviso>
       )}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
+          rotulo="Anotações no período"
+          valor={formatarInteiro(d?.totais.anotacoes ?? 0)}
+          status="bom"
+          neutro
+          icone={NotebookPen}
+          detalhe={textoDoPeriodo}
+        />
+        <KpiCard
+          rotulo="Feriados no período"
+          valor={formatarInteiro(d?.totais.feriados ?? 0)}
+          status="bom"
+          neutro
+          icone={CalendarDays}
+          detalhe={textoDoPeriodo}
+        />
+        <KpiCard
+          rotulo="Dias com contexto"
+          valor={formatarInteiro(d?.totais.diasComContexto ?? 0)}
+          status="bom"
+          neutro
+          icone={CalendarCheck}
+          detalhe={textoDoPeriodo}
+        />
+      </div>
+
+      <Painel classeDoCorpo="p-4 sm:p-5">
+        {consulta.isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-16 rounded-xl bg-muted" />
+            ))}
+          </div>
+        ) : consulta.error ? (
+          <MensagemErro
+            erro={consulta.error}
+            aoTentarDeNovo={() => {
+              void consulta.refetch();
+            }}
+          />
+        ) : busca.visao === "calendario" ? (
+          <Calendario
+            dias={dias}
+            inicio={periodo.inicio}
+            fim={periodo.fim}
+            hoje={hoje}
+            editavel={editavel}
+            aoEditar={(a) => {
+              abrir({ editando: a });
+            }}
+            aoCriar={(dia) => {
+              abrir({ data: dia });
+            }}
+          />
+        ) : dias.length === 0 ? (
+          <EstadoVazio
+            icone={Bookmark}
+            mensagem="Nenhuma anotação no período."
+            acao={
+              <p className="text-[12.5px]">
+                Que tal registrar algo que aconteceu? Pressione{" "}
+                <kbd className="rounded-md border border-border bg-muted px-1.5 font-sans text-xs font-semibold text-foreground">
+                  N
+                </kbd>{" "}
+                a qualquer momento.
+              </p>
+            }
+          />
+        ) : (
+          <Linha
+            dias={dias}
+            editavel={editavel}
+            aoEditar={(a) => {
+              abrir({ editando: a });
+            }}
+          />
+        )}
+      </Painel>
 
       <ModalDeAnotacao
         aberto={modalAberto}
@@ -569,6 +646,6 @@ export function PaginaHistorico() {
         aoGravar={gravar}
         aoExcluir={excluir}
       />
-    </div>
+    </Pagina>
   );
 }

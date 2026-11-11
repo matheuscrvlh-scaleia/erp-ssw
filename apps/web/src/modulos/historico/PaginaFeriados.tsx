@@ -3,20 +3,26 @@ import { contratosHistorico as c, type FeriadoDoHistorico } from "@erp/shared/co
 import { hojeNoFuso } from "@erp/shared/datas";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, CalendarDays, Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { Aviso } from "@/componentes/comum/Aviso";
+import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { CHAVE_DO_CALENDARIO } from "@/modulos/calendario/api";
 import { type FeriadoParaGravar, ModalDeFeriado } from "@/modulos/calendario/ModalDeFeriado";
+import { SeletorDeAno } from "@/modulos/calendario/SeletorDeAno";
+import { EtiquetaDoTipo } from "@/modulos/calendario/Visoes";
 
 import { CHAVE_DO_HISTORICO, consultaFeriados } from "./api";
+import { FiltroUnico } from "./FiltroUnico";
 
 type Tipo = "" | "nacional" | "municipal";
 
@@ -28,7 +34,8 @@ export function PaginaFeriados() {
   const fuso = useFusoDaEmpresa();
   const hoje = hojeNoFuso(fuso);
   const queryClient = useQueryClient();
-  const [ano, setAno] = useState(() => Number(hoje.slice(0, 4)));
+  const anoAtual = Number(hoje.slice(0, 4));
+  const [ano, setAno] = useState(anoAtual);
   const [tipo, setTipo] = useState<Tipo>("");
   const [uf, setUf] = useState("");
   const [editando, setEditando] = useState<Feriado | null>(null);
@@ -86,6 +93,7 @@ export function PaginaFeriados() {
       titulo: "Tipo",
       valor: (f) =>
         f.tipo === "nacional" ? "Nacional" : f.tipo === "estadual" ? "Estadual" : "Municipal",
+      celula: (f) => <EtiquetaDoTipo tipo={f.tipo} />,
     },
     { chave: "cidade", titulo: "Cidade" },
     { chave: "uf", titulo: "UF" },
@@ -98,7 +106,7 @@ export function PaginaFeriados() {
       fixa: true,
       celula: (f) =>
         f.global ? (
-          <span className="text-[11px] text-muted-foreground" title="Cadastrado pela Plataforma">
+          <span className="text-xs text-muted-foreground" title="Cadastrado pela Plataforma">
             todas as empresas
           </span>
         ) : (
@@ -106,22 +114,26 @@ export function PaginaFeriados() {
             <Button
               size="sm"
               variant="ghost"
+              className="h-7 w-7 px-0 text-muted-foreground"
               aria-label={`Editar ${f.descricao}`}
+              title={`Editar ${f.descricao}`}
               onClick={() => {
                 abrir(f);
               }}
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Pencil aria-hidden />
             </Button>
             <Button
               size="sm"
               variant="ghost"
+              className="h-7 w-7 px-0 text-muted-foreground hover:text-destructive"
               aria-label={`Excluir ${f.descricao}`}
+              title={`Excluir ${f.descricao}`}
               onClick={() => {
                 excluir(f);
               }}
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 aria-hidden />
             </Button>
           </span>
         ),
@@ -129,22 +141,17 @@ export function PaginaFeriados() {
   ];
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-[20px] font-semibold">
-            <CalendarDays className="h-5 w-5 text-primary" /> Feriados
-          </h1>
-          <Link
-            to="/historico"
-            className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-3 w-3" /> Voltar ao histórico
-          </Link>
-        </div>
-        <div className="flex items-center gap-2">
+    <Pagina
+      titulo="Feriados"
+      acoes={
+        <>
+          <Button asChild size="sm" variant="ghost">
+            <Link to="/historico">
+              <ArrowLeft aria-hidden /> Voltar ao histórico
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => void importarNacionais()}>
-            <Download className="mr-1 h-4 w-4" /> Importar nacionais {ano}
+            <Download aria-hidden /> Importar nacionais {ano}
           </Button>
           <Button
             size="sm"
@@ -152,52 +159,46 @@ export function PaginaFeriados() {
               abrir(null);
             }}
           >
-            <Plus className="mr-1 h-4 w-4" /> Novo feriado
+            <Plus aria-hidden /> Novo feriado
           </Button>
-        </div>
-      </header>
-
-      <div className="flex flex-wrap items-center gap-2 rounded border border-border/60 bg-card/40 p-3 text-[12px]">
-        <label className="flex items-center gap-1">
-          <span className="text-muted-foreground">Ano</span>
-          <input
-            type="number"
-            value={ano}
-            onChange={(e) => {
-              setAno(Number(e.target.value) || Number(hoje.slice(0, 4)));
+        </>
+      }
+      filtros={
+        <FiltrosAvancados
+          ativos={tipo !== "" || uf !== ""}
+          aoLimpar={() => {
+            setTipo("");
+            setUf("");
+          }}
+        >
+          <SeletorDeAno ano={ano} anoAtual={anoAtual} aoMudar={setAno} />
+          <FiltroUnico
+            rotulo="Tipo"
+            valor={tipo}
+            todos="Todos os tipos"
+            opcoes={[
+              { valor: "nacional", rotulo: "Nacional" },
+              { valor: "municipal", rotulo: "Municipal" },
+            ]}
+            aoMudar={(v) => {
+              setTipo(v === "nacional" || v === "municipal" ? v : "");
             }}
-            className="w-20 rounded border border-border bg-background px-2 py-1 tabular-nums"
           />
-        </label>
-        <select
-          aria-label="Tipo"
-          value={tipo}
-          onChange={(e) => {
-            const v = e.target.value;
-            setTipo(v === "nacional" || v === "municipal" ? v : "");
-          }}
-          className="rounded border border-border bg-background px-2 py-1"
-        >
-          <option value="">Todos os tipos</option>
-          <option value="nacional">Nacional</option>
-          <option value="municipal">Municipal</option>
-        </select>
-        <select
-          aria-label="UF"
-          value={uf}
-          onChange={(e) => {
-            setUf(e.target.value);
-          }}
-          className="rounded border border-border bg-background px-2 py-1"
-        >
-          <option value="">Todos UFs</option>
-          {UFS.map((u) => (
-            <option key={u} value={u}>
-              {u}
-            </option>
-          ))}
-        </select>
-      </div>
+          <FiltroUnico
+            rotulo="UF"
+            valor={uf}
+            todos="Todos UFs"
+            opcoes={UFS.map((u) => ({ valor: u, rotulo: u }))}
+            aoMudar={setUf}
+          />
+        </FiltrosAvancados>
+      }
+    >
+      {consulta.data?.truncado && (
+        <Aviso tom="info">
+          A lista foi cortada no limite da tela. Filtre por ano para ver todos.
+        </Aviso>
+      )}
 
       <TabelaDados
         colunas={colunas}
@@ -217,11 +218,6 @@ export function PaginaFeriados() {
           subtitulo: String(ano),
         }}
       />
-      {consulta.data?.truncado && (
-        <p className="text-[12px] text-muted-foreground">
-          A lista foi cortada no limite da tela. Filtre por ano para ver todos.
-        </p>
-      )}
 
       <ModalDeFeriado
         aberto={modalAberto}
@@ -231,6 +227,6 @@ export function PaginaFeriados() {
         aoGravar={gravar}
         semRecorrencia
       />
-    </div>
+    </Pagina>
   );
 }
