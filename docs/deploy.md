@@ -7,11 +7,11 @@ Configuração padrão por enquanto: um `docker-compose.yml` na raiz, com o Dock
 ## 1. O que sobe
 
 ```
-internet ──8081 (host)──▶ web:80    Caddy: SPA estática, /api/public/* → worker-ssw:3000,
+internet ──8081 (host)──▶ web:80    Caddy: SPA estática, /api/public/* → worker-ssw (host:3002),
                                      resto de /api → api:3000
 internet ──3001 (host)──▶ api:3000  Fastify + jobs do ERP (BullMQ) ──▶ redis:6379 (sem porta no host)
                                      └──▶ Postgres (Supabase), SMTP, Google, Ahgora
-rede externa "erp-interna": api e web ↔ worker-ssw (outro compose, porta 3000; host 3002)
+worker-ssw: outro compose, publicado no host na 3002; api e web chegam por host.docker.internal
 ```
 
 - O sistema inteiro responde na 8081; a 3001 expõe a api direto (`/healthz`, `/readyz`).
@@ -23,7 +23,6 @@ rede externa "erp-interna": api e web ↔ worker-ssw (outro compose, porta 3000;
 
 ```bash
 git clone https://github.com/matheuscrvlh-scaleia/erp-ssw.git ~/erp && cd ~/erp
-docker network create erp-interna          # uma vez; o worker-ssw entra nela também
 cp .env.example .env && chmod 600 .env     # preencher (§3)
 mkdir -p certs                             # CA do Supabase em certs/supabase-ca.crt (§4)
 docker compose up -d --build
@@ -87,5 +86,5 @@ vão cifrados com a chave mestra, e o que se salva vale em até 30 s, sem reinic
 - **E-mail (Resend)**: remetente (domínio verificado no Resend) e a chave da API. O botão
   **Testar** manda um e-mail na hora. Sem isso, em produção, o convite e o "esqueci minha senha"
   falham com aviso.
-- **worker-ssw**: endereço interno (`http://worker-ssw:3000`) e o token de serviço (um dos que o
+- **worker-ssw**: endereço (`http://host.docker.internal:3002`) e o token de serviço (um dos que o
   worker-ssw aceita). Sem eles as ações das telas de ingestão respondem 503 e as leituras seguem.

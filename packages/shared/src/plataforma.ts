@@ -138,8 +138,8 @@ export const INFO_DA_INTEGRACAO_PLATAFORMA: Record<TipoIntegracaoPlataforma, Inf
   worker_ssw: {
     nome: "worker-ssw",
     descricao:
-      "HTTP interno do worker-ssw (rede erp-interna). Sem ele, as ações das telas de ingestão ficam indisponíveis.",
-    campos: [{ chave: "url", rotulo: "Endereço interno", dica: "Ex.: http://worker-ssw:3000" }],
+      "HTTP interno do worker-ssw (porta 3002 do host). Sem ele, as ações das telas de ingestão ficam indisponíveis.",
+    campos: [{ chave: "url", rotulo: "Endereço interno", dica: "Ex.: http://host.docker.internal:3002" }],
     segredo: "Token de serviço",
   },
 };

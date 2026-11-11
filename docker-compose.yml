@@ -1,11 +1,11 @@
 # ERP SSW: api, web e redis. Variáveis em .env na raiz (fora do git; modelo em .env.example).
 #
-#   docker network create erp-interna      # uma vez; o worker-ssw entra nela também
 #   docker compose up -d --build           # produção
 #   docker compose up -d redis             # desenvolvimento: só o Redis (api e web com bun run dev)
 #
 # Portas no host: api 3001 (→ 3000), web 8081 (→ 80). O web repassa /api para a api e
-# /api/public/* para o worker-ssw, então o sistema inteiro responde na 8081.
+# /api/public/* para o worker-ssw, então o sistema inteiro responde na 8081. O worker-ssw é outro
+# compose, publicado no host na 3002: api e web chegam a ele por host.docker.internal.
 
 name: erp
 
@@ -45,7 +45,7 @@ services:
       - ./certs:/etc/erp/certs:ro
     ports:
       - "${API_PORTA_HOST:-3001}:3000"
-    networks: [default, erp-interna]
+    extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       redis: { condition: service_healthy }
 
@@ -56,7 +56,7 @@ services:
     restart: unless-stopped
     ports:
       - "${WEB_PORTA_HOST:-8081}:80"
-    networks: [default, erp-interna]
+    extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on: [api]
 
   redis:
@@ -73,11 +73,6 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-
-networks:
-  # Criada fora dos dois compose: api e web chegam ao worker-ssw por ela.
-  erp-interna:
-    external: true
 
 volumes:
   redis_dados: {}
