@@ -4,6 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Fingerprint, RefreshCw, Search, UserRound } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "@/componentes/comum/classes-de-tabela";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
@@ -18,13 +25,6 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
 import { CampoRotulado, CLASSE_DO_CAMPO, GatilhoRotulado } from "../ranking/campos-do-filtro";
-import {
-  CLASSE_CABECALHO,
-  CLASSE_LINHA,
-  CLASSE_TABELA,
-  CLASSE_TD,
-  CLASSE_TH,
-} from "../ranking/tabela-propria";
 import { consultaBatidas, consultaFuncionarios } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 

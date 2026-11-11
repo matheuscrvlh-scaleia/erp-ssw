@@ -25,6 +25,13 @@ import { type KeyboardEvent, useMemo, useState } from "react";
 
 import { Alternador } from "@/componentes/comum/Alternador";
 import { Aviso } from "@/componentes/comum/Aviso";
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "@/componentes/comum/classes-de-tabela";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import {
   type EtiquetaFiltroOpcional,
@@ -50,13 +57,6 @@ import {
   InterruptorRotulado,
 } from "../ranking/campos-do-filtro";
 import { mesDe, periodoDoMes } from "../ranking/periodo";
-import {
-  CLASSE_CABECALHO,
-  CLASSE_LINHA,
-  CLASSE_TABELA,
-  CLASSE_TD,
-  CLASSE_TH,
-} from "../ranking/tabela-propria";
 import { consultaApuracao, consultaUnidades } from "./api";
 import { ComoFuncionaBonificacao } from "./ComoFuncionaBonificacao";
 import { NIVEL } from "./niveis";

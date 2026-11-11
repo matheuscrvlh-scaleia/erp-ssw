@@ -31,6 +31,12 @@ import { type KeyboardEvent, type ReactNode, useMemo, useState } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { Alternador } from "@/componentes/comum/Alternador";
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TH,
+} from "@/componentes/comum/classes-de-tabela";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
@@ -77,7 +83,6 @@ import {
   nivelDoSla,
   ordenarLinhas,
 } from "./ranking-tela";
-import { CLASSE_CABECALHO, CLASSE_LINHA, CLASSE_TABELA, CLASSE_TH } from "./tabela-propria";
 
 const ROTULO_DA_BASE: Record<Base, string> = {
   emissao: "data de emissão",

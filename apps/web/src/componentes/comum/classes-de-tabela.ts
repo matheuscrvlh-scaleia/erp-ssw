@@ -1,6 +1,6 @@
 /**
- * Visual das tabelas feitas à mão (linhas que abrem, células clicáveis), igual ao `TabelaDados`
- * (docs/design/guia.md §4). Usado pelo ranking, pela bonificação e pelo ponto.
+ * Visual das tabelas (docs/design/guia.md §4): o `TabelaDados` usa estas classes, e as tabelas
+ * feitas à mão (linhas que abrem, células clicáveis) também, para ficarem idênticas.
  */
 export const CLASSE_TABELA = "w-full text-[13px] tabular-nums";
 export const CLASSE_CABECALHO =

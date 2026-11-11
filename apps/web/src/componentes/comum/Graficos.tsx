@@ -280,7 +280,7 @@ export function GraficoLinha<T extends object>(props: GraficoLinhaProps<T>) {
           tick={TICK}
           axisLine={false}
           tickLine={false}
-          width={52}
+          width={formato === "moeda" ? 84 : 52}
           tickFormatter={formatarEixo(formato)}
         />
         {meta && (
@@ -377,7 +377,7 @@ export function GraficoBarras<T extends object>(props: GraficoBarrasProps<T>) {
           tick={TICK}
           axisLine={false}
           tickLine={false}
-          width={52}
+          width={formato === "moeda" ? 84 : 52}
           allowDecimals={formato !== "inteiro"}
           tickFormatter={formatarEixo(formato)}
         />

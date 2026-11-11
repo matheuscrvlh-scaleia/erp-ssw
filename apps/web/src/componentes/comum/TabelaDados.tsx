@@ -14,6 +14,7 @@ import { type ColunaExportacao, textoDaCelula } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
 
 import { BotoesDePagina } from "./BotoesDePagina";
+import { CLASSE_CABECALHO, CLASSE_TABELA } from "./classes-de-tabela";
 import { EstadoVazio } from "./EstadoVazio";
 import { ExportMenu, type ExportMenuProps } from "./ExportMenu";
 import { LinhasCarregando } from "./LinhasCarregando";
@@ -251,7 +252,7 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
     >
       <div
         className={cn(
-          "min-w-0 overflow-hidden bg-card",
+          "relative min-w-0 overflow-hidden bg-card",
           !embutida && "rounded-xl border border-border",
         )}
       >
@@ -288,9 +289,9 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
           </span>
         )}
         <div className="rolagem-fina overflow-x-auto">
-          <table className="w-full text-[13px] tabular-nums" aria-busy={carregando}>
+          <table className={CLASSE_TABELA} aria-busy={carregando}>
             <thead>
-              <tr className="border-b border-border bg-muted/70 text-left text-muted-foreground">
+              <tr className={CLASSE_CABECALHO}>
                 {visiveis.map((c) => {
                   const ativa = ordenacao?.chave === c.chave ? ordenacao.direcao : null;
                   const ordenavel = c.ordenavel ?? true;

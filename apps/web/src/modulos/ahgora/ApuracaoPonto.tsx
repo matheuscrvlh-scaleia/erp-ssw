@@ -21,6 +21,13 @@ import {
 import { type KeyboardEvent, type ReactNode, useState } from "react";
 
 import { Aviso } from "@/componentes/comum/Aviso";
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "@/componentes/comum/classes-de-tabela";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { KpiCard } from "@/componentes/comum/KpiCard";
@@ -42,13 +49,6 @@ import {
   InterruptorRotulado,
 } from "../ranking/campos-do-filtro";
 import { mesDe, periodoDoMes } from "../ranking/periodo";
-import {
-  CLASSE_CABECALHO,
-  CLASSE_LINHA,
-  CLASSE_TABELA,
-  CLASSE_TD,
-  CLASSE_TH,
-} from "../ranking/tabela-propria";
 import { consultaApuracaoDoPonto, consultaDepartamentos } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 

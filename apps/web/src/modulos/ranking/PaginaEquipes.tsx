@@ -7,6 +7,13 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "@/componentes/comum/classes-de-tabela";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
@@ -30,13 +37,6 @@ import { cn } from "@/lib/utils";
 
 import { CHAVE_DAS_EQUIPES, consultaCtesParaAtribuir, consultaEquipes } from "./api";
 import { mesDe, periodoDoMes } from "./periodo";
-import {
-  CLASSE_CABECALHO,
-  CLASSE_LINHA,
-  CLASSE_TABELA,
-  CLASSE_TD,
-  CLASSE_TH,
-} from "./tabela-propria";
 
 // O Select não aceita valor vazio num item: "sem unidade" viaja com esta marca.
 const SEM_UNIDADE = "__sem_unidade__";

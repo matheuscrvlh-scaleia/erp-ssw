@@ -9,6 +9,13 @@ import { CalendarX, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "@/componentes/comum/classes-de-tabela";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
@@ -28,13 +35,6 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
 import { periodoDoMes } from "../ranking/periodo";
-import {
-  CLASSE_CABECALHO,
-  CLASSE_LINHA,
-  CLASSE_TABELA,
-  CLASSE_TD,
-  CLASSE_TH,
-} from "../ranking/tabela-propria";
 import { CHAVE_DAS_FALTAS, consultaFaltas } from "./api";
 
 type TipoDeFalta = (typeof TIPOS_DE_FALTA)[number];
