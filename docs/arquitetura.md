@@ -95,8 +95,8 @@ RLS valendo). O ERP:
 - cadastra as integrações (`empresa_integracoes`, cifradas): o ERP grava, o worker-ssw lê, com as
   mesmas `SEGREDOS_CHAVES`.
 
-O web do ERP (Caddy) encaminha `/api/public/*` (menos o link público do ranking) ao worker-ssw pela porta
-3002 do host (o worker-ssw é outro compose): as URLs das integrações externas não mudam (docs/deploy.md §1).
+O web do ERP (Caddy) encaminha `/api/public/*` (menos o link público do ranking) ao worker-ssw no domínio
+público dele (`worker.ssw.scaleia.ai`): as URLs das integrações externas não mudam (docs/deploy.md §1).
 
 **Agregação pesada** (ex.: performance de 250 mil CT-e) é feita por consulta SQL montada no backend
 (Drizzle/`sql` parametrizado), com a regra expressa em TypeScript: o backend decide o que filtrar,

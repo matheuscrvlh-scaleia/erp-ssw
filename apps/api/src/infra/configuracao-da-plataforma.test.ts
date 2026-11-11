@@ -23,7 +23,7 @@ const completas: LinhaDaPlataforma[] = [
   },
   {
     tipo: "worker_ssw",
-    parametros: { url: "http://host.docker.internal:3002" },
+    parametros: { url: "https://worker.ssw.scaleia.ai" },
     segredo: cifrado("worker_ssw", "t".repeat(40)),
   },
 ];
@@ -33,7 +33,7 @@ describe("configuração da Plataforma", () => {
     expect(montarConfiguracao(completas, chaves, vi.fn())).toEqual({
       dominio: "https://erp.fr.com.br",
       email: { remetente: "Painel <nao-responda@fr.com.br>", chaveApi: "re_123" },
-      workerSsw: { url: "http://host.docker.internal:3002", token: "t".repeat(40) },
+      workerSsw: { url: "https://worker.ssw.scaleia.ai", token: "t".repeat(40) },
     });
   });
 

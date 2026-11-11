@@ -4,8 +4,8 @@
 #   docker compose up -d redis             # desenvolvimento: só o Redis (api e web com bun run dev)
 #
 # Portas no host: api 3001 (→ 3000), web 8081 (→ 80). O web repassa /api para a api e
-# /api/public/* para o worker-ssw, então o sistema inteiro responde na 8081. O worker-ssw é outro
-# compose, publicado no host na 3002: api e web chegam a ele por host.docker.internal.
+# /api/public/* para o worker-ssw, então o sistema inteiro responde na 8081. ERP e worker-ssw se
+# falam pelos domínios públicos (worker: https://worker.ssw.scaleia.ai).
 
 name: erp
 
@@ -45,7 +45,6 @@ services:
       - ./certs:/etc/erp/certs:ro
     ports:
       - "${API_PORTA_HOST:-3001}:3000"
-    extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       redis: { condition: service_healthy }
 
@@ -56,7 +55,6 @@ services:
     restart: unless-stopped
     ports:
       - "${WEB_PORTA_HOST:-8081}:80"
-    extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on: [api]
 
   redis:

@@ -8,14 +8,16 @@
 :80 {
 	encode zstd gzip
 
-	# Integrações do SSW (webhook, FTP, XML) ficam no worker-ssw (outro compose, porta 3002 do host). O link
+	# Integrações do SSW (webhook, FTP, XML) ficam no worker-ssw, no domínio público dele. O link
 	# público do ranking é da api.
 	@publico {
 		path /api/public/*
 		not path /api/public/ranking/*
 	}
 	handle @publico {
-		reverse_proxy host.docker.internal:3002
+		reverse_proxy https://worker.ssw.scaleia.ai {
+			header_up Host {upstream_hostport}
+		}
 	}
 
 	handle /api/* {
