@@ -40,9 +40,6 @@ services:
       GOOGLE_REDIRECT_URI:
       LOGO_URL_BASE:
       METRICAS_TOKEN:
-    volumes:
-      # CA do Supabase para sslmode=verify-full.
-      - ./certs:/etc/erp/certs:ro
     ports:
       - "${API_PORTA_HOST:-3001}:3000"
     depends_on:

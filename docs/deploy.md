@@ -24,7 +24,6 @@ worker-ssw: outro compose; ERP e worker se falam pelos domínios públicos (work
 ```bash
 git clone https://github.com/matheuscrvlh-scaleia/erp-ssw.git ~/erp && cd ~/erp
 cp .env.example .env && chmod 600 .env     # preencher (§3)
-mkdir -p certs                             # CA do Supabase em certs/supabase-ca.crt (§4)
 docker compose up -d --build
 docker compose ps                          # api "healthy"
 curl -fsS http://127.0.0.1:3001/readyz     # 200 prova banco e Redis
@@ -44,13 +43,9 @@ Mudou só o `.env`? `docker compose up -d` recria quem usa a variável.
 
 Postgres do Supabase, schema `erp`, já preparado (migrations e papéis aplicados). A api conecta
 com o papel `erp_app` (sem BYPASSRLS) em `DATABASE_URL`, de preferência pelo pooler em modo
-sessão, porta 5432, com TLS verificado:
-
-```
-...?sslmode=verify-full&sslrootcert=/etc/erp/certs/supabase-ca.crt
-```
-
-A pasta `certs/` da raiz é montada em `/etc/erp/certs` (fora do git). Migration nova:
+sessão, porta 5432, cifrado: `...?sslmode=no-verify`. A conexão é cifrada mas não confere o
+certificado (neste driver, `sslmode=require` equivale a `verify-full` e pediria a CA do Supabase
+num arquivo). Migration nova:
 `bun run db:migrar` de uma máquina confiável, com o papel de migração.
 
 Conexões no Postgres: `API_DB_MAX_CONEXOES` (padrão 10) + as do worker-ssw; tem de caber no Pool
