@@ -35,7 +35,13 @@ import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaRelatorio } from "./api";
 import { DistribuicaoPontualidade } from "./Kpis";
-import { abaSlaPorUnidade, type Indicador, indicadoresDoRelatorio, linhasDoCsv } from "./relatorio";
+import {
+  excelDoRelatorio,
+  type FiltrosDoExcel,
+  type Indicador,
+  indicadoresDoRelatorio,
+  linhasDoCsv,
+} from "./relatorio";
 
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
@@ -43,6 +49,8 @@ interface FiltrosHerdados {
   entrada: Omit<FiltroPerformanceEntrada, "inicio" | "fim" | "baseData">;
   codigos: string[];
   etiquetas: { rotulo: string; valor: string }[];
+  /** Filtros por extenso para as notas da aba "Resumo" do Excel. */
+  filtrosDoExcel: FiltrosDoExcel;
 }
 
 /** Relatório de período: janela própria (padrão "Hoje"), comparativo opcional e exportação. */
@@ -244,9 +252,10 @@ export function DialogoRelatorio({
             size="sm"
             onClick={() => {
               if (data)
-                exportarExcel({ ...exportacao(data), abasExtras: [abaSlaPorUnidade(data)] }).catch(
-                  falhou,
-                );
+                exportarExcel({
+                  ...excelDoRelatorio(data, herdados.codigos, herdados.filtrosDoExcel),
+                  empresa: marca,
+                }).catch(falhou);
             }}
             disabled={!data}
           >

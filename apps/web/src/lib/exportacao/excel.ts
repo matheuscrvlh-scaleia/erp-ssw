@@ -55,11 +55,12 @@ export async function carregarExcelJs(): Promise<ModuloExcel> {
   );
 }
 
-/** Uma aba: título no topo e a tabela. */
+/** Uma aba: título no topo, notas e a tabela. */
 interface Folha {
   nome: string;
   titulo: string;
   subtitulo?: string | undefined;
+  notas?: readonly string[] | undefined;
   colunas: readonly ColunaExportacao[];
   linhas: readonly LinhaExportacao[];
 }
@@ -129,11 +130,23 @@ function desenharTopo(ws: Worksheet, o: Folha, marca: Marca, logoId: number | nu
   }
 }
 
-const LINHA_CABECALHO = 6;
+/** Primeira linha depois da faixa: notas (se houver), uma linha em branco e o cabeçalho. */
+const PRIMEIRA_LINHA = 6;
 
-function desenharTabela(ws: Worksheet, o: Folha, marca: Marca): void {
+/** Escreve as notas e devolve a linha do cabeçalho da tabela. */
+function desenharNotas(ws: Worksheet, o: Folha): number {
+  const notas = o.notas ?? [];
+  notas.forEach((nota, i) => {
+    const celula = ws.getCell(PRIMEIRA_LINHA + i, 1);
+    celula.value = nota;
+    celula.font = { name: "Calibri", size: 10, color: { argb: argb(CORES.textoSuave) } };
+  });
+  return notas.length > 0 ? PRIMEIRA_LINHA + notas.length + 1 : PRIMEIRA_LINHA;
+}
+
+function desenharTabela(ws: Worksheet, o: Folha, marca: Marca, linhaCabecalho: number): void {
   const primaria = argb(marca.primaria);
-  const cabecalho = ws.getRow(LINHA_CABECALHO);
+  const cabecalho = ws.getRow(linhaCabecalho);
   cabecalho.values = o.colunas.map((c) => c.titulo);
   cabecalho.height = 20;
   cabecalho.eachCell((celula) => {
@@ -145,7 +158,7 @@ function desenharTabela(ws: Worksheet, o: Folha, marca: Marca): void {
 
   const borda = { style: "hair" as const, color: { argb: argb(CORES.linha) } };
   o.linhas.forEach((linha, i) => {
-    const row = ws.getRow(LINHA_CABECALHO + 1 + i);
+    const row = ws.getRow(linhaCabecalho + 1 + i);
     o.colunas.forEach((coluna, j) => {
       const celula = row.getCell(j + 1);
       celula.border = { bottom: borda };
@@ -163,11 +176,11 @@ function desenharTabela(ws: Worksheet, o: Folha, marca: Marca): void {
     });
   });
 
-  ws.views = [{ state: "frozen", ySplit: LINHA_CABECALHO, showGridLines: false }];
+  ws.views = [{ state: "frozen", ySplit: linhaCabecalho, showGridLines: false }];
   if (o.linhas.length > 0) {
     ws.autoFilter = {
-      from: { row: LINHA_CABECALHO, column: 1 },
-      to: { row: LINHA_CABECALHO + o.linhas.length, column: o.colunas.length },
+      from: { row: linhaCabecalho, column: 1 },
+      to: { row: linhaCabecalho + o.linhas.length, column: o.colunas.length },
     };
   }
 }
@@ -187,7 +200,7 @@ export function montarPlanilha(
   const logoId = logo && formato ? wb.addImage({ base64: logo, extension: formato }) : null;
 
   const folhas: Folha[] = [
-    { ...o, nome: o.titulo },
+    { ...o, nome: o.nomeDaAba ?? o.titulo },
     ...(o.abasExtras ?? []).map((aba) => ({
       ...aba,
       titulo: aba.titulo ?? o.titulo,
@@ -199,13 +212,14 @@ export function montarPlanilha(
     const ws = wb.addWorksheet(nomeDaAba(folha.nome, usados));
     ws.columns = larguras(folha, marca).map((width) => ({ width }));
     desenharTopo(ws, folha, marca, logoId);
-    desenharTabela(ws, folha, marca);
-    configurarImpressao(ws, folha, marca);
+    const linhaCabecalho = desenharNotas(ws, folha);
+    desenharTabela(ws, folha, marca, linhaCabecalho);
+    configurarImpressao(ws, folha, marca, linhaCabecalho);
   }
   return wb;
 }
 
-function configurarImpressao(ws: Worksheet, o: Folha, marca: Marca): void {
+function configurarImpressao(ws: Worksheet, o: Folha, marca: Marca, linhaCabecalho: number): void {
   ws.pageSetup = {
     orientation: o.colunas.length > 8 ? "landscape" : "portrait",
     // A4. `PaperSize` é const enum só de tipo: com isolatedModules não dá para lê-lo.
@@ -214,7 +228,7 @@ function configurarImpressao(ws: Worksheet, o: Folha, marca: Marca): void {
     fitToPage: true,
     fitToWidth: 1,
     fitToHeight: 0,
-    printTitlesRow: `${LINHA_CABECALHO}:${LINHA_CABECALHO}`,
+    printTitlesRow: `${linhaCabecalho}:${linhaCabecalho}`,
     margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.6, header: 0.2, footer: 0.3 },
   };
   ws.headerFooter = { oddFooter: `&L&8${rodapeDaMarca(marca)}&R&8Página &P de &N` };

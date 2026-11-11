@@ -202,11 +202,16 @@ export function deltaPctAbs(atual: number, comparado: number, maiorMelhor = true
   };
 }
 
-/** Rótulo do prejuízo pelos códigos do filtro. origem: prejuizoSubtitulo (PrejuizoLabel.tsx) */
+/**
+ * Rótulo do prejuízo pelos códigos do filtro: "código 13" (padrão), "código 25" ou "códigos 13,
+ * 69". origem: prejuizoSubtitulo e codigosPrejuizo (PrejuizoLabel.tsx)
+ */
 export function subtituloDoPrejuizo(
   codigos: readonly (string | number)[] | null | undefined,
 ): string {
-  return codigos && codigos.length > 0 ? `códigos ${codigos.join(", ")}` : "código 13";
+  const numeros = (codigos ?? []).map(Number).filter((n) => Number.isFinite(n));
+  const lista = numeros.length > 0 ? numeros : [13];
+  return `${lista.length > 1 ? "códigos" : "código"} ${lista.join(", ")}`;
 }
 
 /** Status da unidade no Excel do relatório. origem: unidadesRows (relatorio-semanal-export.ts) */
