@@ -4,7 +4,6 @@ import {
   FAIXAS_ATRASO,
   type FiltroPrazo,
   type FiltrosDeCte,
-  type OrdemDaLista,
   ORDENS_DA_LISTA,
   PRAZOS,
   type Recortes,
@@ -164,15 +163,6 @@ export const ROTULO_DA_FAIXA: Record<FaixaAtraso, string> = {
   de_9_15: "9 a 15 dias",
   de_16_30: "16 a 30 dias",
   acima_30: "Acima de 30 dias",
-};
-
-export const ROTULO_DA_ORDEM: Record<OrdemDaLista, string> = {
-  data_hora: "Data/hora",
-  codigo: "Código",
-  responsavel: "Responsável",
-  numero_ctrc: "NF / CTRC",
-  parceiro_nome: "Parceiro",
-  atraso_dias: "Atraso",
 };
 
 /**

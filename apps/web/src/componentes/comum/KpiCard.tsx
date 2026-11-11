@@ -30,13 +30,6 @@ const STATUS: Record<StatusKpi, { classe: string; cor: string; icone: LucideIcon
     },
   };
 
-/** `>= meta` bom; até 3 pontos abaixo, alerta; abaixo disso, ruim. origem: statusOf */
-export function statusDaMeta(valor: number, meta: number, tolerancia = 0.03): StatusKpi {
-  if (valor >= meta) return "bom";
-  if (valor >= meta - tolerancia) return "alerta";
-  return "ruim";
-}
-
 interface KpiCardProps {
   rotulo: string;
   /** Já formatado ("95,1%", "1.234"). */

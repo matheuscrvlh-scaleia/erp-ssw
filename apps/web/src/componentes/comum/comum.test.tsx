@@ -5,21 +5,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ErroDaApi } from "@/lib/api";
 import { ErroDoOperador, mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { Abas, ConteudoDaAba } from "./Abas";
+import { Abas } from "./Abas";
 import { ComoFunciona } from "./ComoFunciona";
-import { KpiCard, statusDaMeta } from "./KpiCard";
+import { KpiCard } from "./KpiCard";
 import { MensagemErro } from "./MensagemErro";
 import { SeloAtualizacao } from "./SeloAtualizacao";
 
 afterEach(cleanup);
-
-describe("statusDaMeta", () => {
-  it("bom na meta, alerta até 3 pontos abaixo, ruim abaixo disso", () => {
-    expect(statusDaMeta(0.95, 0.95)).toBe("bom");
-    expect(statusDaMeta(0.93, 0.95)).toBe("alerta");
-    expect(statusDaMeta(0.9, 0.95)).toBe("ruim");
-  });
-});
 
 describe("KpiCard", () => {
   it("clicável vira botão com aria-pressed", () => {
@@ -88,19 +80,6 @@ describe("Abas", () => {
     { valor: "parceiro", rotulo: "Parceiro" },
     { valor: "cidade", rotulo: "Cidade" },
   ] as const;
-
-  it("sozinha: começa no padrão e só a aba aberta fica na tela", () => {
-    render(
-      <Abas abas={ABAS} padrao="parceiro">
-        <ConteudoDaAba valor="parceiro">lista por parceiro</ConteudoDaAba>
-        <ConteudoDaAba valor="cidade">lista por cidade</ConteudoDaAba>
-      </Abas>,
-    );
-    expect(screen.getByText("lista por parceiro")).toBeTruthy();
-    expect(screen.queryByText("lista por cidade")).toBeNull();
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "Cidade" }));
-    expect(screen.getByText("lista por cidade")).toBeTruthy();
-  });
 
   it("controlada: avisa a aba escolhida e marca a do valor", () => {
     const aoMudar = vi.fn();
