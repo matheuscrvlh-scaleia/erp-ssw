@@ -61,3 +61,13 @@ export function etapaDaColeta(
 export function hashDoTokenPublico(token: string | null): string | null {
   return token === null || token === "" ? null : sha256Hex(token);
 }
+
+/**
+ * Instante calculado aqui (Date) no texto que o Postgres devolve com `TimeZone = UTC`
+ * (`2026-09-23 03:00:00+00`, fração só quando há), o formato das linhas de destino: com
+ * `toISOString` a conferência acusa diferença onde o valor gravado é o mesmo.
+ */
+export function instanteDoPostgres(data: Date): string {
+  const [dia, hora] = data.toISOString().replace("Z", "").split("T") as [string, string];
+  return `${dia} ${hora.replace(/\.?0+$/, "")}+00`;
+}

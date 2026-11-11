@@ -317,3 +317,27 @@ describe("executarMigracao", () => {
     expect(() => selecionarPassos([passoDeTeste], ["ctrcs"])).toThrow(/desconhecida/);
   });
 });
+
+describe("linha repetida na origem (mesma chave de conflito)", () => {
+  // Ids diferentes na origem, mesma chave no destino: como o hash repetido do 455.
+  const porNome = { ...def, conflito: ["nome"] as const };
+  const origem = [
+    { id: "u01", empresa_id: EMPRESA, nome: "Igual", valor: "1.00" },
+    { id: "u02", empresa_id: EMPRESA, nome: "Igual", valor: "2.00" },
+    { id: "u03", empresa_id: EMPRESA, nome: "Outra", valor: "1.00" },
+    { id: "u04", empresa_id: EMPRESA, nome: "Igual", valor: "3.00" },
+  ];
+
+  it("grava uma vez por chave no lote e a conferência conta como o upsert", async () => {
+    const infra = ambiente(origem);
+    await migrarTabela(porNome, infra, filtros, opcoes, undefined, () => Promise.resolve(), logMudo);
+    expect(infra.destino.gravacoes[0]?.linhas).toHaveLength(1);
+    const ficou = infra.destino.tabelas.get('"erp"."unidades"')?.get(JSON.stringify(["Igual"]));
+    expect(ficou?.id).toBe("u04");
+    expect(await conferirTabela(porNome, infra, filtros, 2)).toMatchObject({
+      origem: 2,
+      destino: 2,
+      confere: true,
+    });
+  });
+});

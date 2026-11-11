@@ -20,7 +20,7 @@ import {
   migrar,
   semApoio,
 } from "../motor/tipos";
-import { daLista } from "../transformacoes/diversas";
+import { daLista, instanteDoPostgres } from "../transformacoes/diversas";
 import { lerJson } from "../transformacoes/json";
 import {
   daEmpresa,
@@ -353,7 +353,7 @@ function passoDaStaging(cfg: ConfiguracaoDaStaging) {
         hash: id.hash,
         sigla: id.sigla,
         numero: id.numero,
-        dataReferencia: id.dataReferencia?.toISOString() ?? null,
+        dataReferencia: id.dataReferencia ? instanteDoPostgres(id.dataReferencia) : null,
         dados: o.dados,
         importadoEm: o.importado_em,
         // Já aplicada no sistema atual: a retenção de 60 dias conta daqui.

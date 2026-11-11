@@ -813,7 +813,7 @@ describe("ingestão e logs", () => {
     expect(migrada(p036, rom, new Map())).toMatchObject({
       sigla: "CAP",
       numero: "33214",
-      dataReferencia: "2026-11-09T03:00:00.000Z",
+      dataReferencia: "2026-11-09 03:00:00+00",
     });
   });
 

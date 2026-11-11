@@ -110,6 +110,33 @@ function somarContagens(destino: Record<string, Contagem>, origem: Record<string
   }
 }
 
+function chaveDeConflito<T extends PgTable>(
+  conflito: readonly string[],
+  { linha, identidade }: LinhaProcessada<T>,
+): string {
+  const completa: Readonly<Record<string, ValorJson>> = { ...identidade, ...linha };
+  return chaveDaTupla(conflito.map((coluna) => completa[coluna]));
+}
+
+/**
+ * Linhas com a mesma chave de conflito valem uma só, como no upsert: a última com "atualizar",
+ * a primeira com "ignorar". Num mesmo comando o Postgres recusa a repetição ("cannot affect row a
+ * second time"), por isso o lote sai sem ela.
+ */
+function semRepetidasNoLote<T extends PgTable>(
+  linhas: readonly LinhaProcessada<T>[],
+  conflito: readonly string[],
+  aoConflitar: "atualizar" | "ignorar",
+): LinhaProcessada<T>[] {
+  const porChave = new Map<string, LinhaProcessada<T>>();
+  for (const linha of linhas) {
+    const chave = chaveDeConflito(conflito, linha);
+    if (aoConflitar === "atualizar") porChave.delete(chave);
+    if (!porChave.has(chave)) porChave.set(chave, linha);
+  }
+  return [...porChave.values()];
+}
+
 function paraGravacao<T extends PgTable>(
   linhas: readonly LinhaProcessada<T>[],
 ): Readonly<Record<string, ValorJson>>[] {
@@ -161,7 +188,7 @@ export async function migrarTabela<O extends object, T extends PgTable, A>(
     if (!opcoes.simulacao && lote.linhas.length > 0) {
       await infra.destino.gravar({
         meta,
-        linhas: paraGravacao(lote.linhas),
+        linhas: paraGravacao(semRepetidasNoLote(lote.linhas, def.conflito, def.aoConflitar)),
         conflito: def.conflito,
         aoConflitar: def.aoConflitar,
         sobreporIdentidade: def.identidade !== undefined,
@@ -231,6 +258,8 @@ export async function conferirTabela<O extends object, T extends PgTable, A>(
   const json = new Set(colunas.filter((c) => meta.colunas.get(c)?.json));
   const apoio = await def.preparar(infra, filtros);
   const esperado = new SomaDeConferencia();
+  // Por chave de conflito: linhas repetidas na origem viram uma só no destino (upsert).
+  const parcelas = new Map<string, bigint>();
   let errosDeConversao = 0;
 
   let apos: string[] | null = null;
@@ -245,10 +274,16 @@ export async function conferirTabela<O extends object, T extends PgTable, A>(
     const lote = processarLote(def, lido.linhas, apoio, filtros);
     await ajustarReferencias(def.referencias, infra.destino, lote);
     errosDeConversao += lote.erros.length;
-    for (const { linha } of lote.linhas) esperado.adicionar(selecionar(linha, colunas), json);
+    for (const processada of lote.linhas) {
+      const chave = chaveDeConflito(def.conflito, processada);
+      if (def.aoConflitar === "ignorar" && parcelas.has(chave)) continue;
+      parcelas.delete(chave);
+      parcelas.set(chave, SomaDeConferencia.parcela(selecionar(processada.linha, colunas), json));
+    }
     apos = lido.ultimaChave;
     if (lido.linhas.length < tamanhoDoLote) break;
   }
+  for (const parcela of parcelas.values()) esperado.adicionarParcela(parcela);
 
   const encontrado = new SomaDeConferencia();
   const pedido = {
