@@ -6,10 +6,12 @@ import {
   type TipoDePrazo,
 } from "@erp/shared/contratos/admin";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, Pencil, Plus, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -18,11 +20,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/componentes/ui/dialog";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 import { chamar } from "@/lib/api";
 
 import { CHAVES, consultaPrazos } from "../api";
-import { CAMPO, Campo, useGravacao } from "../comum";
+import { CAMPO, Campo, Escolha, useGravacao } from "../comum";
 
 type Opcoes = SaidaDe<typeof c.listarPrazos>;
 type Resultado = SaidaDe<typeof c.criarPrazo>;
@@ -80,98 +83,103 @@ export function SecaoPrazos() {
   };
 
   return (
-    <section className="rounded-xl border border-border/70 bg-card shadow-sm">
-      <header className="space-y-1.5 p-6 pb-3">
-        <h2 className="text-[15px] font-medium">Prazos de entrega</h2>
-        <p className="text-[12px] text-muted-foreground">
+    <Painel
+      titulo="Prazos de entrega"
+      icone={CalendarClock}
+      descricao={
+        <>
           Regras manuais que sobrepõem o prazo do SSW. Prioridade: <strong>parceiro</strong> &gt;{" "}
           <strong>transbordo</strong> &gt; <strong>unidade</strong> &gt; SSW. Valem para os CT-e
           novos na hora; os já existentes são recalculados logo depois de salvar. Sem regra, o CT-e
           volta à previsão do SSW.
-        </p>
-      </header>
-      <div className="space-y-8 p-6 pt-3">
-        {consulta.isLoading && <p className="text-sm text-muted-foreground">Carregando regras…</p>}
-        {consulta.error && (
-          <MensagemErro
-            erro={consulta.error}
-            titulo="Não foi possível carregar as regras"
-            aoTentarDeNovo={() => void consulta.refetch()}
-          />
-        )}
-        {consulta.data && (
-          <>
-            <SubSecao
-              titulo="Por unidade"
-              descricao="Prazo fixo em horas após a chegada na unidade (ocorrência 84)."
-              regras={doTipo("unidade")}
-              aoAdicionar={() => {
-                setModal({ tipo: "unidade", regra: null });
-              }}
-              descrever={(r) => (
-                <>
-                  <span className="font-mono text-[12px]">{r.unidadeCodigo}</span>
-                  <span className="text-muted-foreground">{r.prazoHoras}h após chegada</span>
-                </>
-              )}
-              {...acoes}
-            />
-            <SubSecao
-              titulo="Por parceiro"
-              descricao="Prazo em dias após a emissão, acordado com o parceiro. Tem prioridade sobre transbordo e unidade."
-              regras={doTipo("parceiro")}
-              aoAdicionar={() => {
-                setModal({ tipo: "parceiro", regra: null });
-              }}
-              descrever={(r) => (
-                <>
-                  <span className="truncate">{r.parceiroNome ?? "—"}</span>
-                  <span className="font-mono text-[11px] text-muted-foreground">
-                    {r.parceiroCnpj}
-                  </span>
-                  <span className="text-muted-foreground">{r.prazoDias} dias após emissão</span>
-                </>
-              )}
-              {...acoes}
-            />
-            <SubSecao
-              titulo="Transbordo"
-              descricao="CT-e que chega em uma filial e é repassado para outra. O prazo conta em dias a partir da chegada na filial destino."
-              regras={doTipo("transbordo")}
-              aoAdicionar={() => {
-                setModal({ tipo: "transbordo", regra: null });
-              }}
-              descrever={(r) => (
-                <>
-                  <span className="font-mono text-[12px]">
-                    {r.unidadeCodigo} → {r.unidadeDestinoCodigo}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {r.prazoDias} dias após chegada em {r.unidadeDestinoCodigo}
-                  </span>
-                </>
-              )}
-              {...acoes}
-            />
-          </>
-        )}
-        {modal && consulta.data && (
-          <ModalDeRegra
-            tipo={modal.tipo}
-            regra={modal.regra}
-            opcoes={consulta.data}
-            aoFechar={() => {
-              setModal(null);
+        </>
+      }
+      classeDoCorpo="divide-y divide-border"
+    >
+      {consulta.isLoading && (
+        <div role="status" className="space-y-3 px-5 py-4" aria-label="Carregando regras…">
+          <Skeleton className="h-3.5 w-1/3 bg-muted" />
+          <Skeleton className="h-10 bg-muted" />
+          <Skeleton className="h-10 bg-muted" />
+        </div>
+      )}
+      {consulta.error && (
+        <MensagemErro
+          erro={consulta.error}
+          titulo="Não foi possível carregar as regras"
+          aoTentarDeNovo={() => void consulta.refetch()}
+        />
+      )}
+      {consulta.data && (
+        <>
+          <SubSecao
+            titulo="Por unidade"
+            descricao="Prazo fixo em horas após a chegada na unidade (ocorrência 84)."
+            regras={doTipo("unidade")}
+            aoAdicionar={() => {
+              setModal({ tipo: "unidade", regra: null });
             }}
-            aoGravar={async (dados) => {
-              const gravou = await salvar.gravar({ id: modal.regra?.id ?? null, dados });
-              if (gravou) setModal(null);
-            }}
-            gravando={salvar.gravando}
+            descrever={(r) => (
+              <>
+                <span className="font-mono text-xs font-semibold">{r.unidadeCodigo}</span>
+                <span className="text-muted-foreground">{r.prazoHoras}h após chegada</span>
+              </>
+            )}
+            {...acoes}
           />
-        )}
-      </div>
-    </section>
+          <SubSecao
+            titulo="Por parceiro"
+            descricao="Prazo em dias após a emissão, acordado com o parceiro. Tem prioridade sobre transbordo e unidade."
+            regras={doTipo("parceiro")}
+            aoAdicionar={() => {
+              setModal({ tipo: "parceiro", regra: null });
+            }}
+            descrever={(r) => (
+              <>
+                <span className="truncate font-medium">{r.parceiroNome ?? "—"}</span>
+                <span className="font-mono text-xs text-muted-foreground">{r.parceiroCnpj}</span>
+                <span className="text-muted-foreground">{r.prazoDias} dias após emissão</span>
+              </>
+            )}
+            {...acoes}
+          />
+          <SubSecao
+            titulo="Transbordo"
+            descricao="CT-e que chega em uma filial e é repassado para outra. O prazo conta em dias a partir da chegada na filial destino."
+            regras={doTipo("transbordo")}
+            aoAdicionar={() => {
+              setModal({ tipo: "transbordo", regra: null });
+            }}
+            descrever={(r) => (
+              <>
+                <span className="font-mono text-xs font-semibold">
+                  {r.unidadeCodigo} → {r.unidadeDestinoCodigo}
+                </span>
+                <span className="text-muted-foreground">
+                  {r.prazoDias} dias após chegada em {r.unidadeDestinoCodigo}
+                </span>
+              </>
+            )}
+            {...acoes}
+          />
+        </>
+      )}
+      {modal && consulta.data && (
+        <ModalDeRegra
+          tipo={modal.tipo}
+          regra={modal.regra}
+          opcoes={consulta.data}
+          aoFechar={() => {
+            setModal(null);
+          }}
+          aoGravar={async (dados) => {
+            const gravou = await salvar.gravar({ id: modal.regra?.id ?? null, dados });
+            if (gravou) setModal(null);
+          }}
+          gravando={salvar.gravando}
+        />
+      )}
+    </Painel>
   );
 }
 
@@ -195,11 +203,11 @@ function SubSecao({
   aoExcluir: (r: PrazoConfigurado) => void;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 px-5 py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[13px] font-medium">{titulo}</h3>
-          <p className="text-[12px] text-muted-foreground">{descricao}</p>
+          <h3 className="text-[13px] font-semibold text-foreground">{titulo}</h3>
+          <p className="text-[12.5px] text-muted-foreground">{descricao}</p>
         </div>
         <Button
           variant="outline"
@@ -208,26 +216,28 @@ function SubSecao({
           className="shrink-0"
           aria-label={`Adicionar ${titulo.toLowerCase()}`}
         >
-          <Plus className="mr-1 h-3.5 w-3.5" />
+          <Plus aria-hidden />
           Adicionar
         </Button>
       </div>
       {regras.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-[12px] text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-[12.5px] text-muted-foreground">
           Nenhuma regra cadastrada.
         </p>
       ) : (
-        <ul className="divide-y divide-border/60 rounded-md border border-border/60">
+        <ul className="divide-y divide-border rounded-lg border border-border">
           {regras.map((r) => (
             <li
               key={r.id}
-              className={`flex items-center gap-3 px-3 py-2 text-[13px] ${r.ativo ? "" : "opacity-60"}`}
+              className="flex flex-wrap items-center gap-3 px-3 py-2 text-[13px] hover:bg-muted/60"
             >
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5">
+              <div
+                className={`flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5 ${r.ativo ? "" : "opacity-60"}`}
+              >
                 {descrever(r)}
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <div className="flex shrink-0 items-center gap-1">
+                <label className="mr-1 flex items-center gap-2">
                   <Switch
                     checked={r.ativo}
                     onCheckedChange={(ativo) => {
@@ -235,29 +245,33 @@ function SubSecao({
                     }}
                     aria-label="Ativo"
                   />
-                  {r.ativo ? "Ativa" : "Inativa"}
-                </div>
+                  <SeloStatus tom={r.ativo ? "sucesso" : "neutro"}>
+                    {r.ativo ? "Ativa" : "Inativa"}
+                  </SeloStatus>
+                </label>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
+                  size="sm"
+                  className="h-8 w-8 p-0"
                   onClick={() => {
                     aoEditar(r);
                   }}
                   aria-label="Editar"
+                  title="Editar"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil aria-hidden />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-destructive hover:text-destructive"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-status-bad-fg hover:text-status-bad-fg"
                   onClick={() => {
                     aoExcluir(r);
                   }}
                   aria-label="Remover"
+                  title="Remover"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 aria-hidden />
                 </Button>
               </div>
             </li>
@@ -312,20 +326,15 @@ function ModalDeRegra({
 
   const seletorDeUnidade = (rotulo: string, valor: string, aoMudar: (v: string) => void) => (
     <Campo rotulo={rotulo}>
-      <select
-        className={CAMPO}
-        value={valor}
-        onChange={(e) => {
-          aoMudar(e.target.value);
-        }}
-      >
-        <option value="">Selecione a unidade</option>
-        {opcoes.unidades.map((u) => (
-          <option key={u.codigo} value={u.codigo}>
-            {u.cidade ? `${u.codigo} — ${u.cidade}` : u.codigo}
-          </option>
-        ))}
-      </select>
+      <Escolha
+        placeholder="Selecione a unidade"
+        opcoes={opcoes.unidades.map((u) => ({
+          valor: u.codigo,
+          rotulo: u.cidade ? `${u.codigo} — ${u.cidade}` : u.codigo,
+        }))}
+        valor={valor}
+        aoMudar={aoMudar}
+      />
     </Campo>
   );
   const campoNumerico = (
@@ -337,7 +346,7 @@ function ModalDeRegra({
     <Campo rotulo={rotulo}>
       <input
         inputMode="numeric"
-        className={CAMPO}
+        className={`${CAMPO} tabular-nums`}
         value={valor}
         placeholder={sufixo}
         onChange={(e) => {
@@ -374,20 +383,17 @@ function ModalDeRegra({
           {tipo === "parceiro" && (
             <>
               <Campo rotulo="Parceiro" ajuda={parceiro ? `CNPJ: ${parceiro.cnpj}` : undefined}>
-                <select
-                  className={CAMPO}
-                  value={campos.parceiro}
-                  onChange={(e) => {
-                    mudar({ parceiro: e.target.value });
+                <Escolha
+                  placeholder="Selecione…"
+                  opcoes={opcoes.parceiros.map((p) => ({
+                    valor: p.cnpj,
+                    rotulo: `${p.nome || p.cnpj} — ${p.cnpj}`,
+                  }))}
+                  valor={campos.parceiro}
+                  aoMudar={(parceiro) => {
+                    mudar({ parceiro });
                   }}
-                >
-                  <option value="">Selecione…</option>
-                  {opcoes.parceiros.map((p) => (
-                    <option key={p.cnpj} value={p.cnpj}>
-                      {p.nome || p.cnpj} — {p.cnpj}
-                    </option>
-                  ))}
-                </select>
+                />
               </Campo>
               {campoNumerico("Prazo em dias", campos.dias, "dias", (dias) => {
                 mudar({ dias });

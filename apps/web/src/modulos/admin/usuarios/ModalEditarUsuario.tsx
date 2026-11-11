@@ -15,7 +15,7 @@ import {
 } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
 
-import { CAMPO, Campo, CampoDeSenha } from "../comum";
+import { BotaoDoCampo, CAMPO, Campo, CampoDeSenha, Escolha } from "../comum";
 import { EditorDeExcecoes } from "../EditorDeTelas";
 import {
   listaDasExcecoes,
@@ -153,8 +153,14 @@ export function ModalEditarUsuario({
   return (
     <Dialog open={aberto} onOpenChange={abrirOuFechar}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-7 px-2" aria-label="Editar usuário">
-          <Pencil className="h-3.5 w-3.5" />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0"
+          aria-label="Editar usuário"
+          title="Editar usuário"
+        >
+          <Pencil aria-hidden />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
@@ -163,13 +169,13 @@ export function ModalEditarUsuario({
         </DialogHeader>
         {revisando ? (
           <div className="space-y-3">
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Revise as alterações antes de salvar.
             </p>
             {gerais.length > 0 && (
-              <div className="space-y-1">
-                <div className="text-[11px] font-medium uppercase tracking-wider">Dados gerais</div>
-                <div className="rounded-md border border-border/60 p-2">
+              <div className="space-y-1.5">
+                <div className="label-xs">Dados gerais</div>
+                <div className="rounded-lg border border-border px-3 py-2">
                   {gerais.map((t) => (
                     <LinhaDeTroca key={t.rotulo} troca={t} />
                   ))}
@@ -178,16 +184,12 @@ export function ModalEditarUsuario({
             )}
             {porCategoria.length > 0 ? (
               <div className="space-y-2">
-                <div className="text-[11px] font-medium uppercase tracking-wider">
-                  Permissões por categoria
-                </div>
+                <div className="label-xs">Permissões por categoria</div>
                 {porCategoria.map((c) => (
-                  <div key={c.chave} className="rounded-md border border-border/60 p-2">
+                  <div key={c.chave} className="rounded-lg border border-border px-3 py-2">
                     <div className="mb-1 flex items-center justify-between">
-                      <div className="text-[11px] font-medium uppercase tracking-wider">
-                        {c.rotulo}
-                      </div>
-                      <span className="rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+                      <div className="text-[13px] font-semibold">{c.rotulo}</div>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                         {c.trocas.length} alteraç{c.trocas.length === 1 ? "ão" : "ões"}
                       </span>
                     </div>
@@ -199,7 +201,7 @@ export function ModalEditarUsuario({
               </div>
             ) : (
               gerais.length === 0 && (
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   Nenhuma alteração nas permissões.
                 </p>
               )
@@ -221,7 +223,7 @@ export function ModalEditarUsuario({
           </div>
         ) : (
           <>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Campo rotulo="Nome">
                 <input
                   className={CAMPO}
@@ -246,37 +248,25 @@ export function ModalEditarUsuario({
                 />
               </Campo>
               <Campo rotulo="Departamento">
-                <select
-                  className={CAMPO}
-                  value={campos.departamento}
-                  onChange={(e) => {
-                    mudar({ departamento: e.target.value });
+                <Escolha
+                  vazio="Sem departamento"
+                  opcoes={departamentos.map((d) => ({ valor: d.chave, rotulo: d.rotulo }))}
+                  valor={campos.departamento}
+                  aoMudar={(departamento) => {
+                    mudar({ departamento });
                   }}
-                >
-                  <option value="">Sem departamento</option>
-                  {departamentos.map((d) => (
-                    <option key={d.chave} value={d.chave}>
-                      {d.rotulo}
-                    </option>
-                  ))}
-                </select>
+                />
               </Campo>
               <Campo rotulo="Nível">
-                <select
-                  className={CAMPO}
-                  value={campos.papel}
-                  onChange={(e) => {
-                    mudar({ papel: e.target.value });
+                <Escolha
+                  opcoes={cargos.map((c) => ({ valor: c.chave, rotulo: c.rotulo }))}
+                  valor={campos.papel}
+                  aoMudar={(papel) => {
+                    mudar({ papel });
                   }}
-                >
-                  {cargos.map((c) => (
-                    <option key={c.chave} value={c.chave}>
-                      {c.rotulo}
-                    </option>
-                  ))}
-                </select>
+                />
               </Campo>
-              <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
+              <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
                 <span className="text-[13px] font-medium">Usuário ativo</span>
                 <Switch
                   aria-label="Usuário ativo"
@@ -286,12 +276,12 @@ export function ModalEditarUsuario({
                   }}
                 />
               </div>
-              <div className="space-y-2 rounded-md border border-border/60 p-3">
-                <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <KeyRound className="h-3.5 w-3.5" />
+              <div className="space-y-3 rounded-xl border border-border bg-superficie p-4">
+                <div className="label-xs flex items-center gap-1.5">
+                  <KeyRound className="h-3.5 w-3.5 text-brand" aria-hidden />
                   Segurança · redefinir senha
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Define uma nova senha na hora. O usuário entra imediatamente com ela e as sessões
                   abertas dele são encerradas.
                 </p>
@@ -301,19 +291,9 @@ export function ModalEditarUsuario({
                   aoMudar={setNovaSenha}
                   extra={
                     novaSenha && (
-                      <button
-                        type="button"
-                        onClick={() => void copiar()}
-                        className="text-muted-foreground hover:text-foreground"
-                        aria-label="Copiar senha"
-                        title="Copiar senha"
-                      >
-                        {copiado ? (
-                          <Check className="h-3.5 w-3.5" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
+                      <BotaoDoCampo rotulo="Copiar senha" aoClicar={() => void copiar()}>
+                        {copiado ? <Check aria-hidden /> : <Copy aria-hidden />}
+                      </BotaoDoCampo>
                     )
                   }
                 />
@@ -322,18 +302,16 @@ export function ModalEditarUsuario({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="h-8 gap-1.5 text-[12px]"
                     onClick={() => {
                       setNovaSenha(gerarSenha());
                     }}
                   >
-                    <RefreshCw className="h-3.5 w-3.5" />
+                    <RefreshCw aria-hidden />
                     Gerar
                   </Button>
                   <Button
                     type="button"
                     size="sm"
-                    className="h-8 text-[12px]"
                     disabled={novaSenha.length < 8 || gravando}
                     onClick={() => void definirSenha()}
                   >
@@ -341,11 +319,9 @@ export function ModalEditarUsuario({
                   </Button>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Telas (override)
-                </span>
-                <p className="text-[11px] text-muted-foreground">
+              <div className="space-y-2 border-t border-border pt-4">
+                <span className="label-xs">Telas (override)</span>
+                <p className="text-xs text-muted-foreground">
                   Vazio = padrão do role/setor. Marcar libera, desmarcar bloqueia.
                 </p>
                 <EditorDeExcecoes excecoes={excecoes} aoMudar={setExcecoes} />
@@ -379,11 +355,11 @@ export function ModalEditarUsuario({
 
 function LinhaDeTroca({ troca }: { troca: Troca }) {
   return (
-    <div className="flex items-center justify-between py-0.5 text-[12px]">
+    <div className="flex items-center justify-between gap-3 py-1 text-[13px]">
       <span className="text-muted-foreground">{troca.rotulo}</span>
       <span className="flex items-center gap-1.5">
         <span className="text-muted-foreground line-through">{troca.antes}</span>
-        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
         <span className="font-medium">{troca.depois}</span>
       </span>
     </div>

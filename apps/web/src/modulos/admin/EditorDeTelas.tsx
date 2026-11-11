@@ -6,11 +6,19 @@ import {
 } from "@erp/shared/acesso/editor-de-telas";
 import { ROTULO_DA_TELA, type Tela } from "@erp/shared/acesso/telas";
 
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Button } from "@/componentes/ui/button";
 import { Checkbox } from "@/componentes/ui/checkbox";
 
 import { type MapaDeExcecoes } from "./telas";
 
-const BOTAO_DA_CATEGORIA = "rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted";
+type EscolhaDaTela = "padrao" | "liberar" | "bloquear";
+
+const OPCOES: readonly { valor: EscolhaDaTela; rotulo: string }[] = [
+  { valor: "padrao", rotulo: "Padrão" },
+  { valor: "liberar", rotulo: "Liberar" },
+  { valor: "bloquear", rotulo: "Bloquear" },
+];
 
 /** Telas que um cargo ou departamento libera (marcar o Ranking marca as duas chaves). */
 export function EditorDeMarcacao({
@@ -29,9 +37,12 @@ export function EditorDeMarcacao({
     aoMudar(proximas);
   };
   return (
-    <div className="mt-1 space-y-1.5 rounded-md border border-border/60 p-2">
+    <div className="grid gap-x-4 rounded-xl border border-border bg-superficie p-2 sm:grid-cols-2">
       {TELAS_EDITAVEIS.map((t) => (
-        <label key={t} className="flex items-center justify-between text-[12px]">
+        <label
+          key={t}
+          className="flex min-h-9 cursor-pointer items-center justify-between gap-3 rounded-lg px-2 text-[13px] hover:bg-muted"
+        >
           <span>{ROTULO_DA_TELA[t]}</span>
           <Checkbox
             aria-label={ROTULO_DA_TELA[t]}
@@ -62,70 +73,53 @@ export function EditorDeExcecoes({
     if (valor !== undefined) for (const t of telas) proximas[t] = valor;
     aoMudar(proximas);
   };
+  const valorDa = (escolha: EscolhaDaTela) =>
+    escolha === "padrao" ? undefined : escolha === "liberar";
   return (
-    <div className="space-y-3 rounded-md border border-border/60 p-2">
+    <div className="space-y-3">
       {CATEGORIAS_DE_TELA.map((c) => (
-        <div key={c.chave} className="space-y-1">
-          <div className="flex items-center justify-between px-1">
-            <div>
-              <div className="text-[11px] font-medium uppercase tracking-wider text-foreground">
-                {c.rotulo}
-              </div>
-              <div className="text-[10px] text-muted-foreground">{c.descricao}</div>
+        <div key={c.chave} className="rounded-xl border border-border bg-superficie p-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-foreground">{c.rotulo}</div>
+              <div className="text-xs text-muted-foreground">{c.descricao}</div>
             </div>
-            <div className="flex gap-0.5">
-              <button
-                type="button"
-                className={BOTAO_DA_CATEGORIA}
-                onClick={() => {
-                  definir(c.telas, undefined);
-                }}
-              >
-                Padrão
-              </button>
-              <button
-                type="button"
-                className={BOTAO_DA_CATEGORIA}
-                onClick={() => {
-                  definir(c.telas, true);
-                }}
-              >
-                Liberar
-              </button>
-              <button
-                type="button"
-                className={BOTAO_DA_CATEGORIA}
-                onClick={() => {
-                  definir(c.telas, false);
-                }}
-              >
-                Bloquear
-              </button>
+            <div className="flex gap-0.5" role="group" aria-label={`Todas as telas: ${c.rotulo}`}>
+              {OPCOES.map((o) => (
+                <Button
+                  key={o.valor}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs font-medium text-muted-foreground"
+                  onClick={() => {
+                    definir(c.telas, valorDa(o.valor));
+                  }}
+                >
+                  {o.rotulo}
+                </Button>
+              ))}
             </div>
           </div>
-          <div className="space-y-1">
+          <div className="divide-y divide-border rounded-lg border border-border bg-card">
             {c.telas.map((t) => {
               const v = excecoes[t];
               return (
-                <label
+                <div
                   key={t}
-                  className="flex items-center justify-between rounded px-1 py-0.5 text-[12px] hover:bg-muted/40"
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 text-[13px]"
                 >
                   <span>{ROTULO_DA_TELA[t]}</span>
-                  <select
-                    aria-label={ROTULO_DA_TELA[t]}
-                    className="h-7 w-[120px] rounded-md border border-input bg-background px-2 text-[11px]"
-                    value={v === undefined ? "padrao" : v ? "liberar" : "bloquear"}
-                    onChange={(e) => {
-                      const escolha = e.target.value;
-                      definir([t], escolha === "padrao" ? undefined : escolha === "liberar");
+                  <Alternador
+                    tamanho="pequeno"
+                    rotulo={ROTULO_DA_TELA[t]}
+                    opcoes={OPCOES}
+                    valor={v === undefined ? "padrao" : v ? "liberar" : "bloquear"}
+                    aoMudar={(escolha) => {
+                      definir([t], valorDa(escolha));
                     }}
-                  >
-                    <option value="padrao">Padrão</option>
-                    <option value="liberar">Liberar</option>
-                    <option value="bloquear">Bloquear</option>
-                  </select>
-                </label>
+                  />
+                </div>
               );
             })}
           </div>

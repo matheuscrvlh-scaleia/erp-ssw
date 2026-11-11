@@ -5,14 +5,18 @@ import {
   GRUPOS_DE_CONFIGURACAO,
 } from "@erp/shared/contratos/admin";
 import { useQuery } from "@tanstack/react-query";
+import { Bell, Gauge, type LucideIcon, Trophy, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { chamar } from "@/lib/api";
 
 import { CHAVES, consultaConfiguracoes } from "../api";
-import { CabecalhoDaPagina, CAMPO, useGravacao } from "../comum";
+import { CAMPO, useGravacao } from "../comum";
 import { SecaoPrazos } from "./SecaoPrazos";
 
 const ROTULO_DO_GRUPO: Record<GrupoDeConfiguracao, string> = {
@@ -20,6 +24,13 @@ const ROTULO_DO_GRUPO: Record<GrupoDeConfiguracao, string> = {
   operacional: "Operacional",
   ranking: "Ranking",
   notificacoes: "Notificações",
+};
+
+const ICONE_DO_GRUPO: Record<GrupoDeConfiguracao, LucideIcon> = {
+  performance: Gauge,
+  operacional: Truck,
+  ranking: Trophy,
+  notificacoes: Bell,
 };
 
 const DESCRICAO_DO_GRUPO: Record<GrupoDeConfiguracao, string> = {
@@ -72,35 +83,47 @@ export function PaginaConfiguracoes() {
   const configuracoes = consulta.data?.configuracoes ?? [];
 
   return (
-    <div className="space-y-6">
-      <CabecalhoDaPagina
-        titulo="Configurações"
-        descricao="Ajuste thresholds e parâmetros usados em todo o sistema. As mudanças propagam em até 5 minutos (ou imediatamente após salvar)."
-      />
-      {consulta.isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+    <Pagina
+      largura="estreita"
+      titulo="Configurações"
+      descricao="Ajuste thresholds e parâmetros usados em todo o sistema. As mudanças propagam em até 5 minutos (ou imediatamente após salvar)."
+    >
       {consulta.error && (
-        <MensagemErro
-          erro={consulta.error}
-          titulo="Não foi possível carregar as configurações"
-          aoTentarDeNovo={() => void consulta.refetch()}
-        />
+        <Painel>
+          <MensagemErro
+            erro={consulta.error}
+            titulo="Não foi possível carregar as configurações"
+            aoTentarDeNovo={() => void consulta.refetch()}
+          />
+        </Painel>
       )}
-      <div className="grid gap-5">
-        {GRUPOS_DE_CONFIGURACAO.map((grupo) => {
-          const itens = configuracoes.filter((x) => x.grupo === grupo);
-          return itens.length === 0 ? null : (
-            <SecaoDoGrupo
-              key={grupo}
-              grupo={grupo}
-              itens={itens}
-              salvando={salvar.gravando}
-              aoSalvar={(alterados) => void salvar.gravar({ grupo, itens: alterados })}
-            />
-          );
-        })}
-        <SecaoPrazos />
-      </div>
-    </div>
+      {consulta.isLoading && (
+        <Painel titulo="Carregando…" classeDoCorpo="space-y-4 p-5">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="grid gap-2 md:grid-cols-[minmax(0,1fr)_200px] md:gap-6">
+              <div className="space-y-2">
+                <Skeleton className="h-3.5 w-1/2 bg-muted" />
+                <Skeleton className="h-3 w-3/4 bg-muted" />
+              </div>
+              <Skeleton className="h-9 bg-muted" />
+            </div>
+          ))}
+        </Painel>
+      )}
+      {GRUPOS_DE_CONFIGURACAO.map((grupo) => {
+        const itens = configuracoes.filter((x) => x.grupo === grupo);
+        return itens.length === 0 ? null : (
+          <SecaoDoGrupo
+            key={grupo}
+            grupo={grupo}
+            itens={itens}
+            salvando={salvar.gravando}
+            aoSalvar={(alterados) => void salvar.gravar({ grupo, itens: alterados })}
+          />
+        );
+      })}
+      <SecaoPrazos />
+    </Pagina>
   );
 }
 
@@ -123,41 +146,14 @@ function SecaoDoGrupo({
   const alterado = itens.some((i) => (valores[i.chave] ?? i.valor) !== i.valor);
 
   return (
-    <section className="rounded-xl border border-border/70 bg-card shadow-sm">
-      <header className="space-y-1.5 p-6 pb-3">
-        <h2 className="text-[15px] font-medium">{ROTULO_DO_GRUPO[grupo]}</h2>
-        <p className="text-[12px] text-muted-foreground">{DESCRICAO_DO_GRUPO[grupo]}</p>
-      </header>
-      <div className="space-y-5 p-6 pt-3">
-        {itens.map((i) => {
-          const dica = DICA_DE_TEXTO[i.chave];
-          return (
-            <div
-              key={i.chave}
-              className="grid gap-1.5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start md:gap-4"
-            >
-              <div className="space-y-1">
-                <label htmlFor={`cfg-${i.chave}`} className="text-[13px] font-medium">
-                  {ROTULO_DA_CHAVE[i.chave] ?? i.chave}
-                </label>
-                <p className="text-[12px] text-muted-foreground">{i.descricao}</p>
-                <p className="font-mono text-[11px] text-muted-foreground/70">{i.chave}</p>
-              </div>
-              <input
-                id={`cfg-${i.chave}`}
-                className={`${CAMPO} md:mt-0.5`}
-                inputMode={dica ? "text" : "decimal"}
-                placeholder={dica}
-                value={valores[i.chave] ?? i.valor}
-                onChange={(e) => {
-                  const valor = e.target.value;
-                  setValores((v) => ({ ...v, [i.chave]: valor }));
-                }}
-              />
-            </div>
-          );
-        })}
-        <div className="flex justify-end pt-2">
+    <Painel
+      titulo={ROTULO_DO_GRUPO[grupo]}
+      descricao={DESCRICAO_DO_GRUPO[grupo]}
+      icone={ICONE_DO_GRUPO[grupo]}
+      classeDoCorpo="divide-y divide-border"
+      rodape={
+        <>
+          <span className="flex-1 text-[12.5px]">{alterado && "Alterações não salvas."}</span>
           <Button
             size="sm"
             disabled={!alterado || salvando}
@@ -167,8 +163,37 @@ function SecaoDoGrupo({
           >
             {salvando ? "Salvando…" : "Salvar"}
           </Button>
-        </div>
-      </div>
-    </section>
+        </>
+      }
+    >
+      {itens.map((i) => {
+        const dica = DICA_DE_TEXTO[i.chave];
+        return (
+          <div
+            key={i.chave}
+            className="grid gap-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"
+          >
+            <div className="space-y-1">
+              <label htmlFor={`cfg-${i.chave}`} className="text-[13px] font-semibold">
+                {ROTULO_DA_CHAVE[i.chave] ?? i.chave}
+              </label>
+              <p className="text-[12.5px] text-muted-foreground">{i.descricao}</p>
+              <p className="font-mono text-xs text-muted-foreground">{i.chave}</p>
+            </div>
+            <input
+              id={`cfg-${i.chave}`}
+              className={`${CAMPO} tabular-nums`}
+              inputMode={dica ? "text" : "decimal"}
+              placeholder={dica}
+              value={valores[i.chave] ?? i.valor}
+              onChange={(e) => {
+                const valor = e.target.value;
+                setValores((v) => ({ ...v, [i.chave]: valor }));
+              }}
+            />
+          </div>
+        );
+      })}
+    </Painel>
   );
 }

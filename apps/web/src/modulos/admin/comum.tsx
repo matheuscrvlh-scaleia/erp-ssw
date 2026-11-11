@@ -1,8 +1,15 @@
 import { type QueryKey, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Search } from "lucide-react";
 import { cloneElement, type ReactElement, type ReactNode, useId, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/componentes/ui/select";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
@@ -40,60 +47,18 @@ export function useGravacao<E, S>(opcoes: {
   return { gravar, gravando: mutacao.isPending };
 }
 
-export function CabecalhoDaPagina({
-  titulo,
-  descricao,
-  children,
-}: {
-  titulo: string;
-  descricao: string;
-  children?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-[24px] font-medium tracking-tight">{titulo}</h1>
-        <p className="text-[12px] text-muted-foreground">{descricao}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-const TOM_DO_SELO = {
-  bom: "bg-status-good-bg text-status-good-fg",
-  ruim: "bg-status-bad-bg text-status-bad-fg",
-  alerta: "bg-status-warn-bg text-status-warn-fg",
-  neutro: "border border-border text-muted-foreground",
-} as const;
-
-/** Selo de situação (Ativo/Inativo, Protegido, Convite pendente), nas cores de status. */
-export function Selo({
-  tom = "neutro",
-  children,
-  title,
-}: {
-  tom?: keyof typeof TOM_DO_SELO;
-  children: ReactNode;
-  title?: string | undefined;
-}) {
-  return (
-    <span
-      title={title}
-      className={cn(
-        "whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
-        TOM_DO_SELO[tom],
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
+/** Campo de formulário no desenho do `ui/input` (inputs e textarea feitos à mão). */
 export const CAMPO =
-  "h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60";
+  "h-9 w-full rounded-lg border border-input bg-card px-3 text-[13px] outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-status-bad";
 
-/** Rótulo, controle (recebe o `id`), ajuda e erro. */
+/** Props que o `Campo` repassa ao controle: liga rótulo, ajuda e erro ao leitor de tela. */
+interface PropsDoControle {
+  id?: string;
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
+}
+
+/** Rótulo, controle (recebe o `id`), ajuda e erro logo abaixo (validação no próprio campo). */
 export function Campo({
   rotulo,
   ajuda,
@@ -102,18 +67,152 @@ export function Campo({
 }: {
   rotulo: string;
   ajuda?: ReactNode;
-  erro?: string | null;
-  children: ReactElement<{ id?: string }>;
+  erro?: string | null | undefined;
+  children: ReactElement<PropsDoControle>;
 }) {
   const id = useId();
+  const idDaAjuda = `${id}-ajuda`;
+  const idDoErro = `${id}-erro`;
+  const descricao = [erro && idDoErro, ajuda && idDaAjuda].filter(Boolean).join(" ");
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-[13px] font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="block text-[13px] font-medium text-foreground">
         {rotulo}
       </label>
-      {cloneElement(children, { id })}
-      {ajuda && <p className="text-[11px] text-muted-foreground">{ajuda}</p>}
-      {erro && <p className="text-[11px] text-status-bad-fg">{erro}</p>}
+      {cloneElement(children, {
+        id,
+        ...(descricao ? { "aria-describedby": descricao } : {}),
+        ...(erro ? { "aria-invalid": true } : {}),
+      })}
+      {erro && (
+        <p id={idDoErro} className="text-xs font-medium text-status-bad-fg">
+          {erro}
+        </p>
+      )}
+      {ajuda && (
+        <p id={idDaAjuda} className="text-xs text-muted-foreground">
+          {ajuda}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export interface OpcaoDeEscolha {
+  valor: string;
+  rotulo: string;
+}
+
+/** O Radix não aceita item com valor "": a opção "nenhum" usa esta chave por dentro. */
+const NENHUM = "__nenhum__";
+
+/**
+ * Escolha única (`ui/select`) a partir de uma lista. `vazio` vira a opção de valor "" ("Todos os
+ * níveis", "Sem departamento"); sem ele, valor "" mostra o `placeholder`.
+ */
+export function Escolha({
+  valor,
+  aoMudar,
+  opcoes,
+  vazio,
+  placeholder,
+  rotulo,
+  disabled,
+  filtro,
+  prefixo,
+  className,
+  ...controle
+}: PropsDoControle & {
+  valor: string;
+  aoMudar: (valor: string) => void;
+  opcoes: readonly OpcaoDeEscolha[];
+  vazio?: string | undefined;
+  placeholder?: string | undefined;
+  /** Nome para o leitor de tela quando não há `<label>` (barra de filtros, célula de tabela). */
+  rotulo?: string | undefined;
+  disabled?: boolean | undefined;
+  /** Desenho da barra de filtros (cartão com sombra, como os outros filtros). */
+  filtro?: boolean | undefined;
+  /** Nome do filtro antes do valor, quando o valor sozinho é ambíguo ("Penaliza · Todos"). */
+  prefixo?: string | undefined;
+  className?: string | undefined;
+}) {
+  return (
+    <Select
+      value={valor === "" && vazio ? NENHUM : valor}
+      onValueChange={(v) => {
+        aoMudar(v === NENHUM ? "" : v);
+      }}
+      disabled={disabled}
+    >
+      <SelectTrigger
+        {...controle}
+        aria-label={rotulo}
+        className={cn(
+          "text-[13px] aria-invalid:border-status-bad",
+          filtro && "w-auto min-w-[180px] gap-2 border-border font-medium shadow-cartao",
+          className,
+        )}
+      >
+        {prefixo ? (
+          <span className="min-w-0">
+            <span className="mr-1.5 font-medium text-muted-foreground">{prefixo}</span>
+            <SelectValue placeholder={placeholder ?? vazio} />
+          </span>
+        ) : (
+          <SelectValue placeholder={placeholder ?? vazio} />
+        )}
+      </SelectTrigger>
+      <SelectContent>
+        {vazio && (
+          <SelectItem value={NENHUM} className="text-[13px]">
+            {vazio}
+          </SelectItem>
+        )}
+        {opcoes.map((o) => (
+          <SelectItem key={o.valor} value={o.valor} className="text-[13px]">
+            {o.rotulo}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** Opções a partir de um mapa `chave → rótulo` (ex.: `ROTULO_DA_ENTIDADE`). */
+export const opcoesDoMapa = (mapa: Record<string, string>): OpcaoDeEscolha[] =>
+  Object.entries(mapa).map(([valor, rotulo]) => ({ valor, rotulo }));
+
+/** Busca de texto da barra de filtros (lupa, 36 px, mesmo desenho dos outros filtros). */
+export function BuscaNaBarra({
+  valor,
+  aoMudar,
+  rotulo,
+  placeholder,
+  className,
+}: {
+  valor: string;
+  aoMudar: (valor: string) => void;
+  rotulo: string;
+  placeholder: string;
+  className?: string | undefined;
+}) {
+  return (
+    <div className={cn("relative w-full sm:w-64", className)}>
+      <Search
+        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+      <input
+        type="search"
+        aria-label={rotulo}
+        placeholder={placeholder}
+        value={valor}
+        onChange={(e) => {
+          aoMudar(e.target.value);
+        }}
+        className={cn(CAMPO, "border-border pl-9 shadow-cartao")}
+      />
     </div>
   );
 }
@@ -124,17 +223,19 @@ export function CampoDeSenha({
   valor,
   aoMudar,
   extra,
+  erro,
 }: {
   rotulo: string;
   valor: string;
   aoMudar: (valor: string) => void;
   extra?: ReactNode;
+  erro?: string | null | undefined;
 }) {
   const id = useId();
   const [ver, setVer] = useState(false);
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-[13px] font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="block text-[13px] font-medium text-foreground">
         {rotulo}
       </label>
       <div className="relative">
@@ -143,26 +244,54 @@ export function CampoDeSenha({
           type={ver ? "text" : "password"}
           autoComplete="new-password"
           placeholder="Mínimo 8 caracteres"
-          className={`${CAMPO} pr-16`}
+          aria-invalid={erro ? true : undefined}
+          aria-describedby={erro ? `${id}-erro` : undefined}
+          className={cn(CAMPO, "pr-20")}
           value={valor}
           onChange={(e) => {
             aoMudar(e.target.value);
           }}
         />
-        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+        <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center">
           {extra}
-          <button
-            type="button"
-            onClick={() => {
+          <BotaoDoCampo
+            rotulo={ver ? "Ocultar senha" : "Mostrar senha"}
+            aoClicar={() => {
               setVer((v) => !v);
             }}
-            className="text-muted-foreground hover:text-foreground"
-            aria-label={ver ? "Ocultar senha" : "Mostrar senha"}
           >
-            {ver ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </button>
+            {ver ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+          </BotaoDoCampo>
         </div>
       </div>
+      {erro && (
+        <p id={`${id}-erro`} className="text-xs font-medium text-status-bad-fg">
+          {erro}
+        </p>
+      )}
     </div>
+  );
+}
+
+/** Botão de ícone dentro de um campo (mostrar senha, copiar): 28 px, com dica. */
+export function BotaoDoCampo({
+  rotulo,
+  aoClicar,
+  children,
+}: {
+  rotulo: string;
+  aoClicar: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={aoClicar}
+      aria-label={rotulo}
+      title={rotulo}
+      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:h-4 [&_svg]:w-4"
+    >
+      {children}
+    </button>
   );
 }

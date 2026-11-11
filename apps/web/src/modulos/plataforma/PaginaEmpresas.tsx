@@ -5,7 +5,9 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
+import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -16,14 +18,14 @@ import {
   DialogTrigger,
 } from "@/componentes/ui/dialog";
 import { chamar } from "@/lib/api";
-import { CabecalhoDaPagina, CAMPO, Campo, Selo, useGravacao } from "@/modulos/admin/comum";
+import { CAMPO, Campo, useGravacao } from "@/modulos/admin/comum";
 
 import { CHAVES_DA_PLATAFORMA, consultaEmpresas } from "./api";
 
-export const TOM_DO_STATUS: Record<StatusEmpresa, "alerta" | "bom" | "ruim" | "neutro"> = {
+export const TOM_DO_STATUS: Record<StatusEmpresa, Tom> = {
   implantacao: "alerta",
-  ativa: "bom",
-  suspensa: "ruim",
+  ativa: "sucesso",
+  suspensa: "erro",
   encerrada: "neutro",
 };
 
@@ -47,11 +49,11 @@ const COLUNAS: ColunaTabela<EmpresaResumo>[] = [
         <Link
           to="/plataforma/empresas/$id"
           params={{ id: e.id }}
-          className="font-medium hover:underline"
+          className="font-semibold text-foreground hover:text-brand hover:underline"
         >
           {e.nome}
         </Link>
-        <div className="text-[11px] text-muted-foreground">{e.slug}</div>
+        <div className="text-xs text-muted-foreground">{e.slug}</div>
       </>
     ),
   },
@@ -59,7 +61,9 @@ const COLUNAS: ColunaTabela<EmpresaResumo>[] = [
     chave: "status",
     titulo: "Status",
     valor: (e) => ROTULO_DO_STATUS[e.status],
-    celula: (e) => <Selo tom={TOM_DO_STATUS[e.status]}>{ROTULO_DO_STATUS[e.status]}</Selo>,
+    celula: (e) => (
+      <SeloStatus tom={TOM_DO_STATUS[e.status]}>{ROTULO_DO_STATUS[e.status]}</SeloStatus>
+    ),
   },
   { chave: "cnpj", titulo: "CNPJ", classe: "text-muted-foreground" },
   { chave: "usuariosAtivos", titulo: "Usuários ativos", formato: "inteiro" },
@@ -71,15 +75,15 @@ export function PaginaEmpresas() {
   const navigate = useNavigate();
   const consulta = useQuery(consultaEmpresas);
   return (
-    <div className="space-y-6">
-      <CabecalhoDaPagina
-        titulo="Empresas"
-        descricao="Clientes da plataforma: dados, módulos liberados, usuários e integrações."
-      >
+    <Pagina
+      titulo="Empresas"
+      descricao="Clientes da plataforma: dados, módulos liberados, usuários e integrações."
+      acoes={
         <ModalNovaEmpresa
           aoCriar={(id) => void navigate({ to: "/plataforma/empresas/$id", params: { id } })}
         />
-      </CabecalhoDaPagina>
+      }
+    >
       <TabelaDados
         colunas={COLUNAS}
         linhas={consulta.data?.empresas ?? []}
@@ -89,14 +93,16 @@ export function PaginaEmpresas() {
         aoTentarDeNovo={() => void consulta.refetch()}
         mensagemVazia="Nenhuma empresa cadastrada."
       />
-      <p className="text-[11px] text-muted-foreground">
-        Módulos liberados não contam os essenciais.
-      </p>
-    </div>
+      <p className="text-xs text-muted-foreground">Módulos liberados não contam os essenciais.</p>
+    </Pagina>
   );
 }
 
 const VAZIA = { nome: "", nomeCurto: "", slug: "", cnpj: "" };
+
+/** A mesma regra que a API confere (contrato), avisada no campo enquanto digita. */
+const erroDoSlug = (slug: string) =>
+  p.criarEmpresa.entrada.shape.slug.safeParse(slug).error?.issues[0]?.message ?? null;
 
 /** Nova empresa: nasce em implantação, com os roles padrão e os cadastros da empresa modelo. */
 function ModalNovaEmpresa({ aoCriar }: { aoCriar: (id: string) => void }) {
@@ -121,8 +127,8 @@ function ModalNovaEmpresa({ aoCriar }: { aoCriar: (id: string) => void }) {
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" />
+        <Button size="sm">
+          <Plus aria-hidden />
           Nova empresa
         </Button>
       </DialogTrigger>
@@ -130,7 +136,7 @@ function ModalNovaEmpresa({ aoCriar }: { aoCriar: (id: string) => void }) {
         <DialogHeader>
           <DialogTitle>Nova empresa</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Campo rotulo="Nome">
             <input
               className={CAMPO}
@@ -142,7 +148,7 @@ function ModalNovaEmpresa({ aoCriar }: { aoCriar: (id: string) => void }) {
               }}
             />
           </Campo>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Campo rotulo="Nome curto">
               <input
                 className={CAMPO}
@@ -166,6 +172,7 @@ function ModalNovaEmpresa({ aoCriar }: { aoCriar: (id: string) => void }) {
           <Campo
             rotulo="Identificador (slug)"
             ajuda="Letras minúsculas, números e hífen. Não muda depois."
+            erro={campos.slug ? erroDoSlug(campos.slug) : null}
           >
             <input
               className={CAMPO}

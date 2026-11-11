@@ -7,11 +7,14 @@ import { useState } from "react";
 
 import { Abas } from "@/componentes/comum/Abas";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
-import { CabecalhoDaPagina, Selo, useGravacao } from "@/modulos/admin/comum";
-import { LogsComAbas, PainelAlteracoes } from "@/modulos/admin/logs/Logs";
+import { CAMPO, useGravacao } from "@/modulos/admin/comum";
+import { useAlteracoes, useLogsComAbas } from "@/modulos/admin/logs/Logs";
 
 import { AbaDados } from "./AbaDados";
 import { AbaImplantacao, AbaIntegracoes, AbaModulos, AbaUsuarios } from "./AbasDaEmpresa";
@@ -32,65 +35,93 @@ export function PaginaEmpresa({ id }: { id: string }) {
   const consulta = useQuery(consultaEmpresa(id));
   const [aba, setAba] = useState<Aba>("dados");
   const empresa = consulta.data;
+  // Os filtros dos logs ficam na barra de filtros da página, como nas outras telas.
+  const logs = useLogsComAbas({ empresaId: id, ativo: aba === "logs" && Boolean(empresa) });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          to="/plataforma/empresas"
-          className="mb-2 inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Empresas
-        </Link>
-        <div className="flex items-center gap-3">
-          <h1 className="text-[24px] font-medium tracking-tight">
-            {empresa?.nome ?? (consulta.isLoading ? "Carregando…" : "Empresa")}
-          </h1>
+    <Pagina
+      titulo={
+        <span className="inline-flex flex-wrap items-center gap-3">
+          {empresa?.nome ?? (consulta.isLoading ? "Carregando…" : "Empresa")}
           {empresa && (
-            <Selo tom={TOM_DO_STATUS[empresa.status]}>{ROTULO_DO_STATUS[empresa.status]}</Selo>
+            <SeloStatus tom={TOM_DO_STATUS[empresa.status]}>
+              {ROTULO_DO_STATUS[empresa.status]}
+            </SeloStatus>
           )}
-        </div>
-        {empresa && (
-          <p className="text-[12px] text-muted-foreground">
+        </span>
+      }
+      descricao={
+        empresa && (
+          <>
             {empresa.slug}
             {empresa.cnpj ? ` · CNPJ ${empresa.cnpj}` : ""}
-          </p>
-        )}
-        {consulta.error && (
+          </>
+        )
+      }
+      acoes={
+        <Button asChild size="sm" variant="ghost">
+          <Link to="/plataforma/empresas">
+            <ArrowLeft aria-hidden />
+            Empresas
+          </Link>
+        </Button>
+      }
+      abas={
+        empresa && (
+          // Seis abas não cabem no celular: a lista rola na horizontal em vez de estourar a página.
+          <div className="rolagem-fina max-w-full overflow-x-auto pb-1">
+            <Abas
+              abas={ABAS}
+              valor={aba}
+              aoMudar={setAba}
+              rotulo="Abas da empresa"
+              className="w-max"
+            />
+          </div>
+        )
+      }
+      filtros={
+        empresa &&
+        aba === "logs" && (
+          <div className="flex flex-wrap items-center gap-2">
+            {logs.alternador}
+            {logs.filtros}
+          </div>
+        )
+      }
+    >
+      {consulta.error && (
+        <Painel>
           <MensagemErro erro={consulta.error} aoTentarDeNovo={() => void consulta.refetch()} />
-        )}
-      </div>
-
+        </Painel>
+      )}
       {empresa && (
-        <div className="space-y-4">
-          <Abas abas={ABAS} valor={aba} aoMudar={setAba} />
+        <>
           {aba === "dados" && <AbaDados empresa={empresa} />}
           {aba === "modulos" && <AbaModulos empresaId={id} />}
           {aba === "usuarios" && <AbaUsuarios empresaId={id} />}
           {aba === "integracoes" && <AbaIntegracoes empresaId={id} />}
-          {aba === "logs" && <LogsComAbas empresaId={id} />}
+          {aba === "logs" && logs.conteudo}
           {aba === "implantacao" && <AbaImplantacao empresa={empresa} />}
-        </div>
+        </>
       )}
-    </div>
+    </Pagina>
   );
 }
 
 export function PaginaLogsDaPlataforma() {
   const empresas = useQuery(consultaEmpresas);
+  const alteracoes = useAlteracoes({
+    empresas: (empresas.data?.empresas ?? []).map((e) => ({ id: e.id, nome: e.nome })),
+  });
   return (
-    <div className="space-y-6">
-      <CabecalhoDaPagina
-        titulo="Logs"
-        descricao="O que mudou em todas as empresas e na Plataforma, quem mudou e quando. Clique numa linha para ver o antes e o depois."
-      />
-      <PainelAlteracoes
-        escopo={{
-          empresas: (empresas.data?.empresas ?? []).map((e) => ({ id: e.id, nome: e.nome })),
-        }}
-      />
-    </div>
+    <Pagina
+      titulo="Logs"
+      descricao="O que mudou em todas as empresas e na Plataforma, quem mudou e quando. Clique numa linha para ver o antes e o depois."
+      filtros={alteracoes.filtros}
+    >
+      {alteracoes.conteudo}
+    </Pagina>
   );
 }
 
@@ -126,6 +157,7 @@ export function PaginaAdministradores() {
         <Button
           size="sm"
           variant="ghost"
+          className="h-8 w-8 p-0 text-status-bad-fg hover:text-status-bad-fg"
           aria-label={`Remover ${a.email}`}
           disabled={admins.length <= 1 || remover.gravando}
           title={admins.length <= 1 ? "Não dá para remover o último administrador" : "Remover"}
@@ -136,40 +168,18 @@ export function PaginaAdministradores() {
             if (confirmou) void remover.gravar(a.usuarioId);
           }}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 aria-hidden />
         </Button>
       ),
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <CabecalhoDaPagina
-        titulo="Administradores"
-        descricao="Equipe da Plataforma: vê e administra todas as empresas, as integrações e os logs."
-      />
-      <form
-        className="flex max-w-xl items-center gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (email.trim()) void adicionar.gravar(email);
-        }}
-      >
-        <input
-          type="email"
-          aria-label="E-mail do novo administrador"
-          placeholder="E-mail de um usuário já cadastrado"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-          }}
-          className="h-8 w-full rounded-md border border-input bg-background px-3 text-[12px] shadow-sm"
-        />
-        <Button size="sm" type="submit" className="gap-1.5" disabled={adicionar.gravando}>
-          <UserPlus className="h-3.5 w-3.5" />
-          Adicionar
-        </Button>
-      </form>
+    <Pagina
+      largura="estreita"
+      titulo="Administradores"
+      descricao="Equipe da Plataforma: vê e administra todas as empresas, as integrações e os logs."
+    >
       <TabelaDados
         colunas={colunas}
         linhas={admins}
@@ -178,7 +188,31 @@ export function PaginaAdministradores() {
         erro={consulta.error}
         aoTentarDeNovo={() => void consulta.refetch()}
         mensagemVazia="Nenhum administrador."
+        acoes={
+          <form
+            className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (email.trim()) void adicionar.gravar(email);
+            }}
+          >
+            <input
+              type="email"
+              aria-label="E-mail do novo administrador"
+              placeholder="E-mail de um usuário já cadastrado"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+              }}
+              className={`${CAMPO} w-full sm:w-80`}
+            />
+            <Button size="sm" type="submit" className="h-9" disabled={adicionar.gravando}>
+              <UserPlus aria-hidden />
+              Adicionar
+            </Button>
+          </form>
+        }
       />
-    </div>
+    </Pagina>
   );
 }

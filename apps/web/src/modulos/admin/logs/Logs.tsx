@@ -15,39 +15,63 @@ import {
 } from "@erp/shared/contratos/auditoria";
 import { hojeNoFuso, somarDias } from "@erp/shared/datas";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { CalendarDays } from "lucide-react";
+import { type ReactNode, useState } from "react";
 
 import { Abas } from "@/componentes/comum/Abas";
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Aviso } from "@/componentes/comum/Aviso";
 import { ModalDetalhe } from "@/componentes/comum/Detalhe";
+import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 
-import { Selo } from "../comum";
+import { BuscaNaBarra, Escolha, opcoesDoMapa } from "../comum";
+
+/** Partes de uma tela de logs para o molde `Pagina`: a barra de filtros e o conteúdo. */
+interface PartesDosLogs {
+  filtros: ReactNode;
+  conteudo: ReactNode;
+}
+
+type AbaDosLogs = "alteracoes" | "integracoes";
+
+const ABAS_DOS_LOGS: readonly { valor: AbaDosLogs; rotulo: string }[] = [
+  { valor: "alteracoes", rotulo: "Alterações" },
+  { valor: "integracoes", rotulo: "Integrações" },
+];
 
 /**
- * Logs (decisão Q31: a aba Integrações segue o papel na empresa ativa). Sem `empresaId`: Admin ›
- * Logs (empresa ativa). Com ele: Plataforma › Empresa › Logs.
+ * Logs com as abas Alterações e Integrações (decisão Q31: a aba Integrações segue o papel na
+ * empresa ativa). Sem `empresaId`: Admin › Logs (empresa ativa). Com ele: Plataforma › Empresa ›
+ * Logs. Com `ativo` falso (a aba da empresa está fechada), nada é consultado.
  */
-export function LogsComAbas({ empresaId }: { empresaId?: string }) {
-  const [aba, setAba] = useState<"alteracoes" | "integracoes">("alteracoes");
-  return (
-    <div className="space-y-3">
-      <Abas
-        abas={[
-          { valor: "alteracoes", rotulo: "Alterações" },
-          { valor: "integracoes", rotulo: "Integrações" },
-        ]}
-        valor={aba}
-        aoMudar={setAba}
-      />
-      {aba === "alteracoes" ? (
-        <PainelAlteracoes escopo={empresaId ? { empresaFixa: empresaId } : "empresa"} />
-      ) : (
-        <PainelIntegracoes empresaId={empresaId} />
-      )}
-    </div>
+export function useLogsComAbas({
+  empresaId,
+  ativo = true,
+}: {
+  empresaId?: string | undefined;
+  ativo?: boolean | undefined;
+} = {}) {
+  const [aba, setAba] = useState<AbaDosLogs>("alteracoes");
+  const alteracoes = useAlteracoes(
+    empresaId ? { empresaFixa: empresaId } : "empresa",
+    ativo && aba === "alteracoes",
   );
+  const integracoes = useIntegracoes(empresaId, ativo && aba === "integracoes");
+  const atual = aba === "alteracoes" ? alteracoes : integracoes;
+  return {
+    /** Abas no cabeçalho da página (Admin › Logs). */
+    abas: <Abas abas={ABAS_DOS_LOGS} valor={aba} aoMudar={setAba} rotulo="Tipo de log" />,
+    /** A mesma escolha dentro de uma aba da empresa, na barra de filtros. */
+    alternador: (
+      <Alternador opcoes={ABAS_DOS_LOGS} valor={aba} aoMudar={setAba} rotulo="Tipo de log" />
+    ),
+    filtros: atual.filtros,
+    conteudo: atual.conteudo,
+  };
 }
 
 const ultimosDias = (dias: number, fuso: string) => {
@@ -55,8 +79,6 @@ const ultimosDias = (dias: number, fuso: string) => {
   return { de: somarDias(hoje, -dias), ate: hoje };
 };
 const ouNada = (v: string) => (v.trim() ? v.trim() : undefined);
-
-const FILTRO = "h-8 rounded-md border border-input bg-background px-2 text-[12px] shadow-sm";
 
 type EscopoDasAlteracoes =
   "empresa" | { empresaFixa: string } | { empresas: readonly { id: string; nome: string }[] };
@@ -78,9 +100,11 @@ function colunasDaAuditoria(comEmpresa: boolean): ColunaTabela<LinhaAuditoria>[]
       titulo: "Quem",
       valor: (l) => l.atorEmail ?? ROTULO_DO_ATOR[l.atorTipo],
       celula: (l) => (
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           <div className="truncate">{l.atorEmail ?? "—"}</div>
-          <Selo>{ROTULO_DO_ATOR[l.atorTipo]}</Selo>
+          <SeloStatus tom="neutro" semIcone>
+            {ROTULO_DO_ATOR[l.atorTipo]}
+          </SeloStatus>
         </div>
       ),
     },
@@ -94,7 +118,7 @@ function colunasDaAuditoria(comEmpresa: boolean): ColunaTabela<LinhaAuditoria>[]
         <>
           {ROTULO_DA_ENTIDADE[l.entidade] ?? l.entidade}
           {l.entidadeId && (
-            <div className="max-w-[180px] truncate text-[11px] text-muted-foreground">
+            <div className="max-w-[180px] truncate text-xs text-muted-foreground">
               {l.entidadeId}
             </div>
           )}
@@ -111,20 +135,27 @@ function colunasDaAuditoria(comEmpresa: boolean): ColunaTabela<LinhaAuditoria>[]
   ];
 }
 
-export function PainelAlteracoes({ escopo }: { escopo: EscopoDasAlteracoes }) {
+/** Alterações nos cadastros: da empresa ativa, de uma empresa (Plataforma) ou de todas. */
+export function useAlteracoes(escopo: EscopoDasAlteracoes, ativo = true): PartesDosLogs {
   const fuso = useFusoDaEmpresa();
-  const [filtros, setFiltros] = useState(() => ({
+  const inicial = () => ({
     ...ultimosDias(30, fuso),
     ator: "",
     entidade: "",
     acao: "",
     empresa: "",
-  }));
+  });
+  const [filtros, setFiltros] = useState(inicial);
   const [aberta, setAberta] = useState<LinhaAuditoria | null>(null);
   const mudar = (parte: Partial<typeof filtros>) => {
     setFiltros((f) => ({ ...f, ...parte }));
   };
   const empresas = typeof escopo === "object" && "empresas" in escopo ? escopo.empresas : null;
+  const padrao = inicial();
+  const mexidos =
+    Boolean(filtros.ator || filtros.entidade || filtros.acao || filtros.empresa) ||
+    filtros.de !== padrao.de ||
+    filtros.ate !== padrao.ate;
 
   const entrada = {
     ator: ouNada(filtros.ator),
@@ -140,65 +171,71 @@ export function PainelAlteracoes({ escopo }: { escopo: EscopoDasAlteracoes }) {
       const empresa = "empresaFixa" in escopo ? escopo.empresaFixa : ouNada(filtros.empresa);
       return chamar(a.alteracoesDaPlataforma, { entrada: { ...entrada, empresa } });
     },
+    enabled: ativo,
   });
   const linhas = consulta.data?.linhas ?? [];
 
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        {empresas && (
-          <select
-            aria-label="Empresa"
-            className={`${FILTRO} w-[200px]`}
-            value={filtros.empresa}
-            onChange={(e) => {
-              mudar({ empresa: e.target.value });
-            }}
-          >
-            <option value="">Todas as empresas</option>
-            <option value="plataforma">Só ações da Plataforma</option>
-            {empresas.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.nome}
-              </option>
-            ))}
-          </select>
-        )}
-        <input
-          placeholder="Quem (e-mail)…"
-          aria-label="Quem"
-          className={`${FILTRO} w-[180px]`}
-          value={filtros.ator}
-          onChange={(e) => {
-            mudar({ ator: e.target.value });
-          }}
-        />
+  const filtrosDaTela = (
+    <FiltrosAvancados
+      ativos={mexidos}
+      aoLimpar={() => {
+        setFiltros(inicial());
+      }}
+    >
+      {empresas && (
         <Escolha
-          rotulo="Entidade"
-          todas="Todas as entidades"
-          opcoes={ROTULO_DA_ENTIDADE}
-          valor={filtros.entidade}
-          aoMudar={(entidade) => {
-            mudar({ entidade });
+          filtro
+          rotulo="Empresa"
+          vazio="Todas as empresas"
+          opcoes={[
+            { valor: "plataforma", rotulo: "Só ações da Plataforma" },
+            ...empresas.map((e) => ({ valor: e.id, rotulo: e.nome })),
+          ]}
+          valor={filtros.empresa}
+          aoMudar={(empresa) => {
+            mudar({ empresa });
           }}
         />
-        <Escolha
-          rotulo="Ação"
-          todas="Todas as ações"
-          opcoes={ROTULO_DA_ACAO}
-          valor={filtros.acao}
-          aoMudar={(acao) => {
-            mudar({ acao });
-          }}
-        />
-        <Periodo de={filtros.de} ate={filtros.ate} aoMudar={mudar} />
-      </div>
+      )}
+      <Periodo de={filtros.de} ate={filtros.ate} aoMudar={mudar} />
+      <Escolha
+        filtro
+        rotulo="Entidade"
+        vazio="Todas as entidades"
+        opcoes={opcoesDoMapa(ROTULO_DA_ENTIDADE)}
+        valor={filtros.entidade}
+        aoMudar={(entidade) => {
+          mudar({ entidade });
+        }}
+      />
+      <Escolha
+        filtro
+        rotulo="Ação"
+        vazio="Todas as ações"
+        opcoes={opcoesDoMapa(ROTULO_DA_ACAO)}
+        valor={filtros.acao}
+        aoMudar={(acao) => {
+          mudar({ acao });
+        }}
+      />
+      <BuscaNaBarra
+        rotulo="Quem"
+        placeholder="Quem (e-mail)…"
+        valor={filtros.ator}
+        aoMudar={(ator) => {
+          mudar({ ator });
+        }}
+      />
+    </FiltrosAvancados>
+  );
 
+  const conteudo = (
+    <>
       {linhas.length >= LIMITE_AUDITORIA && (
-        <p className="text-[11px] text-status-warn-fg">
+        <Aviso tom="alerta">
           Mostrando os {LIMITE_AUDITORIA} registros mais recentes. Reduza o período ou aplique mais
           filtros para ver o restante.
-        </p>
+        </Aviso>
       )}
 
       <TabelaDados
@@ -222,6 +259,7 @@ export function PainelAlteracoes({ escopo }: { escopo: EscopoDasAlteracoes }) {
       {aberta && (
         <ModalDetalhe
           aberto
+          largura="larga"
           aoFechar={() => {
             setAberta(null);
           }}
@@ -232,17 +270,19 @@ export function PainelAlteracoes({ escopo }: { escopo: EscopoDasAlteracoes }) {
             <Bloco titulo="Antes" valor={aberta.antes} />
             <Bloco titulo="Depois" valor={aberta.depois} />
           </div>
-          {aberta.ip && <p className="mt-2 text-[11px] text-muted-foreground">IP: {aberta.ip}</p>}
+          {aberta.ip && <p className="text-xs text-muted-foreground">IP: {aberta.ip}</p>}
         </ModalDetalhe>
       )}
-    </div>
+    </>
   );
+
+  return { filtros: filtrosDaTela, conteudo };
 }
 
-function tomDaSituacao(status: string | null): "ruim" | "bom" | "neutro" {
+function tomDaSituacao(status: string | null): Tom {
   const s = (status ?? "").toLowerCase();
-  if (/(erro|falh|error|fail)/.test(s)) return "ruim";
-  if (/(ok|sucesso|conclu|success|importado|aplicado|done)/.test(s)) return "bom";
+  if (/(erro|falh|error|fail)/.test(s)) return "erro";
+  if (/(ok|sucesso|conclu|success|importado|aplicado|done)/.test(s)) return "sucesso";
   return "neutro";
 }
 
@@ -257,19 +297,22 @@ const COLUNAS_DA_INTEGRACAO: ColunaTabela<LinhaIntegracao>[] = [
   {
     chave: "status",
     titulo: "Situação",
-    celula: (l) => l.status && <Selo tom={tomDaSituacao(l.status)}>{l.status}</Selo>,
+    celula: (l) => l.status && <SeloStatus tom={tomDaSituacao(l.status)}>{l.status}</SeloStatus>,
   },
   { chave: "resumo", titulo: "O que fez", classe: "max-w-[420px]" },
   { chave: "erro", titulo: "Mensagem", classe: "max-w-[320px] truncate text-muted-foreground" },
 ];
 
-function PainelIntegracoes({ empresaId }: { empresaId?: string | undefined }) {
+function useIntegracoes(empresaId: string | undefined, ativo: boolean): PartesDosLogs {
   // Dezenas de execuções por dia: começa nos últimos 7 dias.
   const fuso = useFusoDaEmpresa();
-  const [filtros, setFiltros] = useState(() => ({ ...ultimosDias(7, fuso), origem: "" }));
+  const inicial = () => ({ ...ultimosDias(7, fuso), origem: "" });
+  const [filtros, setFiltros] = useState(inicial);
   const mudar = (parte: Partial<typeof filtros>) => {
     setFiltros((f) => ({ ...f, ...parte }));
   };
+  const padrao = inicial();
+  const mexidos = filtros.origem !== "" || filtros.de !== padrao.de || filtros.ate !== padrao.ate;
   const origem = ORIGENS_INTEGRACAO.find((o) => o === filtros.origem);
   const entrada = { origem, de: ouNada(filtros.de), ate: ouNada(filtros.ate) };
   const consulta = useQuery({
@@ -278,31 +321,41 @@ function PainelIntegracoes({ empresaId }: { empresaId?: string | undefined }) {
       empresaId
         ? chamar(a.integracoesDeEmpresaNaPlataforma, { parametros: { id: empresaId }, entrada })
         : chamar(a.integracoesDaEmpresa, { entrada }),
+    enabled: ativo,
   });
   const linhas = consulta.data?.linhas ?? [];
   const noLimite = ORIGENS_INTEGRACAO.some(
     (o) => linhas.filter((l) => l.origem === o).length >= LIMITE_INTEGRACAO_POR_ORIGEM,
   );
 
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Escolha
-          rotulo="Integração"
-          todas="Todas as integrações"
-          opcoes={ROTULO_DA_ORIGEM}
-          valor={filtros.origem}
-          aoMudar={(o) => {
-            mudar({ origem: o });
-          }}
-        />
-        <Periodo de={filtros.de} ate={filtros.ate} aoMudar={mudar} />
-      </div>
+  const filtrosDaTela = (
+    <FiltrosAvancados
+      ativos={mexidos}
+      aoLimpar={() => {
+        setFiltros(inicial());
+      }}
+    >
+      <Periodo de={filtros.de} ate={filtros.ate} aoMudar={mudar} />
+      <Escolha
+        filtro
+        rotulo="Integração"
+        vazio="Todas as integrações"
+        opcoes={opcoesDoMapa(ROTULO_DA_ORIGEM)}
+        valor={filtros.origem}
+        aoMudar={(o) => {
+          mudar({ origem: o });
+        }}
+      />
+    </FiltrosAvancados>
+  );
+
+  const conteudo = (
+    <>
       {noLimite && (
-        <p className="text-[11px] text-status-warn-fg">
+        <Aviso tom="alerta">
           Mostrando as {LIMITE_INTEGRACAO_POR_ORIGEM} execuções mais recentes de cada integração.
           Reduza o período ou escolha uma integração para ver o restante.
-        </p>
+        </Aviso>
       )}
       <TabelaDados
         colunas={COLUNAS_DA_INTEGRACAO}
@@ -319,42 +372,13 @@ function PainelIntegracoes({ empresaId }: { empresaId?: string | undefined }) {
           subtitulo: `Período ${filtros.de || "—"} a ${filtros.ate || "—"}`,
         }}
       />
-    </div>
+    </>
   );
+
+  return { filtros: filtrosDaTela, conteudo };
 }
 
-function Escolha({
-  rotulo,
-  todas,
-  opcoes,
-  valor,
-  aoMudar,
-}: {
-  rotulo: string;
-  todas: string;
-  opcoes: Record<string, string>;
-  valor: string;
-  aoMudar: (valor: string) => void;
-}) {
-  return (
-    <select
-      aria-label={rotulo}
-      className={`${FILTRO} w-[200px]`}
-      value={valor}
-      onChange={(e) => {
-        aoMudar(e.target.value);
-      }}
-    >
-      <option value="">{todas}</option>
-      {Object.entries(opcoes).map(([k, v]) => (
-        <option key={k} value={k}>
-          {v}
-        </option>
-      ))}
-    </select>
-  );
-}
-
+/** De / Até num controle só, no desenho dos outros filtros da barra. */
 function Periodo({
   de,
   ate,
@@ -364,37 +388,43 @@ function Periodo({
   ate: string;
   aoMudar: (parte: { de?: string; ate?: string }) => void;
 }) {
+  const data =
+    "h-full rounded-md bg-transparent px-1.5 text-[13px] tabular-nums outline-none focus-visible:bg-muted";
   return (
-    <>
+    <div
+      role="group"
+      aria-label="Período"
+      className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card pr-1 pl-3 text-[13px] shadow-cartao"
+    >
+      <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       <input
         type="date"
         aria-label="De"
-        className={`${FILTRO} w-[140px]`}
+        className={data}
         value={de}
         onChange={(e) => {
           aoMudar({ de: e.target.value });
         }}
       />
+      <span className="text-muted-foreground">a</span>
       <input
         type="date"
         aria-label="Até"
-        className={`${FILTRO} w-[140px]`}
+        className={data}
         value={ate}
         onChange={(e) => {
           aoMudar({ ate: e.target.value });
         }}
       />
-    </>
+    </div>
   );
 }
 
 function Bloco({ titulo, valor }: { titulo: string; valor: Record<string, unknown> | null }) {
   return (
-    <div>
-      <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-        {titulo}
-      </div>
-      <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 text-[11px]">
+    <div className="min-w-0">
+      <div className="label-xs mb-1.5">{titulo}</div>
+      <pre className="rolagem-fina max-h-72 overflow-auto rounded-lg border border-border bg-muted p-3 text-xs">
         {valor ? JSON.stringify(valor, null, 2) : "—"}
       </pre>
     </div>

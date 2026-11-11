@@ -12,16 +12,20 @@ import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 import { formatarDataHora } from "@erp/shared/formatacao";
 import { INFO_DA_INTEGRACAO } from "@erp/shared/plataforma";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Circle, ExternalLink, KeyRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CheckCircle2, Circle, ExternalLink, KeyRound, ListChecks } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
-import { CAMPO, Selo, useGravacao } from "@/modulos/admin/comum";
+import { cn } from "@/lib/utils";
+import { CAMPO, Campo, Escolha, useGravacao } from "@/modulos/admin/comum";
 import { ModalNovoUsuario } from "@/modulos/admin/usuarios/ModalNovoUsuario";
 
 import {
@@ -32,46 +36,66 @@ import {
   consultaVinculos,
 } from "./api";
 
-const PEQUENO = "h-8 rounded-md border border-input bg-background px-2 text-[12px] shadow-sm";
+/** Campo compacto das linhas de tabela (datas e observação dos módulos). */
+const PEQUENO = cn(CAMPO, "h-8");
 
 function Carregando({ consulta }: { consulta: { isLoading: boolean; error: unknown } }) {
-  if (consulta.isLoading) return <p className="text-[12px] text-muted-foreground">Carregando…</p>;
-  return consulta.error ? <MensagemErro erro={consulta.error} /> : null;
+  if (consulta.isLoading) {
+    return (
+      <div role="status" aria-label="Carregando…" className="grid gap-4 lg:grid-cols-2">
+        <Skeleton className="h-40 rounded-2xl bg-muted" />
+        <Skeleton className="h-40 rounded-2xl bg-muted" />
+      </div>
+    );
+  }
+  return consulta.error ? (
+    <Painel>
+      <MensagemErro erro={consulta.error} />
+    </Painel>
+  ) : null;
 }
 
 // --- Módulos ---------------------------------------------------------------------------------
 
+const CABECALHO = "px-4 py-2.5 text-left text-[11.5px] font-semibold tracking-[0.04em] uppercase";
+
 export function AbaModulos({ empresaId }: { empresaId: string }) {
   const consulta = useQuery(consultaModulos(empresaId));
   return (
-    <div className="space-y-3">
-      <p className="text-[12px] text-muted-foreground">
-        Módulo vale se estiver ligado e dentro do prazo (dia de Brasília). Os essenciais valem
-        sempre. Módulo desligado some do menu e a tela mostra o aviso.
-      </p>
-      <Carregando consulta={consulta} />
-      {consulta.data && (
-        <div className="overflow-x-auto rounded-[10px] border border-border/70 bg-card">
-          <table className="w-full text-[13px]">
-            <thead className="bg-muted/50 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2.5 font-medium">Módulo</th>
-                <th className="px-4 py-2.5 font-medium">Ligado</th>
-                <th className="px-4 py-2.5 font-medium">Início</th>
-                <th className="px-4 py-2.5 font-medium">Fim</th>
-                <th className="px-4 py-2.5 font-medium">Observação</th>
-                <th className="px-4 py-2.5 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {consulta.data.modulos.map((m) => (
-                <LinhaDoModulo key={m.chave} empresaId={empresaId} modulo={m} />
-              ))}
-            </tbody>
-          </table>
+    <Painel
+      titulo="Módulos"
+      descricao="Módulo vale se estiver ligado e dentro do prazo (dia de Brasília). Os essenciais valem sempre. Módulo desligado some do menu e a tela mostra o aviso."
+    >
+      {consulta.isLoading || consulta.error ? (
+        <div className="p-4">
+          <Carregando consulta={consulta} />
         </div>
+      ) : (
+        consulta.data && (
+          <div className="rolagem-fina overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-border bg-muted/70 text-muted-foreground">
+                  <th className={CABECALHO}>Módulo</th>
+                  <th className={CABECALHO}>Ligado</th>
+                  <th className={CABECALHO}>Início</th>
+                  <th className={CABECALHO}>Fim</th>
+                  <th className={CABECALHO}>Observação</th>
+                  <th className={CABECALHO}>
+                    <span className="sr-only">Ações</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {consulta.data.modulos.map((m) => (
+                  <LinhaDoModulo key={m.chave} empresaId={empresaId} modulo={m} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
-    </div>
+    </Painel>
   );
 }
 
@@ -101,29 +125,36 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
   const bloqueado = modulo.essencial;
 
   return (
-    <tr className="border-t border-border/60 align-top">
-      <td className="px-4 py-2.5">
-        <div className="font-medium">{modulo.nome}</div>
+    <tr
+      className={cn(
+        "border-b border-border align-top last:border-b-0 hover:bg-muted/60",
+        alterado && "bg-accent hover:bg-accent",
+      )}
+    >
+      <td className="px-4 py-3">
+        <div className="font-semibold">{modulo.nome}</div>
         {modulo.descricao && (
-          <div className="text-[11px] text-muted-foreground">{modulo.descricao}</div>
+          <div className="text-xs text-muted-foreground">{modulo.descricao}</div>
         )}
-        <div className="mt-1 flex flex-wrap gap-1">
+        <div className="mt-1.5 flex flex-wrap gap-1">
           {modulo.essencial ? (
-            <Selo>Essencial · sempre ligado</Selo>
+            <SeloStatus tom="neutro">Essencial · sempre ligado</SeloStatus>
           ) : moduloVigente(modulo, hoje) ? (
-            <Selo tom="bom">Liberado</Selo>
+            <SeloStatus tom="sucesso">Liberado</SeloStatus>
           ) : (
-            <Selo>Não liberado</Selo>
+            <SeloStatus tom="neutro">Não liberado</SeloStatus>
           )}
           {!modulo.essencial && modulo.ativo && dias !== null && dias >= 0 && dias <= 15 && (
-            <Selo tom="alerta">
+            <SeloStatus tom="alerta">
               {dias === 0 ? "Vence hoje" : `Vence em ${String(dias)} dia${dias === 1 ? "" : "s"}`}
-            </Selo>
+            </SeloStatus>
           )}
-          {!modulo.essencial && dias !== null && dias < 0 && <Selo tom="ruim">Vencido</Selo>}
+          {!modulo.essencial && dias !== null && dias < 0 && (
+            <SeloStatus tom="erro">Vencido</SeloStatus>
+          )}
         </div>
       </td>
-      <td className="px-4 py-2.5">
+      <td className="px-4 py-3">
         <Switch
           checked={bloqueado || m.ativo}
           disabled={bloqueado}
@@ -133,11 +164,11 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
           aria-label={`Ligar ${modulo.nome}`}
         />
       </td>
-      <td className="px-4 py-2.5">
+      <td className="px-4 py-3">
         <input
           type="date"
           aria-label={`Início de ${modulo.nome}`}
-          className={`${PEQUENO} w-[140px]`}
+          className={cn(PEQUENO, "w-[150px] tabular-nums")}
           value={m.inicio ?? ""}
           disabled={bloqueado}
           onChange={(e) => {
@@ -145,11 +176,11 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
           }}
         />
       </td>
-      <td className="px-4 py-2.5">
+      <td className="px-4 py-3">
         <input
           type="date"
           aria-label={`Fim de ${modulo.nome}`}
-          className={`${PEQUENO} w-[140px]`}
+          className={cn(PEQUENO, "w-[150px] tabular-nums")}
           value={m.fim ?? ""}
           disabled={bloqueado}
           onChange={(e) => {
@@ -157,10 +188,10 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
           }}
         />
       </td>
-      <td className="px-4 py-2.5">
+      <td className="px-4 py-3">
         <input
           aria-label={`Observação de ${modulo.nome}`}
-          className={`${PEQUENO} min-w-[180px]`}
+          className={cn(PEQUENO, "min-w-[180px]")}
           placeholder="Ex.: teste de 30 dias"
           value={m.observacao ?? ""}
           disabled={bloqueado}
@@ -169,12 +200,12 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
           }}
         />
         {modulo.atualizadoEm && (
-          <div className="mt-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 text-xs text-muted-foreground">
             Alterado em {formatarDataHora(modulo.atualizadoEm, fuso, { virgula: true })}
           </div>
         )}
       </td>
-      <td className="px-4 py-2.5 text-right">
+      <td className="px-4 py-3 text-right">
         {!bloqueado && (
           <Button
             size="sm"
@@ -229,12 +260,23 @@ export function AbaUsuarios({ empresaId }: { empresaId: string }) {
       titulo: "Nome",
       celula: (u) => (
         <>
-          <div className="font-medium">{u.nome ?? "—"}</div>
-          <div className="text-[11px] text-muted-foreground">{u.email}</div>
-          <div className="mt-0.5 flex gap-1">
-            {u.adminPlataforma && <Selo>Plataforma</Selo>}
-            {u.totalEmpresas > 1 && <Selo>{`${String(u.totalEmpresas)} empresas`}</Selo>}
-          </div>
+          <div className="font-semibold">{u.nome ?? "—"}</div>
+          <div className="text-xs text-muted-foreground">{u.email}</div>
+          {(u.adminPlataforma || u.totalEmpresas > 1) && (
+            <div className="mt-1 flex gap-1">
+              {u.adminPlataforma && (
+                <SeloStatus tom="info" icone={KeyRound}>
+                  Plataforma
+                </SeloStatus>
+              )}
+              {u.totalEmpresas > 1 && (
+                <SeloStatus
+                  tom="neutro"
+                  semIcone
+                >{`${String(u.totalEmpresas)} empresas`}</SeloStatus>
+              )}
+            </div>
+          )}
         </>
       ),
     },
@@ -242,40 +284,32 @@ export function AbaUsuarios({ empresaId }: { empresaId: string }) {
       chave: "papel",
       titulo: "Papel",
       celula: (u) => (
-        <select
-          aria-label={`Papel de ${u.email}`}
-          className={`${PEQUENO} w-[150px]`}
-          value={u.papel ?? ""}
+        <Escolha
+          rotulo={`Papel de ${u.email}`}
+          className="h-8 w-[160px]"
+          vazio="Sem papel"
+          opcoes={cargos.map((c) => ({ valor: c.chave, rotulo: c.rotulo }))}
+          valor={u.papel ?? ""}
           disabled={salvar.gravando}
-          onChange={(e) => void salvar.gravar({ ...u, papel: e.target.value || null })}
-        >
-          <option value="">Sem papel</option>
-          {cargos.map((c) => (
-            <option key={c.chave} value={c.chave}>
-              {c.rotulo}
-            </option>
-          ))}
-        </select>
+          aoMudar={(papel) => void salvar.gravar({ ...u, papel: papel || null })}
+        />
       ),
     },
     {
       chave: "departamento",
       titulo: "Departamento",
       celula: (u) => (
-        <select
-          aria-label={`Departamento de ${u.email}`}
-          className={`${PEQUENO} w-[160px]`}
-          value={u.departamento ?? ""}
+        <Escolha
+          rotulo={`Departamento de ${u.email}`}
+          className="h-8 w-[170px]"
+          vazio="Sem departamento"
+          opcoes={departamentos.map((d) => ({ valor: d.chave, rotulo: d.rotulo }))}
+          valor={u.departamento ?? ""}
           disabled={salvar.gravando}
-          onChange={(e) => void salvar.gravar({ ...u, departamento: e.target.value || null })}
-        >
-          <option value="">Sem departamento</option>
-          {departamentos.map((d) => (
-            <option key={d.chave} value={d.chave}>
-              {d.rotulo}
-            </option>
-          ))}
-        </select>
+          aoMudar={(departamento) =>
+            void salvar.gravar({ ...u, departamento: departamento || null })
+          }
+        />
       ),
     },
     {
@@ -295,9 +329,9 @@ export function AbaUsuarios({ empresaId }: { empresaId: string }) {
   ];
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-4">
-        <p className="max-w-2xl text-[12px] text-muted-foreground">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <p className="max-w-2xl text-[13px] text-muted-foreground">
           Papel e departamento valem por empresa e vêm dos cadastros desta empresa. E-mail que já
           tem conta só ganha o vínculo.
         </p>
@@ -313,6 +347,10 @@ export function AbaUsuarios({ empresaId }: { empresaId: string }) {
         chaveDaLinha={(u) => u.usuarioId}
         carregando={vinculos.isLoading || cadastros.isLoading}
         erro={vinculos.error ?? cadastros.error}
+        aoTentarDeNovo={() => {
+          void vinculos.refetch();
+          void cadastros.refetch();
+        }}
         mensagemVazia="Nenhum usuário vinculado ainda."
       />
     </div>
@@ -326,7 +364,7 @@ export function AbaIntegracoes({ empresaId }: { empresaId: string }) {
   return (
     <>
       <Carregando consulta={consulta} />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         {consulta.data?.integracoes.map((i) => (
           <CartaoDeIntegracao key={i.tipo} empresaId={empresaId} integracao={i} />
         ))}
@@ -335,7 +373,7 @@ export function AbaIntegracoes({ empresaId }: { empresaId: string }) {
   );
 }
 
-const paraTexto = (v: ValorDeParametro | undefined) =>
+export const paraTexto = (v: ValorDeParametro | undefined) =>
   v === null || v === undefined ? "" : Array.isArray(v) ? v.join(", ") : String(v);
 
 /**
@@ -362,6 +400,102 @@ export function parametrosEditados(
   return parametros;
 }
 
+/** Dica curta vai no placeholder; a longa (instrução) vai embaixo do campo, inteira. */
+const DICA_LONGA = 40;
+
+/** Um parâmetro de integração (empresa ou Plataforma). */
+export function CampoDoParametro({
+  rotulo,
+  dica,
+  valor,
+  aoMudar,
+}: {
+  rotulo: string;
+  dica?: string | undefined;
+  valor: string;
+  aoMudar: (valor: string) => void;
+}) {
+  const longa = dica !== undefined && dica.length > DICA_LONGA;
+  return (
+    <Campo rotulo={rotulo} ajuda={longa ? dica : undefined}>
+      <input
+        className={CAMPO}
+        placeholder={longa ? undefined : dica}
+        value={valor}
+        onChange={(e) => {
+          aoMudar(e.target.value);
+        }}
+      />
+    </Campo>
+  );
+}
+
+/**
+ * Senha/token de uma integração: vai cifrado para o banco e o campo nunca mostra o valor gravado.
+ * `aoGravar("")` remove. Usado nas integrações da empresa e nas da Plataforma.
+ */
+export function CampoDeSegredo({
+  rotulo,
+  definidoEm,
+  gravando,
+  aoGravar,
+}: {
+  rotulo: string;
+  definidoEm: string | null;
+  gravando: boolean;
+  aoGravar: (valor: string) => Promise<boolean>;
+}) {
+  const fuso = useFusoDaEmpresa();
+  const [segredo, setSegredo] = useState("");
+  const gravar = async (valor: string) => {
+    if (await aoGravar(valor)) setSegredo("");
+  };
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-superficie p-3">
+      <Campo rotulo={rotulo}>
+        <input
+          type="password"
+          autoComplete="new-password"
+          className={CAMPO}
+          value={segredo}
+          placeholder={definidoEm ? "•••••••• (digite para trocar)" : "Não definido"}
+          onChange={(e) => {
+            setSegredo(e.target.value);
+          }}
+        />
+      </Campo>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!segredo.trim() || gravando}
+          onClick={() => void gravar(segredo)}
+        >
+          Gravar
+        </Button>
+        {definidoEm && (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={gravando}
+            onClick={() => {
+              if (window.confirm(`Remover ${rotulo}?`)) void gravar("");
+            }}
+          >
+            Remover
+          </Button>
+        )}
+        <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+          <KeyRound className="h-3.5 w-3.5" aria-hidden />
+          {definidoEm
+            ? `Guardado cifrado em ${formatarDataHora(definidoEm, fuso, { virgula: true })}`
+            : "Não definido."}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function CartaoDeIntegracao({
   empresaId,
   integracao,
@@ -372,7 +506,6 @@ function CartaoDeIntegracao({
   const fuso = useFusoDaEmpresa();
   const info = INFO_DA_INTEGRACAO[integracao.tipo];
   const [ativo, setAtivo] = useState(integracao.ativo);
-  const [segredo, setSegredo] = useState("");
   const [valores, setValores] = useState<Record<string, string>>({});
   useEffect(() => {
     setAtivo(integracao.ativo);
@@ -396,7 +529,6 @@ function CartaoDeIntegracao({
     sucesso: `${info.nome} salvo`,
     invalidar,
   });
-  // O segredo vai cifrado para o banco; o campo nunca mostra o valor gravado.
   const gravarSegredo = useGravacao({
     executar: (valor: string) =>
       chamar(p.definirSegredo, {
@@ -405,130 +537,89 @@ function CartaoDeIntegracao({
       }),
     sucesso: (valor) => `${info.segredo ?? "Segredo"} ${valor ? "atualizado" : "removido"}`,
     invalidar,
-    aoConcluir: () => {
-      setSegredo("");
-    },
   });
 
   const conhecidas = new Set(info.campos.map((c) => c.chave));
   const extras = Object.entries(integracao.parametros).filter(([k]) => !conhecidas.has(k));
 
   return (
-    <section className="space-y-3 rounded-xl border border-border/70 bg-card p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-[14px] font-medium">{info.nome}</h3>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">{info.descricao}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">
+    <Painel
+      titulo={info.nome}
+      descricao={info.descricao}
+      acoes={
+        <label className="flex items-center gap-2 text-[13px] font-medium">
+          <SeloStatus tom={ativo ? "sucesso" : "neutro"}>
             {ativo ? "Ligada" : "Desligada"}
-          </span>
+          </SeloStatus>
           <Switch checked={ativo} onCheckedChange={setAtivo} aria-label={`Ligar ${info.nome}`} />
-        </div>
-      </div>
-      {info.campos.map((c) => (
-        <label key={c.chave} className="block space-y-1">
-          <span className="text-[12px] font-medium">{c.rotulo}</span>
-          <input
-            className={`${CAMPO} h-8 text-[12px]`}
-            placeholder={c.dica}
-            value={valores[c.chave] ?? ""}
-            onChange={(e) => {
-              const valor = e.target.value;
-              setValores((v) => ({ ...v, [c.chave]: valor }));
-            }}
-          />
         </label>
-      ))}
-      {extras.length > 0 && (
-        <div className="rounded-md bg-muted/40 p-2 text-[11px] text-muted-foreground">
-          {extras.map(([k, v]) => (
-            <div key={k}>
-              <span className="font-medium">{k}:</span> {paraTexto(v)}
-            </div>
-          ))}
-        </div>
-      )}
-      {info.segredo && (
-        <div className="space-y-1">
-          <label className="block space-y-1">
-            <span className="text-[12px] font-medium">{info.segredo}</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className={`${CAMPO} h-8 text-[12px]`}
-              value={segredo}
-              placeholder={
-                integracao.segredoDefinidoEm ? "•••••••• (digite para trocar)" : "Não definido"
-              }
-              onChange={(e) => {
-                setSegredo(e.target.value);
-              }}
-            />
-          </label>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!segredo.trim() || gravarSegredo.gravando}
-              onClick={() => void gravarSegredo.gravar(segredo)}
+      }
+      classeDoCorpo="space-y-4 p-5"
+      rodape={
+        <>
+          {info.tela ? (
+            <a
+              href={info.tela}
+              className="mr-auto inline-flex items-center gap-1.5 text-[13px] font-medium text-brand hover:underline"
             >
-              Gravar
-            </Button>
-            {integracao.segredoDefinidoEm && (
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={gravarSegredo.gravando}
-                onClick={() => {
-                  if (window.confirm(`Remover ${info.segredo ?? "o segredo"}?`)) {
-                    void gravarSegredo.gravar("");
-                  }
-                }}
-              >
-                Remover
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <KeyRound className="h-3 w-3" />
-            {integracao.segredoDefinidoEm
-              ? `Guardado cifrado em ${formatarDataHora(integracao.segredoDefinidoEm, fuso, { virgula: true })}`
-              : "Não definido."}
-          </div>
-        </div>
-      )}
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              Tela da integração
+            </a>
+          ) : (
+            <span className="mr-auto" />
+          )}
+          <Button
+            size="sm"
+            disabled={salvar.gravando}
+            onClick={() => void salvar.gravar(undefined)}
+          >
+            {salvar.gravando ? "Salvando…" : "Salvar"}
+          </Button>
+        </>
+      }
+    >
       <div className="flex flex-wrap items-center gap-2">
         {integracao.ultimoTesteEm ? (
-          <Selo
-            tom={integracao.ultimoTesteOk ? "bom" : "ruim"}
-            title={integracao.ultimoTesteMsg ?? undefined}
-          >
-            {`Último teste ${integracao.ultimoTesteOk ? "ok" : "com erro"} em ${formatarDataHora(integracao.ultimoTesteEm, fuso, { virgula: true })}`}
-          </Selo>
+          <span title={integracao.ultimoTesteMsg ?? undefined}>
+            <SeloStatus tom={integracao.ultimoTesteOk ? "sucesso" : "erro"}>
+              {`Último teste ${integracao.ultimoTesteOk ? "ok" : "com erro"} em ${formatarDataHora(integracao.ultimoTesteEm, fuso, { virgula: true })}`}
+            </SeloStatus>
+          </span>
         ) : (
-          <Selo>Nunca testada</Selo>
+          <SeloStatus tom="neutro">Nunca testada</SeloStatus>
         )}
-        {!integracao.configurada && <Selo>Não configurada</Selo>}
+        {!integracao.configurada && <SeloStatus tom="alerta">Não configurada</SeloStatus>}
       </div>
-      <div className="flex items-center justify-between gap-2 pt-1">
-        {info.tela ? (
-          <a
-            href={info.tela}
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLink className="h-3 w-3" />
-            Tela da integração
-          </a>
-        ) : (
-          <span />
-        )}
-        <Button size="sm" disabled={salvar.gravando} onClick={() => void salvar.gravar(undefined)}>
-          {salvar.gravando ? "Salvando…" : "Salvar"}
-        </Button>
-      </div>
-    </section>
+      {info.campos.map((c) => (
+        <CampoDoParametro
+          key={c.chave}
+          rotulo={c.rotulo}
+          dica={c.dica}
+          valor={valores[c.chave] ?? ""}
+          aoMudar={(valor) => {
+            setValores((v) => ({ ...v, [c.chave]: valor }));
+          }}
+        />
+      ))}
+      {extras.length > 0 && (
+        <dl className="space-y-0.5 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+          {extras.map(([k, v]) => (
+            <div key={k}>
+              <dt className="inline font-semibold">{k}:</dt>{" "}
+              <dd className="inline">{paraTexto(v)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {info.segredo && (
+        <CampoDeSegredo
+          rotulo={info.segredo}
+          definidoEm={integracao.segredoDefinidoEm}
+          gravando={gravarSegredo.gravando}
+          aoGravar={gravarSegredo.gravar}
+        />
+      )}
+    </Painel>
   );
 }
 
@@ -626,24 +717,59 @@ export function AbaImplantacao({ empresa }: { empresa: EmpresaCompleta }) {
     vinculos.data.usuarios,
     hojeNoFuso(empresa.fuso),
   );
+  const feitos = itens.filter((i) => i.feito).length;
   return (
-    <div className="max-w-3xl space-y-2">
-      {itens.map((i) => (
+    <Painel
+      className="max-w-[960px]"
+      rotulo="Implantação"
+      titulo={`${String(feitos)} de ${String(itens.length)} etapas concluídas`}
+      icone={ListChecks}
+    >
+      <div
+        className="mx-5 mt-4 h-1.5 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-label="Etapas concluídas"
+        aria-valuemin={0}
+        aria-valuemax={itens.length}
+        aria-valuenow={feitos}
+      >
         <div
-          key={i.titulo}
-          className="flex items-start gap-3 rounded-[10px] border border-border/70 bg-card px-4 py-3"
-        >
-          {i.feito ? (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-status-good" />
-          ) : (
-            <Circle className="mt-0.5 h-4 w-4 shrink-0 text-status-warn" />
-          )}
-          <div>
-            <div className="text-[13px] font-medium">{i.titulo}</div>
-            <div className="text-[12px] text-muted-foreground">{i.detalhe}</div>
-          </div>
-        </div>
-      ))}
-    </div>
+          className="h-full rounded-full bg-primary transition-[width]"
+          style={{ width: `${String((feitos / itens.length) * 100)}%` }}
+        />
+      </div>
+      <ol className="divide-y divide-border px-1 py-2">
+        {itens.map((i) => (
+          <ItemDaLista key={i.titulo} feito={i.feito} titulo={i.titulo}>
+            {i.detalhe}
+          </ItemDaLista>
+        ))}
+      </ol>
+    </Painel>
+  );
+}
+
+function ItemDaLista({
+  feito,
+  titulo,
+  children,
+}: {
+  feito: boolean;
+  titulo: string;
+  children: ReactNode;
+}) {
+  return (
+    <li className="flex items-start gap-3 px-4 py-3">
+      {feito ? (
+        <CheckCircle2 className="mt-0.5 h-[18px] w-[18px] shrink-0 text-status-good" aria-hidden />
+      ) : (
+        <Circle className="mt-0.5 h-[18px] w-[18px] shrink-0 text-status-warn" aria-hidden />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-semibold">{titulo}</div>
+        <div className="text-[12.5px] text-muted-foreground">{children}</div>
+      </div>
+      <SeloStatus tom={feito ? "sucesso" : "alerta"}>{feito ? "Feito" : "Pendente"}</SeloStatus>
+    </li>
   );
 }

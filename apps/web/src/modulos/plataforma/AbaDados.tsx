@@ -5,18 +5,23 @@ import {
   type EmpresaCompleta,
 } from "@erp/shared/contratos/plataforma";
 import { LOGO_MAXIMO_BYTES, ROTULO_DO_STATUS, STATUS_EMPRESA } from "@erp/shared/plataforma";
-import { useEffect, useState } from "react";
+import { BarChart3, Building2, ImageUp, Palette, Route, Settings2, Truck } from "lucide-react";
+import { type CSSProperties, useEffect, useState } from "react";
 
+import { paletaDaMarca } from "@/acesso/marca";
+import { Painel } from "@/componentes/comum/Painel";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
 import { ErroDoOperador } from "@/lib/mensagem-de-erro";
-import { CAMPO, Campo, useGravacao } from "@/modulos/admin/comum";
+import { cn } from "@/lib/utils";
+import { CAMPO, Campo, Escolha, useGravacao } from "@/modulos/admin/comum";
 
 import { CHAVES_DA_PLATAFORMA } from "./api";
 
 type Formulario = Record<Exclude<keyof DadosDaEmpresa, "status">, string> & {
   status: DadosDaEmpresa["status"];
 };
+type CampoDeTexto = Exclude<keyof Formulario, "status">;
 
 function paraFormulario(e: EmpresaCompleta): Formulario {
   return {
@@ -49,6 +54,9 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
     setF((v) => ({ ...v, ...parte }));
   };
   const lido = dadosDaEmpresa.safeParse(f);
+  /** Primeiro problema de cada campo, mostrado embaixo dele. */
+  const erroDe = (campo: keyof Formulario) =>
+    lido.success ? null : (lido.error.issues.find((i) => i.path[0] === campo)?.message ?? null);
   const salvar = useGravacao({
     executar: (dados: DadosDaEmpresa) =>
       chamar(p.salvarEmpresa, { parametros: { id: empresa.id }, entrada: dados }),
@@ -56,13 +64,8 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
     invalidar: invalidarEmpresa(empresa.id),
   });
 
-  const texto = (
-    chave: Exclude<keyof Formulario, "status">,
-    rotulo: string,
-    ajuda?: string,
-    exemplo?: string,
-  ) => (
-    <Campo rotulo={rotulo} ajuda={ajuda}>
+  const texto = (chave: CampoDeTexto, rotulo: string, ajuda?: string, exemplo?: string) => (
+    <Campo rotulo={rotulo} ajuda={ajuda} erro={erroDe(chave)}>
       <input
         className={CAMPO}
         value={f[chave]}
@@ -74,7 +77,7 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
     </Campo>
   );
   const cor = (chave: "corPrimaria" | "corDestaque", rotulo: string) => (
-    <Campo rotulo={rotulo}>
+    <Campo rotulo={rotulo} erro={erroDe(chave)}>
       <div className="flex items-center gap-2">
         <input
           type="color"
@@ -82,11 +85,11 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
           onChange={(e) => {
             mudar({ [chave]: e.target.value });
           }}
-          className="h-9 w-12 cursor-pointer rounded border border-border"
+          className="h-9 w-11 shrink-0 cursor-pointer rounded-lg border border-input bg-card p-1"
           aria-label={`${rotulo} (seletor)`}
         />
         <input
-          className={CAMPO}
+          className={cn(CAMPO, "font-mono uppercase")}
           value={f[chave]}
           onChange={(e) => {
             mudar({ [chave]: e.target.value });
@@ -97,41 +100,49 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
   );
 
   return (
-    <div className="max-w-3xl space-y-4 rounded-[10px] border border-border/70 bg-card p-5">
-      <div className="grid gap-3 md:grid-cols-2">
+    <div className="max-w-[960px] space-y-5">
+      <Painel
+        titulo="Identificação"
+        icone={Building2}
+        classeDoCorpo="grid gap-4 p-5 md:grid-cols-2"
+      >
         {texto("nome", "Nome")}
         {texto("nomeCurto", "Nome curto", "Usado em rótulos curtos, ex.: “Em atraso (FR)”.")}
         {texto("razaoSocial", "Razão social")}
         {texto("cnpj", "CNPJ")}
+      </Painel>
+
+      <Painel titulo="Operação" icone={Settings2} classeDoCorpo="grid gap-4 p-5 md:grid-cols-2">
         {texto("dominioSsw", "Domínio SSW", undefined, "Ex.: FRT")}
         {texto("fuso", "Fuso horário", undefined, "America/Sao_Paulo")}
         <Campo
           rotulo="Status"
           ajuda="Suspensa ou encerrada: os usuários da empresa deixam de entrar."
         >
-          <select
-            className={CAMPO}
-            value={f.status}
-            onChange={(e) => {
-              const status = STATUS_EMPRESA.find((s) => s === e.target.value);
+          <Escolha
+            opcoes={STATUS_EMPRESA.map((s) => ({ valor: s, rotulo: ROTULO_DO_STATUS[s] }))}
+            valor={f.status}
+            aoMudar={(v) => {
+              const status = STATUS_EMPRESA.find((s) => s === v);
               if (status) mudar({ status });
             }}
-          >
-            {STATUS_EMPRESA.map((s) => (
-              <option key={s} value={s}>
-                {ROTULO_DO_STATUS[s]}
-              </option>
-            ))}
-          </select>
+          />
         </Campo>
-        {texto("slogan", "Slogan")}
-        {cor("corPrimaria", "Cor principal")}
-        {cor("corDestaque", "Cor de destaque")}
-      </div>
-      <Logo empresa={empresa} />
-      <div className="flex items-center justify-end gap-3">
+      </Painel>
+
+      <Painel titulo="Marca" icone={Palette} classeDoCorpo="space-y-5 p-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          {cor("corPrimaria", "Cor principal")}
+          {cor("corDestaque", "Cor de destaque")}
+        </div>
+        <PreviaDaMarca cor={f.corPrimaria} nomeCurto={f.nomeCurto} />
+        <div className="grid gap-4 md:grid-cols-2">{texto("slogan", "Slogan")}</div>
+        <Logo empresa={empresa} />
+      </Painel>
+
+      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-flutuante">
         {!lido.success && (
-          <span className="text-[11px] text-status-bad-fg">
+          <span role="alert" className="mr-auto text-xs font-medium text-status-bad-fg">
             {lido.error.issues[0]?.message ?? "Confira os campos."}
           </span>
         )}
@@ -145,6 +156,108 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
         </Button>
       </div>
     </div>
+  );
+}
+
+/** Itens de menu da amostra da barra lateral (o primeiro aparece ativo). */
+const ITENS_DA_AMOSTRA = [
+  { rotulo: "Performance", icone: BarChart3 },
+  { rotulo: "Romaneio", icone: Truck },
+  { rotulo: "Ocorrências", icone: Route },
+] as const;
+
+/**
+ * Amostra ao vivo da paleta que a cor principal gera (`paletaDaMarca`, a mesma do painel): barra
+ * lateral, botão primário e texto da marca nos dois temas. A amostra escura liga o tema escuro só
+ * nela e troca a cor da marca pela digitada, então os tokens do tema resolvem com a cor nova.
+ */
+function PreviaDaMarca({ cor, nomeCurto }: { cor: string; nomeCurto: string }) {
+  const paleta = paletaDaMarca(cor);
+  const de = (nome: string) => paleta[nome] ?? "";
+  const temaEscuro: CSSProperties & Record<`--${string}`, string> = {
+    "--marca-clara": de("--marca-clara"),
+    "--marca-clara-fg": de("--marca-clara-fg"),
+  };
+  return (
+    <section aria-label="Pré-visualização da cor principal" className="space-y-3">
+      <div>
+        <div className="label-xs">Pré-visualização</div>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          A cor principal muda o painel inteiro da empresa: barra lateral, botões, links, gráficos e
+          o tema escuro. O contraste é ajustado sozinho para continuar legível.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-[200px_minmax(0,1fr)]">
+        <div
+          className="flex flex-col gap-1 rounded-xl p-2.5 shadow-cartao"
+          style={{ backgroundColor: de("--lateral") }}
+          aria-label="Barra lateral"
+          role="img"
+        >
+          <div className="mb-2 flex items-center gap-2 px-1.5 pt-1">
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold"
+              style={{ backgroundColor: de("--lateral-destaque"), color: de("--lateral") }}
+            >
+              {(nomeCurto.trim() || "FR").slice(0, 2).toUpperCase()}
+            </span>
+            <span className="text-[13px] font-semibold text-sidebar-accent-foreground">
+              {nomeCurto.trim() || "Empresa"}
+            </span>
+          </div>
+          {ITENS_DA_AMOSTRA.map(({ rotulo, icone: Icone }, i) => (
+            <span
+              key={rotulo}
+              className={cn(
+                "relative flex h-8 items-center gap-2 rounded-lg px-2 text-[12.5px]",
+                i === 0
+                  ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground",
+              )}
+            >
+              <Icone
+                className="h-4 w-4"
+                aria-hidden
+                style={i === 0 ? { color: de("--lateral-destaque") } : undefined}
+              />
+              {rotulo}
+              {i === 0 && (
+                <span
+                  aria-hidden
+                  className="absolute top-1.5 right-0 bottom-1.5 w-[3px] rounded-full"
+                  style={{ backgroundColor: de("--lateral-destaque") }}
+                />
+              )}
+            </span>
+          ))}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-3 rounded-xl border border-border bg-[Canvas] p-4 text-[CanvasText] [color-scheme:light]">
+            <div className="label-xs opacity-60">Tema claro</div>
+            <p className="text-[15px] font-bold" style={{ color: de("--marca-texto") }}>
+              Texto da marca
+            </p>
+            <span
+              className="inline-flex h-8 items-center rounded-lg px-3 text-[13px] font-semibold shadow-cartao"
+              style={{ backgroundColor: de("--marca"), color: de("--marca-fg") }}
+            >
+              Botão primário
+            </span>
+          </div>
+          <div
+            className="dark space-y-3 rounded-xl border border-border bg-background p-4 text-foreground"
+            style={temaEscuro}
+          >
+            <div className="label-xs text-muted-foreground">Tema escuro</div>
+            <p className="text-[15px] font-bold text-brand">Texto da marca</p>
+            <span className="inline-flex h-8 items-center rounded-lg bg-primary px-3 text-[13px] font-semibold text-primary-foreground shadow-cartao">
+              Botão primário
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -194,36 +307,42 @@ function Logo({ empresa }: { empresa: EmpresaCompleta }) {
   const ocupado = envio.gravando || remocao.gravando;
 
   return (
-    <div>
-      <span className="text-[13px] font-medium">Logo</span>
-      <div className="mt-1 flex items-center gap-3">
+    <div className="space-y-1.5">
+      <span className="block text-[13px] font-medium">Logo</span>
+      <div className="flex flex-wrap items-center gap-3">
         {empresa.logoUrl ? (
           <img
             src={empresa.logoUrl}
             alt={`Logo de ${empresa.nome}`}
-            className="h-14 w-14 rounded-md border border-border object-cover"
+            className="h-14 w-14 rounded-xl border border-border object-cover"
           />
         ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border text-[10px] text-muted-foreground">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-border text-xs text-muted-foreground">
             sem logo
           </div>
         )}
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            accept="image/png,image/jpeg"
-            className="sr-only"
-            disabled={ocupado}
-            onChange={(e) => {
-              const arquivo = e.target.files?.[0];
-              e.target.value = "";
-              if (arquivo) void envio.gravar(arquivo);
-            }}
-          />
-          <span className="inline-flex h-8 items-center rounded-md border border-border px-3 text-[12px] hover:bg-muted">
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring"
+        >
+          <label className={cn(ocupado && "pointer-events-none opacity-50")}>
+            <input
+              type="file"
+              accept="image/png,image/jpeg"
+              className="sr-only"
+              disabled={ocupado}
+              onChange={(e) => {
+                const arquivo = e.target.files?.[0];
+                e.target.value = "";
+                if (arquivo) void envio.gravar(arquivo);
+              }}
+            />
+            <ImageUp aria-hidden />
             {envio.gravando ? "Enviando…" : empresa.logoUrl ? "Trocar logo" : "Enviar logo"}
-          </span>
-        </label>
+          </label>
+        </Button>
         {empresa.logoUrl && (
           <Button
             variant="ghost"
@@ -235,7 +354,7 @@ function Logo({ empresa }: { empresa: EmpresaCompleta }) {
           </Button>
         )}
       </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         PNG ou JPEG até 512 KB, de preferência quadrado. Sai no menu e nos PDFs, planilhas e
         impressões da empresa.
       </p>
