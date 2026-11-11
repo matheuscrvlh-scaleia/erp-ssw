@@ -70,7 +70,8 @@ export type ResultadoDaGravacao<C extends CteGravado> =
 /**
  * Aplica `campos` no CT-e já gravado pelo núcleo e grava a diferença (com `atualizado_em`) e o
  * histórico de previsão. `fonte` decide o que o BI2 pode mudar (padrão: arquivos do SSW, webhook,
- * XML); `ajustar` mexe no resultado do núcleo antes de gravar (ex.: `campos_ssw`).
+ * XML); `ajustar` mexe no resultado do núcleo antes de gravar (ex.: `campos_ssw`);
+ * `ocorrenciasMudaram` = esta gravação mexeu nas ocorrências do CT-e (refaz o `status_atual`).
  */
 export async function regravarCte<C extends CteGravado>(
   repo: RepositorioCteNucleo<C>,
@@ -79,13 +80,17 @@ export async function regravarCte<C extends CteGravado>(
   campos: CamposDoCte<C>,
   ocorrencias: readonly OcorrenciaDoCte[],
   agora: Date,
-  opcoes: { fonte?: FonteDaEscrita; ajustar?: (cte: C) => CamposDoCte<C> } = {},
+  opcoes: {
+    fonte?: FonteDaEscrita;
+    ajustar?: (cte: C) => CamposDoCte<C>;
+    ocorrenciasMudaram?: boolean;
+  } = {},
 ): Promise<ResultadoDaGravacao<C>> {
   const g = prepararGravacaoDoCte({
     antigo,
     novo: { ...antigo, ...campos },
     fonte: opcoes.fonte ?? "outra",
-    contexto: { ...cad, ocorrencias },
+    contexto: { ...cad, ocorrencias, ocorrenciasMudaram: opcoes.ocorrenciasMudaram ?? false },
   });
   if (g.tipo === "descartar") return { tipo: "descartado", motivo: g.motivo };
   const final = opcoes.ajustar ? { ...g.cte, ...opcoes.ajustar(g.cte) } : g.cte;
@@ -110,7 +115,7 @@ export async function criarCte<C extends CteGravado>(
     antigo: null,
     novo,
     fonte,
-    contexto: { ...cad, ocorrencias: [] },
+    contexto: { ...cad, ocorrencias: [], ocorrenciasMudaram: false },
   });
   if (g.tipo === "descartar") return { tipo: "descartado", motivo: g.motivo };
   const [inserido] = await repo.inserirCtes([g.cte]);
