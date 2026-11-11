@@ -97,8 +97,10 @@ colada na borda). Ordem fixa, de cima para baixo:
 | `KpiCard` | Todo indicador numérico. Grade `grid gap-4 sm:grid-cols-2 xl:grid-cols-4` (até 5 por linha; mais que isso, quebre em dois grupos com `Secao`). `icone` dá identidade; `aoClicar` filtra a lista (aparece a seta →); `detalhe` vai no rodapé ("meta 95%", "vs. mês anterior"). Não crie card de KPI próprio: se faltar algo, use o `KpiCard` e anote o que faltou. |
 | `GraficoLinha` / `GraficoBarras` | Gráficos recharts. Já têm degradê, crosshair, dica, legenda clicável, carregando/vazio/erro. Envolva num `Painel`. |
 | `TabelaDados` | Toda tabela de dados com ordenação/paginação/exportação. Tabela própria só se a interação for especial; nesse caso copie o visual (cabeçalho `bg-muted/70`, `label` 11,5 px caixa alta, células `px-4 py-2.5 text-[13px]`, `tabular-nums`, linha `hover:bg-muted/60`, selecionada `bg-accent`) e envolva num `Painel`. |
+| `FiltroUnico` | Filtro de uma escolha só na barra de filtros ("Autor  todos"), no mesmo desenho do `FiltroMultiplo`. |
 | `Alternador` | Escolha exclusiva de 2–5 opções (base de data, visão, agrupamento). Substitui todos os segmentados feitos à mão. |
 | `Abas` | Trocar de conteúdo da tela (vai no `abas` do `Pagina` quando é da tela inteira). |
+| `classes-de-tabela` | Classes da tabela (`CLASSE_TABELA`, `CLASSE_CABECALHO`, `CLASSE_TH`, `CLASSE_TD`, `CLASSE_LINHA`) para tabelas próprias ficarem idênticas ao `TabelaDados`; dentro de `Painel`, use `TabelaDados embutida`. |
 | `SeloStatus` | Status em pílula (`tom`: sucesso/alerta/erro/info/neutro), ícone + texto. Substitui badges coloridos à mão. |
 | `Aviso` | Faixa de alerta/erro/info/sucesso dentro da tela (título, texto, ação). Substitui caixas `amber-50`/`red-50`. |
 | `EstadoVazio`, `MensagemErro`, `LinhasCarregando` | Estados. Vazio sempre diz o que fazer ("Amplie o período…"). |

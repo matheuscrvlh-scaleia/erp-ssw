@@ -35,6 +35,7 @@ import {
   FiltrandoPor,
   FiltrosAvancados,
 } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroUnico } from "@/componentes/comum/FiltroUnico";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
@@ -61,7 +62,6 @@ import {
   ROTULO_DA_PRESENCA,
   ROTULO_DO_PERIODO,
 } from "./busca";
-import { FiltroUnico } from "./FiltroUnico";
 import { type AberturaDoModal, ModalDeAnotacao } from "./ModalDeAnotacao";
 import { COR_DO_TIPO, ICONE_DO_TIPO } from "./tipos";
 

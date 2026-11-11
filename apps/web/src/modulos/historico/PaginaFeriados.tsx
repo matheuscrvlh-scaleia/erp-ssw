@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { Aviso } from "@/componentes/comum/Aviso";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroUnico } from "@/componentes/comum/FiltroUnico";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
@@ -22,7 +23,6 @@ import { SeletorDeAno } from "@/modulos/calendario/SeletorDeAno";
 import { EtiquetaDoTipo } from "@/modulos/calendario/Visoes";
 
 import { CHAVE_DO_HISTORICO, consultaFeriados } from "./api";
-import { FiltroUnico } from "./FiltroUnico";
 
 type Tipo = "" | "nacional" | "municipal";
 
