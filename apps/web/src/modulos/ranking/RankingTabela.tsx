@@ -36,10 +36,15 @@ import {
   type ContextoDosFiltros,
   SeletorDeFilial,
   SeletorDePagador,
+  SeletorDePagadorAgrupado,
   SeletorDeTexto,
   SeletorDeTipoDocumento,
 } from "@/modulos/filtros/componentes";
-import { nomesDosPagadores } from "@/modulos/filtros/regras";
+import {
+  nomesDosPagadores,
+  nomesDosPagadoresAgrupados,
+  unirParceiros,
+} from "@/modulos/filtros/regras";
 import { caminhoDaLista } from "@/modulos/listagem/busca";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";
@@ -92,7 +97,11 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [filiais, setFiliais] = useState<string[]>([]);
-  const [parceiros, setParceiros] = useState<string[]>([]);
+  // Dois seletores de parceiro: por CNPJ e agrupado pelo nome (matriz e filiais juntas). A tela
+  // filtra pela união dos CNPJs marcados nos dois.
+  const [parceirosCnpj, setParceirosCnpj] = useState<string[]>([]);
+  const [parceirosAgrupados, setParceirosAgrupados] = useState<string[]>([]);
+  const parceiros = unirParceiros(parceirosCnpj, parceirosAgrupados);
   const [destino, setDestino] = useState("");
   const [remetente, setRemetente] = useState("");
   const [tipos, setTipos] = useState<string[]>([]);
@@ -187,14 +196,22 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
     setFiltroCard((atual) => (atual === f ? "todos" : f));
   };
 
-  const nomesParceiros = nomesDosPagadores(pagadores.data ?? [], parceiros);
+  const nomesParceiros = nomesDosPagadores(pagadores.data ?? [], parceirosCnpj);
+  const nomesAgrupados = nomesDosPagadoresAgrupados(pagadores.data ?? [], parceirosAgrupados);
   const rotuloTipos = tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t)).join(", ");
   const etiquetas: EtiquetaFiltroOpcional[] = [
     nomesParceiros.length > 0 && {
       rotulo: nomesParceiros.length === 1 ? "Parceiro" : "Parceiros",
       ...resumirNomes(nomesParceiros),
       limpar: () => {
-        setParceiros([]);
+        setParceirosCnpj([]);
+      },
+    },
+    nomesAgrupados.length > 0 && {
+      rotulo: nomesAgrupados.length === 1 ? "Parceiro agrupado" : "Parceiros agrupados",
+      ...resumirNomes(nomesAgrupados),
+      limpar: () => {
+        setParceirosAgrupados([]);
       },
     },
     remetente.trim() !== "" && {
@@ -347,8 +364,14 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         <SeletorDePagador
           rotulo="Parceiros"
           opcoes={pagadores.data}
-          selecionados={parceiros}
-          aoMudar={setParceiros}
+          selecionados={parceirosCnpj}
+          aoMudar={setParceirosCnpj}
+        />
+        <SeletorDePagadorAgrupado
+          rotulo="Parceiros agrupados"
+          opcoes={pagadores.data}
+          selecionados={parceirosAgrupados}
+          aoMudar={setParceirosAgrupados}
         />
         <SeletorDeTexto
           rotulo="Remetente"
