@@ -124,4 +124,16 @@ describe("regravarCte", () => {
     });
     expect(Object.keys(atualizacoes[0]?.campos ?? {})).not.toContain("id");
   });
+
+  it("status escrito pelo chamador fica até chegar ocorrência (ocorrenciasMudaram)", async () => {
+    const criado = await criarCte(repositorio().repo, cad, gravado(), "outra");
+    if (criado.tipo !== "gravado") throw new Error("esperava o CT-e gravado");
+    const oc = [ocorrencia(99, "2026-11-04T12:00:00Z", { descricao: "CTRC BAIXADO/CANCELADO" })];
+    const { repo, atualizacoes } = repositorio([criado.cte]);
+    await regravarCte(repo, cad, criado.cte, { statusAtual: "CANCELADO" }, oc, AGORA);
+    expect(atualizacoes[0]?.campos.statusAtual).toBe("CANCELADO");
+    const cancelado = { ...criado.cte, statusAtual: "CANCELADO" };
+    await regravarCte(repo, cad, cancelado, {}, oc, AGORA, { ocorrenciasMudaram: true });
+    expect(atualizacoes[1]?.campos.statusAtual).toBe("CTRC BAIXADO/CANCELADO");
+  });
 });

@@ -18,7 +18,7 @@ direto.
 
 ```ts
 prepararGravacaoDoCte<T extends CteNucleo>({ antigo, novo, fonte, contexto }): GravacaoDoCte<T>
-// contexto: { ocorrencias, catalogo, filiais, regrasDePrazo, config }
+// contexto: { ocorrencias, catalogo, filiais, regrasDePrazo, config, ocorrenciasMudaram }
 // → { tipo: "descartar", motivo } | { tipo: "gravar", cte, mudou, trocaDePrevisao }
 ```
 
@@ -41,7 +41,10 @@ da empresa do CT-e. Depois:
 Ordem interna (cada passo usa os anteriores): emissão ancorada na 80 → cidade da filial → filial
 efetiva e dígitos do pagador → cancelado no mesmo dia → ocorrência efetiva → data de conclusão →
 previsão (regra configurada ou SSW) → prazo padrão → embarque → status atual → fora do universo.
-Tudo é recalculado em toda gravação (Q20), não só quando "a coluna veio no SET".
+Tudo é recalculado em toda gravação (Q20), não só quando "a coluna veio no SET" — menos o status
+atual, que só é refeito com `ocorrenciasMudaram: true` (a gravação inseriu, alterou ou apagou
+ocorrência do CT-e, ou o catálogo do código mudou), como o gatilho de hoje; fora disso fica o
+gravado (ex.: o "CANCELADO" do XML).
 
 `recalcularDerivadosDoCte(cte, contexto)` devolve só os campos derivados (`DerivadosDoCte`), para
 conferências e para o migrador (recalcular tudo e listar diferenças antes da virada — Q52).

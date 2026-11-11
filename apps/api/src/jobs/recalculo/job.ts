@@ -58,9 +58,9 @@ export const propagarClassificacao = definirJob({
 export const LOTE_DE_CTES = 500;
 
 /**
- * Recalcula pelo núcleo (como numa gravação, fonte "outra") os CT-e que têm os códigos: a situação
- * e a descrição da efetiva acompanham o catálogo (Q20). CT-e igual não é regravado. Lotes de 500,
- * cada um numa transação.
+ * Recalcula pelo núcleo (como numa gravação, fonte "outra") os CT-e que têm os códigos: a situação,
+ * a descrição da efetiva e o status atual acompanham o catálogo (Q20). CT-e igual não é regravado.
+ * Lotes de 500, cada um numa transação.
  */
 export const recalcularCtesDoCodigo = definirJob({
   nome: JOB_RECALCULAR_CTES_DO_CODIGO.nome,
@@ -87,6 +87,7 @@ export const recalcularCtesDoCodigo = definirJob({
                 {},
                 ocorrencias.get(antigo.id) ?? [],
                 agora(),
+                { ocorrenciasMudaram: true },
               );
               if (resultado.tipo === "gravado") alterados++;
             }

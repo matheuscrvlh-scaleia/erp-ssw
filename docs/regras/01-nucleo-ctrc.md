@@ -1090,7 +1090,7 @@ function derivarCtrc(antigo: Ctrc | null, novo: Ctrc, ctx: ContextoDerivacao): C
   novo.data_conclusao_efetiva = dataConclusaoEfetiva(novo, ctx.codigosBaixa); // §3.4 (depende da efetiva)
   novo.prazo_padrao_dias/data = ...;                                          // §6.3 (depende da emissão)
   novo.data_embarque    = embarque(ctx.ocorrencias) ?? novo.data_embarque;    // §8.7
-  novo.status_atual     = statusAtual(ctx.ocorrencias) ?? novo.status_atual;  // §4.3
+  novo.status_atual     = (ctx.ocorrenciasMudaram ? statusAtual(ctx.ocorrencias) : null) ?? novo.status_atual; // §4.3, só quando a gravação mexe em ocorrência
   novo.fora_universo    = (novo.cancelado_mesmo_dia ?? false) || novo.duplicado_de !== null; // §7.3, último
   return novo;
 }

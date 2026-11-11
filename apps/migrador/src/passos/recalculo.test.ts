@@ -17,6 +17,7 @@ const FILTROS = { empresaId: null, instante: "2026-11-10 12:00:00+00" };
 
 const contexto = {
   ocorrencias: [],
+  ocorrenciasMudaram: false,
   catalogo: CATALOGO_FR,
   filiais: [],
   regrasDePrazo: [],

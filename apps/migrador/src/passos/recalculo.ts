@@ -379,9 +379,11 @@ export async function conferirEmpresa(
     );
     for (const linha of lote) {
       const cte = paraCteNucleo(linha);
+      // Como a próxima gravação sem ocorrência nova: o status atual fica o gravado.
       const derivados = recalcularDerivadosDoCte(cte, {
         ...contexto,
         ocorrencias: ocorrencias.get(linha.id) ?? [],
+        ocorrenciasMudaram: false,
       });
       for (const campo of camposDiferentes(cte, derivados)) contar(diferencas, campo, linha.id);
     }
