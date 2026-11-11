@@ -15,6 +15,7 @@ export { imprimir } from "./impressao";
 export { exportarPdf } from "./pdf";
 export { COLUNA_LINK_SSW, TEXTO_LINK_SSW, urlCtrcNoSsw } from "./ssw";
 export type {
+  AbaExcel,
   ColunaExportacao,
   EmpresaExportacao,
   FormatoColuna,

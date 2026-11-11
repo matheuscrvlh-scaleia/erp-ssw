@@ -3,10 +3,13 @@ import {
   deltaPctAbs,
   deltaPP,
   derivadosDoBloco,
+  statusDaUnidade,
   subtituloDoPrejuizo,
 } from "@erp/dominio/performance/relatorio";
 import { type BlocoProducao, type RelatorioPeriodo } from "@erp/shared/contratos/performance";
 import { formatarInteiro, formatarMoeda, formatarPercentual } from "@erp/shared/formatacao";
+
+import { type AbaExcel, type ColunaExportacao } from "@/lib/exportacao";
 
 type TomDoIndicador = "neutro" | "bom" | "ruim";
 
@@ -206,4 +209,64 @@ export function linhasDoCsv(
       : "",
   }));
   return [...indicadores, ...unidades];
+}
+
+/**
+ * Aba "SLA por unidade" do Excel do relatório, com as colunas de hoje (comparativo: pares P/C e
+ * "Status (P)"). Status pelo SLA de Pontualidade (`slaOperacionalPct`) contra a meta.
+ * origem: unidadesRows (relatorio-semanal-export.ts, sistema atual)
+ */
+export function abaSlaPorUnidade(r: RelatorioPeriodo): AbaExcel {
+  const cmp = r.comparativo;
+  const meta = r.limites.slaMetaPct;
+  const comparadas = new Map((cmp?.porUnidade ?? []).map((u) => [u.sigla, u]));
+  const pct = (v: number | null) => formatarPercentual(v, { escala: "cem" });
+  const fixas: ColunaExportacao[] = [
+    { chave: "unidade", titulo: "Unidade" },
+    { chave: "cidadeUf", titulo: "Cidade/UF" },
+  ];
+  const colunas: ColunaExportacao[] = cmp
+    ? [
+        ...fixas,
+        { chave: "emitidos", titulo: "Emitidos (P)", formato: "inteiro" },
+        { chave: "emitidosC", titulo: "Emitidos (C)", formato: "inteiro" },
+        { chave: "entregues", titulo: "Entregues (P)", formato: "inteiro" },
+        { chave: "entreguesC", titulo: "Entregues (C)", formato: "inteiro" },
+        { chave: "producao", titulo: "% Produção (P)" },
+        { chave: "producaoC", titulo: "% Produção (C)" },
+        { chave: "slaPont", titulo: "SLA Pont. (P)" },
+        { chave: "slaPontC", titulo: "SLA Pont. (C)" },
+        { chave: "slaOp", titulo: "SLA Op. (P)" },
+        { chave: "slaOpC", titulo: "SLA Op. (C)" },
+        { chave: "status", titulo: "Status (P)" },
+      ]
+    : [
+        ...fixas,
+        { chave: "emitidos", titulo: "Emitidos", formato: "inteiro" },
+        { chave: "entregues", titulo: "Entregues", formato: "inteiro" },
+        { chave: "producao", titulo: "% Produção" },
+        { chave: "slaPont", titulo: "SLA de Pontualidade" },
+        { chave: "slaOp", titulo: "SLA Operacional" },
+        { chave: "status", titulo: "Status" },
+      ];
+  const linhas = r.porUnidade.map((u) => {
+    // Unidade sem movimento no comparativo: célula vazia, como hoje.
+    const c = comparadas.get(u.sigla);
+    return {
+      unidade: u.sigla,
+      cidadeUf: u.cidade ? `${u.cidade}${u.uf ? `/${u.uf}` : ""}` : "",
+      emitidos: u.total,
+      emitidosC: c?.total ?? "",
+      entregues: u.entregues,
+      entreguesC: c?.entregues ?? "",
+      producao: pct(u.producaoPct),
+      producaoC: c ? pct(c.producaoPct) : "",
+      slaPont: pct(u.slaOperacionalPct),
+      slaPontC: c ? pct(c.slaOperacionalPct) : "",
+      slaOp: pct(u.slaPontualidadePct),
+      slaOpC: c ? pct(c.slaPontualidadePct) : "",
+      status: statusDaUnidade(u.slaOperacionalPct, meta),
+    };
+  });
+  return { nome: "SLA por unidade", titulo: "SLA por unidade", colunas, linhas };
 }

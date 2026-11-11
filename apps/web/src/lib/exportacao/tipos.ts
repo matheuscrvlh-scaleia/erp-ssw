@@ -42,9 +42,21 @@ interface OpcoesComMarca {
   empresa: EmpresaExportacao;
 }
 
+/** Aba seguinte à principal no Excel, no mesmo desenho (logo, título, faixa, tabela). */
+export interface AbaExcel {
+  /** Nome da aba (o Excel corta em 31 caracteres). */
+  nome: string;
+  /** Título no topo da aba. Padrão: o título do arquivo. */
+  titulo?: string | undefined;
+  colunas: readonly ColunaExportacao[];
+  linhas: readonly LinhaExportacao[];
+}
+
 export interface OpcoesExcel extends OpcoesComMarca {
   /** Nome do arquivo sem extensão; o sufixo "-dd-mm-aaaa" entra se não vier. */
   arquivo: string;
+  /** Abas depois da principal (ex.: "SLA por unidade" no relatório de período). */
+  abasExtras?: readonly AbaExcel[] | undefined;
 }
 
 export interface OpcoesPdf extends OpcoesComMarca {
