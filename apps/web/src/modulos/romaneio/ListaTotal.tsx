@@ -35,25 +35,19 @@ import {
   ChevronRight,
   History,
   Layers,
+  Truck,
 } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import { BotoesDePagina } from "@/componentes/comum/BotoesDePagina";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { type EtiquetaFiltroOpcional, FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
-import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
-import { Badge } from "@/componentes/ui/badge";
-import { Button } from "@/componentes/ui/button";
+import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { Checkbox } from "@/componentes/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/componentes/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
 import { consultaLinhaDoTempo, consultaLista, exportarLista } from "./api";
@@ -67,7 +61,17 @@ import {
   tamanhoDePagina,
   veTodos,
 } from "./busca";
-import { CampoAdiado, SelectLista } from "./componentes";
+import {
+  Cabecalho,
+  CampoAdiado,
+  CLASSE_CODIGO,
+  CLASSE_NUMERO,
+  EstadoDaTabela,
+  propsDaLinha,
+  SeletorDaLista,
+  TabelaPropria,
+  Th,
+} from "./componentes";
 import {
   alternarLinha,
   alternarTodas,
@@ -203,200 +207,214 @@ export function ListaTotal({ busca: b, definir, filtros, otifVisivel }: PropsDaL
     : "Nenhum CTRC para os filtros selecionados. Tente ampliar o período ou ajustar os filtros.";
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-[10px] border border-b-0 border-border/70 bg-card px-3 py-2">
-        {/* Os mesmos recortes dos cards: clicar num card marca a Situação; mudar aqui é igual. */}
-        <div className="flex w-full flex-wrap items-center gap-2 border-b border-border/60 pb-2 text-[12px] text-muted-foreground">
-          <SelectLista
-            rotulo="Situação"
-            valor={b.recorte}
-            aoMudar={(recorte) => {
-              definir({ recorte, page: 1 });
-            }}
-            opcoes={RECORTES_DA_LISTA.filter(
-              (r) => (veTodos(b) || r !== "parado") && (otifVisivel || r !== "otif"),
-            ).map((r) => ({ valor: r, rotulo: r === "todos" ? "Todas" : ROTULO_RECORTE[r] }))}
-          />
-          <SelectLista
-            rotulo="Em rota agora"
-            valor={b.romaneado}
-            aoMudar={(romaneado) => {
-              definir({ romaneado, page: 1 });
-            }}
-            opcoes={(["todos", "sim", "nao"] as const).map((r) => ({
-              valor: r,
-              rotulo: ROTULO_EM_ROTA_AGORA[r],
-            }))}
-          />
-          <SelectLista
-            rotulo="Status"
-            valor={b.status}
-            aoMudar={(status) => {
-              definir({ status, page: 1 });
-            }}
-            opcoes={[
-              { valor: "todos", rotulo: "Todos" },
-              { valor: "andamento", rotulo: "Só em andamento" },
-            ]}
-          />
-          <CampoAdiado
-            valor={b.busca}
-            aoMudar={(busca) => {
-              definir({ busca, page: 1 });
-            }}
-            placeholder="Buscar na lista: NF, CTRC, remetente, cidade, placa…"
-            className="w-[320px] max-w-full"
-          />
+    <Painel
+      barra={
+        <div className="flex w-full flex-col gap-2.5">
+          {/* Os mesmos recortes dos cards: clicar num card marca a Situação; mudar aqui é igual. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <SeletorDaLista
+              rotulo="Situação"
+              valor={b.recorte}
+              aoMudar={(recorte) => {
+                definir({ recorte, page: 1 });
+              }}
+              opcoes={RECORTES_DA_LISTA.filter(
+                (r) => (veTodos(b) || r !== "parado") && (otifVisivel || r !== "otif"),
+              ).map((r) => ({ valor: r, rotulo: r === "todos" ? "Todas" : ROTULO_RECORTE[r] }))}
+            />
+            <SeletorDaLista
+              rotulo="Em rota agora"
+              valor={b.romaneado}
+              aoMudar={(romaneado) => {
+                definir({ romaneado, page: 1 });
+              }}
+              opcoes={(["todos", "sim", "nao"] as const).map((r) => ({
+                valor: r,
+                rotulo: ROTULO_EM_ROTA_AGORA[r],
+              }))}
+            />
+            <SeletorDaLista
+              rotulo="Status"
+              valor={b.status}
+              aoMudar={(status) => {
+                definir({ status, page: 1 });
+              }}
+              opcoes={[
+                { valor: "todos", rotulo: "Todos" },
+                { valor: "andamento", rotulo: "Só em andamento" },
+              ]}
+            />
+            <CampoAdiado
+              valor={b.busca}
+              aoMudar={(busca) => {
+                definir({ busca, page: 1 });
+              }}
+              placeholder="Buscar na lista: NF, CTRC, remetente, cidade, placa…"
+              className="w-[340px] max-w-full"
+            />
+          </div>
+          <FiltrandoPor etiquetas={etiquetas} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Layers className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <SeletorDaLista
+              rotulo="Agrupar por"
+              valor={b.agrupar}
+              aoMudar={(agrupar) => {
+                definir({ agrupar, page: 1 });
+              }}
+              opcoes={AGRUPAMENTOS.map((g) => ({ valor: g, rotulo: ROTULO_AGRUPAMENTO[g] }))}
+            />
+            {b.agrupar !== "none" && (
+              <SeloStatus tom="neutro" semIcone>
+                paginação desativada (até {formatarInteiro(LIMITE_AGRUPADO)})
+              </SeloStatus>
+            )}
+            <div className="ml-auto flex flex-wrap items-center gap-3">
+              {total > 0 && (
+                <span className="text-[12.5px] text-muted-foreground">
+                  {cabecalho === true ? (
+                    <>todas as {formatarInteiro(total)} linhas marcadas para exportar</>
+                  ) : (
+                    <>
+                      {formatarInteiro(marcadas)} de {formatarInteiro(total)} marcadas para exportar
+                      ·{" "}
+                      <button
+                        type="button"
+                        className="font-medium text-brand underline-offset-2 hover:underline"
+                        onClick={() => {
+                          setSelecao(selecaoInicial(chaveDosFiltros));
+                        }}
+                      >
+                        marcar todas
+                      </button>
+                    </>
+                  )}
+                </span>
+              )}
+              <ExportMenu
+                arquivo="romaneio"
+                titulo="Romaneio"
+                subtitulo={`${formatarData(filtros.inicio)} a ${formatarData(filtros.fim)}`}
+                colunas={COLUNAS_DA_LISTA}
+                linhas={[]}
+                carregarLinhas={carregarParaExportar}
+                orientacao="paisagem"
+                tamanhoFonte={5.5}
+                desabilitado={q.isLoading || (total > 0 && marcadas === 0)}
+              />
+            </div>
+          </div>
         </div>
-        <FiltrandoPor className="w-full" etiquetas={etiquetas} />
-        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <Layers className="h-3.5 w-3.5" /> Agrupar por:
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-[12px]">
-                {ROTULO_AGRUPAMENTO[b.agrupar]} <ChevronDown className="ml-1 h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {AGRUPAMENTOS.map((g) => (
-                <DropdownMenuItem
-                  key={g}
-                  onSelect={() => {
-                    definir({ agrupar: g, page: 1 });
+      }
+      rodape={
+        b.agrupar === "none" && (
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+            <SeletorDaLista
+              rotulo="Linhas por página"
+              valor={String(b.size)}
+              padrao="50"
+              aoMudar={(size) => {
+                definir({ size: tamanhoDePagina(Number(size)), page: 1 });
+              }}
+              opcoes={TAMANHOS_DE_PAGINA.map((t) => ({ valor: String(t), rotulo: String(t) }))}
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground" aria-live="polite">
+                Página {b.page} de {totalDePaginas}
+              </span>
+              <BotoesDePagina
+                pagina={b.page}
+                totalDePaginas={totalDePaginas}
+                aoMudar={(page) => {
+                  definir({ page });
+                }}
+              />
+            </div>
+          </div>
+        )
+      }
+    >
+      <TabelaPropria>
+        <Cabecalho>
+          <ThOrdenavel
+            coluna="numero_nf"
+            rotulo="NF"
+            {...ordem}
+            fixa
+            antes={
+              <Checkbox
+                checked={cabecalho}
+                onCheckedChange={() => {
+                  setSelecao(alternarTodas(selecao));
+                }}
+                disabled={linhas.length === 0}
+                aria-label="Marcar ou desmarcar todas as linhas da lista"
+                title="Marcar/desmarcar todas as linhas da lista (todas as páginas) — só as marcadas saem na exportação"
+              />
+            }
+          />
+          <ThOrdenavel coluna="numero_ctrc" rotulo="CTRC" {...ordem} />
+          <Th>Status</Th>
+          <ThOrdenavel coluna="data_emissao" rotulo="Emissão" {...ordem} />
+          <ThOrdenavel coluna="data_embarque" rotulo="Embarque" {...ordem} />
+          <Th>Prazo</Th>
+          <ThOrdenavel coluna="parceiro" rotulo="Parceiro" {...ordem} />
+          <ThOrdenavel coluna="unidade" rotulo="Unidade" {...ordem} />
+          <Th>Cidade Unid.</Th>
+          <Th>Local. atual</Th>
+          <Th>Placa</Th>
+          <Th>Motorista</Th>
+          <ThOrdenavel coluna="remetente" rotulo="Remetente" {...ordem} />
+          <Th>Cliente destino</Th>
+          <ThOrdenavel coluna="cidade_destino" rotulo="Destino" {...ordem} />
+          <Th>Setor</Th>
+          <Th>Bairro</Th>
+          <Th direita>Vlr. mercadoria</Th>
+          <ThOrdenavel coluna="peso" rotulo="Peso" {...ordem} direita />
+          <ThOrdenavel coluna="volumes" rotulo="Vol." {...ordem} direita />
+          <ThOrdenavel coluna="valor_frete" rotulo="Frete" {...ordem} direita />
+          <ThOrdenavel coluna="status_atual" rotulo="Última ocorrência" {...ordem} />
+          <Th>Atraso</Th>
+          <Th>Alertas</Th>
+        </Cabecalho>
+        <tbody>
+          <EstadoDaTabela
+            colunas={COLUNAS_DA_TABELA}
+            carregando={q.isLoading}
+            erro={q.error}
+            aoTentarDeNovo={() => void q.refetch()}
+            vazio={q.isSuccess && linhas.length === 0}
+            mensagem={vazio}
+          />
+          {linhas.length > 0 && linhas.every((l) => l.dataPrevista === null) && (
+            <tr>
+              <td
+                colSpan={COLUNAS_DA_TABELA}
+                className="border-b border-border bg-muted/40 px-4 py-2 text-center text-[12.5px] text-muted-foreground"
+              >
+                Prazos ainda não calculados pelo SSW para as notas abaixo.
+              </td>
+            </tr>
+          )}
+          {agrupadas === null
+            ? linhas.map((l) => (
+                <Linha
+                  key={l.id}
+                  linha={l}
+                  hoje={hoje}
+                  limites={limites}
+                  aoAbrir={() => {
+                    abrirCte(l.numero);
                   }}
-                >
-                  {ROTULO_AGRUPAMENTO[g]}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {b.agrupar !== "none" && (
-            <Badge variant="secondary" className="text-[10px]">
-              paginação desativada (até {formatarInteiro(LIMITE_AGRUPADO)})
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {total > 0 && (
-            <span className="text-[11px] text-muted-foreground">
-              {cabecalho === true ? (
-                <>todas as {formatarInteiro(total)} linhas marcadas para exportar</>
-              ) : (
-                <>
-                  {formatarInteiro(marcadas)} de {formatarInteiro(total)} marcadas para exportar ·{" "}
-                  <button
-                    type="button"
-                    className="text-[var(--brand)] underline-offset-2 hover:underline"
-                    onClick={() => {
-                      setSelecao(selecaoInicial(chaveDosFiltros));
-                    }}
-                  >
-                    marcar todas
-                  </button>
-                </>
-              )}
-            </span>
-          )}
-          <ExportMenu
-            arquivo="romaneio"
-            titulo="Romaneio"
-            subtitulo={`${formatarData(filtros.inicio)} a ${formatarData(filtros.fim)}`}
-            colunas={COLUNAS_DA_LISTA}
-            linhas={[]}
-            carregarLinhas={carregarParaExportar}
-            orientacao="paisagem"
-            tamanhoFonte={5.5}
-            desabilitado={q.isLoading || (total > 0 && marcadas === 0)}
-          />
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-b-[10px] border border-border/70 bg-card">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr className="border-b border-border/70">
-                <Th
-                  coluna="numero_nf"
-                  rotulo="NF"
-                  {...ordem}
-                  fixa
-                  antes={
-                    <Checkbox
-                      checked={cabecalho}
-                      onCheckedChange={() => {
-                        setSelecao(alternarTodas(selecao));
-                      }}
-                      disabled={linhas.length === 0}
-                      aria-label="Marcar ou desmarcar todas as linhas da lista"
-                      title="Marcar/desmarcar todas as linhas da lista (todas as páginas) — só as marcadas saem na exportação"
-                    />
-                  }
+                  marcada={estaMarcada(selecao, l.id)}
+                  aoMarcar={() => {
+                    setSelecao(alternarLinha(selecao, l.id));
+                  }}
                 />
-                <Th coluna="numero_ctrc" rotulo="CTRC" {...ordem} />
-                <ThSimples>Status</ThSimples>
-                <Th coluna="data_emissao" rotulo="Emissão" {...ordem} />
-                <Th coluna="data_embarque" rotulo="Embarque" {...ordem} />
-                <ThSimples>Prazo</ThSimples>
-                <Th coluna="parceiro" rotulo="Parceiro" {...ordem} />
-                <Th coluna="unidade" rotulo="Unidade" {...ordem} />
-                <ThSimples>Cidade Unid.</ThSimples>
-                <ThSimples>Local. atual</ThSimples>
-                <ThSimples>Placa</ThSimples>
-                <ThSimples>Motorista</ThSimples>
-                <Th coluna="remetente" rotulo="Remetente" {...ordem} />
-                <ThSimples>Cliente destino</ThSimples>
-                <Th coluna="cidade_destino" rotulo="Destino" {...ordem} />
-                <ThSimples>Setor</ThSimples>
-                <ThSimples>Bairro</ThSimples>
-                <ThSimples direita>Vlr. mercadoria</ThSimples>
-                <Th coluna="peso" rotulo="Peso" {...ordem} direita />
-                <Th coluna="volumes" rotulo="Vol." {...ordem} direita />
-                <Th coluna="valor_frete" rotulo="Frete" {...ordem} direita />
-                <Th coluna="status_atual" rotulo="Última ocorrência" {...ordem} />
-                <ThSimples>Atraso</ThSimples>
-                <ThSimples>Alertas</ThSimples>
-              </tr>
-            </thead>
-            <tbody>
-              {q.isLoading && <LinhasCarregando linhas={8} colunas={20} />}
-              {q.isError && (
-                <tr>
-                  <td colSpan={COLUNAS_DA_TABELA} className="px-3 py-8 text-center">
-                    <div className="text-destructive">{mensagemAmigavel(q.error)}</div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => void q.refetch()}
-                    >
-                      Tentar novamente
-                    </Button>
-                  </td>
-                </tr>
-              )}
-              {q.isSuccess && linhas.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={COLUNAS_DA_TABELA}
-                    className="px-3 py-10 text-center text-muted-foreground"
-                  >
-                    {vazio}
-                  </td>
-                </tr>
-              )}
-              {linhas.length > 0 && linhas.every((l) => l.dataPrevista === null) && (
-                <tr>
-                  <td
-                    colSpan={COLUNAS_DA_TABELA}
-                    className="border-b border-border/40 bg-muted/20 px-3 py-2 text-center text-[11px] text-muted-foreground"
-                  >
-                    Prazos ainda não calculados pelo SSW para as notas abaixo.
-                  </td>
-                </tr>
-              )}
-              {agrupadas === null
-                ? linhas.map((l) => (
+              ))
+            : agrupadas.map((g) => (
+                <Grupo key={g.chave} rotulo={g.rotulo} linhas={g.linhas} subtotal={g.subtotal}>
+                  {(l) => (
                     <Linha
                       key={l.id}
                       linha={l}
@@ -410,84 +428,19 @@ export function ListaTotal({ busca: b, definir, filtros, otifVisivel }: PropsDaL
                         setSelecao(alternarLinha(selecao, l.id));
                       }}
                     />
-                  ))
-                : agrupadas.map((g) => (
-                    <Grupo key={g.chave} rotulo={g.rotulo} linhas={g.linhas} subtotal={g.subtotal}>
-                      {(l) => (
-                        <Linha
-                          key={l.id}
-                          linha={l}
-                          hoje={hoje}
-                          limites={limites}
-                          aoAbrir={() => {
-                            abrirCte(l.numero);
-                          }}
-                          marcada={estaMarcada(selecao, l.id)}
-                          aoMarcar={() => {
-                            setSelecao(alternarLinha(selecao, l.id));
-                          }}
-                        />
-                      )}
-                    </Grupo>
-                  ))}
-            </tbody>
-          </table>
-        </div>
-
-        {b.agrupar === "none" && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 px-3 py-2 text-[12px]">
-            <label className="flex items-center gap-2 text-muted-foreground">
-              <span>Linhas por página:</span>
-              <select
-                className="rounded border border-border/70 bg-background px-1 py-0.5 text-[12px]"
-                value={b.size}
-                onChange={(e) => {
-                  definir({ size: tamanhoDePagina(Number(e.target.value)), page: 1 });
-                }}
-              >
-                {TAMANHOS_DE_PAGINA.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">
-                Página {b.page} de {totalDePaginas}
-              </span>
-              <BotoesDePagina
-                pagina={b.page}
-                totalDePaginas={totalDePaginas}
-                aoMudar={(page) => {
-                  definir({ page });
-                }}
-                className="h-7"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                  )}
+                </Grupo>
+              ))}
+        </tbody>
+      </TabelaPropria>
+    </Painel>
   );
 }
 
 // ---------------------------------------------------------------------------------------------
 
-function ThSimples({ children, direita }: { children: ReactNode; direita?: boolean }) {
-  return (
-    <th
-      className={cn(
-        "whitespace-nowrap px-3 py-1.5 font-normal",
-        direita ? "text-right" : "text-left",
-      )}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Th({
+/** Cabeçalho que ordena a lista no servidor (mesmo visual dos outros cabeçalhos). */
+function ThOrdenavel({
   coluna,
   rotulo,
   ordem,
@@ -511,22 +464,27 @@ function Th({
   const Icone = ativa ? (dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
   return (
     <th
+      scope="col"
       aria-sort={ativa ? (dir === "asc" ? "ascending" : "descending") : undefined}
       className={cn(
-        "whitespace-nowrap px-3 py-1.5 text-left font-normal",
+        "px-4 py-2.5 text-left text-[11.5px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase",
         direita && "text-right",
-        fixa && "sticky left-0 z-10 bg-muted/40",
+        fixa && "sticky left-0 z-10 bg-muted",
       )}
     >
-      {antes ? <span className="mr-2 inline-flex align-middle">{antes}</span> : null}
+      {antes ? <span className="mr-2 inline-flex align-middle normal-case">{antes}</span> : null}
       <button
         type="button"
         onClick={() => {
           aoOrdenar(coluna);
         }}
-        className={cn("inline-flex items-center gap-1", ativa && "text-foreground")}
+        className={cn(
+          "inline-flex items-center gap-0.5 uppercase hover:text-foreground",
+          ativa && "text-foreground",
+        )}
       >
-        {rotulo} <Icone className="h-3 w-3 opacity-60" />
+        {rotulo}
+        <Icone className={cn("ml-1 h-3 w-3", !ativa && "opacity-50")} aria-hidden />
       </button>
     </th>
   );
@@ -543,44 +501,61 @@ function SeloDeStatus({ linha }: { linha: LinhaLista }) {
   const status = statusDaLinha(situacaoDe(linha));
   switch (status) {
     case "Entregue":
-      return (
-        <Badge
-          variant="secondary"
-          className="border-emerald-600/30 bg-emerald-600/10 text-[10px] text-emerald-700"
-        >
-          Entregue
-        </Badge>
-      );
+      return <SeloStatus tom="sucesso">Entregue</SeloStatus>;
     case "Baixado":
       return (
-        <Badge
-          variant="secondary"
-          className="border-amber-600/30 bg-amber-600/10 text-[10px] text-amber-700"
+        <span
           title={
             linha.ultimaOcorrencia
               ? `Encerrado por baixa formal (código ${linha.ultimaOcorrencia.codigo})`
               : "Encerrado por baixa formal"
           }
         >
-          Baixado
-        </Badge>
+          <SeloStatus tom="alerta">Baixado</SeloStatus>
+        </span>
       );
     case "Em rota":
       return (
-        <Badge
-          variant="secondary"
-          className="border-sky-600/30 bg-sky-600/10 text-[10px] text-sky-700"
-        >
+        <SeloStatus tom="info" icone={Truck}>
           Em rota
-        </Badge>
+        </SeloStatus>
       );
     case "Pendente":
-      return (
-        <Badge variant="outline" className="text-[10px] text-muted-foreground">
-          Pendente
-        </Badge>
-      );
+      return <SeloStatus tom="neutro">Pendente</SeloStatus>;
   }
+}
+
+/** Selo de um alerta da linha (atraso, responsabilidade do cliente, TDE, peso/volume). */
+function SeloDoAlerta({
+  alerta,
+  fonte,
+  tde,
+}: {
+  alerta: string;
+  fonte: string;
+  tde: number | null;
+}) {
+  if (alerta.startsWith("ATRASADO")) {
+    return (
+      <span title={`fonte: ${fonte}`}>
+        <SeloStatus tom="erro">{alerta}</SeloStatus>
+      </span>
+    );
+  }
+  if (alerta === "TDE") {
+    return (
+      <span title={`TDE (taxa de dificuldade de entrega): ${formatarMoeda(tde)}`}>
+        <SeloStatus tom="alerta" semIcone>
+          TDE
+        </SeloStatus>
+      </span>
+    );
+  }
+  return (
+    <SeloStatus tom="neutro" semIcone>
+      {alerta}
+    </SeloStatus>
+  );
 }
 
 const diasPorExtenso = (dias: number) => `${dias} ${dias === 1 ? "dia" : "dias"}`;
@@ -605,18 +580,19 @@ function Linha({
   const alertas = alertasDaLinha(situacao, atraso.dias, limites);
   const atrasada = atraso.dias > 0;
   const o = l.ultimaOcorrencia;
+  const fundo = atrasada ? "bg-status-bad-bg" : "bg-card";
   return (
     <tr
-      onClick={aoAbrir}
-      className={cn(
-        "cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/40",
-        atrasada && "bg-destructive/10 text-destructive hover:bg-destructive/15",
+      {...propsDaLinha(
+        aoAbrir,
+        cn("group", atrasada && "bg-status-bad-bg text-status-bad-fg hover:bg-status-bad-bg/70"),
       )}
     >
       <td
         className={cn(
-          "sticky left-0 z-[5] whitespace-nowrap px-3 py-1 hover:bg-muted/40",
-          atrasada ? "bg-destructive/10 text-destructive" : "bg-card",
+          "sticky left-0 z-[5] px-4 py-2.5 whitespace-nowrap",
+          fundo,
+          !atrasada && "group-hover:bg-muted",
         )}
       >
         {/* A caixa de seleção não abre o CTRC. */}
@@ -633,59 +609,45 @@ function Linha({
           />
         </span>
         {l.numeroNf !== null ? (
-          <span className="font-mono text-[11px] font-medium text-[var(--brand)]">
-            {l.numeroNf}
-          </span>
+          <span className="font-mono text-[12px] font-semibold text-brand">{l.numeroNf}</span>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
       </td>
-      <td className="whitespace-nowrap px-3 py-1 font-mono text-[11px] text-muted-foreground">
-        {l.numero}
-      </td>
-      <td className="whitespace-nowrap px-3 py-1">
+      <td className={cn(CLASSE_CODIGO, !atrasada && "text-muted-foreground")}>{l.numero}</td>
+      <td className="px-4 py-2.5 whitespace-nowrap">
         <SeloDeStatus linha={l} />
       </td>
-      <td className="whitespace-nowrap px-3 py-1">{formatarData(l.dataEmissao)}</td>
-      <td className="whitespace-nowrap px-3 py-1">{formatarData(l.dataEmbarque)}</td>
-      <td className="whitespace-nowrap px-3 py-1">{formatarData(l.dataPrevista)}</td>
-      <td className="max-w-[180px] truncate px-3 py-1">{l.parceiroNome ?? "—"}</td>
-      <td className="whitespace-nowrap px-3 py-1 font-mono text-[11px] text-muted-foreground">
-        {l.filial ?? "—"}
-      </td>
-      <td className="whitespace-nowrap px-3 py-1">
+      <td className="px-4 py-2.5 whitespace-nowrap">{formatarData(l.dataEmissao)}</td>
+      <td className="px-4 py-2.5 whitespace-nowrap">{formatarData(l.dataEmbarque)}</td>
+      <td className="px-4 py-2.5 whitespace-nowrap">{formatarData(l.dataPrevista)}</td>
+      <td className="max-w-[180px] truncate px-4 py-2.5">{l.parceiroNome ?? "—"}</td>
+      <td className={cn(CLASSE_CODIGO, !atrasada && "text-muted-foreground")}>{l.filial ?? "—"}</td>
+      <td className="px-4 py-2.5 whitespace-nowrap">
         {cidadeUf(l.unidadeCidade, l.unidadeUf) ?? "—"}
       </td>
-      <td className="whitespace-nowrap px-3 py-1 font-mono text-[11px] text-muted-foreground">
+      <td className={cn(CLASSE_CODIGO, !atrasada && "text-muted-foreground")}>
         {l.unidadeAtual ?? "—"}
       </td>
-      <td className="whitespace-nowrap px-3 py-1 font-mono text-[11px]">{l.placa ?? "—"}</td>
-      <td className="max-w-[160px] truncate px-3 py-1">{l.motorista ?? "—"}</td>
-      <td className="max-w-[200px] truncate px-3 py-1">{l.remetente ?? "—"}</td>
-      <td className="max-w-[200px] truncate px-3 py-1" title={l.destinatario ?? undefined}>
+      <td className={CLASSE_CODIGO}>{l.placa ?? "—"}</td>
+      <td className="max-w-[160px] truncate px-4 py-2.5">{l.motorista ?? "—"}</td>
+      <td className="max-w-[200px] truncate px-4 py-2.5">{l.remetente ?? "—"}</td>
+      <td className="max-w-[200px] truncate px-4 py-2.5" title={l.destinatario ?? undefined}>
         {l.destinatario ?? "—"}
       </td>
-      <td className="whitespace-nowrap px-3 py-1">
+      <td className="px-4 py-2.5 whitespace-nowrap">
         {cidadeUf(l.cidadeDestino, l.ufDestino) ?? "—"}
       </td>
-      <td className="whitespace-nowrap px-3 py-1">{l.setor ?? "—"}</td>
-      <td className="max-w-[160px] truncate px-3 py-1" title={l.endereco ?? undefined}>
+      <td className="px-4 py-2.5 whitespace-nowrap">{l.setor ?? "—"}</td>
+      <td className="max-w-[160px] truncate px-4 py-2.5" title={l.endereco ?? undefined}>
         {l.bairro ?? "—"}
       </td>
-      <td className="whitespace-nowrap px-3 py-1 text-right tabular-nums">
-        {formatarMoeda(l.valorMercadoria)}
-      </td>
-      <td className="whitespace-nowrap px-3 py-1 text-right tabular-nums">
-        {formatarPeso(l.peso, { fixas: true })}
-      </td>
-      <td className="px-3 py-1 text-right tabular-nums">
-        {l.volumes === null ? "—" : formatarInteiro(l.volumes)}
-      </td>
-      <td className="whitespace-nowrap px-3 py-1 text-right tabular-nums">
-        {formatarMoeda(l.valorFrete)}
-      </td>
+      <td className={CLASSE_NUMERO}>{formatarMoeda(l.valorMercadoria)}</td>
+      <td className={CLASSE_NUMERO}>{formatarPeso(l.peso, { fixas: true })}</td>
+      <td className={CLASSE_NUMERO}>{l.volumes === null ? "—" : formatarInteiro(l.volumes)}</td>
+      <td className={CLASSE_NUMERO}>{formatarMoeda(l.valorFrete)}</td>
       <td
-        className="px-3 py-1 text-muted-foreground"
+        className={cn("px-4 py-2.5", !atrasada && "text-muted-foreground")}
         onClick={(e) => {
           e.stopPropagation();
         }}
@@ -709,40 +671,14 @@ function Linha({
           <LinhaDoTempo sigla={l.sigla} numero={l.numero} />
         </div>
       </td>
-      <td className="whitespace-nowrap px-3 py-1">
+      <td className="px-4 py-2.5 whitespace-nowrap">
         <Atraso linha={l} dias={atraso.dias} fonte={atraso.fonte} />
       </td>
-      <td className="px-3 py-1">
+      <td className="px-4 py-2.5">
         <div className="flex flex-wrap gap-1">
-          {alertas.map((a) =>
-            a.startsWith("ATRASADO") ? (
-              <Badge
-                key={a}
-                variant="destructive"
-                className="text-[10px]"
-                title={`fonte: ${atraso.fonte}`}
-              >
-                {a}
-              </Badge>
-            ) : a === "RESP. CLIENTE" ? (
-              <Badge key={a} variant="outline" className="text-[10px]">
-                {a}
-              </Badge>
-            ) : a === "TDE" ? (
-              <Badge
-                key={a}
-                variant="outline"
-                className="border-amber-500/60 text-[10px] text-amber-700 dark:text-amber-400"
-                title={`TDE (taxa de dificuldade de entrega): ${formatarMoeda(l.tde)}`}
-              >
-                TDE
-              </Badge>
-            ) : (
-              <Badge key={a} variant="secondary" className="text-[10px]">
-                {a}
-              </Badge>
-            ),
-          )}
+          {alertas.map((a) => (
+            <SeloDoAlerta key={a} alerta={a} fonte={atraso.fonte} tde={l.tde} />
+          ))}
         </div>
       </td>
     </tr>
@@ -759,14 +695,14 @@ function Atraso({ linha: l, dias, fonte }: { linha: LinhaLista; dias: number; fo
   }
   if (l.responsabilidadeCliente) {
     return (
-      <Badge variant="secondary" className="text-[10px]">
+      <SeloStatus tom="neutro" semIcone>
         Resp. cliente
-      </Badge>
+      </SeloStatus>
     );
   }
   if (dias > 0) {
     return (
-      <span className="font-medium text-destructive" title={`fonte: ${fonte}`}>
+      <span className="font-semibold text-status-bad-fg" title={`fonte: ${fonte}`}>
         {diasPorExtenso(dias)}
       </span>
     );
@@ -777,7 +713,7 @@ function Atraso({ linha: l, dias, fonte }: { linha: LinhaLista; dias: number; fo
         —
       </span>
     ) : (
-      <span className="font-medium text-emerald-600">No prazo</span>
+      <span className="font-semibold text-status-good-fg">No prazo</span>
     );
   }
   return (
@@ -805,34 +741,31 @@ function Grupo({
     volumes: linhas.reduce((s, l) => s + (l.volumes ?? 0), 0),
     frete: linhas.reduce((s, l) => s + (l.valorFrete ?? 0), 0),
   };
+  const Seta = aberto ? ChevronDown : ChevronRight;
   return (
     <>
-      <tr className="border-y border-border/70 bg-muted/30">
-        <td colSpan={COLUNAS_ANTES_DO_PESO} className="sticky left-0 z-[5] bg-muted/30 px-3 py-1.5">
+      <tr className="border-y border-border bg-muted/60">
+        <td colSpan={COLUNAS_ANTES_DO_PESO} className="sticky left-0 z-[5] px-4 py-2">
           <button
             type="button"
             aria-expanded={aberto}
             onClick={() => {
               setAberto((a) => !a);
             }}
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium"
+            className="inline-flex items-center gap-1.5 font-semibold"
           >
-            {aberto ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            <Seta className="h-4 w-4" aria-hidden />
             {rotulo}
-            <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+            <span className="ml-2 text-[12.5px] font-normal text-muted-foreground">
               {formatarInteiro(soma.ctes)} notas
             </span>
           </button>
         </td>
-        <td className="px-3 py-1.5 text-right text-[12px] font-medium tabular-nums">
+        <td className={cn(CLASSE_NUMERO, "py-2 font-semibold")}>
           {formatarPeso(soma.peso, { fixas: true })}
         </td>
-        <td className="px-3 py-1.5 text-right text-[12px] font-medium tabular-nums">
-          {formatarInteiro(soma.volumes)}
-        </td>
-        <td className="px-3 py-1.5 text-right text-[12px] font-medium tabular-nums">
-          {formatarMoeda(soma.frete)}
-        </td>
+        <td className={cn(CLASSE_NUMERO, "py-2 font-semibold")}>{formatarInteiro(soma.volumes)}</td>
+        <td className={cn(CLASSE_NUMERO, "py-2 font-semibold")}>{formatarMoeda(soma.frete)}</td>
         <td colSpan={COLUNAS_DA_TABELA - COLUNAS_ANTES_DO_PESO - 3} />
       </tr>
       {aberto && linhas.map((l) => children(l))}
@@ -850,43 +783,41 @@ function LinhaDoTempo({ sigla, numero }: { sigla: string; numero: string }) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           title="Ver linha do tempo de ocorrências"
           aria-label={`Linha do tempo do CTRC ${numero}`}
         >
-          <History className="h-3.5 w-3.5" />
+          <History className="h-3.5 w-3.5" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[420px] p-0">
-        <div className="border-b border-border/70 px-3 py-2 text-[12px] font-medium">
+        <div className="border-b border-border px-4 py-2.5 text-[13px] font-semibold">
           Linha do tempo · {numero}
         </div>
-        <div className="max-h-[320px] overflow-y-auto p-3">
-          {q.isLoading && <div className="text-[12px] text-muted-foreground">Carregando…</div>}
-          {q.isError && (
-            <div className="text-[12px] text-destructive">{mensagemAmigavel(q.error)}</div>
-          )}
+        <div className="rolagem-fina max-h-[320px] overflow-y-auto p-4">
+          {q.isLoading && <div className="text-[13px] text-muted-foreground">Carregando…</div>}
+          {q.isError && <MensagemErro erro={q.error} className="py-2" />}
           {q.isSuccess && eventos.length === 0 && (
-            <div className="text-[12px] text-muted-foreground">Sem ocorrências registradas.</div>
+            <div className="text-[13px] text-muted-foreground">Sem ocorrências registradas.</div>
           )}
-          <ol className="space-y-2">
+          <ol className="space-y-3">
             {eventos.map((e, i) => (
-              <li key={i} className="border-l-2 border-border/70 pl-3 text-[12px]">
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <li key={i} className="border-l-2 border-brand/40 pl-3 text-[13px]">
+                <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                   <span className="tabular-nums">{formatarDataHora(e.dataHora)}</span>
                   {e.codigo && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <SeloStatus tom="neutro" semIcone className="h-5">
                       {e.codigo}
-                    </Badge>
+                    </SeloStatus>
                   )}
                   <span className="ml-auto">{e.fonte === "ssw" ? "SSW" : "sistema"}</span>
                 </div>
                 <div className="text-foreground">{e.descricao ?? "—"}</div>
                 {e.complemento && (
-                  <div className="text-[11px] text-muted-foreground">{e.complemento}</div>
+                  <div className="text-[12px] text-muted-foreground">{e.complemento}</div>
                 )}
                 {(e.unidade ?? e.usuario) && (
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[12px] text-muted-foreground">
                     {[e.unidade, e.usuario].filter((t) => t !== null).join(" · ")}
                   </div>
                 )}

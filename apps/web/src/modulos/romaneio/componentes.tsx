@@ -1,11 +1,13 @@
-import { formatarInteiro } from "@erp/shared/formatacao";
 /**
- * Peças visuais próprias do Romaneio (cards de totalizador, chips de faixa). Visual da
- * tela de hoje (features/romaneio/TotCard.tsx, Fase2Views.tsx).
+ * Peças visuais do Romaneio no desenho do painel (docs/design/guia.md): indicador com explicação,
+ * faixas de prazo em barra empilhada, trilho de barra horizontal, tabela própria com o visual da
+ * `TabelaDados`, seletor da lista e campo de texto adiado.
  */
-import { Eye, EyeOff } from "lucide-react";
+import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
+import { Eye, EyeOff, Search } from "lucide-react";
 import {
   Children,
+  type ComponentProps,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
@@ -13,178 +15,82 @@ import {
   useState,
 } from "react";
 
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
+import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { CLASSE_DO_TOM, ICONE_DO_TOM, type Tom } from "@/componentes/comum/SeloStatus";
+import { Button } from "@/componentes/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/componentes/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-/** Props de clique acessível (card que vira botão). */
-function clicavel(aoClicar: (() => void) | undefined) {
-  if (!aoClicar) return {};
-  return {
-    role: "button" as const,
-    tabIndex: 0,
-    onClick: aoClicar,
-    onKeyDown: (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        aoClicar();
-      }
-    },
-  };
-}
+// ---------------------------------------------------------------------------------------------
+// Dica e indicadores
 
-const CLICAVEL =
-  "cursor-pointer transition-colors hover:border-[var(--brand)]/60 hover:bg-muted/50";
-
-/** Card de totalizador do topo (e da aba Performance por romaneio). */
-export function TotCard({
-  rotulo,
-  valor,
-  base,
-  dica,
-  nota,
-  tom = "volume",
-  aoClicar,
+/** Dica no passar do mouse (e no foco, quando o filho é focável). O filho é um elemento só. */
+export function ComDica({
+  texto,
+  lado = "top",
+  children,
 }: {
-  rotulo: string;
-  valor: string;
-  base?: string | undefined;
-  dica?: string;
-  nota?: string;
-  tom?: "volume" | "alert" | "positive";
-  aoClicar?: (() => void) | undefined;
+  texto: ReactNode;
+  lado?: "top" | "bottom";
+  children: ReactNode;
 }) {
-  const acento =
-    tom === "positive"
-      ? "border-l-kpi-positive text-kpi-positive"
-      : tom === "alert"
-        ? "border-l-kpi-alert text-kpi-alert"
-        : "border-l-kpi-volume text-kpi-volume";
   return (
-    <div
-      {...clicavel(aoClicar)}
-      className={cn(
-        "rounded-[10px] border border-border/70 border-l-[5px] bg-card px-3 py-2 text-left",
-        acento,
-        aoClicar && CLICAVEL,
-      )}
-    >
-      <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-foreground">
-        <span>{rotulo}</span>
-        {dica && <InfoTip texto={dica} />}
-      </div>
-      <div className="mt-0.5 text-[20px] font-bold tabular-nums">{valor}</div>
-      {base && <div className="mt-0.5 text-[10px] text-muted-foreground">{base}</div>}
-      {nota && <div className="mt-0.5 text-[10px] leading-snug text-muted-foreground">{nota}</div>}
-    </div>
-  );
-}
-
-export type Tom = "ok" | "ruim" | "alerta";
-
-const COR_DO_TOM: Record<Tom | "neutro", string> = {
-  ok: "var(--status-good)",
-  alerta: "var(--status-warn)",
-  ruim: "var(--status-bad)",
-  neutro: "var(--kpi-positive)",
-};
-
-/** Card das abas (Hoje, Romaneio de entrega, Performance). `destaque` = número maior. */
-export function CardAba({
-  rotulo,
-  valor,
-  dica,
-  tom,
-  explicacao,
-  sub,
-  aoClicar,
-  destaque,
-}: {
-  rotulo: string;
-  valor: string;
-  dica?: string | undefined;
-  tom?: Tom | undefined;
-  explicacao?: string;
-  sub?: ReactNode;
-  aoClicar?: (() => void) | undefined;
-  destaque?: boolean;
-}) {
-  const acento = COR_DO_TOM[tom ?? "neutro"];
-  return (
-    <div
-      {...clicavel(aoClicar)}
-      style={{ borderLeftColor: acento }}
-      className={cn(
-        "rounded-[10px] border border-border/70 border-l-[5px] bg-card px-3 text-left",
-        destaque ? "py-2.5" : "py-2",
-        aoClicar && CLICAVEL,
-      )}
-    >
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-        <span>{rotulo}</span>
-        {explicacao && <InfoTip texto={explicacao} />}
-      </div>
-      {sub && <div className="leading-tight">{sub}</div>}
-      <div
-        className={cn(
-          "mt-0.5 tabular-nums",
-          destaque ? "text-[22px] font-semibold" : "text-[18px] font-medium",
-        )}
-        style={{ color: acento }}
-      >
-        {valor}
-      </div>
-      {dica && <div className="mt-0.5 text-[11px] text-muted-foreground">{dica}</div>}
-    </div>
-  );
-}
-
-/** Chip clicável de faixa de prazo ("Em rota, por prazo"). */
-export function FaixaChip({
-  rotulo,
-  valor,
-  tom,
-  aoClicar,
-}: {
-  rotulo: string;
-  valor: number;
-  tom: "ruim" | "alerta" | "ok";
-  aoClicar: () => void;
-}) {
-  const classe =
-    tom === "ruim"
-      ? "border-destructive/40 bg-destructive/10 text-destructive"
-      : tom === "alerta"
-        ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-        : "border-border/70 bg-muted text-foreground";
-  return (
-    <button
-      type="button"
-      onClick={aoClicar}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 transition-colors hover:brightness-95",
-        classe,
-      )}
-    >
-      <span>{rotulo}</span>
-      <span className="font-semibold tabular-nums">{formatarInteiro(valor)}</span>
-    </button>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent side={lado} className="max-w-[320px] text-[12px] leading-snug">
+          {texto}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
 /**
- * Grade de cards em linhas iguais: 8 cards = 4 + 4, 10 = 5 + 5, 9 = 5 + 4 (nenhum card sozinho
- * na linha). Conta só os filhos que de fato aparecem.
+ * `KpiCard` com a explicação do número na dica (mouse e teclado). O comum ainda não tem `dica`.
  */
-export function GradeCards({ children }: { children: ReactNode }) {
+export function Indicador({
+  dica,
+  ...props
+}: ComponentProps<typeof KpiCard> & { dica?: string | undefined }) {
+  const cartao = <KpiCard {...props} />;
+  if (!dica) return cartao;
+  return (
+    <ComDica texto={dica} lado="bottom">
+      {/* Card sem clique ganha foco próprio para a dica chegar pelo teclado. */}
+      <div tabIndex={props.aoClicar ? undefined : 0} className="flex rounded-2xl">
+        {cartao}
+      </div>
+    </ComDica>
+  );
+}
+
+/**
+ * Grade de indicadores em linhas iguais (8 = 4 + 4, 9 = 3 + 3 + 3): nenhum card sozinho na linha.
+ * Conta só os filhos que de fato aparecem.
+ */
+export function GradeDeIndicadores({ max = 4, children }: { max?: number; children: ReactNode }) {
   const n = Math.max(1, Children.toArray(children).length);
-  const colunas = (max: number) => Math.ceil(n / Math.ceil(n / max));
-  const estilo: CSSProperties & Record<"--cols-sm" | "--cols-lg", number> = {
-    "--cols-sm": colunas(4),
-    "--cols-lg": colunas(6),
+  const colunas = (limite: number) => Math.ceil(n / Math.ceil(n / limite));
+  const estilo: CSSProperties & Record<"--cols-sm" | "--cols-xl", number> = {
+    "--cols-sm": colunas(2),
+    "--cols-xl": colunas(max),
   };
   return (
     <div
-      className="grid grid-cols-2 gap-2 sm:[grid-template-columns:repeat(var(--cols-sm),minmax(0,1fr))] lg:[grid-template-columns:repeat(var(--cols-lg),minmax(0,1fr))]"
+      className="grid gap-4 sm:[grid-template-columns:repeat(var(--cols-sm),minmax(0,1fr))] xl:[grid-template-columns:repeat(var(--cols-xl),minmax(0,1fr))]"
       style={estilo}
     >
       {children}
@@ -229,19 +135,288 @@ export function AlternarCardsSecundarios({
   quantos: number;
   aoClicar: () => void;
 }) {
+  const Icone = ocultos ? Eye : EyeOff;
   return (
-    <button
+    <Button
       type="button"
+      size="sm"
+      variant="ghost"
       onClick={aoClicar}
-      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      className="h-auto min-h-8 text-[12.5px] font-medium whitespace-normal text-muted-foreground hover:text-foreground"
     >
-      {ocultos ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+      <Icone aria-hidden />
       {ocultos
         ? `Mostrar ${quantos === 1 ? "card oculto" : `${quantos} cards ocultos`} (Baixado sem entrega${quantos > 1 ? ", Parado sem saída" : ""})`
         : "Ocultar Baixado sem entrega e Parado sem saída"}
-    </button>
+    </Button>
   );
 }
+
+// ---------------------------------------------------------------------------------------------
+// Faixas de prazo (barra empilhada 100% + chips que abrem a lista)
+
+export type ChaveDaFaixa = "vencida" | "hoje" | "futuro" | "sem_prev";
+
+interface ContagemDasFaixas {
+  vencida: number;
+  hoje: number;
+  futuro: number;
+  semPrev: number;
+}
+
+const FAIXAS: readonly {
+  chave: Exclude<ChaveDaFaixa, "sem_prev">;
+  rotulo: string;
+  tom: Tom;
+  cor: string;
+}[] = [
+  { chave: "vencida", rotulo: "Vencida", tom: "erro", cor: "var(--status-bad)" },
+  { chave: "hoje", rotulo: "Vencendo no dia", tom: "alerta", cor: "var(--status-warn)" },
+  { chave: "futuro", rotulo: "Vencimento futuro", tom: "sucesso", cor: "var(--status-good)" },
+];
+
+/**
+ * Uma linha de faixas de prazo: título, barra empilhada (dica no mouse) e um chip por faixa.
+ * Os chips são os botões (teclado); a barra mostra a proporção.
+ */
+export function FaixasDePrazo({
+  rotulo,
+  dica,
+  faixas,
+  aoAbrir,
+}: {
+  rotulo: ReactNode;
+  dica?: string | undefined;
+  faixas: ContagemDasFaixas | undefined;
+  aoAbrir: (faixa: ChaveDaFaixa) => void;
+}) {
+  const f = faixas ?? { vencida: 0, hoje: 0, futuro: 0, semPrev: 0 };
+  const total = f.vencida + f.hoje + f.futuro + f.semPrev;
+  const segmentos = [
+    ...FAIXAS.map((x) => ({ chave: x.chave, rotulo: x.rotulo, cor: x.cor, valor: f[x.chave] })),
+    {
+      chave: "sem_prev",
+      rotulo: "Sem prazo definido",
+      cor: "var(--muted-foreground)",
+      valor: f.semPrev,
+    },
+  ].filter((s) => s.valor > 0);
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+        <span>{rotulo}</span>
+        {dica && <InfoTip texto={dica} />}
+      </div>
+      <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-muted">
+        {total > 0 &&
+          segmentos.map((s) => (
+            <ComDica
+              key={s.chave}
+              texto={`${s.rotulo}: ${formatarInteiro(s.valor)} (${formatarPercentual(s.valor / total)})`}
+            >
+              <span
+                className="h-full transition-opacity hover:opacity-80"
+                style={{ flexGrow: s.valor, flexBasis: 0, background: s.cor }}
+              />
+            </ComDica>
+          ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {FAIXAS.map((x) => {
+          const Icone = ICONE_DO_TOM[x.tom];
+          return (
+            <button
+              key={x.chave}
+              type="button"
+              onClick={() => {
+                aoAbrir(x.chave);
+              }}
+              className={cn(
+                "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] font-medium transition-[filter] hover:brightness-95",
+                CLASSE_DO_TOM[x.tom],
+              )}
+            >
+              <Icone className="h-3.5 w-3.5" aria-hidden />
+              {x.rotulo}
+              <span className="font-bold tabular-nums">{formatarInteiro(f[x.chave])}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          className="h-7 rounded-full px-2 text-[12.5px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          onClick={() => {
+            aoAbrir("sem_prev");
+          }}
+        >
+          sem prazo definido: {formatarInteiro(f.semPrev)}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Barras horizontais
+
+/** Trilho com a barra proporcional (as linhas de barras são botões; o trilho é só desenho). */
+export function Trilho({
+  fracao,
+  cor = "var(--brand)",
+  className,
+}: {
+  fracao: number;
+  cor?: string | undefined;
+  className?: string | undefined;
+}) {
+  return (
+    <span aria-hidden className={cn("block h-2 overflow-hidden rounded-full bg-muted", className)}>
+      <span
+        className="block h-full rounded-full"
+        // Barra mínima visível: um item com 1 ao lado de outro com mil não some.
+        style={{ width: fracao > 0 ? `max(3px, ${fracao * 100}%)` : 0, background: cor }}
+      />
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Tabela própria com o visual da TabelaDados (cabeçalhos com dica, colunas dinâmicas)
+
+export function TabelaPropria({
+  className,
+  children,
+}: {
+  className?: string | undefined;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("rolagem-fina overflow-x-auto", className)}>
+      <table className="w-full text-[13px] tabular-nums">{children}</table>
+    </div>
+  );
+}
+
+/** Linha de cabeçalho (fundo `muted`, rótulos em caixa alta). */
+export function Cabecalho({
+  fixo,
+  children,
+}: {
+  /** Gruda no topo da área com rolagem. */
+  fixo?: boolean | undefined;
+  children: ReactNode;
+}) {
+  return (
+    <thead className={cn(fixo && "sticky top-0 z-[6]")}>
+      <tr className="border-b border-border bg-muted text-muted-foreground">{children}</tr>
+    </thead>
+  );
+}
+
+export function Th({
+  direita,
+  className,
+  style,
+  children,
+}: {
+  direita?: boolean | undefined;
+  className?: string | undefined;
+  style?: CSSProperties | undefined;
+  children?: ReactNode;
+}) {
+  return (
+    <th
+      scope="col"
+      style={style}
+      className={cn(
+        "px-4 py-2.5 align-bottom text-[11.5px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase",
+        direita ? "text-right" : "text-left",
+        className,
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+
+/** Título de coluna com dica ("i"); a dica não reordena nem abre nada. */
+export function TituloComDica({ dica, children }: { dica: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {children}
+      <InfoTip texto={dica} />
+    </span>
+  );
+}
+
+export const CLASSE_TD = "px-4 py-2.5 whitespace-nowrap";
+export const CLASSE_NUMERO = "px-4 py-2.5 text-right tabular-nums whitespace-nowrap";
+/** Documento, placa, sigla. */
+export const CLASSE_CODIGO = "px-4 py-2.5 font-mono text-[12px] whitespace-nowrap";
+
+/**
+ * Linha da tabela; com `aoClicar` vira clicável pelo mouse e pelo teclado (Enter/Espaço na
+ * própria linha, não nos botões de dentro dela).
+ */
+export function propsDaLinha(aoClicar: (() => void) | undefined, classe?: string) {
+  const base = cn(
+    "border-b border-border transition-colors last:border-0 hover:bg-muted/60",
+    aoClicar && "cursor-pointer focus-visible:bg-accent focus-visible:outline-none",
+    classe,
+  );
+  if (!aoClicar) return { className: base };
+  return {
+    className: base,
+    tabIndex: 0,
+    onClick: aoClicar,
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.target !== e.currentTarget) return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        aoClicar();
+      }
+    },
+  };
+}
+
+/** Carregando (esqueleto), erro (com "Tentar novamente") e vazio no corpo da tabela. */
+export function EstadoDaTabela({
+  colunas,
+  carregando,
+  erro,
+  aoTentarDeNovo,
+  vazio,
+  mensagem,
+}: {
+  colunas: number;
+  carregando: boolean;
+  erro?: unknown;
+  aoTentarDeNovo?: (() => void) | undefined;
+  vazio: boolean;
+  mensagem: string;
+}) {
+  if (carregando) return <LinhasCarregando linhas={5} colunas={colunas} />;
+  if (erro !== undefined && erro !== null) {
+    return (
+      <tr>
+        <td colSpan={colunas}>
+          <MensagemErro erro={erro} aoTentarDeNovo={aoTentarDeNovo} />
+        </td>
+      </tr>
+    );
+  }
+  if (!vazio) return null;
+  return (
+    <tr>
+      <td colSpan={colunas}>
+        <EstadoVazio mensagem={mensagem} />
+      </td>
+    </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Prejuízo
 
 /** Códigos que contam como prejuízo: os do filtro, senão o 13. */
 const codigosDoPrejuizo = (codigos: readonly number[] | undefined) =>
@@ -253,65 +428,75 @@ export function textoDoPrejuizo(codigos: readonly number[] | undefined): string 
   return `${lista.length > 1 ? "códigos" : "código"} ${lista.join(", ")}`;
 }
 
+/** "código 13" sob o título da coluna de prejuízo. */
 export function PrejuizoSubtitulo({ codigos }: { codigos?: readonly number[] | undefined }) {
   return (
-    <span className="text-[10px] font-normal normal-case text-muted-foreground">
+    <span className="block text-[12px] font-normal tracking-normal normal-case">
       {textoDoPrejuizo(codigos)}
     </span>
   );
 }
 
-/** Legenda quando há filtro de código ativo (prejuízo atribuído). */
+/** Aviso quando há filtro de código ativo (prejuízo atribuído). */
 export function AtribuicaoLegenda({ codigos }: { codigos?: readonly number[] | undefined }) {
   if (!codigos || codigos.length === 0) return null;
   return (
-    <p className="rounded-md border border-border/70 bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground">
+    <Aviso tom="info">
       Prejuízo atribuído ao(s) código(s) selecionado(s): {codigos.map((c) => `#${c}`).join(", ")} —
       conta apenas os CT-e cuja ocorrência penalizante é um desses códigos.
-    </p>
+    </Aviso>
   );
 }
 
-/** Select compacto do cabeçalho da lista; destaca a borda quando há filtro ativo. */
-export function SelectLista<V extends string>({
+// ---------------------------------------------------------------------------------------------
+// Controles
+
+/**
+ * Seletor de uma opção no desenho dos filtros ("Situação: Todas"); destaca quando sai do padrão
+ * (a primeira opção). `resumo` troca o texto mostrado no botão (a lista mantém o texto completo).
+ */
+export function SeletorDaLista<V extends string>({
   rotulo,
   valor,
   opcoes,
   aoMudar,
+  resumo,
+  padrao = opcoes[0]?.valor,
 }: {
   rotulo: string;
   valor: V;
   opcoes: readonly { valor: V; rotulo: string }[];
   aoMudar: (v: V) => void;
+  resumo?: string | undefined;
+  padrao?: V | undefined;
 }) {
-  const ativo = valor !== opcoes[0]?.valor;
+  const ativo = valor !== padrao;
   return (
-    <label className="inline-flex items-center gap-1.5">
-      <span>{rotulo}:</span>
-      <select
-        value={valor}
-        onChange={(e) => {
-          const escolhida = opcoes.find((o) => o.valor === e.target.value);
-          if (escolhida) aoMudar(escolhida.valor);
-        }}
+    <Select
+      value={valor}
+      onValueChange={(v) => {
+        const escolhida = opcoes.find((o) => o.valor === v);
+        if (escolhida) aoMudar(escolhida.valor);
+      }}
+    >
+      <SelectTrigger
         className={cn(
-          "h-7 rounded-md border bg-background px-2 text-[12px] text-foreground",
-          ativo ? "border-[var(--brand)] ring-1 ring-[var(--brand)]/30" : "border-border/70",
+          "h-9 w-auto max-w-full gap-2 border-border text-[13px] font-medium shadow-cartao",
+          ativo && "border-brand/60 bg-brand-suave",
         )}
       >
+        <span className="shrink-0 text-muted-foreground">{rotulo}:</span>
+        <SelectValue>{resumo}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
         {opcoes.map((o) => (
-          <option key={o.valor} value={o.valor}>
+          <SelectItem key={o.valor} value={o.valor} className="text-[13px]">
             {o.rotulo}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-    </label>
+      </SelectContent>
+    </Select>
   );
-}
-
-/** Mensagem de carregando/vazio/erro dentro de um bloco. */
-export function AvisoDoBloco({ children }: { children: ReactNode }) {
-  return <div className="py-6 text-center text-[12px] text-muted-foreground">{children}</div>;
 }
 
 /**
@@ -346,17 +531,55 @@ export function CampoAdiado({
     };
   }, [texto, valor, aoMudar]);
   return (
-    <input
-      value={texto}
-      onChange={(e) => {
-        setTexto(e.target.value);
-      }}
+    <CaixaDeBusca
+      valor={texto}
+      aoMudar={setTexto}
       placeholder={placeholder}
-      aria-label={placeholder.replace(/[.…]+$/, "")}
-      className={cn(
-        "h-7 rounded-md border border-border/70 bg-background px-2 text-[12px] outline-none focus:border-[var(--brand)]",
-        className,
-      )}
+      rotulo={placeholder.replace(/[.…]+$/, "")}
+      ativo={valor !== ""}
+      className={className}
     />
+  );
+}
+
+/** Caixa de texto com lupa, no desenho dos filtros (36 px). */
+export function CaixaDeBusca({
+  valor,
+  aoMudar,
+  placeholder,
+  rotulo,
+  ativo,
+  className,
+  children,
+}: {
+  valor: string;
+  aoMudar: (v: string) => void;
+  placeholder: string;
+  rotulo: string;
+  ativo?: boolean | undefined;
+  className?: string | undefined;
+  /** Botão à direita dentro da caixa (ex.: limpar). */
+  children?: ReactNode;
+}) {
+  return (
+    <div className={cn("relative", className)}>
+      <Search
+        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+      <input
+        value={valor}
+        onChange={(e) => {
+          aoMudar(e.target.value);
+        }}
+        placeholder={placeholder}
+        aria-label={rotulo}
+        className={cn(
+          "h-9 w-full rounded-lg border border-border bg-card pr-8 pl-9 text-[13px] shadow-cartao outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
+          ativo && "border-brand/60 bg-brand-suave",
+        )}
+      />
+      {children}
+    </div>
   );
 }

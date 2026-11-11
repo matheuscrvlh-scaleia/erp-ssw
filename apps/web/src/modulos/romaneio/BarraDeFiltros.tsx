@@ -1,15 +1,17 @@
 /**
- * Base de data ("Contar as cargas pela") e barra de filtros do topo, comuns a todas as abas
- * menos Hoje, com a faixa "Filtrando por". Visual da tela de hoje.
+ * Filtros do Romaneio (slot `filtros` do `Pagina`), comuns a todas as abas menos Hoje: base de
+ * data ("Contar as cargas pela") e universo na primeira linha; período, parceiros e unidade
+ * sempre à vista; o resto em "Mais filtros"; e a faixa "Filtrando por".
  */
 import { SEM_TIPO } from "@erp/dominio/romaneio/hoje";
 import { type CampoData, type FiltrosRomaneio } from "@erp/shared/contratos/romaneio";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { formatarData } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronDown, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 
+import { Alternador } from "@/componentes/comum/Alternador";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import {
@@ -19,28 +21,24 @@ import {
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
 import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
+import { GatilhoFiltro } from "@/componentes/comum/GatilhoFiltro";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { type Intervalo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
 import { Calendar } from "@/componentes/ui/calendar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/componentes/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { dataDoCalendario, isoDoCalendario } from "@/lib/dia-do-calendario";
-import { cn } from "@/lib/utils";
 
 import { consultaOpcoes, consultaPerformanceAjudantes } from "./api";
 import { baseAtual, type BuscaRomaneio, codigosDaBusca, comSingular, veTodos } from "./busca";
-import { CampoAdiado } from "./componentes";
+import { CampoAdiado, SeletorDaLista } from "./componentes";
 
-const BASES_DATA: readonly { id: CampoData; rotulo: string }[] = [
-  { id: "emissao", rotulo: "Emissão" },
-  { id: "saida", rotulo: "Saída para entrega" },
+const BASES_DATA: readonly { valor: CampoData; rotulo: string }[] = [
+  { valor: "emissao", rotulo: "Emissão" },
+  { valor: "saida", rotulo: "Saída para entrega" },
 ];
+
+const CHAVE_MAIS_FILTROS = "romaneio:mais-filtros";
 
 interface PropsDaBarra {
   busca: BuscaRomaneio;
@@ -49,80 +47,37 @@ interface PropsDaBarra {
   filtros: FiltrosRomaneio;
 }
 
-/** Seletor da data que o período filtra (emissão ou saída para entrega). */
-export function BaseDeData({ busca: b, definir }: Pick<PropsDaBarra, "busca" | "definir">) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-border/70 bg-card px-3 py-2 text-[12px] text-muted-foreground">
-      <span>Contar as cargas pela</span>
-      <div role="group" className="flex rounded-md border border-border/70 p-0.5">
-        {BASES_DATA.map((base) => (
-          <button
-            key={base.id}
-            type="button"
-            aria-pressed={b.ver === base.id}
-            onClick={() => {
-              definir({ ver: base.id, page: 1 });
-            }}
-            className={cn(
-              "rounded-[5px] px-3 py-1 text-[12px] transition-colors",
-              b.ver === base.id
-                ? "bg-[var(--brand)] text-white"
-                : "text-muted-foreground hover:bg-muted",
-            )}
-          >
-            {base.rotulo}
-          </button>
-        ))}
-      </div>
-      <span className="text-foreground">{baseAtual(b.ver).ajuda}</span>
-    </div>
-  );
-}
-
 /** Data prevista de entrega (um dia só). */
 function FiltroPrevisao({ valor, aoMudar }: { valor: string; aoMudar: (v: string) => void }) {
   const [aberto, setAberto] = useState(false);
   return (
-    <div className="inline-flex items-center gap-1">
-      <Popover open={aberto} onOpenChange={setAberto}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn("h-7 text-[12px]", valor && "border-[var(--brand)]")}
-          >
-            <CalendarDays className="mr-1 h-3 w-3" />
-            {valor ? `Data prevista · ${formatarData(valor)}` : "Data prevista"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={valor ? dataDoCalendario(valor) : undefined}
-            onSelect={(d) => {
-              if (!d) return;
-              aoMudar(isoDoCalendario(d));
-              setAberto(false);
-            }}
-            autoFocus
-            className="pointer-events-auto p-3"
-          />
-        </PopoverContent>
-      </Popover>
-      {valor && (
-        <button
-          type="button"
-          aria-label="Limpar data prevista"
-          onClick={() => {
+    <Popover open={aberto} onOpenChange={setAberto}>
+      <PopoverTrigger asChild>
+        <GatilhoFiltro
+          ativo={Boolean(valor)}
+          rotulo="Data prevista"
+          aoLimpar={() => {
             aoMudar("");
           }}
-          className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <X className="h-3 w-3" />
-        </button>
-      )}
-      <InfoTip texto="Mostra só os CTRC com previsão de entrega neste dia. O prazo vem do SSW; CTRC sem prazo calculado não aparecem." />
-    </div>
+          <CalendarDays className="h-4 w-4 text-muted-foreground" aria-hidden />
+          {valor ? `Data prevista · ${formatarData(valor)}` : "Data prevista"}
+        </GatilhoFiltro>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={valor ? dataDoCalendario(valor) : undefined}
+          onSelect={(d) => {
+            if (!d) return;
+            aoMudar(isoDoCalendario(d));
+            setAberto(false);
+          }}
+          autoFocus
+          className="pointer-events-auto p-3"
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -153,6 +108,28 @@ function FiltroAjudante({
   );
 }
 
+/** "Mais filtros" aberto ou fechado: preferência do navegador (começa fechado). */
+function useMaisFiltros() {
+  const [aberto, setAberto] = useState(() => {
+    try {
+      return window.localStorage.getItem(CHAVE_MAIS_FILTROS) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const alternar = () => {
+    setAberto((atual) => {
+      try {
+        window.localStorage.setItem(CHAVE_MAIS_FILTROS, atual ? "0" : "1");
+      } catch {
+        // sem armazenamento: vale só nesta visita
+      }
+      return !atual;
+    });
+  };
+  return { aberto, alternar };
+}
+
 export function BarraDeFiltros({ busca: b, definir, intervalo, filtros }: PropsDaBarra) {
   const escopo = { campo: b.ver, inicio: intervalo.inicio, fim: intervalo.fim };
   const placas = comSingular(b.placas, b.placa);
@@ -174,6 +151,7 @@ export function BarraDeFiltros({ busca: b, definir, intervalo, filtros }: PropsD
   const nomeDoPagador = new Map(opcoes?.pagadores.map((p) => [p.cnpj, p.nome]));
   const descricaoDoCodigo = new Map(opcoes?.codigos.map((c) => [String(c.codigo), c.descricao]));
   const base = baseAtual(b.ver);
+  const maisFiltros = useMaisFiltros();
   const mudar = (mudanca: Partial<BuscaRomaneio>) => {
     definir({ ...mudanca, page: 1 });
   };
@@ -254,6 +232,21 @@ export function BarraDeFiltros({ busca: b, definir, intervalo, filtros }: PropsD
     },
   ];
 
+  // Quantos filtros ligados estão dentro de "Mais filtros" (aparece no botão quando fechado).
+  const ocultosAtivos = [
+    b.unidadeAtual.length > 0,
+    b.remetente.trim() !== "",
+    b.destino.trim() !== "",
+    codigos.length > 0,
+    b.tipos.length > 0,
+    b.previsao !== "",
+    placas.length > 0,
+    (b.tab === "ajudantes" ? ajudantes : motoristas).length > 0,
+    b.status !== "todos",
+    b.ctrc !== "",
+    b.nf !== "",
+  ].filter(Boolean).length;
+
   const algumFiltro = Boolean(
     b.remetente ||
     b.destino ||
@@ -305,6 +298,37 @@ export function BarraDeFiltros({ busca: b, definir, intervalo, filtros }: PropsD
 
   return (
     <>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="label-xs">Contar as cargas pela</span>
+        <Alternador
+          rotulo="Contar as cargas pela"
+          tamanho="pequeno"
+          opcoes={BASES_DATA}
+          valor={b.ver}
+          aoMudar={(ver) => {
+            definir({ ver, page: 1 });
+          }}
+        />
+        <span className="text-[13px] text-foreground">{base.ajuda}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <Button
+            variant={verTodos ? "default" : "outline"}
+            size="sm"
+            aria-pressed={verTodos}
+            onClick={() => {
+              mudar({ verTodos: !b.verTodos, recorte: "todos" });
+            }}
+          >
+            {verTodos ? "Ver só romaneados" : "Ver todos os CTRC"}
+          </Button>
+          <InfoTip texto="Por padrão a tela mostra apenas o que saiu para entrega: entregues, em rota, voltou sem entregar e travado em ocorrência. Ative “Ver todos os CTRC” para incluir também as cargas paradas, sem saída para entrega." />
+        </span>
+        <span className="ml-auto text-[12.5px] text-muted-foreground tabular-nums">
+          {intervalo.inicio === intervalo.fim
+            ? formatarData(intervalo.inicio)
+            : `${formatarData(intervalo.inicio)} – ${formatarData(intervalo.fim)}`}
+        </span>
+      </div>
       <FiltrosAvancados ativos={algumFiltro} aoLimpar={limparTudo}>
         <FiltroPeriodo
           periodo={b.periodo}
@@ -333,164 +357,157 @@ export function BarraDeFiltros({ busca: b, definir, intervalo, filtros }: PropsD
           }}
           monoespacado
         />
-        <FiltroMultiplo
-          rotulo="Local. atual"
-          opcoes={opcoes?.locaisAtuais.map((valor) => ({ valor }))}
-          selecionados={b.unidadeAtual}
-          aoMudar={(unidadeAtual) => {
-            mudar({ unidadeAtual });
-          }}
-          monoespacado
-        />
-        <FiltroTexto
-          rotulo="Remetente"
-          valor={b.remetente}
-          aoMudar={(remetente) => {
-            mudar({ remetente });
-          }}
-        />
-        <FiltroTexto
-          rotulo="Destino"
-          valor={b.destino}
-          aoMudar={(destino) => {
-            mudar({ destino });
-          }}
-        />
-        <FiltroMultiplo
-          rotulo="Código"
-          opcoes={opcoes?.codigos.map((c) => ({
-            valor: String(c.codigo),
-            rotulo: `#${c.codigo}`,
-            detalhe: c.descricao,
-          }))}
-          selecionados={codigos}
-          aoMudar={(v) => {
-            mudar({ codigos: v, codigo: "" });
-          }}
-          resumo={(sel) =>
-            sel.length === 1 && sel[0] !== undefined
-              ? `#${sel[0]} ${descricaoDoCodigo.get(sel[0]) ?? ""}`.trim()
-              : `${sel.length} códigos`
-          }
-          textoVazio="todos"
-        />
-        <FiltroMultiplo
-          rotulo="Tipo documento"
-          opcoes={
-            opcoes && [
-              ...opcoes.tipos.map((valor) => ({ valor })),
-              { valor: SEM_TIPO, rotulo: "sem tipo" },
-            ]
-          }
-          selecionados={b.tipos}
-          aoMudar={(tipos) => {
-            mudar({ tipos });
-          }}
-          textoVazio="todos"
-        />
-        <FiltroPrevisao
-          valor={b.previsao}
-          aoMudar={(previsao) => {
-            mudar({ previsao });
-          }}
-        />
-        <InfoTip
-          className="self-center"
-          texto="Filtros independentes de veículo e de motorista, com múltipla seleção. As listas são encadeadas: ao escolher placas, aparecem só os motoristas que rodaram nelas (e vice-versa). Quando a entrega não foi registrada pelo aplicativo do motorista, a carga aparece sem placa e sem motorista."
-        />
-        <FiltroMultiplo
-          rotulo="Placa"
-          opcoes={opcoesDePlaca?.map((valor) => ({ valor }))}
-          selecionados={placas}
-          aoMudar={(v) => {
-            mudar({ placas: v, placa: "" });
-          }}
-          monoespacado
-          textoVazio="todas"
-        />
-        {b.tab !== "ajudantes" && (
-          <FiltroMultiplo
-            rotulo="Motorista"
-            opcoes={opcoesDeMotorista?.map((valor) => ({ valor }))}
-            selecionados={motoristas}
-            aoMudar={(v) => {
-              mudar({ motoristas: v, motorista: "" });
-            }}
-            textoVazio="todos"
-          />
-        )}
-        {b.tab === "ajudantes" && (
-          <FiltroAjudante
-            filtros={filtros}
-            selecionados={ajudantes}
-            aoMudar={(v) => {
-              mudar({ ajudantes: v, ajudante: "" });
-            }}
-          />
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 text-[12px]">
-              Status: {b.status === "andamento" ? "Só em andamento" : "Todos"}{" "}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem
-              onSelect={() => {
-                mudar({ status: "todos" });
-              }}
-            >
-              Todos
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => {
-                mudar({ status: "andamento" });
-              }}
-            >
-              Só em andamento (sem entregues e baixados)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <InfoTip
-          className="self-center"
-          texto="“Todos” mostra o período inteiro na tabela; “Só em andamento” esconde as cargas já entregues e as baixadas sem entrega (devolução, cancelamento…). Os cards acima continuam mostrando o total do período."
-        />
-        <CampoAdiado
-          valor={b.ctrc}
-          aoMudar={(ctrc) => {
-            mudar({ ctrc });
-          }}
-          placeholder="CTRC..."
-          className="w-[150px]"
-        />
-        <CampoAdiado
-          valor={b.nf}
-          aoMudar={(nf) => {
-            mudar({ nf });
-          }}
-          placeholder="Nota fiscal..."
-          className="w-[150px]"
-        />
         <Button
-          variant={verTodos ? "default" : "outline"}
-          size="sm"
-          className="h-7 text-[12px]"
-          onClick={() => {
-            mudar({ verTodos: !b.verTodos, recorte: "todos" });
-          }}
+          variant="outline"
+          className="h-9 text-[13px]"
+          aria-expanded={maisFiltros.aberto}
+          onClick={maisFiltros.alternar}
         >
-          {verTodos ? "Ver só romaneados" : "Ver todos os CTRC"}
+          <SlidersHorizontal aria-hidden />
+          Mais filtros
+          {!maisFiltros.aberto && ocultosAtivos > 0 && (
+            <span className="rounded-full bg-primary px-1.5 text-[12px] font-bold text-primary-foreground tabular-nums">
+              {ocultosAtivos}
+            </span>
+          )}
+          {maisFiltros.aberto ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
         </Button>
-        <InfoTip
-          className="self-center"
-          texto="Por padrão a tela mostra apenas o que saiu para entrega: entregues, em rota, voltou sem entregar e travado em ocorrência. Ative “Ver todos os CTRC” para incluir também as cargas paradas, sem saída para entrega."
-        />
-        <span className="ml-auto text-[11px] text-muted-foreground">
-          {intervalo.inicio === intervalo.fim
-            ? formatarData(intervalo.inicio)
-            : `${formatarData(intervalo.inicio)} – ${formatarData(intervalo.fim)}`}
-        </span>
+        {maisFiltros.aberto && (
+          <>
+            <span className="basis-full" aria-hidden />
+            <FiltroMultiplo
+              rotulo="Local. atual"
+              opcoes={opcoes?.locaisAtuais.map((valor) => ({ valor }))}
+              selecionados={b.unidadeAtual}
+              aoMudar={(unidadeAtual) => {
+                mudar({ unidadeAtual });
+              }}
+              monoespacado
+            />
+            <FiltroTexto
+              rotulo="Remetente"
+              valor={b.remetente}
+              aoMudar={(remetente) => {
+                mudar({ remetente });
+              }}
+            />
+            <FiltroTexto
+              rotulo="Destino"
+              valor={b.destino}
+              aoMudar={(destino) => {
+                mudar({ destino });
+              }}
+            />
+            <FiltroMultiplo
+              rotulo="Código"
+              opcoes={opcoes?.codigos.map((c) => ({
+                valor: String(c.codigo),
+                rotulo: `#${c.codigo}`,
+                detalhe: c.descricao,
+              }))}
+              selecionados={codigos}
+              aoMudar={(v) => {
+                mudar({ codigos: v, codigo: "" });
+              }}
+              resumo={(sel) =>
+                sel.length === 1 && sel[0] !== undefined
+                  ? `#${sel[0]} ${descricaoDoCodigo.get(sel[0]) ?? ""}`.trim()
+                  : `${sel.length} códigos`
+              }
+              textoVazio="todos"
+            />
+            <FiltroMultiplo
+              rotulo="Tipo documento"
+              opcoes={
+                opcoes && [
+                  ...opcoes.tipos.map((valor) => ({ valor })),
+                  { valor: SEM_TIPO, rotulo: "sem tipo" },
+                ]
+              }
+              selecionados={b.tipos}
+              aoMudar={(tipos) => {
+                mudar({ tipos });
+              }}
+              textoVazio="todos"
+            />
+            <FiltroPrevisao
+              valor={b.previsao}
+              aoMudar={(previsao) => {
+                mudar({ previsao });
+              }}
+            />
+            <InfoTip
+              className="self-center"
+              texto="Mostra só os CTRC com previsão de entrega neste dia. O prazo vem do SSW; CTRC sem prazo calculado não aparecem."
+            />
+            <FiltroMultiplo
+              rotulo="Placa"
+              opcoes={opcoesDePlaca?.map((valor) => ({ valor }))}
+              selecionados={placas}
+              aoMudar={(v) => {
+                mudar({ placas: v, placa: "" });
+              }}
+              monoespacado
+              textoVazio="todas"
+            />
+            {b.tab !== "ajudantes" && (
+              <FiltroMultiplo
+                rotulo="Motorista"
+                opcoes={opcoesDeMotorista?.map((valor) => ({ valor }))}
+                selecionados={motoristas}
+                aoMudar={(v) => {
+                  mudar({ motoristas: v, motorista: "" });
+                }}
+                textoVazio="todos"
+              />
+            )}
+            {b.tab === "ajudantes" && (
+              <FiltroAjudante
+                filtros={filtros}
+                selecionados={ajudantes}
+                aoMudar={(v) => {
+                  mudar({ ajudantes: v, ajudante: "" });
+                }}
+              />
+            )}
+            <InfoTip
+              className="self-center"
+              texto="Filtros independentes de veículo e de motorista, com múltipla seleção. As listas são encadeadas: ao escolher placas, aparecem só os motoristas que rodaram nelas (e vice-versa). Quando a entrega não foi registrada pelo aplicativo do motorista, a carga aparece sem placa e sem motorista."
+            />
+            <SeletorDaLista
+              rotulo="Status"
+              valor={b.status}
+              aoMudar={(status) => {
+                mudar({ status });
+              }}
+              opcoes={[
+                { valor: "todos", rotulo: "Todos" },
+                { valor: "andamento", rotulo: "Só em andamento (sem entregues e baixados)" },
+              ]}
+              resumo={b.status === "andamento" ? "Só em andamento" : "Todos"}
+            />
+            <InfoTip
+              className="self-center"
+              texto="“Todos” mostra o período inteiro na tabela; “Só em andamento” esconde as cargas já entregues e as baixadas sem entrega (devolução, cancelamento…). Os cards acima continuam mostrando o total do período."
+            />
+            <CampoAdiado
+              valor={b.ctrc}
+              aoMudar={(ctrc) => {
+                mudar({ ctrc });
+              }}
+              placeholder="CTRC..."
+              className="w-[160px]"
+            />
+            <CampoAdiado
+              valor={b.nf}
+              aoMudar={(nf) => {
+                mudar({ nf });
+              }}
+              placeholder="Nota fiscal..."
+              className="w-[160px]"
+            />
+          </>
+        )}
       </FiltrosAvancados>
       <FiltrandoPor etiquetas={etiquetas} />
     </>

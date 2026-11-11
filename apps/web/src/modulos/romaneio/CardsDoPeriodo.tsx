@@ -5,8 +5,30 @@ import {
   formatarPercentual,
   formatarPeso,
 } from "@erp/shared/formatacao";
+import {
+  Banknote,
+  CirclePause,
+  FileText,
+  Package,
+  PackageCheck,
+  PackageX,
+  Receipt,
+  TrendingDown,
+  TriangleAlert,
+  Truck,
+  Warehouse,
+  Weight,
+} from "lucide-react";
 
-import { AlternarCardsSecundarios, FaixaChip, GradeCards, TotCard } from "./componentes";
+import { Painel } from "@/componentes/comum/Painel";
+
+import {
+  AlternarCardsSecundarios,
+  type ChaveDaFaixa,
+  FaixasDePrazo,
+  GradeDeIndicadores,
+  Indicador,
+} from "./componentes";
 
 export interface PropsCardsDoPeriodo {
   totais: TotaisDoTopo | undefined;
@@ -15,6 +37,17 @@ export interface PropsCardsDoPeriodo {
   cardsSecundarios: { ocultos: boolean; alternar: () => void };
   aoAbrir: (recorte: Recorte) => void;
 }
+
+const RECORTE_DA_FAIXA: Record<ChaveDaFaixa, Recorte> = {
+  vencida: "em_rota_vencida",
+  hoje: "em_rota_hoje",
+  futuro: "em_rota_futuro",
+  sem_prev: "em_rota_sem_prev",
+};
+
+/** Linha de apoio do card: as partes que existem, separadas por " · ". */
+const juntar = (...partes: (string | undefined)[]) =>
+  partes.filter((p): p is string => Boolean(p)).join(" · ");
 
 /**
  * Totalizadores do período: ficam no topo em todas as abas menos Performance por romaneio, onde
@@ -33,168 +66,167 @@ export function CardsDoPeriodo({
     base > 0 ? `${formatarPercentual(n / base)} do total do período` : undefined;
   const otifPct = t && base > 0 ? (t.otifProblemas / base) * 100 : null;
   const n = (v: number | undefined) => formatarInteiro(v ?? 0);
+  const abrir = (recorte: Recorte) => () => {
+    aoAbrir(recorte);
+  };
   return (
-    <div className="space-y-1">
-      <GradeCards>
-        <TotCard
+    <div className="space-y-4">
+      <GradeDeIndicadores>
+        <Indicador
           rotulo="CTRC"
+          icone={FileText}
+          neutro
+          status="bom"
           valor={n(t?.ctes)}
-          base="Total do período"
+          detalhe="Total do período"
           dica="Todos os CTRCs do período e dos filtros escolhidos, sem os que foram cancelados no mesmo dia da emissão. É a base dos percentuais desta tela."
-          aoClicar={() => {
-            aoAbrir("todos");
-          }}
+          aoClicar={abrir("todos")}
         />
-        <TotCard
+        <Indicador
           rotulo="Peso total"
+          icone={Weight}
+          neutro
+          status="bom"
           valor={formatarPeso(t?.peso ?? 0, { fixas: true })}
+          detalhe=""
           dica="Peso somado das mercadorias do período. Acima de 1.000 kg aparece em toneladas."
         />
-        <TotCard
+        <Indicador
           rotulo="Volumes"
+          icone={Package}
+          neutro
+          status="bom"
           valor={n(t?.volumes)}
+          detalhe=""
           dica="Quantidade de volumes somada de todas as cargas do período."
         />
-        <TotCard
+        <Indicador
           rotulo="Frete total"
+          icone={Banknote}
+          neutro
+          status="bom"
           valor={formatarMoeda(t?.frete ?? 0)}
+          detalhe=""
           dica="Valor de frete somado de todas as cargas do período."
         />
-        <TotCard
+      </GradeDeIndicadores>
+      <GradeDeIndicadores max={5}>
+        <Indicador
           rotulo="Em rota de entrega"
-          tom="alert"
+          icone={Truck}
+          neutro
+          status="alerta"
           valor={n(t?.emRota)}
-          base={pctBase(t?.emRota ?? 0)}
-          nota="Saiu para entrega e ainda não foi entregue."
+          detalhe={juntar(pctBase(t?.emRota ?? 0), "Saiu para entrega e ainda não foi entregue.")}
           dica="Mesma regra da aba Hoje: cargas que saíram para entrega e ainda não foram entregues. Inclui quem recebeu ocorrência depois da saída (ausente, recusa, pendência…), que também aparece em Travado em ocorrência, e quem foi baixado sem entrega. Vendo por Saída para entrega, é o total de CT-e menos os entregues."
-          aoClicar={() => {
-            aoAbrir("em_rota");
-          }}
+          aoClicar={abrir("em_rota")}
         />
-        <TotCard
+        <Indicador
           rotulo="Entregues"
-          tom="positive"
+          icone={PackageCheck}
+          neutro
+          status="bom"
           valor={n(t?.entregues)}
-          base={pctBase(t?.entregues ?? 0) ?? "sem base no período"}
+          detalhe={pctBase(t?.entregues ?? 0) ?? "sem base no período"}
           dica="Cargas com entrega confirmada ao destinatário. Conta todo o período; nas abas de Performance o mesmo indicador considera só as cargas que já saíram para entrega, por isso os números podem diferir levemente."
-          aoClicar={() => {
-            aoAbrir("entregues");
-          }}
+          aoClicar={abrir("entregues")}
         />
         {!cardsSecundarios.ocultos && (
-          <TotCard
+          <Indicador
             rotulo="Baixado sem entrega"
-            tom="alert"
+            icone={PackageX}
+            neutro
+            status="alerta"
             valor={n(t?.baixadoSemEntrega)}
-            base={pctBase(t?.baixadoSemEntrega ?? 0)}
+            detalhe={pctBase(t?.baixadoSemEntrega ?? 0) ?? ""}
             dica="Cargas encerradas por baixa formal, sem entrega: devolução ao parceiro, coleta cancelada, mercadoria indenizada, confiscada ou liberada pelo seguro, CTRC substituído, cancelado ou emitido só para efeito de frete. NÃO é a mesma coisa que a Taxa de retorno das abas de Performance, que conta cargas que voltaram com o código 13 — por isso os dois números são diferentes."
-            aoClicar={() => {
-              aoAbrir("devolvido");
-            }}
+            aoClicar={abrir("devolvido")}
           />
         )}
-        <TotCard
+        <Indicador
           rotulo="Travado em ocorrência"
-          tom="alert"
+          icone={CirclePause}
+          neutro
+          status="alerta"
           valor={n(t?.travado)}
-          base={
+          detalhe={
             t?.travadoMotivo
               ? `Principal: ${t.travadoMotivo.toLowerCase()}`
-              : pctBase(t?.travado ?? 0)
+              : (pctBase(t?.travado ?? 0) ?? "")
           }
           dica={`Cargas com pendência do cliente ou da operação que ainda não saíram de novo para entrega. Só uma nova saída para entrega tira a carga daqui; agendamento, chegada na unidade ou "pendência solucionada" não bastam.${t?.travadoMotivo ? ` Motivo mais frequente: ${t.travadoMotivo.toLowerCase()}.` : ""}`}
-          aoClicar={() => {
-            aoAbrir("travado");
-          }}
+          aoClicar={abrir("travado")}
         />
         {verTodos && !cardsSecundarios.ocultos && (
-          <TotCard
+          <Indicador
             rotulo="Parado sem saída"
-            tom="alert"
+            icone={Warehouse}
+            neutro
+            status="alerta"
             valor={n(t?.parado)}
-            base={pctBase(t?.parado ?? 0)}
+            detalhe={pctBase(t?.parado ?? 0) ?? ""}
             dica="Cargas que ainda não saíram para entrega e nunca tiveram pendência, incluindo as recém-criadas sem nenhuma movimentação registrada: seguem na unidade aguardando programação. Carga com pendência fica em Travado em ocorrência."
-            aoClicar={() => {
-              aoAbrir("parado");
-            }}
+            aoClicar={abrir("parado")}
           />
         )}
-        <TotCard
+      </GradeDeIndicadores>
+      <GradeDeIndicadores>
+        <Indicador
           rotulo="TDE romaneado"
+          icone={Receipt}
+          neutro
+          status="bom"
           valor={n(t?.tdeRomaneado)}
-          base={`${n(t?.tdeRomaneadoEmRota)} em rota · ${n(t?.tdeRomaneadoEntregue)} entregues · ${formatarMoeda(t?.tdeRomaneadoValor ?? 0)} de TDE · ${n(t?.tdeCtes)} CTRC com TDE no período`}
+          detalhe={`${n(t?.tdeRomaneadoEmRota)} em rota · ${n(t?.tdeRomaneadoEntregue)} entregues · ${formatarMoeda(t?.tdeRomaneadoValor ?? 0)} de TDE · ${n(t?.tdeCtes)} CTRC com TDE no período`}
           dica="Cargas com TDE (taxa de dificuldade de entrega, do relatório 455) que já saíram para entrega: em rota ou entregues. As que ainda aguardam programação estão no card “TDE aguardando programação” da tela Performance."
-          aoClicar={() => {
-            aoAbrir("tde_romaneado");
-          }}
+          aoClicar={abrir("tde_romaneado")}
         />
         {otifVisivel && (
-          <TotCard
+          <Indicador
             rotulo="CTRC com problema (OTIF)"
-            tom="alert"
+            icone={TriangleAlert}
+            neutro
+            status="alerta"
             valor={otifPct == null ? "—" : formatarPercentual(otifPct, { escala: "cem" })}
-            base={`${n(t?.otifProblemas)} CTRC`}
+            detalhe={`${n(t?.otifProblemas)} CTRC`}
             dica="De cada 100 cargas do período, quantas tiveram algum problema no percurso — pendência do cliente ou da operação — mesmo que tenham sido entregues no prazo. Quanto menor, melhor."
-            aoClicar={() => {
-              aoAbrir("otif");
-            }}
+            aoClicar={abrir("otif")}
           />
         )}
-        <TotCard
+        <Indicador
           rotulo="Prejuízo"
+          icone={TrendingDown}
+          neutro
+          status="ruim"
           valor={formatarMoeda(t?.prejuizoFrete ?? 0)}
-          base={`${n(t?.prejuizoCtes)} CTRC`}
+          detalhe={`${n(t?.prejuizoCtes)} CTRC`}
           dica="Frete das cargas com problema de responsabilidade da transportadora no período."
-          aoClicar={() => {
-            aoAbrir("prejuizo");
-          }}
+          aoClicar={abrir("prejuizo")}
         />
-      </GradeCards>
-      <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
-        <span className="text-muted-foreground">
-          Em rota, por prazo{!verTodos ? " (somente romaneados)" : ""}:
-        </span>
-        <FaixaChip
-          rotulo="Vencida"
-          valor={t?.emRotaVencida ?? 0}
-          tom="ruim"
-          aoClicar={() => {
-            aoAbrir("em_rota_vencida");
-          }}
+      </GradeDeIndicadores>
+      <div className="flex justify-end">
+        <AlternarCardsSecundarios
+          ocultos={cardsSecundarios.ocultos}
+          quantos={verTodos ? 2 : 1}
+          aoClicar={cardsSecundarios.alternar}
         />
-        <FaixaChip
-          rotulo="Vencendo no dia"
-          valor={t?.emRotaHoje ?? 0}
-          tom="alerta"
-          aoClicar={() => {
-            aoAbrir("em_rota_hoje");
-          }}
-        />
-        <FaixaChip
-          rotulo="Vencimento futuro"
-          valor={t?.emRotaFuturo ?? 0}
-          tom="ok"
-          aoClicar={() => {
-            aoAbrir("em_rota_futuro");
-          }}
-        />
-        <button
-          type="button"
-          className="text-muted-foreground underline-offset-2 hover:underline"
-          onClick={() => {
-            aoAbrir("em_rota_sem_prev");
-          }}
-        >
-          sem prazo definido: {n(t?.emRotaSemPrev)}
-        </button>
-        <span className="ml-auto">
-          <AlternarCardsSecundarios
-            ocultos={cardsSecundarios.ocultos}
-            quantos={verTodos ? 2 : 1}
-            aoClicar={cardsSecundarios.alternar}
-          />
-        </span>
       </div>
+      <Painel classeDoCorpo="px-5 py-4">
+        <FaixasDePrazo
+          rotulo={`Em rota, por prazo${!verTodos ? " (somente romaneados)" : ""}`}
+          faixas={
+            t && {
+              vencida: t.emRotaVencida,
+              hoje: t.emRotaHoje,
+              futuro: t.emRotaFuturo,
+              semPrev: t.emRotaSemPrev,
+            }
+          }
+          aoAbrir={(faixa) => {
+            aoAbrir(RECORTE_DA_FAIXA[faixa]);
+          }}
+        />
+      </Painel>
     </div>
   );
 }
