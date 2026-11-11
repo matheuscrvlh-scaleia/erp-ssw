@@ -40,17 +40,14 @@ import {
   SeletorDeTexto,
   SeletorDeTipoDocumento,
 } from "@/modulos/filtros/componentes";
-import {
-  nomesDosPagadores,
-  nomesDosPagadoresAgrupados,
-  unirParceiros,
-} from "@/modulos/filtros/regras";
+import { nomesDosPagadoresAgrupados, unirParceiros } from "@/modulos/filtros/regras";
 import { caminhoDaLista } from "@/modulos/listagem/busca";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";
 import {
   type ChaveDeOrdem,
   COR_DO_NIVEL,
+  escopoDaSerie,
   filtrarPorCard,
   type FiltroDoCard,
   kpisDoRanking,
@@ -196,9 +193,18 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
     setFiltroCard((atual) => (atual === f ? "todos" : f));
   };
 
-  const nomesParceiros = nomesDosPagadores(pagadores.data ?? [], parceirosCnpj);
+  // Nos dois seletores, CNPJs de mesmo nome (sem acento/caixa) contam como um parceiro, como hoje.
+  const nomesParceiros = nomesDosPagadoresAgrupados(pagadores.data ?? [], parceirosCnpj);
   const nomesAgrupados = nomesDosPagadoresAgrupados(pagadores.data ?? [], parceirosAgrupados);
-  const rotuloTipos = tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t)).join(", ");
+  const rotulosTipos = tipos.map((t) => (t === SEM_TIPO_DOCUMENTO ? "sem tipo" : t));
+  const rotuloTipos = rotulosTipos.join(", ");
+  const escopoDoGrafico = escopoDaSerie({
+    nomesParceiros: nomesDosPagadoresAgrupados(pagadores.data ?? [], parceiros),
+    destino,
+    remetente,
+    filiais,
+    tipos: rotulosTipos,
+  });
   const etiquetas: EtiquetaFiltroOpcional[] = [
     nomesParceiros.length > 0 && {
       rotulo: nomesParceiros.length === 1 ? "Parceiro" : "Parceiros",
@@ -462,7 +468,7 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
           <div>
             <h3 className="text-[13px] font-semibold">SLA mês a mês — {ano}</h3>
             <p className="text-[11px] text-muted-foreground">
-              por {ROTULO_DA_BASE[base]} · não segue o período acima
+              {escopoDoGrafico} · por {ROTULO_DA_BASE[base]} · não segue o período acima
             </p>
           </div>
           <select

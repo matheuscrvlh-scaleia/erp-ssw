@@ -642,6 +642,14 @@ export function PaginaPerformance() {
           entrada: filtros,
           codigos: busca.codigos,
           etiquetas: etiquetas.flatMap((e) => (e ? [{ rotulo: e.rotulo, valor: e.valor }] : [])),
+          filtrosDoExcel: {
+            unidades: nomesUnidades,
+            parceiros: nomesParceiros,
+            remetente: busca.remetente,
+            destino: busca.destino,
+            filiais: busca.filiais,
+            codigos: busca.codigos,
+          },
         }}
       />
 

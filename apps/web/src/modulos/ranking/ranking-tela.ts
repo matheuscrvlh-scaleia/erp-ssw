@@ -112,3 +112,32 @@ export function ordenarLinhas(
     return sinal * (va - vb);
   });
 }
+
+/**
+ * Escopo do gráfico mês a mês, antes de "por <base> · não segue o período acima": "todos os
+ * parceiros", o nome do parceiro ou "N parceiros" (CNPJs de mesmo nome contam como um), e os
+ * demais filtros. origem: escopoSerie (RankingTabela.tsx)
+ */
+export function escopoDaSerie(f: {
+  nomesParceiros: readonly string[];
+  destino: string;
+  remetente: string;
+  filiais: readonly string[];
+  tipos: readonly string[];
+}): string {
+  const parceiros =
+    f.nomesParceiros.length === 0
+      ? "todos os parceiros"
+      : f.nomesParceiros.length === 1
+        ? (f.nomesParceiros[0] ?? "")
+        : `${String(f.nomesParceiros.length)} parceiros`;
+  return [
+    parceiros,
+    f.destino.trim() && `destino ${f.destino.trim()}`,
+    f.remetente.trim() && `remetente ${f.remetente.trim()}`,
+    f.filiais.length > 0 && `filiais ${f.filiais.join(", ")}`,
+    f.tipos.length > 0 && `tipo ${f.tipos.join(", ")}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}

@@ -309,6 +309,8 @@ describe("relatório de período", () => {
     });
     expect(subtituloDoPrejuizo([])).toBe("código 13");
     expect(subtituloDoPrejuizo(["13", "20"])).toBe("códigos 13, 20");
+    // Um código só fica no singular, como hoje.
+    expect(subtituloDoPrejuizo(["25"])).toBe("código 25");
     expect(statusDaUnidade(96, 95)).toBe("Verde");
     expect(statusDaUnidade(91, 95)).toBe("Amarelo");
     expect(statusDaUnidade(89, 95)).toBe("Vermelho");

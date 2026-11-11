@@ -48,6 +48,8 @@ export interface AbaExcel {
   nome: string;
   /** Título no topo da aba. Padrão: o título do arquivo. */
   titulo?: string | undefined;
+  /** Linhas de contexto entre o topo e a tabela (filtros, totais). */
+  notas?: readonly string[] | undefined;
   colunas: readonly ColunaExportacao[];
   linhas: readonly LinhaExportacao[];
 }
@@ -55,6 +57,10 @@ export interface AbaExcel {
 export interface OpcoesExcel extends OpcoesComMarca {
   /** Nome do arquivo sem extensão; o sufixo "-dd-mm-aaaa" entra se não vier. */
   arquivo: string;
+  /** Nome da aba principal. Padrão: o título. */
+  nomeDaAba?: string | undefined;
+  /** Linhas de contexto da aba principal, entre o topo e a tabela (ex.: "Filtros aplicados:"). */
+  notas?: readonly string[] | undefined;
   /** Abas depois da principal (ex.: "SLA por unidade" no relatório de período). */
   abasExtras?: readonly AbaExcel[] | undefined;
 }

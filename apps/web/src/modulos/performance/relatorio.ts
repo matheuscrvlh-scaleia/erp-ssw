@@ -6,10 +6,19 @@ import {
   statusDaUnidade,
   subtituloDoPrejuizo,
 } from "@erp/dominio/performance/relatorio";
-import { type BlocoProducao, type RelatorioPeriodo } from "@erp/shared/contratos/performance";
-import { formatarInteiro, formatarMoeda, formatarPercentual } from "@erp/shared/formatacao";
+import {
+  type BlocoProducao,
+  type Previstos,
+  type RelatorioPeriodo,
+} from "@erp/shared/contratos/performance";
+import {
+  formatarData,
+  formatarInteiro,
+  formatarMoeda,
+  formatarPercentual,
+} from "@erp/shared/formatacao";
 
-import { type AbaExcel, type ColunaExportacao } from "@/lib/exportacao";
+import { type AbaExcel, type ColunaExportacao, type OpcoesExcel } from "@/lib/exportacao";
 
 type TomDoIndicador = "neutro" | "bom" | "ruim";
 
@@ -269,4 +278,224 @@ export function abaSlaPorUnidade(r: RelatorioPeriodo): AbaExcel {
     };
   });
   return { nome: "SLA por unidade", titulo: "SLA por unidade", colunas, linhas };
+}
+
+// ---------------------------------------------------------------- Excel (como o atual)
+// origem: exportRelatorioXlsx (relatorio-semanal-export.ts, sistema atual). Números saem crus
+// (sem formato de coluna) e percentuais como texto "x,x%" / "—", como hoje.
+
+const pctTexto = (v: number | null) => formatarPercentual(v, { escala: "cem" });
+
+/** Filtros herdados da tela, por extenso, para as notas da aba "Resumo". */
+export interface FiltrosDoExcel {
+  unidades: readonly string[];
+  parceiros: readonly string[];
+  remetente: string;
+  destino: string;
+  filiais: readonly string[];
+  codigos: readonly string[];
+}
+
+/** Notas "Filtros aplicados:" da aba "Resumo" (vazia sem filtro). origem: filtrosLines */
+export function notasDosFiltros(f: FiltrosDoExcel): string[] {
+  const partes: string[] = [];
+  if (f.unidades.length > 0) partes.push(`Unidades: ${f.unidades.join(", ")}`);
+  if (f.parceiros.length > 0) partes.push(`Parceiros: ${f.parceiros.join(", ")}`);
+  if (f.remetente.trim()) partes.push(`Remetente: ${f.remetente.trim()}`);
+  if (f.destino.trim()) partes.push(`Destino: ${f.destino.trim()}`);
+  if (f.filiais.length > 0) partes.push(`Filiais: ${f.filiais.join(", ")}`);
+  if (f.codigos.length > 0) partes.push(`Códigos: ${f.codigos.join(", ")}`);
+  return partes.length > 0 ? ["Filtros aplicados:", ...partes.map((p) => `• ${p}`)] : [];
+}
+
+/** Subtítulo de todas as abas. origem: subtituloPeriodo */
+export function subtituloDoExcel(r: RelatorioPeriodo): string {
+  const principal = `Período: ${formatarData(r.periodo.inicio)} a ${formatarData(r.periodo.fim)}`;
+  const c = r.comparativo;
+  return c
+    ? `${principal} · comparativo: ${formatarData(c.periodo.inicio)} a ${formatarData(c.periodo.fim)}`
+    : principal;
+}
+
+/** Indicadores da aba "Resumo", na ordem e com os rótulos de hoje. origem: blocoIndicadores */
+function indicadoresDoResumo(
+  a: BlocoProducao,
+  codigosDoFiltro: readonly string[],
+): { rotulo: string; valor: string | number }[] {
+  const d = derivadosDoBloco(a);
+  return [
+    { rotulo: "CT-e emitidos", valor: a.totalCtrcs },
+    { rotulo: "Entregues", valor: a.entregues },
+    { rotulo: "Finalizado em Sistema", valor: a.finalizadoSistema },
+    { rotulo: "% Produção (entregues/emitidos)", valor: pctTexto(d.pctProducao) },
+    { rotulo: "No prazo", valor: a.noPrazo },
+    { rotulo: "Fora do prazo", valor: a.foraPrazo },
+    { rotulo: "% No prazo", valor: pctTexto(d.pctNoPrazo) },
+    { rotulo: "% Penalizado Pontualidade", valor: pctTexto(d.pctPenalizadoOp) },
+    { rotulo: "% Penalizado Operacional", valor: pctTexto(d.pctPenalizadoPont) },
+    { rotulo: "Pendentes de prazo", valor: a.pendentePrazo },
+    { rotulo: "Sem prazo definido", valor: a.semPrazo },
+    { rotulo: "SLA de Pontualidade", valor: pctTexto(a.slaOperacionalPct) },
+    { rotulo: "SLA Operacional", valor: pctTexto(a.slaPontualidadePct) },
+    { rotulo: "SLA Cliente", valor: pctTexto(a.slaClientePct) },
+    { rotulo: "SLA Cliente — no prazo", valor: a.noPrazoCliente },
+    { rotulo: "SLA Cliente — fora do prazo", valor: a.foraPrazoCliente },
+    { rotulo: "SLA Cliente — total (universo)", valor: a.totalCliente },
+    { rotulo: "Taxa de retorno (código 13)", valor: pctTexto(a.taxaRetornoPct) },
+    { rotulo: "Valor de frete romaneado", valor: formatarMoeda(a.valorFreteTotal) },
+    {
+      rotulo: `Prejuízo (R$) — ${subtituloDoPrejuizo(codigosDoFiltro)}`,
+      valor: formatarMoeda(a.valorFretePerdido),
+    },
+    { rotulo: "Prejuízo (% dos romaneados)", valor: pctTexto(a.pctFretePerdido) },
+  ];
+}
+
+/** Aba "Resumo": `Indicador | Valor` (comparativo: períodos principal e comparativo). */
+export function tabelaDoResumo(
+  r: RelatorioPeriodo,
+  codigosDoFiltro: readonly string[],
+): Pick<OpcoesExcel, "colunas" | "linhas"> {
+  const c = r.comparativo;
+  const principal = indicadoresDoResumo(r.atual, codigosDoFiltro);
+  const comparado = c ? indicadoresDoResumo(c.atual, codigosDoFiltro) : [];
+  const linhas = [
+    ...principal.map((i, n) => ({
+      indicador: i.rotulo,
+      valor: i.valor,
+      comparativo: comparado[n]?.valor ?? "",
+    })),
+    {
+      indicador: "Penalizantes — ocorrências",
+      valor: r.penalizantes.ocorrencias,
+      comparativo: c?.penalizantes.ocorrencias ?? "",
+    },
+    {
+      indicador: "Penalizantes — CTRCs afetados",
+      valor: r.penalizantes.ctrcsAfetados,
+      comparativo: c?.penalizantes.ctrcsAfetados ?? "",
+    },
+  ];
+  const colunas: ColunaExportacao[] = c
+    ? [
+        { chave: "indicador", titulo: "Indicador" },
+        { chave: "valor", titulo: "Período principal" },
+        { chave: "comparativo", titulo: "Período comparativo" },
+      ]
+    : [
+        { chave: "indicador", titulo: "Indicador" },
+        { chave: "valor", titulo: "Valor" },
+      ];
+  return { colunas, linhas };
+}
+
+type FaixaDosPrevistos = Previstos["status"][number] | Previstos["faixa"][number];
+
+/** Abas "Previstos (todos)" e "Previstos (período)": status e faixa de vencimento, crus. */
+function abaDePrevistos(nome: string, titulo: string, p: Previstos): AbaExcel {
+  const linha = (eixo: string) => (b: FaixaDosPrevistos) => ({
+    eixo,
+    chave: b.key,
+    qtd: b.qtd,
+    peso: b.peso,
+    volumes: b.volumes,
+    frete: b.frete,
+  });
+  return {
+    nome,
+    titulo,
+    // Quantidade e peso crus no total, como hoje.
+    notas: [
+      `Total: ${String(p.total.qtd)} CTRCs · Peso: ${String(p.total.peso)} kg · Frete: ${formatarMoeda(p.total.frete)}`,
+    ],
+    colunas: [
+      { chave: "eixo", titulo: "Eixo" },
+      { chave: "chave", titulo: "Chave" },
+      { chave: "qtd", titulo: "Qtd" },
+      { chave: "peso", titulo: "Peso (kg)" },
+      { chave: "volumes", titulo: "Volumes" },
+      { chave: "frete", titulo: "Frete (R$)" },
+    ],
+    linhas: [...p.status.map(linha("Status")), ...p.faixa.map(linha("Vencimento"))],
+  };
+}
+
+/** Aba "Finalizado em Sistema" (só com linhas). */
+function abaFinalizadoEmSistema(r: RelatorioPeriodo): AbaExcel | null {
+  if (r.finalizadoPorCodigo.length === 0) return null;
+  return {
+    nome: "Finalizado em Sistema",
+    titulo: "Finalizado em Sistema",
+    colunas: [
+      { chave: "codigo", titulo: "Código" },
+      { chave: "descricao", titulo: "Descrição" },
+      { chave: "qtd", titulo: "Qtd" },
+    ],
+    linhas: r.finalizadoPorCodigo.map((f) => ({
+      codigo: f.codigo,
+      descricao: f.descricao ?? "—",
+      qtd: f.qtd,
+    })),
+  };
+}
+
+/** Aba "Impacto por código" (só com linhas; comparativo em pares P/C). origem: impactoRows */
+function abaImpactoPorCodigo(r: RelatorioPeriodo): AbaExcel | null {
+  if (r.impactoCodigos.length === 0) return null;
+  const cmp = r.comparativo;
+  const comparados = new Map((cmp?.impactoCodigos ?? []).map((i) => [i.codigo, i]));
+  const fixas: ColunaExportacao[] = [
+    { chave: "codigo", titulo: "Código" },
+    { chave: "descricao", titulo: "Descrição" },
+  ];
+  const colunas: ColunaExportacao[] = cmp
+    ? [
+        ...fixas,
+        { chave: "ctrcs", titulo: "CTRCs (P)" },
+        { chave: "ctrcsC", titulo: "CTRCs (C)" },
+        { chave: "pct", titulo: "% total (P)" },
+        { chave: "pctC", titulo: "% total (C)" },
+      ]
+    : [...fixas, { chave: "ctrcs", titulo: "CTRCs" }, { chave: "pct", titulo: "% total" }];
+  const linhas = r.impactoCodigos.map((i) => {
+    const c = comparados.get(i.codigo);
+    return {
+      codigo: i.codigo,
+      descricao: i.descricao ?? "—",
+      ctrcs: i.totalCtrcs,
+      ctrcsC: c?.totalCtrcs ?? "",
+      pct: pctTexto(i.pctDoTotal),
+      pctC: c ? pctTexto(c.pctDoTotal) : "",
+    };
+  });
+  return { nome: "Impacto por código", titulo: "Impacto por código", colunas, linhas };
+}
+
+/**
+ * Excel do relatório de período, aba por aba como hoje: Resumo, SLA por unidade, Previstos
+ * (todos), Previstos (período), Finalizado em Sistema e Impacto por código (as duas últimas só
+ * com linhas). Arquivo `relatorio-periodo-AAAA-MM-DD-AAAA-MM-DD.xlsx`.
+ */
+export function excelDoRelatorio(
+  r: RelatorioPeriodo,
+  codigosDoFiltro: readonly string[],
+  filtros: FiltrosDoExcel,
+): Omit<OpcoesExcel, "empresa"> {
+  const opcionais = [abaFinalizadoEmSistema(r), abaImpactoPorCodigo(r)].filter(
+    (a): a is AbaExcel => a !== null,
+  );
+  return {
+    arquivo: `relatorio-periodo-${r.periodo.inicio}-${r.periodo.fim}`,
+    titulo: "Relatório de período",
+    subtitulo: subtituloDoExcel(r),
+    nomeDaAba: "Resumo",
+    notas: notasDosFiltros(filtros),
+    ...tabelaDoResumo(r, codigosDoFiltro),
+    abasExtras: [
+      abaSlaPorUnidade(r),
+      abaDePrevistos("Previstos (todos)", "Previstos — Todos em aberto", r.previstosTodos),
+      abaDePrevistos("Previstos (período)", "Previstos — Emitidos no período", r.previstosPeriodo),
+      ...opcionais,
+    ],
+  };
 }

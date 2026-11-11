@@ -104,6 +104,11 @@ describe("nome do arquivo", () => {
     );
     expect(nomeDoArquivo("lista.xlsx", "xlsx", dia)).toBe("lista-10-11-2026.xlsx");
   });
+  it("base que já termina em data AAAA-MM-DD (período do relatório) não ganha outra", () => {
+    expect(nomeDoArquivo("relatorio-periodo-2026-11-01-2026-11-10", "xlsx", dia)).toBe(
+      "relatorio-periodo-2026-11-01-2026-11-10.xlsx",
+    );
+  });
 });
 
 describe("marca", () => {
@@ -282,5 +287,47 @@ describe("Excel", () => {
     expect(wb.getWorksheet("sla por unidade (2)")?.getCell(1, 2).value).toBe(
       "Relatório de período",
     );
+  }, 30_000);
+  it("nome da aba principal e notas acima da tabela, com uma linha em branco", async () => {
+    const ExcelJS = await carregarExcelJs();
+    const wb = montarPlanilha(
+      ExcelJS,
+      {
+        arquivo: "x",
+        titulo: "Relatório de período",
+        nomeDaAba: "Resumo",
+        notas: ["Filtros aplicados:", "• Filiais: CAP"],
+        colunas: [
+          { chave: "indicador", titulo: "Indicador" },
+          { chave: "valor", titulo: "Valor" },
+        ],
+        linhas: [{ indicador: "CT-e emitidos", valor: 1234 }],
+        empresa: FR,
+        abasExtras: [
+          {
+            nome: "Previstos (todos)",
+            notas: ["Total: 3 CTRCs"],
+            colunas: [{ chave: "qtd", titulo: "Qtd" }],
+            linhas: [{ qtd: 3 }],
+          },
+        ],
+      },
+      null,
+    );
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Resumo", "Previstos (todos)"]);
+    const resumo = wb.getWorksheet("Resumo");
+    if (!resumo) throw new Error("sem a aba Resumo");
+    expect(resumo.getCell(6, 1).value).toBe("Filtros aplicados:");
+    expect(resumo.getCell(7, 1).value).toBe("• Filiais: CAP");
+    expect(resumo.getCell(8, 1).value).toBeNull();
+    expect(resumo.getRow(9).values).toEqual([undefined, "Indicador", "Valor"]);
+    // Número sem formato de coluna sai cru, como no sistema atual.
+    expect(resumo.getCell(10, 2).value).toBe(1234);
+    expect(resumo.getCell(10, 2).numFmt).toBeUndefined();
+    expect(resumo.views[0]).toMatchObject({ state: "frozen", ySplit: 9 });
+    expect(resumo.pageSetup.printTitlesRow).toBe("9:9");
+    const previstos = wb.getWorksheet("Previstos (todos)");
+    expect(previstos?.getCell(6, 1).value).toBe("Total: 3 CTRCs");
+    expect(previstos?.getRow(8).values).toEqual([undefined, "Qtd"]);
   }, 30_000);
 });
