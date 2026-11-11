@@ -39,7 +39,7 @@ const esquema = z
     SMTP_SEGURO: booleano.default(false),
     SMTP_USUARIO: z.string().optional(),
     SMTP_SENHA: z.string().optional(),
-    EMAIL_REMETENTE: z.string().default("Painel Logístico <nao-responda@localhost>"),
+    EMAIL_REMETENTE: z.string().min(1).default("Painel Logístico <nao-responda@localhost>"),
 
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),

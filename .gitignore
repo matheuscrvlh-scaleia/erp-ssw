@@ -7,5 +7,5 @@ coverage/
 .worktrees/
 *.log
 .turbo/
-# CA do Supabase (montada na api pelo compose.yaml).
+# CA do Supabase (montada na api pelo docker-compose.yml).
 certs/

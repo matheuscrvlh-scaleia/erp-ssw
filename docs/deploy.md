@@ -1,8 +1,8 @@
 # Deploy do ERP SSW
 
-Configuração padrão por enquanto: um `compose.yaml` na raiz, com o Dockerfile de cada app em
-`apps/api/Dockerfile` e `apps/web/Dockerfile`. O `docker-compose.dev.yml` é só do desenvolvimento
-(Redis local).
+Configuração padrão por enquanto: um `docker-compose.yml` na raiz, com o Dockerfile de cada app em
+`apps/api/Dockerfile` e `apps/web/Dockerfile`. No desenvolvimento sobe só o Redis
+(`docker compose up -d redis`, em `127.0.0.1:6379`); api e web rodam com `bun run dev`.
 
 ## 1. O que sobe
 
