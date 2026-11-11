@@ -1,9 +1,11 @@
 import { type LinhaLista, type OrdemLista } from "@erp/shared/contratos/listagem";
 import { formatarData, formatarDataHora, formatarMoeda } from "@erp/shared/formatacao";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Clock, ExternalLink } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Clock, ExternalLink } from "lucide-react";
 import { type ReactNode } from "react";
 
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
@@ -14,7 +16,7 @@ import { selo } from "./textos";
 type Tom = "ruim_forte" | "ruim" | "atencao" | "bom";
 
 const CLASSE_DO_TOM: Record<Tom, string> = {
-  ruim_forte: "bg-status-bad text-white",
+  ruim_forte: "bg-destructive text-destructive-foreground",
   ruim: "bg-status-bad-bg text-status-bad-fg",
   atencao: "bg-status-warn-bg text-status-warn-fg",
   bom: "bg-status-good-bg text-status-good-fg",
@@ -27,7 +29,7 @@ function SeloDeAtraso({ atraso, entregue }: { atraso: number | null; entregue: b
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold",
+        "inline-flex h-6 items-center rounded-full px-2 text-xs font-semibold whitespace-nowrap",
         CLASSE_DO_TOM[s.tom],
       )}
       title={s.dica}
@@ -38,11 +40,11 @@ function SeloDeAtraso({ atraso, entregue }: { atraso: number | null; entregue: b
 }
 
 function IconeDaOrdem({ ativa, direcao }: { ativa: boolean; direcao: "asc" | "desc" }) {
-  if (!ativa) return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-50" />;
+  if (!ativa) return <ArrowUpDown className="ml-1 inline h-3.5 w-3.5 opacity-50" aria-hidden />;
   return direcao === "asc" ? (
-    <ArrowUp className="ml-1 inline h-3 w-3" />
+    <ArrowUp className="ml-1 inline h-3.5 w-3.5" aria-hidden />
   ) : (
-    <ArrowDown className="ml-1 inline h-3 w-3" />
+    <ArrowDown className="ml-1 inline h-3.5 w-3.5" aria-hidden />
   );
 }
 
@@ -50,21 +52,22 @@ function IconeDaOrdem({ ativa, direcao }: { ativa: boolean; direcao: "asc" | "de
 const LARGURAS_FIXAS = [110, 110, 140, 220] as const;
 const ESQUERDAS_FIXAS = [0, 110, 220, 360] as const;
 
-/** Em celular nada fica fixo (as colunas se sobreporiam); a partir de `md` as 4 primeiras ficam. */
+/**
+ * Em celular nada fica fixo (as colunas se sobreporiam); a partir de `md` as 4 primeiras ficam,
+ * com fundo opaco (a linha passa por baixo delas na rolagem horizontal).
+ */
 function fixa(indice: 0 | 1 | 2 | 3, extra: string) {
   return {
-    className: cn(
-      "md:sticky md:bg-background",
-      indice === 3 && "md:shadow-[1px_0_0_0_var(--border)]",
-      extra,
-    ),
+    className: cn("md:sticky", indice === 3 && "md:shadow-[1px_0_0_0_var(--border)]", extra),
     style: { left: ESQUERDAS_FIXAS[indice], minWidth: LARGURAS_FIXAS[indice] },
   };
 }
 
-const CABECALHO_FIXO = "px-2 py-2 z-20 top-0 bg-muted/95 backdrop-blur";
-const TH = "whitespace-nowrap px-2 py-2";
-const TD = "whitespace-nowrap px-2 py-1.5";
+const TH =
+  "whitespace-nowrap border-b border-border bg-muted px-3 py-2.5 text-left text-[11.5px] font-semibold tracking-wide uppercase";
+const CABECALHO_FIXO = `${TH} z-20 top-0`;
+const TD = "whitespace-nowrap border-b border-border px-3 py-2";
+const TD_FIXA = `${TD} md:bg-card md:group-hover:bg-muted`;
 const nz = (v: string | null) => v ?? "—";
 const numero = (n: number | null, casas = 0) =>
   n === null
@@ -91,7 +94,7 @@ export function TabelaCtrcs({
       onClick={() => {
         aoOrdenar(ordem);
       }}
-      className="inline-flex items-center text-[11px] font-medium whitespace-nowrap hover:text-foreground"
+      className="inline-flex items-center font-semibold tracking-wide whitespace-nowrap uppercase hover:text-foreground"
     >
       {rotulo}
       <IconeDaOrdem ativa={ordenacao.ordem === ordem} direcao={ordenacao.direcao} />
@@ -100,15 +103,13 @@ export function TabelaCtrcs({
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="relative overflow-x-auto rounded-lg border border-border/70 bg-card">
-        <table className="w-full border-separate border-spacing-0 text-[12px]">
-          <thead className="bg-muted/60">
-            <tr className="text-left text-muted-foreground">
+      <div className="rolagem-fina relative overflow-x-auto rounded-xl">
+        <table className="w-full border-separate border-spacing-0 text-[13px]">
+          <thead>
+            <tr className="text-muted-foreground">
               <th {...fixa(0, CABECALHO_FIXO)}>NF</th>
               <th {...fixa(1, CABECALHO_FIXO)}>CT-e</th>
-              <th {...fixa(2, `whitespace-nowrap ${CABECALHO_FIXO}`)}>
-                {botaoDeOrdem("Atraso", "atraso")}
-              </th>
+              <th {...fixa(2, CABECALHO_FIXO)}>{botaoDeOrdem("Atraso", "atraso")}</th>
               <th {...fixa(3, CABECALHO_FIXO)}>Cliente Destino</th>
               <th className={TH}>Origem</th>
               <th className={TH}>Destino</th>
@@ -125,14 +126,14 @@ export function TabelaCtrcs({
               <th className={TH}>Expedidor</th>
               <th className={TH}>Remetente</th>
               <th className={TH}>Documento</th>
-              <th className={`${TH} text-right`}>Peso Real</th>
-              <th className={`${TH} text-right`}>Valor Frete</th>
-              <th className={`${TH} text-right`}>Qtd Vol.</th>
+              <th className={cn(TH, "text-right")}>Peso Real</th>
+              <th className={cn(TH, "text-right")}>Valor Frete</th>
+              <th className={cn(TH, "text-right")}>Qtd Vol.</th>
               <th className={TH}>Localização</th>
               <th className={TH}>1º Manifesto</th>
               <th className={TH}>Últ. Manifesto</th>
-              <th className={`${TH} text-right`}>Valor Mercadoria</th>
-              <th className={`${TH} text-center`}>SSW</th>
+              <th className={cn(TH, "text-right")}>Valor Mercadoria</th>
+              <th className={cn(TH, "text-center")}>SSW</th>
             </tr>
           </thead>
           <tbody>
@@ -141,8 +142,11 @@ export function TabelaCtrcs({
             ))}
             {linhas.length === 0 && (
               <tr>
-                <td colSpan={COLUNAS} className="px-4 py-10 text-center text-muted-foreground">
-                  Nenhum CTRC encontrado com os filtros atuais.
+                <td colSpan={COLUNAS}>
+                  <EstadoVazio
+                    mensagem="Nenhum CTRC encontrado com os filtros atuais."
+                    detalhe="Amplie o período ou tire algum filtro."
+                  />
                 </td>
               </tr>
             )}
@@ -158,24 +162,24 @@ function Linha({ l, saiuComPrazoVencido }: { l: LinhaLista; saiuComPrazoVencido:
   const ssw = urlCtrcNoSsw(l.sigla, l.numero, l.dataEmissao);
   const temTde = l.tde !== null && l.tde > 0;
   return (
-    <tr className="border-t border-border/40 odd:bg-background even:bg-muted/20 hover:bg-brand/[0.04]">
-      <td {...fixa(0, "px-2 py-1.5 font-mono font-semibold")}>
+    <tr className="group transition-colors hover:bg-muted">
+      <td {...fixa(0, `${TD_FIXA} font-mono font-semibold`)}>
         <Link
           to="/ctrc/$numero"
           params={{ numero: l.numero }}
           search={{ sigla: l.sigla }}
-          className="text-brand hover:underline"
+          className="text-brand underline-offset-2 hover:underline"
           title="Abrir detalhes do CTRC"
         >
           {nf}
         </Link>
       </td>
-      <td {...fixa(1, "px-2 py-1.5 font-mono text-muted-foreground")}>{l.numero}</td>
-      <td {...fixa(2, TD)}>
+      <td {...fixa(1, `${TD_FIXA} font-mono text-muted-foreground`)}>{l.numero}</td>
+      <td {...fixa(2, TD_FIXA)}>
         <SeloDeAtraso atraso={l.atrasoDias} entregue={l.dataEntrega !== null} />
       </td>
       <td
-        {...fixa(3, "max-w-[220px] truncate px-2 py-1.5")}
+        {...fixa(3, `${TD_FIXA} max-w-[220px] truncate`)}
         title={
           temTde
             ? `${l.destinatario ?? ""} · TDE ${formatarMoeda(l.tde)}`
@@ -183,7 +187,7 @@ function Linha({ l, saiuComPrazoVencido }: { l: LinhaLista; saiuComPrazoVencido:
         }
       >
         {temTde && (
-          <span className="mr-1 rounded border border-amber-500/60 px-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+          <span className="mr-1.5 rounded-md border border-status-warn/50 bg-status-warn-bg px-1 text-xs font-semibold text-status-warn-fg">
             TDE
           </span>
         )}
@@ -206,12 +210,11 @@ function Linha({ l, saiuComPrazoVencido }: { l: LinhaLista; saiuComPrazoVencido:
           {saiuComPrazoVencido && l.dataPrevista && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
-                  <AlertTriangle className="h-2.5 w-2.5" />
-                  Saiu com prazo vencido
+                <span tabIndex={0} className="inline-flex rounded-full">
+                  <SeloStatus tom="alerta">Saiu com prazo vencido</SeloStatus>
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
+              <TooltipContent side="top" className="max-w-[260px] text-[12px] leading-snug">
                 A primeira saída para entrega (ocorrência 85) foi depois da previsão de entrega (
                 {formatarData(l.dataPrevista)}): a carga saiu para a rua com o prazo já estourado.
               </TooltipContent>
@@ -253,7 +256,7 @@ function Linha({ l, saiuComPrazoVencido }: { l: LinhaLista; saiuComPrazoVencido:
             className="inline-flex items-center justify-center rounded p-1 text-brand hover:bg-brand/10"
             title="Abrir no SSW"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-4 w-4" aria-hidden />
           </a>
         ) : (
           <Tooltip>
@@ -262,10 +265,10 @@ function Linha({ l, saiuComPrazoVencido }: { l: LinhaLista; saiuComPrazoVencido:
                 className="inline-flex cursor-help items-center justify-center rounded p-1 text-muted-foreground/60"
                 aria-label="Aguardando SSW"
               >
-                <Clock className="h-3.5 w-3.5" />
+                <Clock className="h-4 w-4" aria-hidden />
               </span>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[240px] text-[11px] leading-snug">
+            <TooltipContent side="top" className="max-w-[240px] text-[12px] leading-snug">
               Aguardando SSW. A sigla do CTRC será preenchida pelo relatório 0174 em breve.
             </TooltipContent>
           </Tooltip>

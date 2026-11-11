@@ -16,7 +16,7 @@ describe("SeletorDeRecorte", () => {
         aoMudar={aoMudar}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "CT-e emitidos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Recorte CT-e emitidos" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "CT-e atrasados" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Em atraso (ACME)" }));
     expect(aoMudar).not.toHaveBeenCalled();

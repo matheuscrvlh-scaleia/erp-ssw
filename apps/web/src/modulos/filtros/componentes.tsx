@@ -52,15 +52,15 @@ export function ItemMarcavel({
         aria-checked={marcado}
         onClick={aoAlternar}
         className={cn(
-          "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] hover:bg-muted",
-          marcado && "bg-status-good-bg",
+          "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] hover:bg-muted",
+          marcado && "bg-accent text-accent-foreground",
         )}
       >
         <span
           aria-hidden
           className={cn(
-            "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border border-border",
-            marcado && "border-brand bg-brand text-white",
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border border-input",
+            marcado && "border-primary bg-primary text-primary-foreground",
           )}
         >
           {marcado && <Check className="h-2.5 w-2.5" />}
@@ -75,8 +75,8 @@ export function AvisoDaLista({ children, erro }: { children: ReactNode; erro?: b
   return (
     <li
       className={cn(
-        "px-3 py-3 text-center text-[11px] text-muted-foreground",
-        erro && "text-status-bad",
+        "px-3 py-3 text-center text-[12.5px] text-muted-foreground",
+        erro && "text-status-bad-fg",
       )}
     >
       {children}
@@ -117,7 +117,10 @@ export function BuscaDocumento({
 
   return (
     <div className={cn("relative w-[190px]", className)}>
-      <Search className="pointer-events-none absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+      <Search
+        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
       <input
         value={local}
         onChange={(e) => {
@@ -128,7 +131,7 @@ export function BuscaDocumento({
         }}
         placeholder={placeholder}
         aria-label={`Buscar por ${placeholder.replace(/\.+$/, "")}`}
-        className="h-[26px] w-full rounded-md border border-border/70 bg-background pr-6 pl-7 text-[12px] outline-none focus:border-brand"
+        className="h-9 w-full rounded-lg border border-border bg-card pr-8 pl-9 text-[13px] shadow-cartao outline-none placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
       />
       {local.length > 0 && (
         <button
@@ -138,9 +141,9 @@ export function BuscaDocumento({
             setLocal("");
             aoMudar("");
           }}
-          className="absolute top-1/2 right-1.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <X className="h-3 w-3" />
+          <X className="h-3.5 w-3.5" aria-hidden />
         </button>
       )}
     </div>
@@ -239,7 +242,7 @@ export function SeletorDePagadorAgrupado({
           rotulo: g.cnpjFormatado ? `${g.nome} · ${g.cnpjFormatado}` : g.nome,
           detalhe:
             g.ids.length > 1 ? (
-              <span className="shrink-0 text-[10px] text-muted-foreground">
+              <span className="shrink-0 text-xs text-muted-foreground">
                 {g.ids.length} CNPJs com este nome
               </span>
             ) : undefined,

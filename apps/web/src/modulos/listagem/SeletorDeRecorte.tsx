@@ -1,9 +1,9 @@
 import { type TipoRecorte, TIPOS_RECORTE } from "@erp/shared/contratos/listagem";
 
+import { GatilhoFiltro } from "@/componentes/comum/GatilhoFiltro";
 import { Badge } from "@/componentes/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { useSelecaoAdiada } from "@/hooks/use-selecao-adiada";
-import { cn } from "@/lib/utils";
 import { ItemMarcavel } from "@/modulos/filtros/componentes";
 
 /**
@@ -47,28 +47,30 @@ export function SeletorDeRecorte({
       }}
     >
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex max-w-[22rem] items-center gap-1.5 rounded-md border border-border/70 bg-card px-2 py-1 text-[12px] hover:bg-muted",
-            selecionados.length > 1 && "border-brand",
-          )}
+        <GatilhoFiltro
+          ativo={selecionados.length > 1 || unico !== "emitidos"}
+          rotulo="Recorte"
+          className="max-w-[24rem]"
           title={selecionados.map((t) => rotulos[t]).join(" + ")}
         >
-          <span className="truncate">{resumo}</span>
+          <span className="text-muted-foreground">Recorte</span>{" "}
+          <span className="truncate font-semibold">{resumo}</span>
           {selecionados.length > 1 && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+            <Badge
+              variant="secondary"
+              className="h-5 border-transparent bg-brand-suave px-2 text-[11.5px] text-brand"
+            >
               {selecionados.length}
             </Badge>
           )}
-        </button>
+        </GatilhoFiltro>
       </PopoverTrigger>
       <PopoverContent className="w-80 max-w-[calc(100vw-2rem)] p-0" align="end">
-        <div className="flex items-center justify-between border-b border-border/60 px-3 py-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between border-b border-border px-3 py-2 text-[12.5px] text-muted-foreground">
           <span>Marque um ou mais recortes</span>
           <button
             type="button"
-            className="underline disabled:opacity-40"
+            className="font-medium text-brand hover:underline disabled:opacity-40"
             disabled={selecionados.length === 1 && unico === "emitidos"}
             onClick={() => {
               alterar(["emitidos"], true);
@@ -77,7 +79,7 @@ export function SeletorDeRecorte({
             limpar
           </button>
         </div>
-        <ul className="max-h-96 overflow-auto py-1">
+        <ul className="rolagem-fina max-h-96 overflow-auto p-1">
           {TIPOS_RECORTE.map((t) => (
             <ItemMarcavel
               key={t}

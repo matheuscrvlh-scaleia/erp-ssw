@@ -9,11 +9,13 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import { ArrowLeft, Filter, RefreshCw } from "lucide-react";
+import { ArrowLeft, Filter, ListFilter, RefreshCw } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Aviso } from "@/componentes/comum/Aviso";
 import { BotoesDePagina } from "@/componentes/comum/BotoesDePagina";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
@@ -23,12 +25,17 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { GatilhoFiltro } from "@/componentes/comum/GatilhoFiltro";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { Painel } from "@/componentes/comum/Painel";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
 import { consultaPagadores } from "@/modulos/filtros/api";
 import {
   BuscaDocumento,
@@ -363,59 +370,180 @@ export function PaginaListagem() {
     else void navegar({ to: "/" });
   };
 
-  const acoes = (
-    <>
-      <Button variant="ghost" size="sm" className="h-8" onClick={() => void atualizar()}>
-        <RefreshCw className="mr-1.5 h-3 w-3" />
-        Atualizar
-      </Button>
-      <ExportMenu
-        arquivo={nomeDoArquivo(recortes, periodo.inicio, periodo.fim)}
-        titulo={titulo}
-        subtitulo={subtitulo}
-        colunas={COLUNAS_DA_EXPORTACAO}
-        linhas={[]}
-        carregarLinhas={carregarParaExportar}
-        desabilitado={total === 0}
-        tamanhoFonte={5.5}
-        className="h-8"
-      />
-    </>
-  );
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <div className="flex items-center justify-between gap-2 sm:min-w-0 sm:justify-start sm:gap-3">
-          <button
-            type="button"
-            onClick={voltar}
-            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-border/70 bg-card px-2 text-[12px] hover:bg-muted"
+    <Pagina
+      titulo={titulo}
+      meta={<SeloDosDados className="" />}
+      acoes={
+        <>
+          <Button variant="ghost" size="sm" onClick={voltar}>
+            <ArrowLeft aria-hidden />
+            Voltar
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void atualizar()}>
+            <RefreshCw aria-hidden />
+            Atualizar
+          </Button>
+          <ExportMenu
+            arquivo={nomeDoArquivo(recortes, periodo.inicio, periodo.fim)}
+            titulo={titulo}
+            subtitulo={subtitulo}
+            colunas={COLUNAS_DA_EXPORTACAO}
+            linhas={[]}
+            carregarLinhas={carregarParaExportar}
+            desabilitado={total === 0}
+            tamanhoFonte={5.5}
+            className="h-8"
+          />
+        </>
+      }
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={filtrosAtivos}
+            aoLimpar={() => {
+              atualizarBusca(FILTROS_LIMPOS);
+            }}
           >
-            <ArrowLeft className="h-3 w-3" /> Voltar
-          </button>
-          <h1 className="hidden truncate text-lg font-semibold sm:block">{titulo}</h1>
-          <div className="flex items-center gap-2 sm:hidden">{acoes}</div>
-        </div>
-        <h1 className="text-base leading-snug font-semibold break-words whitespace-normal sm:hidden">
-          {titulo}
-        </h1>
-        <div className="hidden items-center gap-2 sm:flex">{acoes}</div>
-      </div>
-      <SeloDosDados className="-mt-2" />
+            <FiltroPeriodo
+              periodo={busca.periodo}
+              de={busca.de}
+              ate={busca.ate}
+              rotulo={DATA_DA_BASE[busca.base]}
+              aoMudar={(p) => {
+                atualizarBusca(p);
+              }}
+            />
+            <Alternador<Base>
+              rotulo="Base de data"
+              valor={busca.base}
+              aoMudar={(b) => {
+                atualizarBusca({ base: b });
+              }}
+              opcoes={BASES.map((b) => ({
+                valor: b,
+                rotulo: ROTULO_DA_BASE[b],
+                dica: DICA_DA_BASE[b],
+              }))}
+            />
+            <span className="inline-flex items-center gap-1 text-[12.5px] text-muted-foreground">
+              <InfoTip texto={DICA_DA_BASE[busca.base]} />
+              <span className="hidden sm:inline">{BASE_CURTA[busca.base]}</span>
+            </span>
+            <SeletorDeRecorte
+              rotulos={rotulosDosRecortes(nomeCurto)}
+              selecionados={recortes}
+              aoMudar={(marcados) => {
+                const [tipo = "emitidos", ...extras] = marcados;
+                // "Saíram para entrega" entra já filtrado nos códigos em aberto.
+                const entrouSaiu =
+                  marcados.includes("nascido_atrasado") && !temRecorte("nascido_atrasado");
+                atualizarBusca({
+                  tipo,
+                  recortes: extras.length > 0 ? extras : undefined,
+                  abertos: entrouSaiu || undefined,
+                });
+              }}
+            />
+            <SeletorDeFilial
+              selecionadas={busca.filiais}
+              aoMudar={(filiais) => {
+                atualizarBusca({ filiais });
+              }}
+              contexto={contexto}
+            />
+            <SeletorDePagador
+              rotulo="Parceiros"
+              opcoes={pagadores.data ?? []}
+              selecionados={busca.parceiros}
+              aoMudar={(parceiros) => {
+                atualizarBusca({ parceiros });
+              }}
+            />
+            <SeletorDeTexto
+              rotulo="Remetente"
+              campo="remetente"
+              valor={busca.remetente}
+              aoMudar={(remetente) => {
+                atualizarBusca({ remetente });
+              }}
+              contexto={contexto}
+            />
+            <SeletorDeTexto
+              rotulo="Destino"
+              campo="cidade_destino"
+              valor={busca.destino}
+              aoMudar={(destino) => {
+                atualizarBusca({ destino });
+              }}
+              contexto={contexto}
+            />
+            {/* Ocorrência efetiva — também muda pelo clique no gráfico "Ocorrências". */}
+            <SeletorDeOcorrencia
+              filtro={filtro}
+              selecionados={busca.codigos}
+              nomeCurto={nomeCurto}
+              aoMudar={(codigos) => {
+                atualizarBusca({ codigos });
+              }}
+            />
+            <MaisFiltros
+              key={`${busca.cidade}|${String(busca.peso_min)}|${String(busca.peso_max)}|${String(busca.atraso_min)}|${String(busca.atraso_max)}`}
+              busca={busca}
+              ativo={maisFiltrosAtivos}
+              aoMudar={atualizarBusca}
+            />
+            <BuscaDocumento
+              valor={busca.ctrc}
+              placeholder="CTRC..."
+              className="w-[150px]"
+              aoMudar={(ctrc) => {
+                atualizarBusca({ ctrc });
+              }}
+            />
+            <BuscaDocumento
+              valor={busca.nf}
+              placeholder="Nota fiscal..."
+              className="w-[150px]"
+              aoMudar={(nf) => {
+                atualizarBusca({ nf });
+              }}
+            />
+          </FiltrosAvancados>
+          <FiltrandoPor etiquetas={etiquetas} />
+        </>
+      }
+    >
+      {lista.isError && (
+        <Aviso
+          tom="erro"
+          acao={
+            <Button size="sm" variant="outline" onClick={() => void lista.refetch()}>
+              <RefreshCw aria-hidden />
+              Tentar novamente
+            </Button>
+          }
+        >
+          {mensagemAmigavel(lista.error)}
+        </Aviso>
+      )}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
-        <div className="rounded-lg border border-l-[5px] border-border/70 border-l-kpi-positive bg-card p-4">
-          <div className="text-[11px] tracking-wide text-muted-foreground uppercase">
-            Total do recorte
-          </div>
-          <div className="mt-1 text-3xl font-bold text-kpi-positive tabular-nums">
-            {lista.isLoading ? "…" : total.toLocaleString("pt-BR")}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">CTRCs · {periodo.rotulo}</div>
+      <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="flex xl:self-start">
+          <KpiCard
+            rotulo="Total do recorte"
+            icone={ListFilter}
+            valor={lista.isLoading ? "…" : total.toLocaleString("pt-BR")}
+            status="bom"
+            neutro
+            detalhe={`CTRCs · ${periodo.rotulo}`}
+          />
         </div>
         <div
-          className={`grid grid-cols-1 gap-3 ${mostrarFaixa ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+          className={cn(
+            "grid gap-4 md:grid-cols-2",
+            mostrarFaixa ? "2xl:grid-cols-4" : "2xl:grid-cols-3",
+          )}
         >
           <GraficoDeBarras
             titulo="Ocorrências"
@@ -424,9 +552,9 @@ export function PaginaListagem() {
             larguraDoRotulo={44}
             barras={porCodigo.map((a) => ({
               chave: String(a.codigo),
-              rotulo: `#${a.codigo}`,
+              rotulo: `#${String(a.codigo)}`,
               qtd: a.qtd,
-              dica: `#${a.codigo} — ${a.descricao ?? ""}`,
+              dica: `#${String(a.codigo)} — ${a.descricao ?? ""}`,
               ativa: busca.codigos.includes(a.codigo),
             }))}
             aoClicar={(chave) => {
@@ -507,163 +635,34 @@ export function PaginaListagem() {
         </div>
       </div>
 
-      <FiltrosAvancados
-        ativos={filtrosAtivos}
-        aoLimpar={() => {
-          atualizarBusca(FILTROS_LIMPOS);
-        }}
-      >
-        <FiltroPeriodo
-          periodo={busca.periodo}
-          de={busca.de}
-          ate={busca.ate}
-          rotulo={DATA_DA_BASE[busca.base]}
-          aoMudar={(p) => {
-            atualizarBusca(p);
-          }}
-        />
-        <span className="inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground">
-          <InfoTip texto={DICA_DA_BASE[busca.base]} />
-          <span className="hidden sm:inline">{BASE_CURTA[busca.base]}</span>
-        </span>
-        <div className="flex rounded-md border border-border/70 p-0.5">
-          {BASES.map((b) => (
-            <button
-              key={b}
-              type="button"
-              onClick={() => {
-                atualizarBusca({ base: b });
+      <Painel
+        rodape={
+          <>
+            <span className="flex-1">
+              Página {busca.page} de {totalDePaginas} · {total.toLocaleString("pt-BR")} CTRCs
+            </span>
+            <BotoesDePagina
+              pagina={busca.page}
+              totalDePaginas={totalDePaginas}
+              aoMudar={(page) => {
+                atualizarBusca({ page });
               }}
-              aria-pressed={busca.base === b}
-              className={`rounded-[5px] px-2.5 py-1 text-[12px] ${
-                busca.base === b
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {ROTULO_DA_BASE[b]}
-            </button>
-          ))}
-        </div>
-        <BuscaDocumento
-          valor={busca.ctrc}
-          placeholder="CTRC..."
-          className="w-[150px]"
-          aoMudar={(ctrc) => {
-            atualizarBusca({ ctrc });
+              desabilitado={lista.isLoading}
+            />
+          </>
+        }
+      >
+        <TabelaCtrcs
+          linhas={linhas}
+          ordenacao={ordenacao}
+          aoOrdenar={(ordem) => {
+            const direcao = busca.sort === ordem && busca.dir === "desc" ? "asc" : "desc";
+            atualizarBusca({ sort: ordem, dir: direcao });
           }}
+          saiuComPrazoVencido={temRecorte("nascido_atrasado")}
         />
-        <BuscaDocumento
-          valor={busca.nf}
-          placeholder="Nota fiscal..."
-          className="w-[150px]"
-          aoMudar={(nf) => {
-            atualizarBusca({ nf });
-          }}
-        />
-        <SeletorDeFilial
-          selecionadas={busca.filiais}
-          aoMudar={(filiais) => {
-            atualizarBusca({ filiais });
-          }}
-          contexto={contexto}
-        />
-        <SeletorDePagador
-          rotulo="Parceiros"
-          opcoes={pagadores.data ?? []}
-          selecionados={busca.parceiros}
-          aoMudar={(parceiros) => {
-            atualizarBusca({ parceiros });
-          }}
-        />
-        <SeletorDeTexto
-          rotulo="Remetente"
-          campo="remetente"
-          valor={busca.remetente}
-          aoMudar={(remetente) => {
-            atualizarBusca({ remetente });
-          }}
-          contexto={contexto}
-        />
-        <SeletorDeTexto
-          rotulo="Destino"
-          campo="cidade_destino"
-          valor={busca.destino}
-          aoMudar={(destino) => {
-            atualizarBusca({ destino });
-          }}
-          contexto={contexto}
-        />
-        {/* Ocorrência efetiva — também muda pelo clique no gráfico "Ocorrências". */}
-        <SeletorDeOcorrencia
-          filtro={filtro}
-          selecionados={busca.codigos}
-          nomeCurto={nomeCurto}
-          aoMudar={(codigos) => {
-            atualizarBusca({ codigos });
-          }}
-        />
-        <MaisFiltros
-          key={`${busca.cidade}|${busca.peso_min}|${busca.peso_max}|${busca.atraso_min}|${busca.atraso_max}`}
-          busca={busca}
-          ativo={maisFiltrosAtivos}
-          aoMudar={atualizarBusca}
-        />
-        <div className="ml-auto flex items-center gap-1">
-          <span className="text-[11px] text-muted-foreground">Recorte</span>
-          <SeletorDeRecorte
-            rotulos={rotulosDosRecortes(nomeCurto)}
-            selecionados={recortes}
-            aoMudar={(marcados) => {
-              const [tipo = "emitidos", ...extras] = marcados;
-              // "Saíram para entrega" entra já filtrado nos códigos em aberto.
-              const entrouSaiu =
-                marcados.includes("nascido_atrasado") && !temRecorte("nascido_atrasado");
-              atualizarBusca({
-                tipo,
-                recortes: extras.length > 0 ? extras : undefined,
-                abertos: entrouSaiu || undefined,
-              });
-            }}
-          />
-        </div>
-      </FiltrosAvancados>
-
-      <FiltrandoPor etiquetas={etiquetas} />
-
-      {lista.isError && (
-        <div className="rounded-lg border border-status-bad/40 bg-status-bad-bg px-3 py-2 text-[12px] text-status-bad-fg">
-          {mensagemAmigavel(lista.error)}
-        </div>
-      )}
-
-      <TabelaCtrcs
-        linhas={linhas}
-        ordenacao={ordenacao}
-        aoOrdenar={(ordem) => {
-          const direcao = busca.sort === ordem && busca.dir === "desc" ? "asc" : "desc";
-          atualizarBusca({ sort: ordem, dir: direcao });
-        }}
-        saiuComPrazoVencido={temRecorte("nascido_atrasado")}
-      />
-
-      <div className="flex items-center justify-between text-[12px] text-muted-foreground">
-        <div>
-          Página {busca.page} de {totalDePaginas} · {total.toLocaleString("pt-BR")} CTRCs
-        </div>
-        <div className="flex items-center gap-1">
-          <BotoesDePagina
-            pagina={busca.page}
-            totalDePaginas={totalDePaginas}
-            aoMudar={(page) => {
-              atualizarBusca({ page });
-            }}
-            desabilitado={lista.isLoading}
-            className="h-7"
-          />
-        </div>
-      </div>
-    </div>
+      </Painel>
+    </Pagina>
   );
 }
 
@@ -677,7 +676,8 @@ function MaisFiltros({
   ativo: boolean;
   aoMudar: (mudanca: Partial<BuscaDaLista>) => void;
 }) {
-  const campo = "w-full rounded-md border border-border/70 bg-background px-2 py-1 text-[12px]";
+  const campo =
+    "h-8 w-full rounded-lg border border-input bg-card px-2.5 text-[13px] outline-none focus:border-ring";
   const inteiroOuNulo = (texto: string) => {
     const n = numeroOuNulo(texto);
     return n === null ? null : Math.trunc(n);
@@ -685,21 +685,21 @@ function MaisFiltros({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-card px-3 py-1 text-[12px] hover:bg-muted"
-        >
-          <Filter className="h-3 w-3" />
+        <GatilhoFiltro ativo={ativo} rotulo="Mais filtros">
+          <Filter className="h-4 w-4 text-muted-foreground" aria-hidden />
           Mais filtros
           {ativo && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+            <Badge
+              variant="secondary"
+              className="h-5 border-transparent bg-brand-suave px-2 text-[11.5px] text-brand"
+            >
               ativo
             </Badge>
           )}
-        </button>
+        </GatilhoFiltro>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-3 p-3">
-        <label className="block text-[11px] text-muted-foreground">
+        <label className="block text-[12.5px] font-medium text-muted-foreground">
           Cidade destino contém
           <input
             defaultValue={busca.cidade}
@@ -711,7 +711,7 @@ function MaisFiltros({
           />
         </label>
         <div>
-          <span className="text-[11px] text-muted-foreground">Peso (kg)</span>
+          <span className="text-[12.5px] font-medium text-muted-foreground">Peso (kg)</span>
           <div className="mt-1 flex gap-2">
             <input
               type="number"
@@ -736,7 +736,7 @@ function MaisFiltros({
           </div>
         </div>
         <div>
-          <span className="text-[11px] text-muted-foreground">Atraso (dias)</span>
+          <span className="text-[12.5px] font-medium text-muted-foreground">Atraso (dias)</span>
           <div className="mt-1 flex gap-2">
             <input
               type="number"

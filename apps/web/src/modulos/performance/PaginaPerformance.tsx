@@ -15,11 +15,13 @@ import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowRight, FileBarChart, RefreshCw } from "lucide-react";
+import { ArrowRight, FileBarChart, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Aviso } from "@/componentes/comum/Aviso";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
@@ -29,6 +31,7 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { Pagina, Secao } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
@@ -72,7 +75,7 @@ import {
   temFiltroLimpavel,
   type TipoDaLista,
 } from "./busca";
-import { textoDoStatus } from "./cores";
+import { ComoFuncionaPerformance } from "./ComoFuncionaPerformance";
 import { COLUNAS_DA_EXPORTACAO } from "./exportacao";
 import { GraficoSerie } from "./GraficoSerie";
 import { EsqueletoDeCards, LinhaDeKpis } from "./Kpis";
@@ -295,29 +298,23 @@ export function PaginaPerformance() {
   const erro = resumo.error ?? pont.error;
   const cobertura = r?.cobertura;
   const dias = diferencaEmDias(periodo.inicio, periodo.fim) + 1;
-  const alternador = (ativo: boolean, cor: string) =>
-    "rounded-[5px] px-3 py-1 text-[12px] transition-colors " +
-    (ativo ? cor : "text-muted-foreground hover:bg-muted");
 
   return (
-    <div className="space-y-6">
-      <header className="grid grid-cols-1 items-end gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="min-w-0">
-          <h1 className="truncate text-[24px] font-semibold">
-            {busca.periodo === "hoje" ? "Performance do dia" : `Performance — ${periodo.rotulo}`}
-          </h1>
-          <SeloDosDados />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <Pagina
+      titulo={busca.periodo === "hoje" ? "Performance do dia" : `Performance — ${periodo.rotulo}`}
+      descricao="Entregas e SLA por unidade no período"
+      meta={<SeloDosDados className="" />}
+      acoes={
+        <>
+          <ComoFuncionaPerformance otifVisivel={configuracao.otifVisivel} nomeCurto={nomeCurto} />
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => {
-              setRelatorioAberto((v) => !v);
-            }}
+            variant="ghost"
+            onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DA_PERFORMANCE })}
+            disabled={resumo.isFetching}
           >
-            <FileBarChart className="mr-1.5 h-3 w-3" />
-            {relatorioAberto ? "Fechar relatório" : "Relatório de período"}
+            <RefreshCw className={resumo.isFetching ? "animate-spin" : undefined} aria-hidden />
+            Atualizar
           </Button>
           <ExportMenu
             arquivo={`performance-${busca.periodo}`}
@@ -332,149 +329,189 @@ export function PaginaPerformance() {
               return r.linhas;
             }}
             desabilitado={resumo.isFetching}
+            className="h-8"
           />
           <Button
             size="sm"
-            variant="ghost"
-            onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DA_PERFORMANCE })}
-            disabled={resumo.isFetching}
+            onClick={() => {
+              setRelatorioAberto((v) => !v);
+            }}
           >
-            <RefreshCw className={`mr-1.5 h-3 w-3 ${resumo.isFetching ? "animate-spin" : ""}`} />{" "}
-            Atualizar
+            <FileBarChart aria-hidden />
+            {relatorioAberto ? "Fechar relatório" : "Relatório de período"}
           </Button>
-        </div>
-      </header>
-
-      <FiltrosAvancados
-        ativos={temFiltroLimpavel(busca)}
-        aoLimpar={() => void navegarNaTela({ search: limparFiltros(busca) })}
-      >
-        <FiltroPeriodo
-          periodo={busca.periodo}
-          de={busca.de}
-          ate={busca.ate}
-          rotulo={DATA_DA_BASE[busca.base]}
-          aoMudar={(m) => {
-            mudar({
-              periodo: m.periodo === "mes_anterior" ? "mes" : m.periodo,
-              de: m.de,
-              ate: m.ate,
-            });
-          }}
-        />
-        <div
-          className="flex rounded-md border border-border/70 p-0.5"
-          title={DICA_DA_BASE[busca.base]}
-        >
-          {BASES_DE_DATA.map((b: BaseDeData) => (
-            <button
-              key={b}
-              onClick={() => {
+        </>
+      }
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={temFiltroLimpavel(busca)}
+            aoLimpar={() => void navegarNaTela({ search: limparFiltros(busca) })}
+          >
+            <FiltroPeriodo
+              periodo={busca.periodo}
+              de={busca.de}
+              ate={busca.ate}
+              rotulo={DATA_DA_BASE[busca.base]}
+              aoMudar={(m) => {
+                mudar({
+                  periodo: m.periodo === "mes_anterior" ? "mes" : m.periodo,
+                  de: m.de,
+                  ate: m.ate,
+                });
+              }}
+            />
+            <Alternador<BaseDeData>
+              rotulo="Base de data"
+              valor={busca.base}
+              aoMudar={(b) => {
                 mudar({ base: b });
               }}
-              title={DICA_DA_BASE[b]}
-              className={alternador(busca.base === b, "bg-foreground text-background")}
+              opcoes={BASES_DE_DATA.map((b) => ({
+                valor: b,
+                rotulo: ROTULO_DA_BASE[b],
+                dica: DICA_DA_BASE[b],
+              }))}
+            />
+            <span
+              className="hidden text-[12.5px] text-muted-foreground sm:inline"
+              title={DICA_DA_BASE[busca.base]}
             >
-              {ROTULO_DA_BASE[b]}
-            </button>
-          ))}
-        </div>
-        <span className="text-[11px] text-muted-foreground" title={DICA_DA_BASE[busca.base]}>
-          {BASE_CURTA[busca.base]}
-        </span>
-        <BuscaDocumento
-          valor=""
-          placeholder="CTRC..."
-          className="w-[150px]"
-          aoMudar={(v) => {
-            if (v) abrirLista("emitidos", { ctrc: v, ignorarPeriodo: true });
-          }}
-        />
-        <BuscaDocumento
-          valor=""
-          placeholder="Nota fiscal..."
-          className="w-[150px]"
-          aoMudar={(v) => {
-            if (v) abrirLista("emitidos", { nf: v, ignorarPeriodo: true });
-          }}
-        />
-        <SeletorDePagador
-          rotulo="Parceiros"
-          opcoes={pagadores.data}
-          selecionados={busca.parceiros}
-          aoMudar={(ids) => {
-            mudar({ parceiros: ids });
-          }}
-        />
-        <SeletorDeFilial
-          selecionadas={busca.filiais}
-          contexto={contexto}
-          aoMudar={(siglas) => {
-            mudar({ filiais: siglas });
-          }}
-        />
-        <SeletorDeTexto
-          rotulo="Remetente"
-          campo="remetente"
-          valor={busca.remetente}
-          contexto={contexto}
-          aoMudar={(v) => {
-            mudar({ remetente: v });
-          }}
-        />
-        <SeletorDeTexto
-          rotulo="Destino"
-          campo="cidade_destino"
-          valor={busca.destino}
-          contexto={contexto}
-          aoMudar={(v) => {
-            mudar({ destino: v });
-          }}
-        />
-        <span
-          className="inline-flex items-center"
-          title="Filtra os CT-e cuja ocorrência EFETIVA atual (o status vigente do CT-e) é o código selecionado — o mesmo critério da lista detalhada. Não considera ocorrências antigas já superadas na jornada. Todos os cards, gráficos e a lista respeitam esse filtro."
-        >
-          <FiltroMultiplo
-            rotulo="Ocorrência"
-            textoVazio="todos"
-            opcoes={
-              codigos.data
-                ? ordenarCodigosDisponiveis(codigos.data).map((o) => ({
-                    valor: o.codigo,
-                    rotulo: `${o.codigo} — ${o.descricao ?? "sem descrição"}`,
-                    detalhe: String(o.qtd),
-                  }))
-                : undefined
-            }
-            aoAbrir={setOcorrenciaAberta}
-            selecionados={busca.codigos}
-            aoMudar={(ids) => {
-              mudar({ codigos: ids });
-            }}
-          />
-        </span>
-        <SeletorDeTipoDocumento
-          contagens={tiposNoPeriodo.data}
-          aoAbrir={setTipoAberto}
-          selecionados={busca.tipos}
-          aoMudar={(ids) => {
-            mudar({ tipos: ids });
-          }}
-        />
-      </FiltrosAvancados>
-
-      <FiltrandoPor etiquetas={etiquetas} />
+              {BASE_CURTA[busca.base]}
+            </span>
+            <SeletorDePagador
+              rotulo="Parceiros"
+              opcoes={pagadores.data}
+              selecionados={busca.parceiros}
+              aoMudar={(ids) => {
+                mudar({ parceiros: ids });
+              }}
+            />
+            <SeletorDeFilial
+              selecionadas={busca.filiais}
+              contexto={contexto}
+              aoMudar={(siglas) => {
+                mudar({ filiais: siglas });
+              }}
+            />
+            <SeletorDeTexto
+              rotulo="Remetente"
+              campo="remetente"
+              valor={busca.remetente}
+              contexto={contexto}
+              aoMudar={(v) => {
+                mudar({ remetente: v });
+              }}
+            />
+            <SeletorDeTexto
+              rotulo="Destino"
+              campo="cidade_destino"
+              valor={busca.destino}
+              contexto={contexto}
+              aoMudar={(v) => {
+                mudar({ destino: v });
+              }}
+            />
+            <span
+              className="inline-flex items-center"
+              title="Filtra os CT-e cuja ocorrência EFETIVA atual (o status vigente do CT-e) é o código selecionado — o mesmo critério da lista detalhada. Não considera ocorrências antigas já superadas na jornada. Todos os cards, gráficos e a lista respeitam esse filtro."
+            >
+              <FiltroMultiplo
+                rotulo="Ocorrência"
+                textoVazio="todos"
+                opcoes={
+                  codigos.data
+                    ? ordenarCodigosDisponiveis(codigos.data).map((o) => ({
+                        valor: o.codigo,
+                        rotulo: `${o.codigo} — ${o.descricao ?? "sem descrição"}`,
+                        detalhe: String(o.qtd),
+                      }))
+                    : undefined
+                }
+                aoAbrir={setOcorrenciaAberta}
+                selecionados={busca.codigos}
+                aoMudar={(ids) => {
+                  mudar({ codigos: ids });
+                }}
+              />
+            </span>
+            <SeletorDeTipoDocumento
+              contagens={tiposNoPeriodo.data}
+              aoAbrir={setTipoAberto}
+              selecionados={busca.tipos}
+              aoMudar={(ids) => {
+                mudar({ tipos: ids });
+              }}
+            />
+            <BuscaDocumento
+              valor=""
+              placeholder="CTRC..."
+              className="w-[150px]"
+              aoMudar={(v) => {
+                if (v) abrirLista("emitidos", { ctrc: v, ignorarPeriodo: true });
+              }}
+            />
+            <BuscaDocumento
+              valor=""
+              placeholder="Nota fiscal..."
+              className="w-[150px]"
+              aoMudar={(v) => {
+                if (v) abrirLista("emitidos", { nf: v, ignorarPeriodo: true });
+              }}
+            />
+          </FiltrosAvancados>
+          <FiltrandoPor etiquetas={etiquetas} />
+        </>
+      }
+    >
+      {erro && (
+        <Aviso tom="erro">
+          {mensagemAmigavel(erro, "Não foi possível carregar os dados de performance.")}
+        </Aviso>
+      )}
 
       {dias > 183 && (
-        <div className="flex items-start gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          <div>
-            <strong>Período longo selecionado ({dias} dias).</strong> A consulta pode demorar alguns
-            segundos — considere aplicar filtros de unidade, parceiro ou filial para acelerar o
-            carregamento.
-          </div>
-        </div>
+        <Aviso tom="alerta" titulo={`Período longo selecionado (${String(dias)} dias).`}>
+          A consulta pode demorar alguns segundos — considere aplicar filtros de unidade, parceiro
+          ou filial para acelerar o carregamento.
+        </Aviso>
+      )}
+
+      {r &&
+        cobertura?.min &&
+        cobertura.max &&
+        (r.totais.totalCtrcs === 0 || cobertura.min === cobertura.max) && (
+          <Aviso tom="info">
+            {r.totais.totalCtrcs === 0 ? (
+              <>
+                Sem CTRCs no intervalo <strong>{periodo.inicio}</strong> →{" "}
+                <strong>{periodo.fim}</strong>.{" "}
+              </>
+            ) : (
+              <>
+                Os números podem parecer iguais entre períodos porque os CTRCs disponíveis estão
+                concentrados em <strong>{cobertura.min}</strong>.{" "}
+              </>
+            )}
+            Mudar o período só altera os valores quando há CTRCs em datas diferentes dentro da
+            janela.
+          </Aviso>
+        )}
+
+      {r && r.totais.ocorrenciasPendentes > 0 && (
+        <Aviso
+          tom="alerta"
+          acao={
+            <Button asChild size="sm" variant="outline">
+              <a href="/admin/codigos">
+                Classificar agora <ArrowRight aria-hidden />
+              </a>
+            </Button>
+          }
+        >
+          <strong className="font-semibold">{r.totais.ocorrenciasPendentes}</strong> ocorrências
+          precisam de classificação para os números ficarem 100% exatos.
+        </Aviso>
       )}
 
       {alertas.data && (
@@ -492,45 +529,6 @@ export function PaginaPerformance() {
           }}
         />
       )}
-
-      {erro && (
-        <div
-          className="flex items-start gap-2 rounded-[10px] border border-amber-200 bg-[var(--status-warn-bg)] px-4 py-3 text-[12px]"
-          style={{ color: textoDoStatus.alerta }}
-        >
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>
-            {mensagemAmigavel(erro, "Não foi possível carregar os dados de performance.")}
-          </span>
-        </div>
-      )}
-
-      {r &&
-        cobertura?.min &&
-        cobertura.max &&
-        (r.totais.totalCtrcs === 0 || cobertura.min === cobertura.max) && (
-          <div className="flex items-start gap-2 rounded-[10px] border border-border/70 bg-muted/40 px-4 py-2.5 text-[12px] text-muted-foreground">
-            <AlertTriangle
-              className="mt-0.5 h-3.5 w-3.5 shrink-0"
-              style={{ color: textoDoStatus.alerta }}
-            />
-            <span>
-              {r.totais.totalCtrcs === 0 ? (
-                <>
-                  Sem CTRCs no intervalo <strong>{periodo.inicio}</strong> →{" "}
-                  <strong>{periodo.fim}</strong>.{" "}
-                </>
-              ) : (
-                <>
-                  Os números podem parecer iguais entre períodos porque os CTRCs disponíveis estão
-                  concentrados em <strong>{cobertura.min}</strong>.{" "}
-                </>
-              )}
-              Mudar o período só altera os valores quando há CTRCs em datas diferentes dentro da
-              janela.
-            </span>
-          </div>
-        )}
 
       {r ? (
         <LinhaDeKpis
@@ -558,47 +556,41 @@ export function PaginaPerformance() {
           }}
         />
       ) : (
-        <EsqueletoDeCards quantos={5} altura="h-[140px]" />
+        <EsqueletoDeCards quantos={5} />
       )}
-      <p className="-mt-3 text-[11px] text-muted-foreground">
-        {configuracao.otifVisivel && (
-          <>
-            <strong className="font-medium text-foreground">OTIF:</strong> percentual dos CTRCs do
-            período que tiveram algum problema no percurso (pendência do cliente ou da operação),
-            mesmo que tenham sido entregues no fim. Quanto menor, melhor — mesma leitura usada na
-            tela de Romaneio, que mede só as cargas que já saíram para entrega.
-            {"  ·  "}
-          </>
+
+      <Secao titulo="Produção">
+        {bloco ? (
+          <LinhaDeProducao
+            bloco={bloco}
+            tde={tde.data}
+            slaMetaPct={configuracao.slaMetaPct}
+            onCard={(card) => {
+              abrirLista(CARD_PARA_LISTA[card]);
+            }}
+          />
+        ) : (
+          <EsqueletoDeCards quantos={7} />
         )}
-        <strong className="font-medium text-foreground">Nascidos em atraso:</strong> CTRCs emitidos
-        a menos de 48 horas (corridas) da previsão de entrega — o atraso é do parceiro, não da{" "}
-        {nomeCurto}.{"  ·  "}
-        <strong className="font-medium text-foreground">SLA Operacional:</strong> (CT-e emitidos −
-        entregues fora do prazo) ÷ CT-e emitidos.
-      </p>
+      </Secao>
 
-      {bloco ? (
-        <LinhaDeProducao
-          bloco={bloco}
-          tde={tde.data}
-          slaMetaPct={configuracao.slaMetaPct}
-          onCard={(card) => {
-            abrirLista(CARD_PARA_LISTA[card]);
-          }}
+      <div ref={refSerie}>
+        <GraficoSerie
+          titulo={`Evolução ${janela.granularidade === "mes" ? "mês a mês" : "dia a dia"}`}
+          subtitulo={
+            janela.ampliada
+              ? "Últimos 7 dias (o período selecionado é curto demais para um gráfico)"
+              : `${periodo.rotulo} · mesmos filtros da tela`
+          }
+          pontos={serie.data}
+          granularidade={janela.granularidade}
+          metricas={["sla_op", "sla_cli", "volume"]}
+          meta={configuracao.slaMetaPct / 100}
+          carregando={serie.isFetching || (!serie.data && !serie.error)}
+          erro={serie.error}
+          nomeExport="performance-evolucao"
         />
-      ) : (
-        <EsqueletoDeCards quantos={7} altura="h-[124px]" />
-      )}
-
-      <SecaoPrevistos
-        dados={previstos.data}
-        carregando={previstos.isFetching}
-        ignorarPeriodo={ignorarPeriodo}
-        onIgnorarPeriodo={setIgnorarPeriodo}
-        onClique={cliqueNosPrevistos}
-      />
-
-      {bloco && <VerificacaoDaParticao bloco={bloco} ignorarPeriodo={ignorarPeriodo} />}
+      </div>
 
       <TabelaDeUnidades
         linhas={linhas}
@@ -618,23 +610,14 @@ export function PaginaPerformance() {
         }}
       />
 
-      <div ref={refSerie}>
-        <GraficoSerie
-          titulo={`Evolução ${janela.granularidade === "mes" ? "mês a mês" : "dia a dia"}`}
-          subtitulo={
-            janela.ampliada
-              ? "Últimos 7 dias (o período selecionado é curto demais para um gráfico)"
-              : `${periodo.rotulo} · mesmos filtros da tela`
-          }
-          pontos={serie.data}
-          granularidade={janela.granularidade}
-          metricas={["sla_op", "sla_cli", "volume"]}
-          meta={configuracao.slaMetaPct / 100}
-          carregando={serie.isFetching || (!serie.data && !serie.error)}
-          erro={serie.error}
-          nomeExport="performance-evolucao"
-        />
-      </div>
+      <SecaoPrevistos
+        dados={previstos.data}
+        carregando={previstos.isFetching}
+        ignorarPeriodo={ignorarPeriodo}
+        onIgnorarPeriodo={setIgnorarPeriodo}
+        onClique={cliqueNosPrevistos}
+        rodape={bloco && <VerificacaoDaParticao bloco={bloco} ignorarPeriodo={ignorarPeriodo} />}
+      />
 
       <DialogoRelatorio
         aberto={relatorioAberto}
@@ -655,25 +638,6 @@ export function PaginaPerformance() {
           },
         }}
       />
-
-      {r && r.totais.ocorrenciasPendentes > 0 && (
-        <a
-          href="/admin/codigos"
-          className="flex items-center justify-between gap-3 rounded-[10px] border border-amber-200 bg-[var(--status-warn-bg)] px-4 py-3 text-[12px] transition-colors hover:bg-amber-100"
-        >
-          <span className="flex items-center gap-2" style={{ color: textoDoStatus.alerta }}>
-            <AlertTriangle className="h-4 w-4" />
-            <strong className="font-medium">{r.totais.ocorrenciasPendentes}</strong> ocorrências
-            precisam de classificação para os números ficarem 100% exatos.
-          </span>
-          <span
-            className="flex items-center gap-1 font-medium"
-            style={{ color: textoDoStatus.alerta }}
-          >
-            Classificar agora <ArrowRight className="h-3 w-3" />
-          </span>
-        </a>
-      )}
-    </div>
+    </Pagina>
   );
 }
