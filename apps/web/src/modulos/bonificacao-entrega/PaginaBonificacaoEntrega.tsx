@@ -11,56 +11,77 @@ import {
 import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarDiaMes, formatarMoeda } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ChevronDown, ChevronRight, Play } from "lucide-react";
-import { useMemo, useState } from "react";
-
-import { Abas, ConteudoDaAba } from "@/componentes/comum/Abas";
-import { Badge } from "@/componentes/ui/badge";
-import { Button } from "@/componentes/ui/button";
-import { Input } from "@/componentes/ui/input";
-import { Label } from "@/componentes/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/componentes/ui/select";
+  CalendarX,
+  ChevronDown,
+  ChevronRight,
+  PackageCheck,
+  Play,
+  RefreshCw,
+  UsersRound,
+  Wallet,
+} from "lucide-react";
+import { type KeyboardEvent, useMemo, useState } from "react";
+
+import { Alternador } from "@/componentes/comum/Alternador";
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
+import {
+  type EtiquetaFiltroOpcional,
+  FiltrandoPor,
+  FiltrosAvancados,
+} from "@/componentes/comum/FiltrosAvancados";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
+import { Pagina } from "@/componentes/layout/Pagina";
+import { Button } from "@/componentes/ui/button";
+import { Select, SelectContent, SelectItem } from "@/componentes/ui/select";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
 
+import {
+  CampoRotulado,
+  CLASSE_DO_CAMPO,
+  GatilhoRotulado,
+  InterruptorRotulado,
+} from "../ranking/campos-do-filtro";
 import { mesDe, periodoDoMes } from "../ranking/periodo";
+import {
+  CLASSE_CABECALHO,
+  CLASSE_LINHA,
+  CLASSE_TABELA,
+  CLASSE_TD,
+  CLASSE_TH,
+} from "../ranking/tabela-propria";
 import { consultaApuracao, consultaUnidades } from "./api";
 import { ComoFuncionaBonificacao } from "./ComoFuncionaBonificacao";
+import { NIVEL } from "./niveis";
 import { QuadroDeFaltas } from "./QuadroDeFaltas";
 
 const TODAS = "__todas__";
 
-const NIVEL_LABEL: Record<LinhaBonificacao["nivel"], string> = {
-  turbo: "Turbo",
-  acelerado: "Acelerado",
-  em_rota: "Em rota",
-  sem_bonus: "Sem bônus",
-};
-
-const NIVEL_COR: Record<LinhaBonificacao["nivel"], string> = {
-  turbo: "bg-purple-500/15 text-purple-700 dark:text-purple-300",
-  acelerado: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-  em_rota: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  sem_bonus: "bg-red-500/15 text-red-700 dark:text-red-300",
+const ROTULO_DA_HORA_EXTRA: Record<string, string> = {
+  [TODAS]: "Todas",
+  sim: "Fez hora extra",
+  nao: "Não fez",
+  sem_ponto: "Sem registro de ponto",
 };
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /** Verde = sem hora extra (vale Turbo). Vermelho = fez. Cinza = sem ponto. */
 function BolinhaHoraExtra({ valor }: { valor: boolean | null }) {
-  const cor = valor === null ? "bg-muted-foreground/40" : valor ? "bg-red-500" : "bg-emerald-500";
+  const cor =
+    valor === null ? "bg-muted-foreground/40" : valor ? "bg-status-bad" : "bg-status-good";
   const titulo =
     valor === null ? "Sem registro de ponto" : valor ? "Fez hora extra" : "Sem hora extra";
   return (
     <span
+      role="img"
       className={`inline-block h-2.5 w-2.5 rounded-full ${cor}`}
       title={titulo}
       aria-label={titulo}
@@ -68,129 +89,146 @@ function BolinhaHoraExtra({ valor }: { valor: boolean | null }) {
   );
 }
 
+const TH_DO_DIA = "py-1.5 pr-3 label-xs";
+
 function LinhaPessoa({ p }: { p: ResumoPessoa }) {
   const [aberto, setAberto] = useState(false);
+  const alternar = () => {
+    setAberto((v) => !v);
+  };
+  const tecla = (e: KeyboardEvent<HTMLTableRowElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    alternar();
+  };
   return (
     <>
       <tr
-        className="cursor-pointer hover:bg-muted/30"
-        onClick={() => {
-          setAberto((v) => !v);
-        }}
+        tabIndex={0}
+        aria-expanded={aberto}
+        className={cn(
+          CLASSE_LINHA,
+          "cursor-pointer focus-visible:bg-accent focus-visible:outline-none",
+          aberto && "bg-muted/40",
+        )}
+        onClick={alternar}
+        onKeyDown={tecla}
       >
-        <td className="px-3 py-1.5">
-          <div className="flex items-center gap-1.5">
+        <td className={CLASSE_TD}>
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
             {aberto ? (
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
             )}
-            <span className="font-medium">{p.colaborador}</span>
-            <Badge variant="secondary" className="text-[10px] font-normal">
+            <span className="font-semibold">{p.colaborador}</span>
+            <SeloStatus tom="neutro" semIcone>
               {p.funcao}
-            </Badge>
+            </SeloStatus>
             {p.zerados > 0 && (
-              <Badge variant="destructive" className="text-[10px]">
+              <SeloStatus tom="erro">
                 {p.zerados} zerado{p.zerados > 1 ? "s" : ""} por falta
-              </Badge>
+              </SeloStatus>
             )}
           </div>
         </td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{p.dias}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{p.entregues}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{p.retornos}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{pct(p.exitoMedio)}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{p.diasTurbo}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{p.diasSemBonus}</td>
-        <td className="px-3 py-1.5">
+        <td className={cn(CLASSE_TD, "text-right")}>{p.dias}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>{p.entregues}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>{p.retornos}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>{pct(p.exitoMedio)}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>{p.diasTurbo}</td>
+        <td className={cn(CLASSE_TD, "text-right")}>{p.diasSemBonus}</td>
+        <td className={CLASSE_TD}>
           {/* No resumo a pessoa tem vários dias: a bolinha mostra se houve hora extra em algum
               deles, e o número diz em quantos. */}
           <div className="flex items-center justify-end gap-1.5">
             <BolinhaHoraExtra valor={p.diasHoraExtra > 0} />
-            <span className="tabular-nums text-muted-foreground">
+            <span className="text-muted-foreground">
               {p.diasHoraExtra}/{p.dias}
             </span>
           </div>
         </td>
-        <td className="px-3 py-1.5 text-right tabular-nums">
+        <td className={cn(CLASSE_TD, "text-right")}>
           {p.semPonto > 0 ? (
-            <span className="text-amber-600">{p.semPonto}</span>
+            <span className="font-semibold text-status-warn-fg">{p.semPonto}</span>
           ) : (
             <span className="text-muted-foreground">—</span>
           )}
         </td>
-        <td className="px-3 py-1.5 text-right font-medium tabular-nums">
-          {formatarMoeda(p.total)}
-        </td>
+        <td className={cn(CLASSE_TD, "text-right font-semibold")}>{formatarMoeda(p.total)}</td>
       </tr>
       {aberto && (
-        <tr>
-          <td colSpan={10} className="bg-muted/20 px-3 py-2">
-            <table className="w-full text-[11px]">
-              <thead className="text-[10px] uppercase text-muted-foreground">
-                <tr>
-                  <th className="py-1 text-left font-medium">Dia</th>
-                  <th className="py-1 text-left font-medium">Romaneio</th>
-                  <th className="py-1 text-left font-medium">Função</th>
-                  <th className="py-1 text-right font-medium">NFs</th>
-                  <th className="py-1 text-right font-medium">SAC</th>
-                  <th className="py-1 text-right font-medium">Retornos</th>
-                  <th className="py-1 text-right font-medium">Pend.</th>
-                  <th className="py-1 text-right font-medium">Êxito</th>
-                  <th className="py-1 text-center font-medium">HE</th>
-                  <th className="py-1 text-left font-medium">Nível</th>
-                  <th className="py-1 text-right font-medium">Bônus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {p.linhas.map((l) => (
-                  <tr
-                    key={`${l.dataRomaneio}-${l.romaneio}-${l.funcao}`}
-                    className="border-t border-border/30"
-                  >
-                    <td className="py-1 font-mono">{formatarDiaMes(l.dataRomaneio)}</td>
-                    <td className="py-1 font-mono text-muted-foreground">{l.romaneio}</td>
-                    <td className="py-1 text-muted-foreground">{l.funcao}</td>
-                    <td className="py-1 text-right tabular-nums">{l.nfsCarregadas}</td>
-                    <td className="py-1 text-right tabular-nums">{l.sac}</td>
-                    <td className="py-1 text-right tabular-nums">{l.retornos}</td>
-                    <td className="py-1 text-right tabular-nums">
-                      {l.pendentes > 0 ? (
-                        <span className="text-amber-600">{l.pendentes}</span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="py-1 text-right tabular-nums">{pct(l.exito)}</td>
-                    <td className="py-1 text-center">
-                      <BolinhaHoraExtra valor={l.horaExtra} />
-                    </td>
-                    <td className="py-1">
-                      <span className={`rounded px-1.5 py-0.5 ${NIVEL_COR[l.nivel]}`}>
-                        {NIVEL_LABEL[l.nivel]}
-                      </span>
-                      {l.semRegistroPonto && (
-                        <span
-                          className="ml-1 text-amber-600"
-                          title="Sem registro de ponto no Ahgora"
-                        >
-                          sem ponto
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-1 text-right tabular-nums">
-                      {l.zeradoPorFalta ? (
-                        <span className="text-destructive line-through">
-                          {formatarMoeda(l.bonus)}
-                        </span>
-                      ) : (
-                        formatarMoeda(l.bonus)
-                      )}
-                    </td>
+        <tr className="border-b border-border">
+          <td colSpan={10} className="bg-superficie px-4 py-2">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12.5px] tabular-nums">
+                <thead>
+                  <tr className="text-left">
+                    <th className={TH_DO_DIA}>Dia</th>
+                    <th className={TH_DO_DIA}>Romaneio</th>
+                    <th className={TH_DO_DIA}>Função</th>
+                    <th className={cn(TH_DO_DIA, "text-right")}>NFs</th>
+                    <th className={cn(TH_DO_DIA, "text-right")}>SAC</th>
+                    <th className={cn(TH_DO_DIA, "text-right")}>Retornos</th>
+                    <th className={cn(TH_DO_DIA, "text-right")}>Pend.</th>
+                    <th className={cn(TH_DO_DIA, "text-right")}>Êxito</th>
+                    <th className={cn(TH_DO_DIA, "text-center")}>HE</th>
+                    <th className={TH_DO_DIA}>Nível</th>
+                    <th className={cn(TH_DO_DIA, "pr-0 text-right")}>Bônus</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {p.linhas.map((l) => (
+                    <tr
+                      key={`${l.dataRomaneio}-${l.romaneio}-${l.funcao}`}
+                      className="border-t border-border"
+                    >
+                      <td className="py-1.5 pr-3">{formatarDiaMes(l.dataRomaneio)}</td>
+                      <td className="py-1.5 pr-3 font-mono text-muted-foreground">{l.romaneio}</td>
+                      <td className="py-1.5 pr-3 text-muted-foreground">{l.funcao}</td>
+                      <td className="py-1.5 pr-3 text-right">{l.nfsCarregadas}</td>
+                      <td className="py-1.5 pr-3 text-right">{l.sac}</td>
+                      <td className="py-1.5 pr-3 text-right">{l.retornos}</td>
+                      <td className="py-1.5 pr-3 text-right">
+                        {l.pendentes > 0 ? (
+                          <span className="font-semibold text-status-warn-fg">{l.pendentes}</span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-3 text-right">{pct(l.exito)}</td>
+                      <td className="py-1.5 pr-3 text-center">
+                        <BolinhaHoraExtra valor={l.horaExtra} />
+                      </td>
+                      <td className="py-1.5 pr-3">
+                        <span className="inline-flex flex-wrap items-center gap-1.5">
+                          <SeloStatus tom={NIVEL[l.nivel].tom} icone={NIVEL[l.nivel].icone}>
+                            {NIVEL[l.nivel].rotulo}
+                          </SeloStatus>
+                          {l.semRegistroPonto && (
+                            <span
+                              className="text-xs font-semibold text-status-warn-fg"
+                              title="Sem registro de ponto no Ahgora"
+                            >
+                              sem ponto
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-right">
+                        {l.zeradoPorFalta ? (
+                          <span className="text-status-bad-fg line-through">
+                            {formatarMoeda(l.bonus)}
+                          </span>
+                        ) : (
+                          formatarMoeda(l.bonus)
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </td>
         </tr>
       )}
@@ -199,6 +237,7 @@ function LinhaPessoa({ p }: { p: ResumoPessoa }) {
 }
 
 type Filtros = EntradaDe<typeof c.apurar>;
+type Visao = "pessoa" | "dia";
 
 /** origem: features/bonificacao/components/BonificacaoScreen.tsx (sistema atual) */
 export function PaginaBonificacaoEntrega() {
@@ -209,6 +248,7 @@ export function PaginaBonificacaoEntrega() {
   const [horaExtra, setHoraExtra] = useState<string>(TODAS);
   const [usarPonto, setUsarPonto] = useState(true);
   const [filtros, setFiltros] = useState<Filtros | null>(null);
+  const [visao, setVisao] = useState<Visao>("pessoa");
 
   const unidades = useQuery(consultaUnidades);
   const q = useQuery(consultaApuracao(filtros));
@@ -257,41 +297,50 @@ export function PaginaBonificacaoEntrega() {
     });
   }
 
-  return (
-    <div className="space-y-4">
-      <header>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-[22px] font-medium tracking-tight">Bonificação de entrega</h1>
-          <ComoFuncionaBonificacao />
-        </div>
-        <p className="text-[12px] text-muted-foreground">
-          Apuração do bônus por colaborador, a partir dos romaneios e das ocorrências do dia. A hora
-          extra vem do ponto no Ahgora e é o que separa Turbo de Acelerado.
-        </p>
-      </header>
+  const etiquetas: EtiquetaFiltroOpcional[] = [
+    funcao !== TODAS && {
+      rotulo: "Função",
+      valor: funcao,
+      limpar: () => {
+        setFuncao(TODAS);
+      },
+    },
+    horaExtra !== TODAS && {
+      rotulo: "Hora extra",
+      valor: ROTULO_DA_HORA_EXTRA[horaExtra] ?? horaExtra,
+      limpar: () => {
+        setHoraExtra(TODAS);
+      },
+    },
+  ];
 
-      <section className="rounded-[10px] border border-border/70 bg-card p-3">
-        <div className="grid gap-3 sm:grid-cols-[auto_auto_1fr_auto]">
-          <div className="space-y-1">
-            <Label htmlFor="bonificacao-mes" className="text-[11px]">
-              Mês
-            </Label>
-            <Input
-              id="bonificacao-mes"
-              type="month"
-              className="h-8 text-[12px]"
-              value={mes}
-              onChange={(e) => {
-                setMes(e.target.value);
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[11px]">Unidade</Label>
+  return (
+    <Pagina
+      titulo="Bonificação de entrega"
+      descricao="Apuração do bônus por colaborador, a partir dos romaneios e das ocorrências do dia. A hora extra vem do ponto no Ahgora e é o que separa Turbo de Acelerado."
+      acoes={<ComoFuncionaBonificacao />}
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={filtrando}
+            aoLimpar={() => {
+              setFuncao(TODAS);
+              setHoraExtra(TODAS);
+            }}
+          >
+            <CampoRotulado rotulo="Mês" htmlFor="bonificacao-mes">
+              <input
+                id="bonificacao-mes"
+                type="month"
+                className={CLASSE_DO_CAMPO}
+                value={mes}
+                onChange={(e) => {
+                  setMes(e.target.value);
+                }}
+              />
+            </CampoRotulado>
             <Select value={unidade} onValueChange={setUnidade}>
-              <SelectTrigger className="h-8 w-[160px] text-[12px]" aria-label="Unidade">
-                <SelectValue />
-              </SelectTrigger>
+              <GatilhoRotulado rotulo="Unidade" />
               <SelectContent>
                 {(unidades.data ?? []).map((u) => (
                   <SelectItem key={u.unidade} value={u.unidade}>
@@ -301,205 +350,246 @@ export function PaginaBonificacaoEntrega() {
                 <SelectItem value={TODAS}>Todas</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="flex items-end gap-2 pb-1.5">
-            <Switch id="usar-ponto" checked={usarPonto} onCheckedChange={setUsarPonto} />
-            <Label htmlFor="usar-ponto" className="text-[11px]">
-              Usar ponto do Ahgora para hora extra
-            </Label>
-          </div>
-          <div className="flex items-end">
-            <Button size="sm" className="h-8" onClick={apurar} disabled={q.isFetching}>
-              <Play className="mr-1.5 h-3 w-3" />
+            <InterruptorRotulado id="usar-ponto" rotulo="Usar ponto do Ahgora para hora extra">
+              <Switch id="usar-ponto" checked={usarPonto} onCheckedChange={setUsarPonto} />
+            </InterruptorRotulado>
+            <Button onClick={apurar} disabled={q.isFetching}>
+              <Play aria-hidden />
               {q.isFetching ? "Apurando…" : "Apurar"}
             </Button>
-          </div>
-        </div>
-
-        {q.data && (
-          <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-border/60 pt-3">
-            <div className="space-y-1">
-              <Label className="text-[11px]">Função</Label>
-              <Select value={funcao} onValueChange={setFuncao}>
-                <SelectTrigger className="h-8 w-[150px] text-[12px]" aria-label="Função">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TODAS}>Todas</SelectItem>
-                  <SelectItem value="Motorista">Motorista</SelectItem>
-                  <SelectItem value="Ajudante">Ajudante</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px]">Hora extra</Label>
-              <Select value={horaExtra} onValueChange={setHoraExtra}>
-                <SelectTrigger className="h-8 w-[190px] text-[12px]" aria-label="Hora extra">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TODAS}>Todas</SelectItem>
-                  <SelectItem value="sim">Fez hora extra</SelectItem>
-                  <SelectItem value="nao">Não fez</SelectItem>
-                  <SelectItem value="sem_ponto">Sem registro de ponto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {filtrando && (
-              <p className="pb-2 text-[11px] text-amber-600">
-                Filtro ativo: os totais abaixo somam só {linhas.length} de {todasLinhas.length}{" "}
-                lançamentos.
-              </p>
+            {q.data && (
+              <>
+                <span aria-hidden className="mx-1 hidden h-6 w-px bg-border sm:block" />
+                <Select value={funcao} onValueChange={setFuncao}>
+                  <GatilhoRotulado rotulo="Função" />
+                  <SelectContent>
+                    <SelectItem value={TODAS}>Todas</SelectItem>
+                    <SelectItem value="Motorista">Motorista</SelectItem>
+                    <SelectItem value="Ajudante">Ajudante</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={horaExtra} onValueChange={setHoraExtra}>
+                  <GatilhoRotulado rotulo="Hora extra" />
+                  <SelectContent>
+                    {Object.entries(ROTULO_DA_HORA_EXTRA).map(([valor, rotulo]) => (
+                      <SelectItem key={valor} value={valor}>
+                        {rotulo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             )}
-          </div>
-        )}
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Com o ponto ligado, a apuração consulta o Ahgora colaborador por colaborador e leva alguns
-          segundos a mais. Sem ele, ninguém chega a Turbo.
-        </p>
-      </section>
-
+          </FiltrosAvancados>
+          <FiltrandoPor etiquetas={etiquetas} />
+          <p className="text-xs text-muted-foreground">
+            Com o ponto ligado, a apuração consulta o Ahgora colaborador por colaborador e leva
+            alguns segundos a mais. Sem ele, ninguém chega a Turbo.
+          </p>
+        </>
+      }
+    >
       {q.error && (
-        <div className="rounded-[10px] border border-destructive/40 bg-destructive/5 p-3 text-[12px] text-destructive">
+        <Aviso
+          tom="erro"
+          acao={
+            <Button size="sm" variant="outline" onClick={() => void q.refetch()}>
+              <RefreshCw aria-hidden /> Tentar novamente
+            </Button>
+          }
+        >
           {mensagemAmigavel(q.error)}
-        </div>
+        </Aviso>
       )}
 
       {q.isFetching ? (
-        <div className="space-y-2 rounded-[10px] border border-border/70 bg-card p-3">
-          {Array.from({ length: 8 }, (_, i) => (
-            <Skeleton key={i} className="h-8 w-full" />
-          ))}
+        <div className="space-y-4" aria-busy>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-2xl bg-muted" />
+            ))}
+          </div>
+          <Skeleton className="h-72 w-full rounded-2xl bg-muted" />
         </div>
       ) : q.data ? (
         <>
-          <section className="grid gap-3 sm:grid-cols-4">
-            {[
-              { rotulo: "Colaboradores", valor: String(pessoas.length), alerta: false },
-              {
-                rotulo: "NFs entregues",
-                valor: String(linhas.reduce((a, l) => a + l.nfsEntregues, 0)),
-                alerta: false,
-              },
-              { rotulo: "Custo total", valor: formatarMoeda(total), alerta: false },
-              { rotulo: "Dias sem ponto", valor: String(semPonto), alerta: semPonto > 0 },
-            ].map((k) => (
-              <div key={k.rotulo} className="rounded-[10px] border border-border/70 bg-card p-3">
-                <p className="text-[11px] text-muted-foreground">{k.rotulo}</p>
-                <p
-                  className={`text-[20px] font-medium tabular-nums ${k.alerta ? "text-amber-600" : ""}`}
-                >
-                  {k.valor}
-                </p>
-              </div>
-            ))}
-          </section>
-
+          {filtrando && (
+            <Aviso tom="info">
+              Filtro ativo: os totais abaixo somam só {linhas.length} de {todasLinhas.length}{" "}
+              lançamentos.
+            </Aviso>
+          )}
           {pendentes > 0 && (
-            <div className="flex items-start gap-2 rounded-[10px] border border-amber-500/40 bg-amber-500/5 p-3 text-[12px] text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                {pendentes} de {linhas.length} linhas têm NF sem desfecho registrado no dia. Elas
-                contam como entregues, então o valor apurado pode cair quando as ocorrências
-                fecharem.
-              </span>
-            </div>
+            <Aviso tom="alerta">
+              {pendentes} de {linhas.length} linhas têm NF sem desfecho registrado no dia. Elas
+              contam como entregues, então o valor apurado pode cair quando as ocorrências fecharem.
+            </Aviso>
           )}
 
-          <Abas
-            abas={[
-              { valor: "pessoa", rotulo: "Por colaborador" },
-              { valor: "dia", rotulo: "Por dia" },
-            ]}
-            padrao="pessoa"
-            classeDaAba="text-[12px]"
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiCard
+              rotulo="Colaboradores"
+              valor={String(pessoas.length)}
+              status="bom"
+              neutro
+              icone={UsersRound}
+              detalhe={`${String(linhas.length)} lançamentos pessoa-dia`}
+            />
+            <KpiCard
+              rotulo="NFs entregues"
+              valor={String(linhas.reduce((a, l) => a + l.nfsEntregues, 0))}
+              status="bom"
+              neutro
+              icone={PackageCheck}
+              detalhe="carregadas − SAC − retornos"
+            />
+            <KpiCard
+              rotulo="Custo total"
+              valor={formatarMoeda(total)}
+              status="bom"
+              neutro
+              icone={Wallet}
+              detalhe="soma do bônus no recorte"
+            />
+            <KpiCard
+              rotulo="Dias sem ponto"
+              valor={String(semPonto)}
+              status={semPonto > 0 ? "alerta" : "bom"}
+              icone={CalendarX}
+              detalhe={semPonto > 0 ? "nível limitado a Acelerado" : "todos com ponto"}
+            />
+          </div>
+
+          <Painel
+            barra={
+              <Alternador
+                rotulo="Visão da apuração"
+                valor={visao}
+                aoMudar={setVisao}
+                opcoes={[
+                  { valor: "pessoa", rotulo: "Por colaborador" },
+                  { valor: "dia", rotulo: "Por dia" },
+                ]}
+              />
+            }
           >
-            <ConteudoDaAba valor="pessoa">
-              <section className="overflow-x-auto rounded-[10px] border border-border/70 bg-card">
-                <table className="w-full text-[12px]">
-                  <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Colaborador</th>
-                      <th className="px-3 py-2 text-right">Dias</th>
-                      <th className="px-3 py-2 text-right">NFs entregues</th>
-                      <th className="px-3 py-2 text-right">Retornos</th>
-                      <th className="px-3 py-2 text-right">Êxito médio</th>
-                      <th className="px-3 py-2 text-right">Dias Turbo</th>
-                      <th className="px-3 py-2 text-right">Sem bônus</th>
-                      <th className="px-3 py-2 text-right">Hora extra</th>
-                      <th className="px-3 py-2 text-right">Sem ponto</th>
-                      <th className="px-3 py-2 text-right">Bônus</th>
+            <div className="rolagem-fina relative overflow-x-auto rounded-xl">
+              {visao === "pessoa" ? (
+                <table className={CLASSE_TABELA}>
+                  <thead>
+                    <tr className={CLASSE_CABECALHO}>
+                      <th scope="col" className={CLASSE_TH}>
+                        Colaborador
+                      </th>
+                      {[
+                        "Dias",
+                        "NFs entregues",
+                        "Retornos",
+                        "Êxito médio",
+                        "Dias Turbo",
+                        "Sem bônus",
+                        "Hora extra",
+                        "Sem ponto",
+                        "Bônus",
+                      ].map((t) => (
+                        <th key={t} scope="col" className={cn(CLASSE_TH, "text-right")}>
+                          {t}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/40">
+                  <tbody>
                     {pessoas.map((p) => (
                       <LinhaPessoa key={p.colaborador} p={p} />
                     ))}
+                    {pessoas.length === 0 && (
+                      <tr>
+                        <td colSpan={10}>
+                          <EstadoVazio
+                            mensagem="Nenhum lançamento no recorte."
+                            detalhe="Troque o mês, a unidade ou tire os filtros de função e hora extra."
+                          />
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
-                  <tfoot className="border-t-2 border-border bg-muted/30 text-[12px] font-medium">
-                    <tr>
-                      <td className="px-3 py-2">Total do período</td>
+                  <tfoot>
+                    <tr className="border-t-2 border-border bg-muted/70 font-semibold">
+                      <td className={CLASSE_TD}>Total do período</td>
                       <td colSpan={8} />
-                      <td className="px-3 py-2 text-right tabular-nums">{formatarMoeda(total)}</td>
+                      <td className={cn(CLASSE_TD, "text-right")}>{formatarMoeda(total)}</td>
                     </tr>
                   </tfoot>
                 </table>
-              </section>
-            </ConteudoDaAba>
-
-            <ConteudoDaAba valor="dia">
-              <section className="overflow-x-auto rounded-[10px] border border-border/70 bg-card">
-                <table className="w-full text-[12px]">
-                  <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Dia</th>
-                      <th className="px-3 py-2 text-right">Veículos</th>
-                      <th className="px-3 py-2 text-right">Pessoas</th>
-                      <th className="px-3 py-2 text-right">NFs entregues</th>
-                      <th className="px-3 py-2 text-right">Turbo</th>
-                      <th className="px-3 py-2 text-right">Acelerado</th>
-                      <th className="px-3 py-2 text-right">Em rota</th>
-                      <th className="px-3 py-2 text-right">Sem bônus</th>
-                      <th className="px-3 py-2 text-right">Custo do dia</th>
+              ) : (
+                <table className={CLASSE_TABELA}>
+                  <thead>
+                    <tr className={CLASSE_CABECALHO}>
+                      <th scope="col" className={CLASSE_TH}>
+                        Dia
+                      </th>
+                      {[
+                        "Veículos",
+                        "Pessoas",
+                        "NFs entregues",
+                        "Turbo",
+                        "Acelerado",
+                        "Em rota",
+                        "Sem bônus",
+                        "Custo do dia",
+                      ].map((t) => (
+                        <th key={t} scope="col" className={cn(CLASSE_TH, "text-right")}>
+                          {t}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/40">
+                  <tbody>
                     {porDia.map(([dia, ls]) => (
-                      <tr key={dia}>
-                        <td className="px-3 py-1.5 font-mono">{formatarDiaMes(dia)}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums">
+                      <tr key={dia} className={CLASSE_LINHA}>
+                        <td className={cn(CLASSE_TD, "font-semibold")}>{formatarDiaMes(dia)}</td>
+                        <td className={cn(CLASSE_TD, "text-right")}>
                           {new Set(ls.map((l) => l.romaneio)).size}
                         </td>
-                        <td className="px-3 py-1.5 text-right tabular-nums">{ls.length}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums">
+                        <td className={cn(CLASSE_TD, "text-right")}>{ls.length}</td>
+                        <td className={cn(CLASSE_TD, "text-right")}>
                           {ls.reduce((a, l) => a + l.nfsEntregues, 0)}
                         </td>
                         {NIVEIS_DE_BONIFICACAO.map((n) => (
-                          <td key={n} className="px-3 py-1.5 text-right tabular-nums">
+                          <td key={n} className={cn(CLASSE_TD, "text-right")}>
                             {ls.filter((l) => l.nivel === n).length}
                           </td>
                         ))}
-                        <td className="px-3 py-1.5 text-right tabular-nums">
+                        <td className={cn(CLASSE_TD, "text-right font-semibold")}>
                           {formatarMoeda(
                             ls.reduce((a, l) => a + Math.round(l.bonus * 10_000), 0) / 10_000,
                           )}
                         </td>
                       </tr>
                     ))}
+                    {porDia.length === 0 && (
+                      <tr>
+                        <td colSpan={9}>
+                          <EstadoVazio mensagem="Nenhum lançamento no recorte." />
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
-              </section>
-            </ConteudoDaAba>
-          </Abas>
+              )}
+            </div>
+          </Painel>
         </>
       ) : (
-        <div className="rounded-[10px] border border-dashed border-border/70 p-8 text-center text-[12px] text-muted-foreground">
-          Escolha o mês e a unidade e clique em “Apurar”.
-        </div>
+        !q.error && (
+          <Painel>
+            <EstadoVazio icone={Play} mensagem="Escolha o mês e a unidade e clique em “Apurar”." />
+          </Painel>
+        )
       )}
 
       {/* key: trocar o mês recomeça o formulário no dia 1 do mês novo. */}
       <QuadroDeFaltas key={mes} mes={mes} />
-    </div>
+    </Pagina>
   );
 }

@@ -8,11 +8,37 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarMoeda } from "@erp/shared/formatacao";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Copy, Edit, Plus, Sparkles, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarRange,
+  Copy,
+  Edit,
+  ListChecks,
+  Plus,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ModalDetalhe } from "@/componentes/comum/Detalhe";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
+import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
+import { Checkbox } from "@/componentes/ui/checkbox";
+import { Input } from "@/componentes/ui/input";
+import { Label } from "@/componentes/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/componentes/ui/select";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { ErroDoOperador, mensagemAmigavel } from "@/lib/mensagem-de-erro";
@@ -35,7 +61,7 @@ export function PaginaRegras() {
   const qc = useQueryClient();
   const hoje = hojeNoFuso(useFusoDaEmpresa());
   const [editando, setEditando] = useState<Rascunho | null>(null);
-  const { data: regras } = useQuery(consultaRegras);
+  const regras = useQuery(consultaRegras);
 
   const salvar = useMutation({
     mutationFn: (d: Rascunho) => {
@@ -76,138 +102,164 @@ export function PaginaRegras() {
     }
   }
 
+  const lista = regras.data ?? [];
+
   return (
-    <div className="space-y-4">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <Pagina
+      titulo="Regras de bonificação"
+      descricao="Defina critérios e simule antes de ativar"
+      largura="estreita"
+      acoes={
+        <>
           <Button asChild size="sm" variant="ghost">
-            <Link to="/admin/equipes" aria-label="Voltar para Equipes">
-              <ArrowLeft className="h-4 w-4" />
+            <Link to="/admin/equipes" aria-label="Voltar para Equipes" title="Voltar para Equipes">
+              <ArrowLeft aria-hidden /> Voltar
             </Link>
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold">Regras de bonificação</h1>
-            <p className="text-sm text-muted-foreground">
-              Defina critérios e simule antes de ativar
-            </p>
-          </div>
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditando(rascunhoVazio(hoje));
+            }}
+          >
+            <Plus aria-hidden /> Nova regra
+          </Button>
+        </>
+      }
+    >
+      {regras.isPending ? (
+        <div className="space-y-4" aria-busy>
+          {[0, 1].map((i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-2xl bg-muted" />
+          ))}
         </div>
-        <Button
-          onClick={() => {
-            setEditando(rascunhoVazio(hoje));
-          }}
-        >
-          <Plus className="mr-1.5 h-4 w-4" /> Nova regra
-        </Button>
-      </header>
-
-      <div className="space-y-3">
-        {(regras ?? []).map((r) => {
-          const sim = simulacao?.regraId === r.id ? simulacao : null;
-          return (
-            <div key={r.id} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{r.nome}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs ${
-                        r.ativo
-                          ? "bg-emerald-500/20 text-emerald-300"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
+      ) : regras.error ? (
+        <Painel>
+          <MensagemErro erro={regras.error} aoTentarDeNovo={() => void regras.refetch()} />
+        </Painel>
+      ) : lista.length === 0 ? (
+        <Painel>
+          <EstadoVazio
+            icone={ListChecks}
+            mensagem="Nenhuma regra cadastrada ainda."
+            detalhe="Crie a primeira em “Nova regra”."
+          />
+        </Painel>
+      ) : (
+        <div className="space-y-4">
+          {lista.map((r) => {
+            const sim = simulacao?.regraId === r.id ? simulacao : null;
+            return (
+              <Painel
+                key={r.id}
+                titulo={
+                  <span className="flex flex-wrap items-center gap-2">
+                    {r.nome}
+                    <SeloStatus tom={r.ativo ? "sucesso" : "neutro"}>
                       {r.ativo ? "Ativa" : "Inativa"}
-                    </span>
-                  </div>
-                  {r.descricao && (
-                    <p className="mt-1 text-sm text-muted-foreground">{r.descricao}</p>
-                  )}
-                  <p className="mt-1 text-xs text-muted-foreground">
+                    </SeloStatus>
+                  </span>
+                }
+                descricao={r.descricao}
+                acoes={
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void simular(r.id)}
+                      disabled={simulando === r.id}
+                    >
+                      <Sparkles aria-hidden /> Simular
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      aria-label="Editar regra"
+                      title="Editar regra"
+                      onClick={() => {
+                        setEditando(rascunhoDaRegra(r));
+                      }}
+                    >
+                      <Edit aria-hidden />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      aria-label="Copiar regra"
+                      title="Copiar regra"
+                      onClick={() => {
+                        setEditando({
+                          ...rascunhoDaRegra(r),
+                          id: undefined,
+                          nome: `${r.nome} (cópia)`,
+                        });
+                      }}
+                    >
+                      <Copy aria-hidden />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-status-bad-fg hover:text-status-bad-fg"
+                      aria-label="Remover regra"
+                      title="Remover regra"
+                      onClick={() => {
+                        if (window.confirm("Remover regra?")) excluir.mutate(r.id);
+                      }}
+                    >
+                      <Trash2 aria-hidden />
+                    </Button>
+                  </>
+                }
+                classeDoCorpo="space-y-3 px-5 py-4"
+              >
+                <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                  <CalendarRange className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="tabular-nums">
                     Vigência: {r.vigenciaInicio} {r.vigenciaFim ? `→ ${r.vigenciaFim}` : "→ aberta"}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  </span>
+                </p>
+                {r.criterios.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
                     {r.criterios.map((k) => (
-                      <span key={k.id} className="rounded bg-muted px-2 py-0.5 text-xs">
+                      <span
+                        key={k.id}
+                        className="inline-flex h-6 items-center rounded-full border border-border bg-muted px-2.5 text-xs font-medium text-foreground"
+                      >
                         {ROTULO_DO_CRITERIO[k.criterio]}
                       </span>
                     ))}
                   </div>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void simular(r.id)}
-                    disabled={simulando === r.id}
-                  >
-                    <Sparkles className="mr-1.5 h-4 w-4" /> Simular
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label="Editar regra"
-                    onClick={() => {
-                      setEditando(rascunhoDaRegra(r));
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label="Copiar regra"
-                    onClick={() => {
-                      setEditando({
-                        ...rascunhoDaRegra(r),
-                        id: undefined,
-                        nome: `${r.nome} (cópia)`,
-                      });
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label="Remover regra"
-                    onClick={() => {
-                      if (window.confirm("Remover regra?")) excluir.mutate(r.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-rose-400" />
-                  </Button>
-                </div>
-              </div>
+                )}
 
-              {sim && (
-                <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
-                  <div className="font-medium text-emerald-300">Simulação (mês anterior)</div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {sim.equipes.length} equipe(s) · Total estimado:{" "}
-                    <span className="font-medium text-emerald-300">
-                      {formatarMoeda(sim.equipes.reduce((s, e) => s + e.valorCalculado, 0))}
-                    </span>
+                {sim && (
+                  <div className="rounded-xl border border-brand/30 bg-brand-suave p-3 text-[13px]">
+                    <div className="font-semibold text-brand">Simulação (mês anterior)</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {sim.equipes.length} equipe(s) · Total estimado:{" "}
+                      <span className="font-bold text-foreground tabular-nums">
+                        {formatarMoeda(sim.equipes.reduce((s, e) => s + e.valorCalculado, 0))}
+                      </span>
+                    </div>
+                    <div className="mt-2 divide-y divide-border">
+                      {sim.equipes.slice(0, 5).map((e) => (
+                        <div key={e.equipeId} className="flex justify-between gap-3 py-1.5 text-xs">
+                          <span>{e.nome}</span>
+                          <span className="font-semibold tabular-nums">
+                            {formatarMoeda(e.valorCalculado)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="mt-2 space-y-1">
-                    {sim.equipes.slice(0, 5).map((e) => (
-                      <div key={e.equipeId} className="flex justify-between text-xs">
-                        <span>{e.nome}</span>
-                        <span className="font-medium">{formatarMoeda(e.valorCalculado)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {(!regras || regras.length === 0) && (
-          <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            Nenhuma regra cadastrada ainda.
-          </div>
-        )}
-      </div>
+                )}
+              </Painel>
+            );
+          })}
+        </div>
+      )}
 
       {editando && (
         <ModalDaRegra
@@ -221,11 +273,12 @@ export function PaginaRegras() {
           }}
         />
       )}
-    </div>
+    </Pagina>
   );
 }
 
-const CAMPO = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
+const CAMPO_TEXTO =
+  "w-full rounded-lg border border-input bg-card px-3 py-2 text-[13px] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none";
 
 function ModalDaRegra({
   inicial,
@@ -257,25 +310,29 @@ function ModalDaRegra({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={d.id ? "Editar regra" : "Nova regra"}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+    <ModalDetalhe
+      aberto
+      aoFechar={aoCancelar}
+      titulo={d.id ? "Editar regra" : "Nova regra"}
+      largura="larga"
     >
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-xl border border-border bg-card p-5 shadow-xl">
-        <h2 className="text-lg font-semibold">{d.id ? "Editar" : "Nova"} regra</h2>
-        <div className="mt-4 space-y-3">
-          <input
-            className={CAMPO}
+      <div className="space-y-4 text-[13px]">
+        <div className="space-y-1.5">
+          <Label htmlFor="regra-nome">Nome</Label>
+          <Input
+            id="regra-nome"
             placeholder="Nome (ex.: Regra Q3 2026)"
             value={d.nome}
             onChange={(e) => {
               setD({ ...d, nome: e.target.value });
             }}
           />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="regra-descricao">Descrição</Label>
           <textarea
-            className={CAMPO}
+            id="regra-descricao"
+            className={CAMPO_TEXTO}
             placeholder="Descrição (opcional)"
             rows={2}
             value={d.descricao}
@@ -283,124 +340,129 @@ function ModalDaRegra({
               setD({ ...d, descricao: e.target.value });
             }}
           />
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-xs">
-              <div className="mb-1 text-muted-foreground">Vigência início</div>
-              <input
-                type="date"
-                className={CAMPO}
-                value={d.vigenciaInicio}
-                onChange={(e) => {
-                  setD({ ...d, vigenciaInicio: e.target.value });
-                }}
-              />
-            </label>
-            <label className="text-xs">
-              <div className="mb-1 text-muted-foreground">Vigência fim (opcional)</div>
-              <input
-                type="date"
-                className={CAMPO}
-                value={d.vigenciaFim}
-                onChange={(e) => {
-                  setD({ ...d, vigenciaFim: e.target.value });
-                }}
-              />
-            </label>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={d.ativo}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="regra-inicio">Vigência início</Label>
+            <Input
+              id="regra-inicio"
+              type="date"
+              value={d.vigenciaInicio}
               onChange={(e) => {
-                setD({ ...d, ativo: e.target.checked });
+                setD({ ...d, vigenciaInicio: e.target.value });
               }}
             />
-            Ativa
-          </label>
-
-          <div>
-            <div className="mb-2 text-sm font-medium">Critérios</div>
-            <div className="space-y-2">
-              {d.criterios.map((k, i) => (
-                <div key={i} className="rounded-md border border-border bg-background p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <select
-                      aria-label="Critério"
-                      value={k.criterio}
-                      onChange={(e) => {
-                        const novo = CRITERIOS_DE_REGRA.find((x) => x === e.target.value);
-                        if (novo) trocarCriterio(i, novo);
-                      }}
-                      className="rounded-md border border-border bg-card px-2 py-1 text-sm"
-                    >
-                      {CRITERIOS_DE_REGRA.map((x) => (
-                        <option key={x} value={x}>
-                          {ROTULO_DO_CRITERIO[x]}
-                        </option>
-                      ))}
-                    </select>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label="Remover critério"
-                      onClick={() => {
-                        setD({ ...d, criterios: d.criterios.filter((_, j) => j !== i) });
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                    {Object.keys(PARAMETROS_PADRAO[k.criterio]).map((chave) => (
-                      <label key={chave}>
-                        <div className="mb-1 text-muted-foreground">{chave}</div>
-                        <input
-                          className="w-full rounded-md border border-border bg-card px-2 py-1"
-                          value={k.parametros[chave] ?? ""}
-                          onChange={(e) => {
-                            trocarParametro(i, chave, e.target.value);
-                          }}
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setD({
-                    ...d,
-                    criterios: [
-                      ...d.criterios,
-                      {
-                        criterio: "entregas_prazo",
-                        parametros: { ...PARAMETROS_PADRAO.entregas_prazo },
-                      },
-                    ],
-                  });
-                }}
-              >
-                <Plus className="mr-1 h-4 w-4" /> Adicionar critério
-              </Button>
-            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="regra-fim">Vigência fim (opcional)</Label>
+            <Input
+              id="regra-fim"
+              type="date"
+              value={d.vigenciaFim}
+              onChange={(e) => {
+                setD({ ...d, vigenciaFim: e.target.value });
+              }}
+            />
           </div>
         </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={aoCancelar}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => {
-              aoSalvar(d);
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="regra-ativa"
+            checked={d.ativo}
+            onCheckedChange={(v) => {
+              setD({ ...d, ativo: v === true });
             }}
-            disabled={!d.nome.trim() || salvando}
+          />
+          <Label htmlFor="regra-ativa">Ativa</Label>
+        </div>
+
+        <div className="space-y-2">
+          <div className="label-xs">Critérios</div>
+          {d.criterios.map((k, i) => (
+            <div key={i} className="rounded-xl border border-border bg-superficie p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Select
+                  value={k.criterio}
+                  onValueChange={(v) => {
+                    const novo = CRITERIOS_DE_REGRA.find((x) => x === v);
+                    if (novo) trocarCriterio(i, novo);
+                  }}
+                >
+                  <SelectTrigger className="w-64 text-[13px]" aria-label="Critério">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CRITERIOS_DE_REGRA.map((x) => (
+                      <SelectItem key={x} value={x}>
+                        {ROTULO_DO_CRITERIO[x]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  aria-label="Remover critério"
+                  title="Remover critério"
+                  onClick={() => {
+                    setD({ ...d, criterios: d.criterios.filter((_, j) => j !== i) });
+                  }}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {Object.keys(PARAMETROS_PADRAO[k.criterio]).map((chave) => (
+                  <div key={chave} className="space-y-1">
+                    <Label htmlFor={`criterio-${String(i)}-${chave}`} className="text-xs">
+                      {chave}
+                    </Label>
+                    <Input
+                      id={`criterio-${String(i)}-${chave}`}
+                      value={k.parametros[chave] ?? ""}
+                      onChange={(e) => {
+                        trocarParametro(i, chave, e.target.value);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setD({
+                ...d,
+                criterios: [
+                  ...d.criterios,
+                  {
+                    criterio: "entregas_prazo",
+                    parametros: { ...PARAMETROS_PADRAO.entregas_prazo },
+                  },
+                ],
+              });
+            }}
           >
-            Salvar
+            <Plus aria-hidden /> Adicionar critério
           </Button>
         </div>
       </div>
-    </div>
+      <div className="flex justify-end gap-2 border-t border-border pt-4">
+        <Button variant="ghost" onClick={aoCancelar}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={() => {
+            aoSalvar(d);
+          }}
+          disabled={!d.nome.trim() || salvando}
+        >
+          Salvar
+        </Button>
+      </div>
+    </ModalDetalhe>
   );
 }

@@ -4,9 +4,11 @@ import { formatarMoeda } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 
 import { ComoFunciona, ComoFuncionaSecao, Formula } from "@/componentes/comum/ComoFunciona";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 
 import { consultaParametros } from "./api";
+import { NIVEL } from "./niveis";
 
 type Taxas = Omit<ParametrosDeBonificacao, "id" | "vigenciaInicio" | "vigenciaFim">;
 
@@ -43,28 +45,24 @@ export function ComoFuncionaBonificacao() {
   const hoje = hojeNoFuso(useFusoDaEmpresa());
   const p = vigenteHoje(parametros.data ?? [], hoje) ?? PADRAO;
 
-  const niveis = [
+  const niveis: { nivel: keyof typeof NIVEL; regra: string; taxa: string }[] = [
     {
-      nivel: "Turbo",
-      cor: "bg-purple-500/15 text-purple-700 dark:text-purple-300",
+      nivel: "turbo",
       regra: "Êxito na meta da rota e SEM hora extra no dia",
       taxa: `${formatarMoeda(p.taxaTurbo)} por NF`,
     },
     {
-      nivel: "Acelerado",
-      cor: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
+      nivel: "acelerado",
       regra: "Êxito na meta da rota, mas fez hora extra ou está sem registro de ponto",
       taxa: `${formatarMoeda(p.taxaAcelerado)} por NF`,
     },
     {
-      nivel: "Em rota",
-      cor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+      nivel: "em_rota",
       regra: `Êxito abaixo da meta da rota, mas a partir de ${pct(p.metaEmRota)}`,
       taxa: `${formatarMoeda(p.taxaEmRotaGrande)} por NF (rota grande) · ${formatarMoeda(p.taxaEmRotaPequena)} por NF (rota pequena)`,
     },
     {
-      nivel: "Sem bônus",
-      cor: "bg-red-500/15 text-red-700 dark:text-red-300",
+      nivel: "sem_bonus",
       regra: `Êxito abaixo de ${pct(p.metaEmRota)}`,
       taxa: "R$ 0,00",
     },
@@ -142,25 +140,25 @@ export function ComoFuncionaBonificacao() {
       </ComoFuncionaSecao>
 
       <ComoFuncionaSecao titulo="5. Níveis e valor por NF">
-        <div className="overflow-x-auto rounded-md border border-border/70">
-          <table className="w-full text-[11px]">
-            <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
-              <tr>
-                <th className="px-2 py-1.5 text-left font-medium">Nível</th>
-                <th className="px-2 py-1.5 text-left font-medium">Quando</th>
-                <th className="px-2 py-1.5 text-left font-medium">Paga</th>
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-[12.5px]">
+            <thead>
+              <tr className="border-b border-border bg-muted/70 text-left">
+                <th className="label-xs px-3 py-2">Nível</th>
+                <th className="label-xs px-3 py-2">Quando</th>
+                <th className="label-xs px-3 py-2">Paga</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40 text-foreground">
+            <tbody className="divide-y divide-border text-foreground">
               {niveis.map((n) => (
                 <tr key={n.nivel}>
-                  <td className="px-2 py-1.5 align-top">
-                    <span className={`whitespace-nowrap rounded px-1.5 py-0.5 ${n.cor}`}>
-                      {n.nivel}
-                    </span>
+                  <td className="px-3 py-2 align-top">
+                    <SeloStatus tom={NIVEL[n.nivel].tom} icone={NIVEL[n.nivel].icone}>
+                      {NIVEL[n.nivel].rotulo}
+                    </SeloStatus>
                   </td>
-                  <td className="px-2 py-1.5 align-top">{n.regra}</td>
-                  <td className="px-2 py-1.5 align-top tabular-nums">{n.taxa}</td>
+                  <td className="px-3 py-2 align-top">{n.regra}</td>
+                  <td className="px-3 py-2 align-top tabular-nums">{n.taxa}</td>
                 </tr>
               ))}
             </tbody>
@@ -172,7 +170,7 @@ export function ComoFuncionaBonificacao() {
           {formatarMoeda(p.taxaTurbo)} = {formatarMoeda(27 * p.taxaTurbo)}.
         </p>
         {parametros.isError && (
-          <p className="text-amber-600">
+          <p className="text-status-warn-fg">
             Não foi possível carregar os parâmetros vigentes. Os valores acima são os padrão do
             programa.
           </p>
@@ -208,10 +206,10 @@ export function ComoFuncionaBonificacao() {
         </ul>
         <p className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" /> sem hora extra
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-status-good" /> sem hora extra
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" /> fez hora extra
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-status-bad" /> fez hora extra
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted-foreground/40" /> sem

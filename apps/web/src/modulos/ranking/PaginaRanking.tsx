@@ -1,35 +1,33 @@
-import { Abas, ConteudoDaAba } from "@/componentes/comum/Abas";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
+import { useState } from "react";
 
-import { RankingTabela } from "./RankingTabela";
+import { Abas } from "@/componentes/comum/Abas";
+
+import { useFiltrosDoRanking } from "./filtros-do-ranking";
+import { RankingDoGrupo } from "./RankingDoGrupo";
+
+type Grupo = "pagador" | "cidade";
 
 /** origem: routes/_authenticated/ranking.tsx (sistema atual) */
 export function PaginaRanking() {
+  const [grupo, setGrupo] = useState<Grupo>("pagador");
+  const filtros = useFiltrosDoRanking();
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold">Ranking por Parceiro e Cidade</h1>
-        <SeloDosDados />
-        <p className="text-sm text-muted-foreground">
-          SLA operacional por parceiro (pagador) e por cidade de destino. Clique num item para ver
-          os casos que estão puxando o SLA para baixo.
-        </p>
-      </header>
-      <Abas
-        abas={[
-          { valor: "parceiro", rotulo: "Parceiro" },
-          { valor: "cidade", rotulo: "Cidade" },
-        ]}
-        padrao="parceiro"
-        classeDoGrupo="w-full"
-      >
-        <ConteudoDaAba valor="parceiro" className="mt-4">
-          <RankingTabela grupo="pagador" />
-        </ConteudoDaAba>
-        <ConteudoDaAba valor="cidade" className="mt-4">
-          <RankingTabela grupo="cidade" />
-        </ConteudoDaAba>
-      </Abas>
-    </div>
+    // key: cada aba começa com a própria ordenação, filtro dos cards e ano do gráfico.
+    <RankingDoGrupo
+      key={grupo}
+      grupo={grupo}
+      filtros={filtros}
+      abas={
+        <Abas
+          rotulo="Abas do ranking"
+          abas={[
+            { valor: "pagador", rotulo: "Parceiro" },
+            { valor: "cidade", rotulo: "Cidade" },
+          ]}
+          valor={grupo}
+          aoMudar={setGrupo}
+        />
+      }
+    />
   );
 }

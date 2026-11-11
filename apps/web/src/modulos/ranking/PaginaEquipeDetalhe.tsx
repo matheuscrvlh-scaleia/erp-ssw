@@ -2,8 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
+import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { Skeleton } from "@/componentes/ui/skeleton";
 
 import { consultaCalculoDaEquipe } from "./api";
 import { EquipeMobileView } from "./EquipeMobileView";
@@ -16,32 +19,40 @@ export function PaginaEquipeDetalhe({
   id: string;
   busca: { inicio: string; fim: string; regra: string };
 }) {
-  const { data, error } = useQuery(consultaCalculoDaEquipe(id, busca));
-  if (error) {
-    return (
-      <div className="p-8 text-center text-sm text-destructive">{mensagemAmigavel(error)}</div>
-    );
-  }
-  if (!data) {
-    return <div className="p-8 text-center text-sm text-muted-foreground">Carregando…</div>;
-  }
+  const { data, error, refetch } = useQuery(consultaCalculoDaEquipe(id, busca));
   return (
-    <div>
-      <div className="px-4 pt-4">
+    <Pagina
+      titulo={
+        data?.equipeNome ??
+        (error ? "Ranking da equipe" : <Skeleton className="h-7 w-56 rounded-md bg-muted" />)
+      }
+      descricao={`${busca.inicio} → ${busca.fim}`}
+      largura="estreita"
+      acoes={
         <Button asChild size="sm" variant="ghost">
           <Link to="/admin/equipes">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
+            <ArrowLeft aria-hidden /> Voltar
           </Link>
         </Button>
-      </div>
-      <EquipeMobileView
-        equipeNome={data.equipeNome}
-        periodoRotulo={`${busca.inicio} → ${busca.fim}`}
-        calculo={data.calculo}
-        posicao={null}
-        totalEquipes={data.totalEquipes}
-        top3={[]}
-      />
-    </div>
+      }
+    >
+      {error ? (
+        <Painel>
+          <MensagemErro erro={error} aoTentarDeNovo={() => void refetch()} />
+        </Painel>
+      ) : !data ? (
+        <div className="mx-auto max-w-md space-y-4" aria-busy>
+          <Skeleton className="h-40 w-full rounded-2xl bg-muted" />
+          <Skeleton className="h-24 w-full rounded-2xl bg-muted" />
+        </div>
+      ) : (
+        <EquipeMobileView
+          calculo={data.calculo}
+          posicao={null}
+          totalEquipes={data.totalEquipes}
+          top3={[]}
+        />
+      )}
+    </Pagina>
   );
 }
