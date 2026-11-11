@@ -1,6 +1,9 @@
 import { AlertTriangle, ArrowRight, CircleCheck, CircleX, type LucideIcon } from "lucide-react";
+import { type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+
+import { InfoTip } from "./InfoTip";
 
 /** Situação do indicador frente à meta. */
 export type StatusKpi = "bom" | "alerta" | "ruim";
@@ -49,7 +52,11 @@ interface KpiCardProps {
   neutro?: boolean | undefined;
   /** Ícone no quadrado do canto (identidade do indicador). */
   icone?: LucideIcon | undefined;
-  /** Torna o card um botão (ex.: filtrar a lista abaixo). */
+  /** Explicação do indicador no (i) ao lado do rótulo. */
+  dica?: string | undefined;
+  /** Conteúdo interativo no rodapé, à direita (ex.: link "ver códigos"); fica fora do clique do card. */
+  extra?: ReactNode;
+  /** Torna o card clicável (ex.: filtrar a lista abaixo). */
   aoClicar?: (() => void) | undefined;
   /** Destaca o card como filtro ativo. */
   ativo?: boolean | undefined;
@@ -69,23 +76,40 @@ export function KpiCard({
   progresso,
   neutro,
   icone: Icone,
+  dica,
+  extra,
   aoClicar,
   ativo,
 }: KpiCardProps) {
   const s = STATUS[status];
   const IconeStatus = s.icone;
   const mostrarSelo = !neutro || selo;
+  // Card clicável = botão que cobre o card inteiro por baixo do conteúdo; o (i) e o `extra` ficam
+  // por cima e continuam clicáveis (botão dentro de botão quebraria teclado e leitor de tela).
   const classe = cn(
-    "group flex w-full flex-col rounded-2xl border border-border bg-superficie p-1 text-left shadow-cartao",
+    "group relative flex w-full flex-col rounded-2xl border border-border bg-superficie p-1 text-left shadow-cartao",
     aoClicar &&
-      "cursor-pointer transition-[box-shadow,border-color] hover:border-brand/40 hover:shadow-flutuante focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+      "transition-[box-shadow,border-color] hover:border-brand/40 hover:shadow-flutuante has-[>button:focus-visible]:outline-2 has-[>button:focus-visible]:outline-offset-2 has-[>button:focus-visible]:outline-ring",
     ativo && "border-brand ring-2 ring-brand/30",
   );
-  const conteudo = (
-    <>
-      <div className="flex flex-1 flex-col rounded-xl border border-border bg-card px-4 py-3.5">
+  const interativo = "pointer-events-auto relative z-10";
+  return (
+    <div className={classe}>
+      {aoClicar && (
+        <button
+          type="button"
+          onClick={aoClicar}
+          aria-pressed={!!ativo}
+          aria-label={`${rotulo}: ${valor}. ${detalhe}`}
+          className="absolute inset-0 z-0 cursor-pointer rounded-2xl focus-visible:outline-none"
+        />
+      )}
+      <div className="pointer-events-none relative flex flex-1 flex-col rounded-xl border border-border bg-card px-4 py-3.5">
         <div className="flex items-start justify-between gap-3">
-          <span className="label-xs pt-0.5">{rotulo}</span>
+          <span className="flex items-center gap-1.5 pt-0.5">
+            <span className="label-xs">{rotulo}</span>
+            {dica && <InfoTip texto={dica} className={interativo} />}
+          </span>
           {Icone && (
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border text-brand">
               <Icone className="h-[18px] w-[18px]" aria-hidden />
@@ -97,7 +121,7 @@ export function KpiCard({
           {mostrarSelo && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11.5px] font-semibold",
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold",
                 s.classe,
               )}
             >
@@ -125,8 +149,9 @@ export function KpiCard({
           </div>
         )}
       </div>
-      <div className="flex min-h-9 items-center gap-2 px-3 py-2 text-[12.5px] text-muted-foreground">
+      <div className="pointer-events-none relative flex min-h-9 items-center gap-2 px-3 py-2 text-[12.5px] text-muted-foreground">
         <span className="flex-1">{detalhe}</span>
+        {extra && <span className={interativo}>{extra}</span>}
         {aoClicar && (
           <ArrowRight
             className="h-4 w-4 shrink-0 text-foreground transition-transform group-hover:translate-x-0.5"
@@ -134,13 +159,6 @@ export function KpiCard({
           />
         )}
       </div>
-    </>
-  );
-  return aoClicar ? (
-    <button type="button" onClick={aoClicar} aria-pressed={!!ativo} className={classe}>
-      {conteudo}
-    </button>
-  ) : (
-    <div className={classe}>{conteudo}</div>
+    </div>
   );
 }

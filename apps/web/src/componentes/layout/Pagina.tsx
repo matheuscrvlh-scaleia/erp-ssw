@@ -50,7 +50,8 @@ export function Pagina({
             limite,
           )}
         >
-          <div className="min-w-0 flex-1">
+          {/* Base de 18rem: sem espaço para título + ações, as ações descem para a linha de baixo. */}
+          <div className="min-w-0 flex-[1_1_18rem]">
             <h1 className="text-[22px] leading-tight font-bold tracking-[-0.02em] text-foreground md:text-[24px]">
               {titulo}
             </h1>
