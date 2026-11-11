@@ -22,8 +22,11 @@ export function sufixoHoje(agora: Date = new Date()): string {
   return `${dia ?? ""}-${mes ?? ""}-${ano ?? ""}`;
 }
 
-/** Base que já termina em data: `-dd-mm-aaaa` ou `-aaaa-mm-dd` (ex.: o período do relatório). */
-const TERMINA_COM_DATA = /-(\d{2}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2})$/;
+/**
+ * Base que já termina em data: `-dd-mm-aaaa` ou `-aaaa-mm-dd`, também depois de `_` (ex.: o
+ * período do relatório, `relatorio-periodo-aaaa-mm-dd_aaaa-mm-dd` no CSV).
+ */
+const TERMINA_COM_DATA = /[-_](\d{2}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2})$/;
 
 /**
  * Nome final: `<base>-dd-mm-aaaa.<ext>` (padrão de todas as exportações). Se a base já trouxer

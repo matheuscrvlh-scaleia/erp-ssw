@@ -45,10 +45,40 @@ export function montarCsv(
   return [cabecalho, ...corpo].join("\n");
 }
 
-export function exportarCsv({ arquivo, colunas, linhas, fuso }: OpcoesCsv): void {
-  const texto = montarCsv(colunas, linhas, fuso);
+function baixarCsv(arquivo: string, texto: string): void {
   baixarArquivo(
     new Blob([BOM + texto], { type: "text/csv;charset=utf-8;" }),
     nomeDoArquivo(arquivo, "csv"),
   );
+}
+
+export function exportarCsv({ arquivo, colunas, linhas, fuso }: OpcoesCsv): void {
+  baixarCsv(arquivo, montarCsv(colunas, linhas, fuso));
+}
+
+/** Linha do CSV em seções: texto cru (título `# ...` ou linha em branco) ou as células. */
+export type LinhaCsvEmSecoes = string | readonly (string | number)[];
+
+/** Número já formatado com vírgula ("95,73", "-1,50"): não leva `'` (número não muda). */
+const NUMERO_EM_TEXTO = /^-?\d+(,\d+)?$/;
+
+/** Célula do CSV em seções: aspas também com vírgula, como o relatório de período de hoje. */
+function celulaEmSecao(valor: string | number): string {
+  const texto =
+    typeof valor === "number" || NUMERO_EM_TEXTO.test(valor) || !INICIO_DE_FORMULA.test(valor)
+      ? String(valor)
+      : `'${valor}`;
+  return /[";\n\r,]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
+}
+
+/**
+ * CSV com várias tabelas uma depois da outra, separadas por títulos `# ...` (relatório de
+ * período). origem: exportCsv (RelatorioPeriodoPanel.tsx, sistema atual)
+ */
+export function montarCsvEmSecoes(linhas: readonly LinhaCsvEmSecoes[]): string {
+  return linhas.map((l) => (typeof l === "string" ? l : l.map(celulaEmSecao).join(";"))).join("\n");
+}
+
+export function exportarCsvEmSecoes(arquivo: string, linhas: readonly LinhaCsvEmSecoes[]): void {
+  baixarCsv(arquivo, montarCsvEmSecoes(linhas));
 }

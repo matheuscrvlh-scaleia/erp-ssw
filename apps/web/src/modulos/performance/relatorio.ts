@@ -11,6 +11,7 @@ import {
   type Previstos,
   type RelatorioPeriodo,
 } from "@erp/shared/contratos/performance";
+import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import {
   formatarData,
   formatarInteiro,
@@ -197,29 +198,6 @@ export function indicadoresDoRelatorio(
   ];
 }
 
-/** Linhas do CSV do relatório: indicadores e SLA por unidade. */
-export function linhasDoCsv(
-  r: RelatorioPeriodo,
-  codigosDoFiltro: readonly string[],
-): { secao: string; item: string; valor: string; comparativo: string }[] {
-  const indicadores = indicadoresDoRelatorio(r, codigosDoFiltro).map((i) => ({
-    secao: i.secao,
-    item: i.rotulo,
-    valor: i.valor,
-    comparativo: i.comparativo?.valor ?? "",
-  }));
-  const comparadas = new Map((r.comparativo?.porUnidade ?? []).map((u) => [u.sigla, u]));
-  const unidades = r.porUnidade.map((u) => ({
-    secao: "SLA por unidade",
-    item: u.sigla,
-    valor: `${formatarInteiro(u.total)} emitidos · SLA Pont. ${formatarPercentual(u.slaOperacionalPct, { escala: "cem" })} · SLA Op. ${formatarPercentual(u.slaPontualidadePct, { escala: "cem" })}`,
-    comparativo: comparadas.has(u.sigla)
-      ? `SLA Pont. ${formatarPercentual(comparadas.get(u.sigla)?.slaOperacionalPct ?? null, { escala: "cem" })}`
-      : "",
-  }));
-  return [...indicadores, ...unidades];
-}
-
 /**
  * Aba "SLA por unidade" do Excel do relatório, com as colunas de hoje (comparativo: pares P/C e
  * "Status (P)"). Status pelo SLA de Pontualidade (`slaOperacionalPct`) contra a meta.
@@ -286,8 +264,11 @@ export function abaSlaPorUnidade(r: RelatorioPeriodo): AbaExcel {
 
 const pctTexto = (v: number | null) => formatarPercentual(v, { escala: "cem" });
 
-/** Filtros herdados da tela, por extenso, para as notas da aba "Resumo". */
-export interface FiltrosDoExcel {
+/**
+ * Filtros herdados da tela, por extenso, para as etiquetas do relatório, o CSV, a impressão e as
+ * notas da aba "Resumo". Unidade ou parceiro sem nome conhecido fica de fora, como hoje.
+ */
+export interface FiltrosDoRelatorio {
   unidades: readonly string[];
   parceiros: readonly string[];
   remetente: string;
@@ -296,8 +277,39 @@ export interface FiltrosDoExcel {
   codigos: readonly string[];
 }
 
+/** Nomes conhecidos dos ids selecionados; o que não tem nome é omitido (como hoje). */
+export function nomesConhecidos(
+  ids: readonly string[],
+  opcoes: readonly { id: string; nome: string }[] | undefined,
+): string[] {
+  return ids.flatMap((id) => {
+    const nome = opcoes?.find((o) => o.id === id)?.nome;
+    return nome ? [nome] : [];
+  });
+}
+
+const ateTres = (lista: readonly string[]) =>
+  lista.slice(0, 3).join(", ") + (lista.length > 3 ? ` +${String(lista.length - 3)}` : "");
+
+/**
+ * Etiquetas "Filtros herdados da barra principal" do relatório (e do CSV e da impressão).
+ * origem: buildChips (RelatorioPeriodoPanel.tsx, sistema atual)
+ */
+export function etiquetasDoRelatorio(f: FiltrosDoRelatorio): { rotulo: string; valor: string }[] {
+  const etiquetas: { rotulo: string; valor: string }[] = [];
+  if (f.unidades.length > 0) etiquetas.push({ rotulo: "Unidades", valor: ateTres(f.unidades) });
+  if (f.parceiros.length > 0) etiquetas.push({ rotulo: "Parceiros", valor: ateTres(f.parceiros) });
+  if (f.remetente)
+    etiquetas.push({ rotulo: "Remetente", valor: lerFiltroTexto(f.remetente).join(" · ") });
+  if (f.destino)
+    etiquetas.push({ rotulo: "Destino", valor: lerFiltroTexto(f.destino).join(" · ") });
+  if (f.filiais.length > 0) etiquetas.push({ rotulo: "Filiais", valor: f.filiais.join(", ") });
+  if (f.codigos.length > 0) etiquetas.push({ rotulo: "Ocorrências", valor: ateTres(f.codigos) });
+  return etiquetas;
+}
+
 /** Notas "Filtros aplicados:" da aba "Resumo" (vazia sem filtro). origem: filtrosLines */
-export function notasDosFiltros(f: FiltrosDoExcel): string[] {
+export function notasDosFiltros(f: FiltrosDoRelatorio): string[] {
   const partes: string[] = [];
   if (f.unidades.length > 0) partes.push(`Unidades: ${f.unidades.join(", ")}`);
   if (f.parceiros.length > 0) partes.push(`Parceiros: ${f.parceiros.join(", ")}`);
@@ -479,7 +491,7 @@ function abaImpactoPorCodigo(r: RelatorioPeriodo): AbaExcel | null {
 export function excelDoRelatorio(
   r: RelatorioPeriodo,
   codigosDoFiltro: readonly string[],
-  filtros: FiltrosDoExcel,
+  filtros: FiltrosDoRelatorio,
 ): Omit<OpcoesExcel, "empresa"> {
   const opcionais = [abaFinalizadoEmSistema(r), abaImpactoPorCodigo(r)].filter(
     (a): a is AbaExcel => a !== null,
