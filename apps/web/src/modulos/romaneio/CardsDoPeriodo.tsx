@@ -20,6 +20,7 @@ import {
   Weight,
 } from "lucide-react";
 
+import { KpiCard } from "@/componentes/comum/KpiCard";
 import { Painel } from "@/componentes/comum/Painel";
 
 import {
@@ -27,7 +28,6 @@ import {
   type ChaveDaFaixa,
   FaixasDePrazo,
   GradeDeIndicadores,
-  Indicador,
 } from "./componentes";
 
 export interface PropsCardsDoPeriodo {
@@ -72,7 +72,7 @@ export function CardsDoPeriodo({
   return (
     <div className="space-y-4">
       <GradeDeIndicadores>
-        <Indicador
+        <KpiCard
           rotulo="CTRC"
           icone={FileText}
           neutro
@@ -82,7 +82,7 @@ export function CardsDoPeriodo({
           dica="Todos os CTRCs do período e dos filtros escolhidos, sem os que foram cancelados no mesmo dia da emissão. É a base dos percentuais desta tela."
           aoClicar={abrir("todos")}
         />
-        <Indicador
+        <KpiCard
           rotulo="Peso total"
           icone={Weight}
           neutro
@@ -91,7 +91,7 @@ export function CardsDoPeriodo({
           detalhe=""
           dica="Peso somado das mercadorias do período. Acima de 1.000 kg aparece em toneladas."
         />
-        <Indicador
+        <KpiCard
           rotulo="Volumes"
           icone={Package}
           neutro
@@ -100,7 +100,7 @@ export function CardsDoPeriodo({
           detalhe=""
           dica="Quantidade de volumes somada de todas as cargas do período."
         />
-        <Indicador
+        <KpiCard
           rotulo="Frete total"
           icone={Banknote}
           neutro
@@ -111,7 +111,7 @@ export function CardsDoPeriodo({
         />
       </GradeDeIndicadores>
       <GradeDeIndicadores max={5}>
-        <Indicador
+        <KpiCard
           rotulo="Em rota de entrega"
           icone={Truck}
           neutro
@@ -121,7 +121,7 @@ export function CardsDoPeriodo({
           dica="Mesma regra da aba Hoje: cargas que saíram para entrega e ainda não foram entregues. Inclui quem recebeu ocorrência depois da saída (ausente, recusa, pendência…), que também aparece em Travado em ocorrência, e quem foi baixado sem entrega. Vendo por Saída para entrega, é o total de CT-e menos os entregues."
           aoClicar={abrir("em_rota")}
         />
-        <Indicador
+        <KpiCard
           rotulo="Entregues"
           icone={PackageCheck}
           neutro
@@ -132,7 +132,7 @@ export function CardsDoPeriodo({
           aoClicar={abrir("entregues")}
         />
         {!cardsSecundarios.ocultos && (
-          <Indicador
+          <KpiCard
             rotulo="Baixado sem entrega"
             icone={PackageX}
             neutro
@@ -143,7 +143,7 @@ export function CardsDoPeriodo({
             aoClicar={abrir("devolvido")}
           />
         )}
-        <Indicador
+        <KpiCard
           rotulo="Travado em ocorrência"
           icone={CirclePause}
           neutro
@@ -158,7 +158,7 @@ export function CardsDoPeriodo({
           aoClicar={abrir("travado")}
         />
         {verTodos && !cardsSecundarios.ocultos && (
-          <Indicador
+          <KpiCard
             rotulo="Parado sem saída"
             icone={Warehouse}
             neutro
@@ -171,7 +171,7 @@ export function CardsDoPeriodo({
         )}
       </GradeDeIndicadores>
       <GradeDeIndicadores>
-        <Indicador
+        <KpiCard
           rotulo="TDE romaneado"
           icone={Receipt}
           neutro
@@ -182,7 +182,7 @@ export function CardsDoPeriodo({
           aoClicar={abrir("tde_romaneado")}
         />
         {otifVisivel && (
-          <Indicador
+          <KpiCard
             rotulo="CTRC com problema (OTIF)"
             icone={TriangleAlert}
             neutro
@@ -193,7 +193,7 @@ export function CardsDoPeriodo({
             aoClicar={abrir("otif")}
           />
         )}
-        <Indicador
+        <KpiCard
           rotulo="Prejuízo"
           icone={TrendingDown}
           neutro

@@ -7,7 +7,6 @@ import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
 import { Eye, EyeOff, Search } from "lucide-react";
 import {
   Children,
-  type ComponentProps,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
@@ -18,7 +17,6 @@ import {
 import { Aviso } from "@/componentes/comum/Aviso";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { InfoTip } from "@/componentes/comum/InfoTip";
-import { KpiCard } from "@/componentes/comum/KpiCard";
 import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { CLASSE_DO_TOM, ICONE_DO_TOM, type Tom } from "@/componentes/comum/SeloStatus";
@@ -55,25 +53,6 @@ export function ComDica({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  );
-}
-
-/**
- * `KpiCard` com a explicação do número na dica (mouse e teclado). O comum ainda não tem `dica`.
- */
-export function Indicador({
-  dica,
-  ...props
-}: ComponentProps<typeof KpiCard> & { dica?: string | undefined }) {
-  const cartao = <KpiCard {...props} />;
-  if (!dica) return cartao;
-  return (
-    <ComDica texto={dica} lado="bottom">
-      {/* Card sem clique ganha foco próprio para a dica chegar pelo teclado. */}
-      <div tabIndex={props.aoClicar ? undefined : 0} className="flex rounded-2xl">
-        {cartao}
-      </div>
-    </ComDica>
   );
 }
 

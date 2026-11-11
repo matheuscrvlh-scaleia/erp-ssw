@@ -43,6 +43,7 @@ import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { Skeleton } from "@/componentes/ui/skeleton";
@@ -69,7 +70,6 @@ import {
   ComDica,
   EstadoDaTabela,
   GradeDeIndicadores,
-  Indicador,
   PrejuizoSubtitulo,
   propsDaLinha,
   TabelaPropria,
@@ -128,7 +128,7 @@ export function AbaRomaneioEntrega({ filtros, aoAbrir }: PropsDaAba) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Indicador
+        <KpiCard
           rotulo="CTRC no período"
           icone={FileText}
           neutro
@@ -363,7 +363,7 @@ export function AbaPerformanceRomaneio({
           : "Base desta aba: cargas que já saíram para entrega."}
       </p>
       <GradeDeIndicadores max={5}>
-        <Indicador
+        <KpiCard
           rotulo="CTRC romaneados"
           icone={Truck}
           neutro
@@ -372,7 +372,7 @@ export function AbaPerformanceRomaneio({
           detalhe="Cargas que já saíram para entrega no período"
           dica="Base desta aba: cargas com saída para entrega registrada, dentro do período e filtros escolhidos."
         />
-        <Indicador
+        <KpiCard
           rotulo="Entregues"
           icone={CircleCheck}
           neutro
@@ -384,7 +384,7 @@ export function AbaPerformanceRomaneio({
             aoAbrir({ recorte: "entregues" });
           }}
         />
-        <Indicador
+        <KpiCard
           rotulo="Não entregues"
           icone={CircleX}
           neutro
@@ -396,7 +396,7 @@ export function AbaPerformanceRomaneio({
             aoAbrir({ recorte: "em_rota", status: "andamento" });
           }}
         />
-        <Indicador
+        <KpiCard
           rotulo="Performance positiva"
           icone={ThumbsUp}
           neutro
@@ -410,7 +410,7 @@ export function AbaPerformanceRomaneio({
           dica="Entregues ÷ CTRC total da aba — a mesma Produtividade calculada mais abaixo."
           progresso={positiva !== null ? positiva / 100 : undefined}
         />
-        <Indicador
+        <KpiCard
           rotulo="Performance negativa"
           icone={ThumbsDown}
           neutro
@@ -425,7 +425,7 @@ export function AbaPerformanceRomaneio({
         />
       </GradeDeIndicadores>
       <GradeDeIndicadores>
-        <Indicador
+        <KpiCard
           rotulo="Entregas prejudicadas"
           icone={TriangleAlert}
           neutro
@@ -437,7 +437,7 @@ export function AbaPerformanceRomaneio({
             aoAbrir({ recorte: "prejuizo" });
           }}
         />
-        <Indicador
+        <KpiCard
           rotulo="Frete perdido"
           icone={Banknote}
           neutro={!(k && k.fretePerdido > 0)}
@@ -453,7 +453,7 @@ export function AbaPerformanceRomaneio({
             aoAbrir({ recorte: "prejuizo" });
           }}
         />
-        <Indicador
+        <KpiCard
           rotulo="Prejuízo (%)"
           icone={Percent}
           neutro={!(pPrejuizo !== null && pPrejuizo > 0)}
@@ -469,7 +469,7 @@ export function AbaPerformanceRomaneio({
             aoAbrir({ recorte: "prejuizo" });
           }}
         />
-        <Indicador
+        <KpiCard
           rotulo="Entregas no horário (%)"
           icone={CalendarClock}
           neutro={!(pPrejuizo !== null && 100 - pPrejuizo >= 95)}
@@ -699,7 +699,7 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
         entregues. Cargas ainda em rota contam contra a produtividade até terem desfecho.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Indicador
+        <KpiCard
           rotulo="Produtividade"
           icone={CircleCheck}
           neutro={!(pct !== null && pct >= 95)}
@@ -713,7 +713,7 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
           progresso={pct !== null ? pct / 100 : undefined}
           dica="Entregues ÷ CTRC total da aba (entregues + não entregues/em rota + finalizado em sistema). Cargas em rota contam contra até terem desfecho."
         />
-        <Indicador
+        <KpiCard
           rotulo="Taxa de retorno"
           icone={Undo2}
           neutro={retornos === 0}

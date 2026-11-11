@@ -15,6 +15,7 @@ import { DrawerDetalhe } from "@/componentes/comum/Detalhe";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltrandoPor, FiltrosAvancados, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
+import { KpiCard } from "@/componentes/comum/KpiCard";
 import { ordenarPorPlaca } from "@/componentes/comum/ordenar-por-placa";
 import { Painel } from "@/componentes/comum/Painel";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
@@ -31,7 +32,6 @@ import {
   EstadoDaTabela,
   FaixasDePrazo,
   GradeDeIndicadores,
-  Indicador,
   PrejuizoSubtitulo,
   propsDaLinha,
   TabelaPropria,
@@ -289,7 +289,7 @@ export function AbaHoje({
       </Aviso>
 
       <GradeDeIndicadores max={5}>
-        <Indicador
+        <KpiCard
           rotulo="Romaneios de hoje"
           icone={ClipboardList}
           neutro
@@ -298,7 +298,7 @@ export function AbaHoje({
           detalhe=""
           dica="Quantidade de romaneios de entrega emitidos hoje."
         />
-        <Indicador
+        <KpiCard
           rotulo="CT-e nos romaneios"
           icone={FileText}
           neutro
@@ -306,7 +306,7 @@ export function AbaHoje({
           valor={r ? formatarInteiro(r.ctes) : "—"}
           detalhe={r ? `${formatarMoeda(r.frete, { centavos: false })} de frete` : ""}
         />
-        <Indicador
+        <KpiCard
           rotulo="Já entregues"
           icone={PackageCheck}
           neutro={!(perf !== null && perf >= 90)}
@@ -316,7 +316,7 @@ export function AbaHoje({
             perf !== null ? `${formatarPercentual(perf, { escala: "cem" })} de performance` : ""
           }
         />
-        <Indicador
+        <KpiCard
           rotulo="Em rota de entrega"
           icone={Truck}
           neutro
@@ -327,7 +327,7 @@ export function AbaHoje({
           }
           dica="CT-e nos romaneios − Já entregues: o que saiu hoje e ainda não foi entregue, inclusive o que recebeu ocorrência depois da saída. As faixas de “Em rota agora” somam este número."
         />
-        <Indicador
+        <KpiCard
           rotulo="Prejuízo"
           icone={TrendingDown}
           neutro={!(r && r.prejuizoFrete > 0)}
