@@ -1,16 +1,25 @@
-import { statusDoSla } from "@erp/dominio/performance/tela";
+import { type Status, statusDoSla } from "@erp/dominio/performance/tela";
 import { type UnidadeResumo } from "@erp/shared/contratos/performance";
 import { formatarPercentual } from "@erp/shared/formatacao";
+import { ArrowDown, ArrowUp, Building2 } from "lucide-react";
 
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
+import { cn } from "@/lib/utils";
 
-import { corDoStatus, fundoDoStatus, textoDoStatus } from "./cores";
+import { corDoStatus } from "./cores";
 import { clicavel } from "./Kpis";
 
 type LinhaDaUnidade = UnidadeResumo & {
   slaOp: number | null;
   nascidosPct: number | null;
 };
+
+const TOM_DO_STATUS: Record<Status, Tom> = { bom: "sucesso", alerta: "alerta", ruim: "erro" };
+
+const CABECALHO = "label-xs";
 
 /** "Performance por unidade": ordenada pelo SLA Op.; clique abre os CT-e da unidade. */
 export function TabelaDeUnidades({
@@ -34,54 +43,58 @@ export function TabelaDeUnidades({
   onUnidade: (sigla: string) => void;
   onPenalizados: (sigla: string) => void;
 }) {
+  const Seta = ordem === "pior" ? ArrowUp : ArrowDown;
   return (
-    <div className="rounded-[10px] border border-border/70 bg-card">
-      <div className="flex items-center justify-between border-b border-border/60 px-5 py-3.5">
+    <Painel
+      titulo={
         <button
-          className="label-xs hover:text-foreground"
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-md hover:text-brand"
           onClick={onInverterOrdem}
           title="Clique para inverter a ordem"
         >
-          Performance por unidade {ordem === "pior" ? "↑" : "↓"}
+          Performance por unidade
+          <Seta className="h-4 w-4" aria-label={ordem === "pior" ? "↑" : "↓"} />
         </button>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">{linhas.length} unidades</span>
-          <ExportMenu
-            soIcone
-            arquivo="performance-por-unidade"
-            titulo="Performance por unidade"
-            subtitulo={`${periodo.inicio} → ${periodo.fim}`}
-            colunas={[
-              { chave: "sigla", titulo: "Unidade destino" },
-              { chave: "total", titulo: "Total CTRCs", formato: "inteiro" },
-              { chave: "concluidos", titulo: "Concluídos", formato: "inteiro" },
-              { chave: "penalizadosAbertos", titulo: "Penalizados em aberto", formato: "inteiro" },
-              { chave: "penalizados", titulo: "Penalizados concluídos", formato: "inteiro" },
-              { chave: "slaOp", titulo: "SLA Op. (%)", formato: "percentual" },
-              { chave: "nascidosPct", titulo: "Nascidos em atraso (%)", formato: "percentual" },
-            ]}
-            linhas={linhas}
-          />
-        </div>
-      </div>
-      <div className="flex items-center gap-4 border-b border-border/60 bg-muted/30 px-5 py-2 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-        <span className="h-[7px] w-[7px] shrink-0" aria-hidden />
-        <span className="min-w-0 flex-1">Unidade destino</span>
-        <span className="hidden w-[90px] shrink-0 sm:block" aria-hidden />
+      }
+      descricao={`${String(linhas.length)} unidades`}
+      icone={Building2}
+      acoes={
+        <ExportMenu
+          soIcone
+          arquivo="performance-por-unidade"
+          titulo="Performance por unidade"
+          subtitulo={`${periodo.inicio} → ${periodo.fim}`}
+          colunas={[
+            { chave: "sigla", titulo: "Unidade destino" },
+            { chave: "total", titulo: "Total CTRCs", formato: "inteiro" },
+            { chave: "concluidos", titulo: "Concluídos", formato: "inteiro" },
+            { chave: "penalizadosAbertos", titulo: "Penalizados em aberto", formato: "inteiro" },
+            { chave: "penalizados", titulo: "Penalizados concluídos", formato: "inteiro" },
+            { chave: "slaOp", titulo: "SLA Op. (%)", formato: "percentual" },
+            { chave: "nascidosPct", titulo: "Nascidos em atraso (%)", formato: "percentual" },
+          ]}
+          linhas={linhas}
+        />
+      }
+    >
+      <div className="flex items-center gap-4 border-b border-border bg-muted/70 px-4 py-2.5">
+        <span className={cn(CABECALHO, "min-w-0 flex-1")}>Unidade destino</span>
+        <span className="hidden w-[120px] shrink-0 sm:block" aria-hidden />
         <span
-          className="w-20 shrink-0 text-right"
+          className={cn(CABECALHO, "w-24 shrink-0 text-right")}
           title="SLA Operacional: (CT-e emitidos − entregues fora do prazo) ÷ CT-e emitidos. Fora do prazo exclui responsabilidade do cliente."
         >
           SLA Op.
         </span>
         <span
-          className="hidden w-20 shrink-0 text-right md:block"
+          className={cn(CABECALHO, "hidden w-24 shrink-0 text-right md:block")}
           title="Nascidos em atraso: CTRCs emitidos a menos de 48 horas (corridas) da previsão de entrega (atraso do parceiro)."
         >
           Nasc. atraso
         </span>
       </div>
-      <ul className="divide-y divide-border/60">
+      <ul className="divide-y divide-border">
         {linhas.map((l) => (
           <LinhaDeUnidade
             key={l.sigla}
@@ -97,12 +110,15 @@ export function TabelaDeUnidades({
           />
         ))}
         {linhas.length === 0 && !carregando && (
-          <li className="px-5 py-8 text-center text-[13px] text-muted-foreground">
-            Sem dados de CTRCs para os filtros selecionados.
+          <li>
+            <EstadoVazio
+              mensagem="Sem dados de CTRCs para os filtros selecionados."
+              detalhe="Amplie o período ou tire algum filtro."
+            />
           </li>
         )}
       </ul>
-    </div>
+    </Painel>
   );
 }
 
@@ -123,27 +139,27 @@ function LinhaDeUnidade({
   const status = sla != null ? statusDoSla(sla, meta, alerta) : "bom";
   const ruim = sla != null && status === "ruim";
   const abertos = linha.penalizadosAbertos;
-  const rotulo = `${abertos} penalizado${abertos === 1 ? "" : "s"} em aberto`;
+  const rotulo = `${String(abertos)} penalizado${abertos === 1 ? "" : "s"} em aberto`;
   return (
     <li
-      className="flex cursor-pointer items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/40"
-      style={ruim ? { background: fundoDoStatus.ruim } : undefined}
+      className={cn(
+        "flex cursor-pointer items-center gap-4 px-4 py-2.5 text-[13px] transition-colors last:rounded-b-xl hover:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+        ruim && "bg-status-bad-bg/60",
+      )}
       title="Ver CTRCs com atraso, ocorrências e NFs desta unidade"
       {...clicavel(onClick)}
     >
-      <span
-        className="inline-block h-[7px] w-[7px] shrink-0 rounded-full"
-        style={{ backgroundColor: sla != null ? corDoStatus[status] : "var(--muted-foreground)" }}
-      />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span
-            className="text-[13px] font-medium tabular-nums"
-            style={ruim ? { color: textoDoStatus.ruim } : undefined}
+            className={cn(
+              "font-mono font-semibold tabular-nums",
+              ruim ? "text-status-bad-fg" : "text-foreground",
+            )}
           >
             {linha.sigla}
           </span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[12.5px] text-muted-foreground">
             {linha.total} CTRCs ·{" "}
             {abertos > 0 ? (
               <button
@@ -152,7 +168,7 @@ function LinhaDeUnidade({
                   e.stopPropagation();
                   onPenalizados();
                 }}
-                className="underline decoration-dotted underline-offset-2 hover:text-foreground focus:outline-none"
+                className="underline decoration-dotted underline-offset-2 hover:text-foreground"
                 title="Ver os CTRCs penalizados desta unidade que ainda estão em aberto (sem entrega e sem baixa finalizadora)"
               >
                 {rotulo}
@@ -168,8 +184,7 @@ function LinhaDeUnidade({
                 e.stopPropagation();
                 onPenalizados();
               }}
-              className="text-[11px] font-medium underline decoration-dotted underline-offset-2 hover:opacity-80 focus:outline-none"
-              style={{ color: textoDoStatus.ruim }}
+              className="text-[12.5px] font-semibold text-status-bad-fg underline decoration-dotted underline-offset-2 hover:opacity-80"
               title="Ver os CTRCs penalizados desta unidade que ainda estão em aberto"
             >
               · agir agora
@@ -177,22 +192,25 @@ function LinhaDeUnidade({
           )}
         </div>
       </div>
-      <div className="hidden h-[5px] w-[90px] shrink-0 overflow-hidden rounded-full bg-border/60 sm:block">
+      <div className="hidden h-1.5 w-[120px] shrink-0 overflow-hidden rounded-full bg-muted sm:block">
         <div
           className="h-full rounded-full"
           style={{
-            width: `${Math.max(2, Math.min(100, (sla ?? 0) * 100))}%`,
+            width: `${String(Math.max(2, Math.min(100, (sla ?? 0) * 100)))}%`,
             backgroundColor: sla != null ? corDoStatus[status] : "transparent",
           }}
         />
       </div>
-      <div
-        className="w-20 shrink-0 text-right text-[13px] font-medium tabular-nums"
-        style={{ color: sla != null ? textoDoStatus[status] : "var(--muted-foreground)" }}
-      >
-        {sla != null ? formatarPercentual(sla, { separador: "." }) : "—"}
+      <div className="flex w-24 shrink-0 justify-end">
+        {sla != null ? (
+          <SeloStatus tom={TOM_DO_STATUS[status]} className="tabular-nums">
+            {formatarPercentual(sla, { separador: "." })}
+          </SeloStatus>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </div>
-      <div className="hidden w-20 shrink-0 text-right text-[13px] text-muted-foreground tabular-nums md:block">
+      <div className="hidden w-24 shrink-0 text-right text-muted-foreground tabular-nums md:block">
         {linha.nascidosPct != null
           ? formatarPercentual(linha.nascidosPct, { separador: "." })
           : "—"}

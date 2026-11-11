@@ -1,10 +1,13 @@
 import { valorDaMetrica } from "@erp/dominio/performance/serie";
 import { type Granularidade, type PontoSerie } from "@erp/shared/contratos/performance";
 import { formatarInteiro, formatarPercentual } from "@erp/shared/formatacao";
+import { BarChart3, LineChart } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
+import { Alternador } from "@/componentes/comum/Alternador";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { GraficoBarras, GraficoLinha } from "@/componentes/comum/Graficos";
+import { ItemDeLegenda, Painel } from "@/componentes/comum/Painel";
 import { type ColunaExportacao } from "@/lib/exportacao";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -121,8 +124,8 @@ export function GraficoSerie({
     series: [{ chave: "valor", nome: def.rotulo }],
     dica: (d: (typeof dados)[number]) => (
       <>
-        <div className="font-medium">{rotuloDoPeriodo(d.ponto.periodo, granularidade, true)}</div>
-        <div className="mt-0.5 tabular-nums">
+        <div className="label-xs mb-1">{rotuloDoPeriodo(d.ponto.periodo, granularidade, true)}</div>
+        <div className="tabular-nums">
           {def.rotulo}:{" "}
           <strong>
             {d.valor == null
@@ -132,9 +135,9 @@ export function GraficoSerie({
                 : formatarInteiro(d.valor)}
           </strong>
         </div>
-        <div className="text-[11px] text-muted-foreground tabular-nums">{def.detalhe(d.ponto)}</div>
+        <div className="text-xs text-muted-foreground tabular-nums">{def.detalhe(d.ponto)}</div>
         {def.pct && (
-          <div className="text-[11px] text-muted-foreground tabular-nums">
+          <div className="text-xs text-muted-foreground tabular-nums">
             {formatarInteiro(d.ponto.totalCtrcs)} CT-e emitidos
           </div>
         )}
@@ -144,50 +147,43 @@ export function GraficoSerie({
     erro,
   };
   return (
-    <section className="rounded-[10px] border border-border/70 bg-card">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3.5">
-        <div className="min-w-0">
-          <h2 className="text-[13px] font-medium">{titulo}</h2>
-          <p className="text-[11px] text-muted-foreground">{subtitulo}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <Painel
+      titulo={titulo}
+      descricao={subtitulo}
+      icone={def.pct ? LineChart : BarChart3}
+      acoes={
+        <ExportMenu
+          arquivo={nomeExport}
+          titulo={titulo}
+          subtitulo={subtitulo}
+          colunas={exportacao.colunas}
+          linhas={exportacao.linhas}
+          soIcone
+        />
+      }
+      barra={
+        <>
           {filtrosExtra}
           {metricas.length > 1 && (
-            <div
-              role="group"
-              aria-label="Métrica do gráfico"
-              className="flex rounded-md border border-border/70 p-0.5"
-            >
-              {metricas.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  aria-pressed={metrica === m}
-                  onClick={() => {
-                    setMetrica(m);
-                  }}
-                  className={
-                    "rounded-[5px] px-3 py-1 text-[12px] transition-colors " +
-                    (metrica === m
-                      ? "bg-[var(--brand)] text-white"
-                      : "text-muted-foreground hover:bg-muted")
-                  }
-                >
-                  {DEFINICAO[m].rotulo}
-                </button>
-              ))}
-            </div>
+            <Alternador
+              rotulo="Métrica do gráfico"
+              tamanho="pequeno"
+              valor={metrica}
+              aoMudar={setMetrica}
+              opcoes={metricas.map((m) => ({ valor: m, rotulo: DEFINICAO[m].rotulo }))}
+            />
           )}
-          <ExportMenu
-            arquivo={nomeExport}
-            titulo={titulo}
-            subtitulo={subtitulo}
-            colunas={exportacao.colunas}
-            linhas={exportacao.linhas}
-            soIcone
-          />
-        </div>
-      </header>
+          <span className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1">
+            <ItemDeLegenda cor="var(--brand)">{def.rotulo}</ItemDeLegenda>
+            {def.pct && (
+              <ItemDeLegenda cor="var(--muted-foreground)">
+                meta {formatarPercentual(meta)}
+              </ItemDeLegenda>
+            )}
+          </span>
+        </>
+      }
+    >
       {def.pct ? (
         <GraficoLinha
           {...comum}
@@ -198,6 +194,6 @@ export function GraficoSerie({
       ) : (
         <GraficoBarras {...comum} formato="inteiro" />
       )}
-    </section>
+    </Painel>
   );
 }

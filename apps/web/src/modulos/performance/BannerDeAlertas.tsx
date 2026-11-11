@@ -39,26 +39,29 @@ export function BannerDeAlertas({
   if (cartoes.length === 0) return null;
   return (
     <TooltipProvider delayDuration={150}>
-      <section aria-label="Alertas operacionais" className="space-y-1.5">
+      <section aria-label="Alertas operacionais" className="space-y-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] tracking-wide text-muted-foreground uppercase">
+          <h2 className="text-[16px] font-bold tracking-[-0.01em] text-foreground">
             Alertas operacionais
-          </span>
+          </h2>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex cursor-help items-center gap-1 rounded-full border border-border/70 px-2 py-0.5 text-[10px] text-muted-foreground">
-                <Info className="h-3 w-3" />
+              <button
+                type="button"
+                className="inline-flex h-6 cursor-help items-center gap-1 rounded-full border border-border bg-muted px-2 text-[12px] font-medium text-muted-foreground"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden />
                 sempre por emissão
-              </span>
+              </button>
             </TooltipTrigger>
-            <TooltipContent className="max-w-[280px] text-[11px]">
+            <TooltipContent className="max-w-[280px] text-[12px]">
               Alertas operacionais sempre por data de emissão e vencimento; não seguem o alternador
               Emitidos/Data Prevista/Concluídos acima. Vale também para os detalhamentos abertos a
               partir deles.
             </TooltipContent>
           </Tooltip>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {cartoes.map((c) => {
             const Icone = ICONE[c.chave];
             return (
@@ -68,22 +71,22 @@ export function BannerDeAlertas({
                 onClick={() => {
                   onClique(c);
                 }}
-                className="group relative flex items-start gap-3 rounded-[10px] border border-border/70 bg-card px-4 py-3 pr-9 text-left transition-colors hover:bg-muted/40 focus:ring-2 focus:ring-[var(--brand)]/40 focus:outline-none"
+                className="group relative flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-3 pr-10 text-left shadow-cartao transition-[box-shadow,border-color] hover:border-brand/40 hover:shadow-flutuante focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <span
-                  className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
                   style={{
                     background: `color-mix(in oklab, ${c.cor} 15%, transparent)`,
                     color: c.cor,
                   }}
                 >
-                  <Icone className="h-4 w-4" />
+                  <Icone className="h-[18px] w-[18px]" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-medium text-foreground">
+                  <span className="block truncate text-[13px] font-semibold text-foreground">
                     {c.titulo}
                   </span>
-                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                  <span className="mt-0.5 block truncate text-[12.5px] text-muted-foreground">
                     {c.subtitulo}
                   </span>
                 </span>
@@ -103,12 +106,12 @@ export function BannerDeAlertas({
                           e.preventDefault();
                         }
                       }}
-                      className="absolute top-2 right-2 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      className="absolute top-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                      <Info className="h-3.5 w-3.5" />
+                      <Info className="h-3.5 w-3.5" aria-hidden />
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="left" className="max-w-[320px] text-[11px] leading-relaxed">
+                  <TooltipContent side="left" className="max-w-[320px] text-[12px] leading-relaxed">
                     {c.explicacao}
                   </TooltipContent>
                 </Tooltip>

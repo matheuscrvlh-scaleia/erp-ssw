@@ -133,7 +133,10 @@ export function SeletorDeOcorrencia({
         >
           Ocorrência{" "}
           {selecionados.length > 0 ? (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+            <Badge
+              variant="secondary"
+              className="h-5 border-transparent bg-brand-suave px-2 text-[11.5px] text-brand"
+            >
               {selecionados.length === 1 ? `#${primeiro ?? ""}` : `${selecionados.length} códigos`}
             </Badge>
           ) : (
@@ -142,7 +145,7 @@ export function SeletorDeOcorrencia({
         </GatilhoFiltro>
       </PopoverTrigger>
       <PopoverContent className="w-96 max-w-[calc(100vw-2rem)] p-0" align="start">
-        <div className="space-y-2 border-b border-border/60 p-2">
+        <div className="space-y-2 border-b border-border p-2">
           <input
             autoFocus
             value={termo}
@@ -150,7 +153,8 @@ export function SeletorDeOcorrencia({
               setTermo(e.target.value);
             }}
             placeholder="Buscar por código ou descrição…"
-            className="w-full rounded-md border border-border/70 bg-background px-2 py-1 text-[12px] outline-none focus:border-brand"
+            aria-label="Buscar ocorrência"
+            className="h-8 w-full rounded-lg border border-input bg-card px-2.5 text-[13px] outline-none focus:border-ring"
           />
           <div className="flex flex-wrap items-center gap-1">
             {GRUPOS_DE_OCORRENCIA.map((g) => {
@@ -169,8 +173,9 @@ export function SeletorDeOcorrencia({
                     definir(ativo ? [] : codigos);
                   }}
                   className={cn(
-                    "rounded-full border border-border/70 px-2 py-0.5 text-[11px] hover:bg-muted disabled:opacity-40",
-                    ativo && "border-brand bg-brand text-white hover:bg-brand",
+                    "h-7 rounded-full border border-border px-2.5 text-[12px] font-medium hover:bg-muted disabled:opacity-40",
+                    ativo &&
+                      "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
                   )}
                   title={`Mostrar só os códigos de "${rotulo.toLowerCase()}" deste recorte`}
                 >
@@ -178,10 +183,10 @@ export function SeletorDeOcorrencia({
                 </button>
               );
             })}
-            <span className="ml-auto flex gap-2 text-[11px] text-muted-foreground">
+            <span className="ml-auto flex gap-2 text-[12px] font-medium text-brand">
               <button
                 type="button"
-                className="underline disabled:opacity-40"
+                className="hover:underline disabled:opacity-40"
                 disabled={comCte.length === 0}
                 onClick={() => {
                   definir(comCte.map((c) => c.codigo));
@@ -191,7 +196,7 @@ export function SeletorDeOcorrencia({
               </button>
               <button
                 type="button"
-                className="underline disabled:opacity-40"
+                className="hover:underline disabled:opacity-40"
                 disabled={selecionados.length === 0}
                 onClick={() => {
                   definir([]);
@@ -202,7 +207,7 @@ export function SeletorDeOcorrencia({
             </span>
           </div>
         </div>
-        <ul className="max-h-80 overflow-auto py-1">
+        <ul className="rolagem-fina max-h-80 overflow-auto p-1">
           {opcoes.isLoading && <AvisoDaLista>Carregando ocorrências do recorte…</AvisoDaLista>}
           {opcoes.isError && (
             <AvisoDaLista erro>
@@ -222,13 +227,9 @@ export function SeletorDeOcorrencia({
                   alternar(o.codigo);
                 }}
               >
-                <span className="font-mono text-[11px] text-muted-foreground">#{o.codigo}</span>
+                <span className="font-mono text-xs text-muted-foreground">#{o.codigo}</span>
                 <span className="flex-1 truncate">{o.descricao ?? "sem CT-e no recorte"}</span>
-                {tipo && (
-                  <span className="shrink-0 text-[9px] tracking-wide text-muted-foreground uppercase">
-                    {comEmpresa(tipo)}
-                  </span>
-                )}
+                {tipo && <span className="label-xs shrink-0">{comEmpresa(tipo)}</span>}
                 <span className="w-10 shrink-0 text-right text-muted-foreground tabular-nums">
                   {o.qtd.toLocaleString("pt-BR")}
                 </span>
