@@ -12,19 +12,27 @@ import {
 } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, ChartBarBig, Gauge, RefreshCw, Scale, ShieldCheck } from "lucide-react";
 
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import {
   type EtiquetaFiltroOpcional,
   FiltrandoPor,
+  FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
-import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
+import { KpiCard } from "@/componentes/comum/KpiCard";
+import { Painel } from "@/componentes/comum/Painel";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
+import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
+import { TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
@@ -35,7 +43,8 @@ import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaDetalhe, consultaOpcoes } from "./api";
 import { esquemaDetalhe, filtrosDaBusca, ROTULO_PERIODO } from "./busca";
-import { BotoesDePeriodo, CartaoMetrica, tomDoSla } from "./componentes";
+import { AlternadorDePeriodo, NumeroDoCtrc } from "./pecas";
+import { tomDoSla } from "./sla";
 import { opcoesDeTipo, rotuloDoTipo } from "./tipos";
 
 const rota = getRouteApi("/_autenticado/prazo-parceiro_/$id");
@@ -76,7 +85,6 @@ export function PaginaDetalheParceiro() {
   const d = q.data;
   const r = d?.resumo;
   const sla = d?.sla ?? { meta: 0.95, alerta: 0.9 };
-  const maiorFaixa = Math.max(1, ...(d?.histograma.map((h) => h.qtd) ?? []));
   const diferenca = r ? r.performancePropria - r.performanceTotal : 0;
   const nascidos = d?.nascidos ?? [];
 
@@ -104,197 +112,232 @@ export function PaginaDetalheParceiro() {
     },
   ];
 
+  const colunas = (
+    [
+      { chave: "numero", titulo: "CTRC", celula: (n) => <NumeroDoCtrc numero={n.numero} /> },
+      { chave: "dataEmbarque", titulo: "Embarque", celula: (n) => formatarData(n.dataEmbarque) },
+      {
+        chave: "dataPrevista",
+        titulo: "Prazo entrega",
+        celula: (n) => formatarData(n.dataPrevista),
+      },
+      {
+        chave: "prazoPadraoData",
+        titulo: "Mínimo 48h",
+        classe: "text-muted-foreground",
+        celula: (n) => formatarData(n.prazoPadraoData),
+      },
+      {
+        chave: "diasAbaixoDoPadrao",
+        titulo: "Abaixo das 48h (dias)",
+        alinhamento: "direita",
+        classe: "whitespace-nowrap font-semibold text-status-bad-fg",
+        celula: (n) => n.diasAbaixoDoPadrao ?? "—",
+      },
+      {
+        chave: "statusAtual",
+        titulo: "Status",
+        classe: "max-w-[160px] truncate text-muted-foreground",
+        celula: (n) => n.statusAtual ?? "—",
+      },
+      { chave: "setor", titulo: "Setor", classe: "font-mono", celula: (n) => n.setor ?? "—" },
+      { chave: "destino", titulo: "Destino", celula: (n) => destinoDe(n) ?? "—" },
+      {
+        chave: "unidadeNome",
+        titulo: "Unidade",
+        classe: "max-w-[160px] truncate",
+        celula: (n) => n.unidadeNome ?? "—",
+      },
+    ] satisfies ColunaTabela<NascidoAtrasado>[]
+  ).map((c): ColunaTabela<NascidoAtrasado> => ({ ...c, ordenavel: false }));
+
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <Link
-            to="/prazo-parceiro"
-            search={{ periodo: b.periodo, unidades: b.unidades, tipos: b.tipos }}
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-3 w-3" /> voltar
-          </Link>
-          <h1 className="text-[24px] font-medium tracking-tight">
-            {d?.parceiro.nome ?? "Parceiro"}
-          </h1>
-          <SeloDosDados />
-          <p className="text-[12px] text-muted-foreground">
-            Detalhe de prazo do parceiro · {ROTULO_PERIODO[b.periodo]}
-            {d?.parceiro.prazoAcordoHoras != null && (
-              <span className="ml-2">· acordo: {d.parceiro.prazoAcordoHoras}h</span>
-            )}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <BotoesDePeriodo
-            atual={b.periodo}
-            aoMudar={(periodo) => {
-              definir({ periodo });
-            }}
-          />
-          <FiltroMultiplo
-            rotulo="Tipo documento"
-            opcoes={opcoes && opcoesDeTipo(opcoes.tipos)}
-            selecionados={b.tipos}
-            aoMudar={(tipos) => {
-              definir({ tipos });
-            }}
-            textoVazio="todos"
-          />
+    <Pagina
+      titulo={d?.parceiro.nome ?? "Parceiro"}
+      descricao={
+        <>
+          Detalhe de prazo do parceiro · {ROTULO_PERIODO[b.periodo]}
+          {d?.parceiro.prazoAcordoHoras != null && (
+            <span className="ml-2">· acordo: {d.parceiro.prazoAcordoHoras}h</span>
+          )}
+        </>
+      }
+      meta={<SeloDosDados className="" />}
+      acoes={
+        <>
+          <Button asChild size="sm" variant="ghost">
+            <Link
+              to="/prazo-parceiro"
+              search={{ periodo: b.periodo, unidades: b.unidades, tipos: b.tipos }}
+            >
+              <ArrowLeft aria-hidden /> Voltar
+            </Link>
+          </Button>
           <Button
             size="sm"
             variant="ghost"
             disabled={q.isFetching}
             onClick={() => void q.refetch()}
           >
-            <RefreshCw className={cn("mr-1.5 h-3 w-3", q.isFetching && "animate-spin")} /> Atualizar
+            <RefreshCw className={cn(q.isFetching && "animate-spin")} aria-hidden /> Atualizar
           </Button>
-        </div>
-      </header>
-
-      <FiltrandoPor etiquetas={etiquetas} />
-
+        </>
+      }
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={b.unidades.length > 0 || b.tipos.length > 0}
+            aoLimpar={() => {
+              definir({ unidades: [], tipos: [] });
+            }}
+          >
+            <AlternadorDePeriodo
+              atual={b.periodo}
+              aoMudar={(periodo) => {
+                definir({ periodo });
+              }}
+            />
+            <FiltroMultiplo
+              rotulo="Tipo documento"
+              opcoes={opcoes && opcoesDeTipo(opcoes.tipos)}
+              selecionados={b.tipos}
+              aoMudar={(tipos) => {
+                definir({ tipos });
+              }}
+              textoVazio="todos"
+            />
+          </FiltrosAvancados>
+          <FiltrandoPor etiquetas={etiquetas} />
+        </>
+      }
+    >
       {q.isError && (
-        <p className="rounded-[10px] border border-[var(--status-bad)]/40 bg-[var(--status-bad-bg)] px-3 py-2 text-[12px] text-[var(--status-bad-fg)]">
+        <Aviso
+          tom="erro"
+          acao={
+            <Button size="sm" variant="outline" onClick={() => void q.refetch()}>
+              <RefreshCw aria-hidden /> Tentar novamente
+            </Button>
+          }
+        >
           {mensagemAmigavel(q.error)}
-        </p>
+        </Aviso>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <CartaoMetrica
-          tamanho="medio"
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
           rotulo="Performance total"
           valor={r ? formatarPercentual(r.performanceTotal) : "—"}
-          tom={r && tomDoSla(r.performanceTotal, sla)}
-          dica={`${formatarInteiro(r?.totalCtes ?? 0)} CTRC(s) no período`}
-          carregando={q.isLoading}
+          status={r ? tomDoSla(r.performanceTotal, sla) : "bom"}
+          neutro={!r}
+          icone={Gauge}
+          detalhe={`${formatarInteiro(r?.totalCtes ?? 0)} CTRC(s) no período`}
         />
-        <CartaoMetrica
-          tamanho="medio"
+        <KpiCard
           rotulo="Performance própria"
           valor={r ? formatarPercentual(r.performancePropria) : "—"}
-          tom={r && tomDoSla(r.performancePropria, sla)}
-          dica={`apenas ${formatarInteiro(r?.totalProprio ?? 0)} CTRC(s) com prazo próprio`}
-          carregando={q.isLoading}
-          destaque
+          status={r ? tomDoSla(r.performancePropria, sla) : "bom"}
+          neutro={!r}
+          icone={ShieldCheck}
+          detalhe={`apenas ${formatarInteiro(r?.totalProprio ?? 0)} CTRC(s) com prazo próprio`}
         />
-        <CartaoMetrica
-          tamanho="medio"
+        <KpiCard
           rotulo="Diferença"
           valor={formatarPontos(diferenca)}
-          tom={diferenca > 0 ? "bom" : "neutro"}
-          dica={`${formatarInteiro(r?.nascidosAtrasados ?? 0)} CTRC(s) nasceram em atraso`}
-          carregando={q.isLoading}
+          status="bom"
+          neutro={!(diferenca > 0)}
+          icone={Scale}
+          detalhe={`${formatarInteiro(r?.nascidosAtrasados ?? 0)} CTRC(s) nasceram em atraso`}
         />
       </div>
 
-      <div className="rounded-[10px] border border-border/70 bg-card p-3">
-        <h2 className="text-[14px] font-medium">Atraso na origem</h2>
-        <p className="text-[11px] text-muted-foreground">
-          Quantos dias o prazo do CT-e veio abaixo das 48 horas, por faixa
-        </p>
+      <Painel
+        titulo="Atraso na origem"
+        descricao="Quantos dias o prazo do CT-e veio abaixo das 48 horas, por faixa"
+        icone={ChartBarBig}
+        classeDoCorpo="px-5 py-4"
+      >
         {q.isLoading ? (
-          <Skeleton className="mt-4 h-24 rounded bg-muted/60" />
+          <Skeleton className="h-24 rounded-lg bg-muted" />
         ) : (d?.histograma.length ?? 0) === 0 ? (
-          <p className="mt-4 text-[12px] text-muted-foreground">
-            Nenhum CTRC nasceu atrasado neste período.
-          </p>
+          <EstadoVazio className="py-6" mensagem="Nenhum CTRC nasceu atrasado neste período." />
         ) : (
-          <ul className="mt-3 space-y-2">
-            {d?.histograma.map((h) => (
-              <li key={h.faixa} className="flex items-center gap-2 text-[12px]">
-                <span className="w-20 text-muted-foreground">{h.faixa}</span>
-                <div className="h-3 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-[var(--status-bad)]"
-                    style={{ width: `${(h.qtd / maiorFaixa) * 100}%` }}
-                  />
-                </div>
-                <span className="w-10 text-right tabular-nums">{formatarInteiro(h.qtd)}</span>
-              </li>
-            ))}
-          </ul>
+          <Histograma faixas={d?.histograma ?? []} />
         )}
-      </div>
+      </Painel>
 
-      <div className="rounded-[10px] border border-border/70 bg-card">
-        <div className="flex items-center justify-between border-b border-border/70 p-3">
-          <div>
-            <h2 className="text-[14px] font-medium">CTRCs nascidos em atraso</h2>
-            <p className="text-[11px] text-muted-foreground">
-              Use esta lista na reunião comercial com o parceiro
-            </p>
+      <TabelaDados
+        titulo="CTRCs nascidos em atraso"
+        colunas={colunas}
+        linhas={nascidos}
+        chaveDaLinha={(n) => n.id}
+        aoClicarLinha={(n) => {
+          abrirCte(n.numero);
+        }}
+        carregando={q.isLoading}
+        mensagemVazia="Nenhum CTRC nasceu atrasado deste parceiro no período."
+        porPagina={0}
+        rotuloTotal={(n) =>
+          `${formatarInteiro(n)} CTRC(s) · Use esta lista na reunião comercial com o parceiro`
+        }
+        acoes={
+          <div className="flex flex-1 justify-end">
+            <ExportMenu
+              arquivo={`prazo-parceiro-${slug(d?.parceiro.nome ?? "parceiro")}`}
+              titulo={`Nascidos em atraso — ${d?.parceiro.nome ?? "parceiro"}`}
+              subtitulo={ROTULO_PERIODO[b.periodo]}
+              colunas={COLUNAS_DA_EXPORTACAO}
+              linhas={nascidos.map((n) => ({
+                ...n,
+                destino: destinoDe(n),
+                linkSsw: urlCtrcNoSsw(n.sigla, n.numero, n.dataEmissao),
+              }))}
+              formatos={["csv", "excel"]}
+              desabilitado={q.isLoading || nascidos.length === 0}
+            />
           </div>
-          <ExportMenu
-            arquivo={`prazo-parceiro-${slug(d?.parceiro.nome ?? "parceiro")}`}
-            titulo={`Nascidos em atraso — ${d?.parceiro.nome ?? "parceiro"}`}
-            subtitulo={ROTULO_PERIODO[b.periodo]}
-            colunas={COLUNAS_DA_EXPORTACAO}
-            linhas={nascidos.map((n) => ({
-              ...n,
-              destino: destinoDe(n),
-              linkSsw: urlCtrcNoSsw(n.sigla, n.numero, n.dataEmissao),
-            }))}
-            formatos={["csv", "excel"]}
-            desabilitado={q.isLoading || nascidos.length === 0}
-          />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr className="border-b border-border/70">
-                <th className="px-3 py-1.5 text-left font-normal">CTRC</th>
-                <th className="px-3 py-1.5 text-left font-normal">Embarque</th>
-                <th className="px-3 py-1.5 text-left font-normal">Prazo entrega</th>
-                <th className="px-3 py-1.5 text-left font-normal">Mínimo 48h</th>
-                <th className="px-3 py-1.5 text-right font-normal">Abaixo das 48h (dias)</th>
-                <th className="px-3 py-1.5 text-left font-normal">Status</th>
-                <th className="px-3 py-1.5 text-left font-normal">Setor</th>
-                <th className="px-3 py-1.5 text-left font-normal">Destino</th>
-                <th className="px-3 py-1.5 text-left font-normal">Unidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.isLoading && <LinhasCarregando linhas={6} colunas={9} />}
-              {q.isSuccess && nascidos.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">
-                    Nenhum CTRC nasceu atrasado deste parceiro no período.
-                  </td>
-                </tr>
-              )}
-              {nascidos.map((n) => (
-                <tr
-                  key={n.id}
-                  onClick={() => {
-                    abrirCte(n.numero);
-                  }}
-                  className="cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/40"
-                >
-                  <td className="px-3 py-1.5 font-mono text-[11px] text-[var(--brand)]">
-                    {n.numero}
-                  </td>
-                  <td className="px-3 py-1.5">{formatarData(n.dataEmbarque)}</td>
-                  <td className="px-3 py-1.5">{formatarData(n.dataPrevista)}</td>
-                  <td className="px-3 py-1.5 text-muted-foreground">
-                    {formatarData(n.prazoPadraoData)}
-                  </td>
-                  <td className="px-3 py-1.5 text-right font-medium tabular-nums text-[var(--status-bad)]">
-                    {n.diasAbaixoDoPadrao ?? "—"}
-                  </td>
-                  <td className="max-w-[140px] truncate px-3 py-1.5 text-muted-foreground">
-                    {n.statusAtual ?? "—"}
-                  </td>
-                  <td className="px-3 py-1.5 font-mono">{n.setor ?? "—"}</td>
-                  <td className="px-3 py-1.5">{destinoDe(n) ?? "—"}</td>
-                  <td className="max-w-[140px] truncate px-3 py-1.5">{n.unidadeNome ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+        }
+      />
+    </Pagina>
+  );
+}
+
+/** Barras horizontais por faixa de atraso, com dica no passar do mouse e no foco do teclado. */
+function Histograma({ faixas }: { faixas: readonly { faixa: string; qtd: number }[] }) {
+  const maior = Math.max(1, ...faixas.map((h) => h.qtd));
+  return (
+    <TooltipProvider delayDuration={80}>
+      <ul className="space-y-2.5">
+        {faixas.map((h) => {
+          const texto = `${h.faixa}: ${formatarInteiro(h.qtd)} CTRC(s)`;
+          return (
+            <li key={h.faixa} className="flex items-center gap-3 text-[13px]">
+              <span className="w-24 shrink-0 text-muted-foreground">{h.faixa}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    role="img"
+                    tabIndex={0}
+                    aria-label={texto}
+                    className="group h-3.5 flex-1 rounded-full bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <span
+                      className="block h-full rounded-full bg-status-bad transition-opacity group-hover:opacity-80"
+                      style={{ width: `${String((h.qtd / maior) * 100)}%` }}
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-[12px]">
+                  {texto}
+                </TooltipContent>
+              </Tooltip>
+              <span className="w-12 shrink-0 text-right font-semibold tabular-nums">
+                {formatarInteiro(h.qtd)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </TooltipProvider>
   );
 }

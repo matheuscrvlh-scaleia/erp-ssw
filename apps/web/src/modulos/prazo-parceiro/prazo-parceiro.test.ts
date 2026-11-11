@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { lerFiltros } from "@/hooks/filtros-na-url";
 
 import { esquemaDetalhe, esquemaPrazo, filtrosDaBusca } from "./busca";
-import { tomDoSla } from "./componentes";
+import { tomDoSla } from "./sla";
 import { opcoesDeTipo } from "./tipos";
 
 const intervalo = { inicio: "2026-10-12", fim: "2026-11-10" };

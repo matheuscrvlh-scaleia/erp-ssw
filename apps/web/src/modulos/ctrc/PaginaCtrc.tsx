@@ -16,19 +16,35 @@ import { getRouteApi, Link, useRouter } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowLeft,
+  Building2,
+  CalendarClock,
   Check,
   CheckCircle2,
+  ChevronRight,
   Clock,
   Copy,
+  Database,
   ExternalLink,
   Eye,
+  FileText,
+  Gauge,
+  History,
+  type LucideIcon,
+  MapPin,
+  Package,
   RefreshCw,
+  SearchX,
+  Truck,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
-import { Badge, type BadgeProps } from "@/componentes/ui/badge";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -77,11 +93,20 @@ export function PaginaCtrc() {
   const { data, isLoading, isError, refetch, isFetching } = useQuery(consultaCtrc(numero, sigla));
   const ctrc = data?.tipo === "encontrado" ? data.ctrc : null;
   const ssw = ctrc ? urlCtrcNoSsw(ctrc.sigla, ctrc.numero, ctrc.dataEmissao) : null;
+  const id = identificacao(ctrc?.numeroNf ?? null, ctrc?.numero ?? numero);
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+    <Pagina
+      titulo={<Titulo rotulo={id.rotulo} principal={id.principal} />}
+      descricao={
+        <>
+          {id.secundario ? `CTRC ${ctrc?.sigla ?? ""} ${id.secundario} · ` : ""}
+          Detalhes do conhecimento de transporte
+        </>
+      }
+      meta={<SeloDosDados className="" />}
+      acoes={
+        <>
           <Button
             size="sm"
             variant="ghost"
@@ -89,22 +114,20 @@ export function PaginaCtrc() {
               router.history.back();
             }}
           >
-            <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Voltar
+            <ArrowLeft aria-hidden /> Voltar
           </Button>
-          <Titulo numero={numero} ctrc={ctrc} />
-        </div>
-        <div className="flex items-center gap-2">
           {ssw && (
-            <a
-              href={ssw}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/10 px-3 py-1.5 text-[12px] font-medium text-brand transition hover:bg-brand/15"
-              title="Abrir este CTRC no SSW"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Abrir no SSW
-            </a>
+            <Button asChild size="sm" variant="outline">
+              <a
+                href={ssw}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir este CTRC no SSW"
+              >
+                <ExternalLink aria-hidden />
+                Abrir no SSW
+              </a>
+            </Button>
           )}
           {ctrc && (
             <ExportMenu
@@ -118,99 +141,98 @@ export function PaginaCtrc() {
             />
           )}
           <Button size="sm" variant="ghost" onClick={() => void refetch()} disabled={isFetching}>
-            <RefreshCw className={cn("mr-1.5 h-3 w-3", isFetching && "animate-spin")} /> Atualizar
+            <RefreshCw className={cn(isFetching && "animate-spin")} aria-hidden /> Atualizar
           </Button>
-        </div>
-      </header>
-
+        </>
+      }
+    >
       {isLoading && <Esqueleto />}
 
       {isError && (
-        <div className="rounded-[10px] border border-destructive/40 bg-destructive/5 p-6 text-center">
-          <p className="text-destructive">Falha ao carregar CTRC.</p>
-          <Button size="sm" variant="outline" className="mt-2" onClick={() => void refetch()}>
-            Tentar novamente
-          </Button>
-        </div>
+        <Aviso
+          tom="erro"
+          titulo="Falha ao carregar CTRC."
+          acao={
+            <Button size="sm" variant="outline" onClick={() => void refetch()}>
+              <RefreshCw aria-hidden /> Tentar novamente
+            </Button>
+          }
+        />
       )}
 
       {data?.tipo === "nao_encontrado" && (
-        <div className="rounded-[10px] border border-border/70 bg-card p-10 text-center text-muted-foreground">
-          CTRC <span className="font-mono">{sigla ? `${sigla} ${numero}` : numero}</span> não
-          encontrado.
-        </div>
+        <Painel>
+          <EstadoVazio
+            icone={SearchX}
+            mensagem={`CTRC ${sigla ? `${sigla} ${numero}` : numero} não encontrado.`}
+          />
+        </Painel>
       )}
 
       {data?.tipo === "varios" && <EscolhaDeSerie numero={numero} opcoes={data.opcoes} />}
 
       {ctrc && <Detalhe ctrc={ctrc} nomeCurto={nomeCurto} fuso={fuso} />}
-    </div>
+    </Pagina>
   );
 }
 
-function Titulo({ numero, ctrc }: { numero: string; ctrc: DetalheCtrc | null }) {
-  const id = identificacao(ctrc?.numeroNf ?? null, ctrc?.numero ?? numero);
-  const semNf = id.rotulo === "CTRC";
+function Titulo({ rotulo, principal }: { rotulo: "NF" | "CTRC"; principal: string }) {
+  const semNf = rotulo === "CTRC";
   const classe = cn(
-    "mr-1.5 text-[13px] font-normal text-muted-foreground",
+    "mr-2 align-middle text-[13px] font-semibold tracking-normal text-muted-foreground",
     semNf && "cursor-help underline decoration-dotted underline-offset-2",
   );
   return (
-    <div>
-      <h1 className="text-[22px] font-medium tracking-tight">
-        {semNf ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={classe}>{id.rotulo}</span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-              Número da NF ainda não recebido. Ele vem do BI2 (relatório 0174), que roda em D-1.
-              Assim que o próximo ciclo cobrir este CTRC, a NF aparece aqui automaticamente.
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <span className={classe}>{id.rotulo}</span>
-        )}
-        <span className="font-mono text-brand">{id.principal}</span>
-      </h1>
-      <SeloDosDados />
-      <p className="text-[12px] text-muted-foreground">
-        {id.secundario ? `CTRC ${ctrc?.sigla ?? ""} ${id.secundario} · ` : ""}
-        Detalhes do conhecimento de transporte
-      </p>
-    </div>
+    <>
+      {semNf ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={classe}>{rotulo}</span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">
+            Número da NF ainda não recebido. Ele vem do BI2 (relatório 0174), que roda em D-1. Assim
+            que o próximo ciclo cobrir este CTRC, a NF aparece aqui automaticamente.
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <span className={classe}>{rotulo}</span>
+      )}
+      <span className="font-mono text-brand">{principal}</span>
+    </>
   );
 }
 
 /** Q02: o mesmo número em mais de uma série — o operador escolhe qual abrir. */
 function EscolhaDeSerie({ numero, opcoes }: { numero: string; opcoes: readonly OpcaoDeCtrc[] }) {
   return (
-    <section className="rounded-[10px] border border-border/70 bg-card">
-      <header className="border-b border-border/70 px-3 py-2">
-        <h2 className="text-[13px] font-medium">
-          O número {numero} existe em {opcoes.length} séries. Qual CT-e você quer abrir?
-        </h2>
-      </header>
-      <ul className="divide-y divide-border/40">
+    <Painel
+      titulo={`O número ${numero} existe em ${String(opcoes.length)} séries. Qual CT-e você quer abrir?`}
+      icone={FileText}
+    >
+      <ul className="divide-y divide-border">
         {opcoes.map((o) => (
           <li key={`${o.sigla}-${o.numero}`}>
             <Link
               to="/ctrc/$numero"
               params={{ numero: o.numero }}
               search={{ sigla: o.sigla }}
-              className="flex flex-wrap items-center gap-3 px-3 py-2 text-[12px] hover:bg-muted"
+              className="group flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-[13px] transition-colors last:rounded-b-xl hover:bg-muted"
             >
               <span className="font-mono font-semibold text-brand">
                 {o.sigla} {o.numero}
               </span>
               <span className="text-muted-foreground">Emissão {formatarData(o.dataEmissao)}</span>
-              <span className="flex-1 truncate">{o.destinatario ?? "—"}</span>
+              <span className="min-w-0 flex-1 truncate font-medium">{o.destinatario ?? "—"}</span>
               <span className="text-muted-foreground">{o.cidadeDestino ?? "—"}</span>
+              <ChevronRight
+                className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                aria-hidden
+              />
             </Link>
           </li>
         ))}
       </ul>
-    </section>
+    </Painel>
   );
 }
 
@@ -236,327 +258,303 @@ function Detalhe({
   const bairro = ctrc.bairroDestino?.trim();
   const cep = ctrc.cepDestinatario?.trim();
   const temEndereco = Boolean(rua || complemento || bairro || cidadeUf || cep);
+  const nascido =
+    ctrc.dataPrevista &&
+    ctrc.prazoPadraoData &&
+    nasceuEmAtraso(ctrc.dataPrevista, ctrc.prazoPadraoData);
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-border/70 bg-card px-3 py-2 text-[12px]">
+      {nascido && (
+        <Aviso tom="alerta" titulo="Nascido em atraso">
+          Emitido a menos de 48 horas da previsão de entrega ({formatarData(ctrc.dataPrevista)}); o
+          mínimo seria {formatarData(ctrc.prazoPadraoData)}. O atraso é do parceiro, não da{" "}
+          {nomeCurto}.
+        </Aviso>
+      )}
+
+      <Painel classeDoCorpo="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3.5 text-[13px]">
         <SeloDeStatus status={ctrc.statusAtual} entregue={entregue} baixa={baixa} />
         {ctrc.dataEntrega && (
-          <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
-            <CheckCircle2 className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center gap-1.5 font-semibold text-status-good-fg">
+            <CheckCircle2 className="h-4 w-4" aria-hidden />
             Entregue em {formatarDataHora(ctrc.dataEntrega, fuso)}
           </span>
         )}
         {ctrc.dataPrevista && aberto && (
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" />
-            Prazo: {formatarData(ctrc.dataPrevista)}
-            {ctrc.prazoOrigem && (
-              <Selo variante="contorno" className="ml-1 text-[10px]">
-                {ctrc.prazoOrigem}
-              </Selo>
-            )}
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <Clock className="h-4 w-4" aria-hidden />
+            Prazo:{" "}
+            <span className="font-semibold text-foreground">{formatarData(ctrc.dataPrevista)}</span>
+            {ctrc.prazoOrigem && <Etiqueta>{ctrc.prazoOrigem}</Etiqueta>}
           </span>
         )}
-      </div>
+      </Painel>
 
-      {/* Duas colunas, cada uma uma pilha própria (sem buraco entre cards de alturas
-          diferentes); no celular empilham: esquerda, depois direita. */}
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <Cartao titulo="Identificação">
-            {ctrc.numeroNf !== null && (
-              <Campo
-                rotulo="Número NF"
-                valor={<span className="font-mono">{ctrc.numeroNf}</span>}
-              />
-            )}
-            <Campo
-              rotulo="Número CTRC"
-              valor={
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        {/* Duas pilhas próprias (sem buraco entre cartões de alturas diferentes); no celular
+            empilham: esquerda, depois direita. A linha do tempo fica ao lado em telas largas. */}
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <Cartao titulo="Identificação" icone={FileText}>
+              {ctrc.numeroNf !== null && (
+                <Campo rotulo="Número NF">
+                  <span className="font-mono">{ctrc.numeroNf}</span>
+                </Campo>
+              )}
+              <Campo rotulo="Número CTRC">
                 <span className="font-mono">
                   {ctrc.sigla} {ctrc.numero}
                 </span>
-              }
-            />
-            <Campo rotulo="Emissão" valor={formatarData(ctrc.dataEmissao)} />
-            <Campo rotulo="Embarque" valor={formatarData(ctrc.dataEmbarque)} />
-            {ctrc.chave && <CampoDeChave rotulo="Chave CT-e" chave={ctrc.chave} />}
-            {ctrc.chaveNfe && <CampoDeChave rotulo="Chave NF-e" chave={ctrc.chaveNfe} />}
-          </Cartao>
+              </Campo>
+              <Campo rotulo="Emissão">{formatarData(ctrc.dataEmissao)}</Campo>
+              <Campo rotulo="Embarque">{formatarData(ctrc.dataEmbarque)}</Campo>
+              {ctrc.chave && <CampoDeChave rotulo="Chave CT-e" chave={ctrc.chave} />}
+              {ctrc.chaveNfe && <CampoDeChave rotulo="Chave NF-e" chave={ctrc.chaveNfe} />}
+            </Cartao>
 
-          <Cartao titulo="Situação atual">
-            <Campo rotulo="Status atual" valor={ctrc.statusAtual ?? "—"} />
-            <Campo
-              rotulo="Ocorrências"
-              valor={
+            <Cartao titulo="Situação atual" icone={Truck}>
+              <Campo rotulo="Status atual">{ctrc.statusAtual ?? "—"}</Campo>
+              <Campo rotulo="Ocorrências">
                 <JanelaDeOcorrencias
                   ocorrencias={ctrc.ocorrencias}
                   numero={ctrc.numero}
                   fuso={fuso}
                 />
-              }
-            />
-            <Campo
-              rotulo="Placa do veículo"
-              valor={
-                ctrc.placa ? (
+              </Campo>
+              <Campo rotulo="Placa do veículo">
+                {ctrc.placa ? (
                   <span className="font-mono">
                     {ctrc.placa}
                     {ctrc.romaneio && (
-                      <span className="ml-1.5 text-[11px] text-muted-foreground">
+                      <span className="ml-1.5 font-sans text-[12.5px] text-muted-foreground">
                         · {ctrc.romaneio}
                       </span>
                     )}
                   </span>
                 ) : (
                   "—"
-                )
-              }
-            />
-            <Campo rotulo="Motorista" valor={ctrc.motorista ?? "—"} />
-            <Campo rotulo="Localização" valor={ctrc.localizacao ?? "—"} />
-          </Cartao>
-
-          <Cartao titulo="Remetente / Destinatário">
-            <Campo rotulo="Remetente" valor={ctrc.remetente ?? "—"} />
-            <Campo rotulo="Destinatário" valor={ctrc.destinatario ?? "—"} />
-            <div className="px-3 pt-2 pb-1 text-[10px] font-medium tracking-wide text-muted-foreground/70 uppercase">
-              Endereço de entrega
-            </div>
-            {temEndereco ? (
-              <>
-                <Campo rotulo="Logradouro" valor={rua || "—"} />
-                {complemento && <Campo rotulo="Complemento" valor={complemento} />}
-                {bairro && <Campo rotulo="Bairro" valor={bairro} />}
-                <Campo rotulo="Cidade / UF" valor={cidadeUf ?? "—"} />
-                {cep && (
-                  <Campo
-                    rotulo="CEP"
-                    valor={<span className="font-mono">{formatarCep(cep)}</span>}
-                  />
                 )}
-              </>
-            ) : (
-              <div className="px-3 pb-2 text-[12px] text-muted-foreground">Não informado.</div>
-            )}
-          </Cartao>
+              </Campo>
+              <Campo rotulo="Motorista">{ctrc.motorista ?? "—"}</Campo>
+              <Campo rotulo="Localização" largo>
+                {ctrc.localizacao ?? "—"}
+              </Campo>
+            </Cartao>
 
-          <Cartao titulo="Carga & Frete">
-            <Campo
-              rotulo="Peso"
-              valor={formatarPeso(ctrc.peso, { tonelada: 3, quilo: 3, fixas: true })}
-            />
-            <Campo rotulo="Volumes" valor={formatarInteiro(ctrc.volumes)} />
-            <Campo rotulo="Valor do frete" valor={formatarMoeda(ctrc.valorFrete)} />
-          </Cartao>
-        </div>
+            <Cartao titulo="Remetente / Destinatário" icone={MapPin}>
+              <Campo rotulo="Remetente" largo>
+                {ctrc.remetente ?? "—"}
+              </Campo>
+              <Campo rotulo="Destinatário" largo>
+                {ctrc.destinatario ?? "—"}
+              </Campo>
+              <div className="col-span-2 border-t border-border pt-3 text-[12.5px] font-semibold text-brand">
+                Endereço de entrega
+              </div>
+              {temEndereco ? (
+                <>
+                  <Campo rotulo="Logradouro" largo>
+                    {rua || "—"}
+                  </Campo>
+                  {complemento && <Campo rotulo="Complemento">{complemento}</Campo>}
+                  {bairro && <Campo rotulo="Bairro">{bairro}</Campo>}
+                  <Campo rotulo="Cidade / UF">{cidadeUf ?? "—"}</Campo>
+                  {cep && (
+                    <Campo rotulo="CEP">
+                      <span className="font-mono">{formatarCep(cep)}</span>
+                    </Campo>
+                  )}
+                </>
+              ) : (
+                <p className="col-span-2 text-[13px] text-muted-foreground">Não informado.</p>
+              )}
+            </Cartao>
 
-        <div className="flex flex-col gap-4">
-          <Cartao titulo="Prazos & Entrega">
-            <Campo
-              rotulo="Prazo contratado"
-              valor={ctrc.prazoContratadoDias !== null ? `${ctrc.prazoContratadoDias} dias` : "—"}
-            />
-            <Campo
-              rotulo="Previsão de entrega"
-              valor={
-                ctrc.prazoFonte ? (
+            <Cartao titulo="Carga & Frete" icone={Package}>
+              <Campo rotulo="Peso">
+                {formatarPeso(ctrc.peso, { tonelada: 3, quilo: 3, fixas: true })}
+              </Campo>
+              <Campo rotulo="Volumes">{formatarInteiro(ctrc.volumes)}</Campo>
+              <Campo rotulo="Valor do frete">{formatarMoeda(ctrc.valorFrete)}</Campo>
+            </Cartao>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Cartao titulo="Prazos & Entrega" icone={CalendarClock}>
+              <Campo rotulo="Prazo contratado">
+                {ctrc.prazoContratadoDias !== null ? `${ctrc.prazoContratadoDias} dias` : "—"}
+              </Campo>
+              <Campo rotulo="Previsão de entrega">
+                {ctrc.prazoFonte ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="cursor-help underline decoration-dotted underline-offset-2">
                         {formatarData(ctrc.dataPrevista)}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs text-[11px]">
+                    <TooltipContent side="top" className="max-w-xs text-xs">
                       {origemDaPrevisao(ctrc.prazoFonte, ctrc.dataPrevista)}
                     </TooltipContent>
                   </Tooltip>
                 ) : (
                   formatarData(ctrc.dataPrevista)
-                )
-              }
-            />
-            <Campo rotulo="Status do prazo" valor={<SeloDoPrazo ctrc={ctrc} fuso={fuso} />} />
-            <Campo rotulo="Origem do prazo" valor={ctrc.prazoOrigem ?? "—"} />
-            <Campo
-              rotulo="Prazo mínimo (48h)"
-              valor={textoDoPrazoMinimo(ctrc.prazoPadraoData, ctrc.prazoPadraoDias, formatarData)}
-            />
-            <Campo rotulo="Entrega realizada" valor={formatarDataHora(ctrc.dataEntrega, fuso)} />
-            {ctrc.dataPrevista &&
-              ctrc.prazoPadraoData &&
-              nasceuEmAtraso(ctrc.dataPrevista, ctrc.prazoPadraoData) && (
-                <div className="flex items-start gap-2 border-t border-border/40 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>
-                    Nascido em atraso — emitido a menos de 48 horas da previsão de entrega (
-                    {formatarData(ctrc.dataPrevista)}); o mínimo seria{" "}
-                    {formatarData(ctrc.prazoPadraoData)}. O atraso é do parceiro, não da {nomeCurto}
-                    .
-                  </span>
-                </div>
-              )}
-          </Cartao>
+                )}
+              </Campo>
+              <Campo rotulo="Status do prazo" largo>
+                <SeloDoPrazo ctrc={ctrc} fuso={fuso} />
+              </Campo>
+              <Campo rotulo="Origem do prazo">{ctrc.prazoOrigem ?? "—"}</Campo>
+              <Campo rotulo="Prazo mínimo (48h)" largo>
+                {textoDoPrazoMinimo(ctrc.prazoPadraoData, ctrc.prazoPadraoDias, formatarData)}
+              </Campo>
+              <Campo rotulo="Entrega realizada">{formatarDataHora(ctrc.dataEntrega, fuso)}</Campo>
+            </Cartao>
 
-          <Cartao titulo="Parceiro & Unidade">
-            <Campo rotulo="Parceiro" valor={ctrc.parceiroNome ?? ctrc.parceiro?.nome ?? "—"} />
-            <Campo
-              rotulo="CNPJ"
-              valor={formatarCnpjOuTraco(ctrc.parceiroCnpj ?? ctrc.parceiro?.cnpj ?? null)}
-            />
-            <Campo rotulo="Unidade" valor={ctrc.filial ?? "—"} />
-            <Campo
-              rotulo="Cidade da unidade"
-              valor={
-                ctrc.unidadeCidade
+            <Cartao titulo="Parceiro & Unidade" icone={Building2}>
+              <Campo rotulo="Parceiro" largo>
+                {ctrc.parceiroNome ?? ctrc.parceiro?.nome ?? "—"}
+              </Campo>
+              <Campo rotulo="CNPJ">
+                <span className="tabular-nums">
+                  {formatarCnpjOuTraco(ctrc.parceiroCnpj ?? ctrc.parceiro?.cnpj ?? null)}
+                </span>
+              </Campo>
+              <Campo rotulo="Unidade">{ctrc.filial ?? "—"}</Campo>
+              <Campo rotulo="Cidade da unidade">
+                {ctrc.unidadeCidade
                   ? `${ctrc.unidadeCidade}${ctrc.unidadeUf ? `/${ctrc.unidadeUf}` : ""}`
-                  : "—"
-              }
-            />
-          </Cartao>
+                  : "—"}
+              </Campo>
+            </Cartao>
 
-          <Cartao titulo="Performance">
-            <Campo rotulo="Pontualidade" valor={<SeloDePontualidade ctrc={ctrc} />} />
-            <Campo rotulo="Performance" valor={textoDaPerformance(ctrc.performanceDias)} />
-            <Campo rotulo="Atraso" valor={textoDoAtraso(ctrc.atrasoDias)} />
-            <Campo rotulo="Entrega realizada" valor={formatarDataHora(ctrc.dataEntrega, fuso)} />
-            <Campo
-              rotulo="Rota (origem → destino)"
-              valor={
-                ctrc.unidadeOrigem || ctrc.unidadeDestino
-                  ? `${ctrc.unidadeOrigem ?? "—"} → ${ctrc.unidadeDestino ?? "—"}`
-                  : "—"
+            <Cartao
+              titulo="Performance"
+              icone={Gauge}
+              rodape={
+                ctrc.ocorrencias.length === 0 &&
+                (ctrc.responsabilidadeCliente !== null || ctrc.dataEntrega) &&
+                "Classificação baseada no relatório de performance do SSW (0017) — nenhum evento individual foi capturado para este CTRC via webhook."
               }
-            />
-            <Campo rotulo="Unidade atual" valor={ctrc.unidadeAtual ?? "—"} />
-            <Campo rotulo="Fonte" valor={ctrc.fontePerformance ?? "—"} />
-            <Campo
-              rotulo="Última movimentação BI2"
-              valor={
-                ctrc.efetiva.dataHora ? (
-                  <span className="inline-flex flex-col items-end">
+            >
+              <Campo rotulo="Pontualidade" largo>
+                <SeloDePontualidade ctrc={ctrc} />
+              </Campo>
+              <Campo rotulo="Performance">{textoDaPerformance(ctrc.performanceDias)}</Campo>
+              <Campo rotulo="Atraso">{textoDoAtraso(ctrc.atrasoDias)}</Campo>
+              <Campo rotulo="Entrega realizada">{formatarDataHora(ctrc.dataEntrega, fuso)}</Campo>
+              <Campo rotulo="Rota (origem → destino)">
+                {ctrc.unidadeOrigem || ctrc.unidadeDestino
+                  ? `${ctrc.unidadeOrigem ?? "—"} → ${ctrc.unidadeDestino ?? "—"}`
+                  : "—"}
+              </Campo>
+              <Campo rotulo="Unidade atual">{ctrc.unidadeAtual ?? "—"}</Campo>
+              <Campo rotulo="Fonte">{ctrc.fontePerformance ?? "—"}</Campo>
+              <Campo rotulo="Última movimentação BI2" largo>
+                {ctrc.efetiva.dataHora ? (
+                  <span className="flex flex-col">
                     <span>
                       {ctrc.efetiva.codigo !== null ? `${ctrc.efetiva.codigo} — ` : ""}
                       {ctrc.efetiva.descricao ?? "—"}
                     </span>
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-[12.5px] text-muted-foreground">
                       {formatarDataHora(ctrc.efetiva.dataHora, fuso)} ·{" "}
                       {rotuloDaFonte(ctrc.efetiva.fonte)}
                     </span>
                   </span>
                 ) : (
                   "—"
-                )
-              }
-            />
-            {ctrc.ocorrencias.length === 0 &&
-              (ctrc.responsabilidadeCliente !== null || ctrc.dataEntrega) && (
-                <div className="border-t border-border/40 bg-muted/30 px-3 py-2 text-[11px] leading-snug text-muted-foreground">
-                  Classificação baseada no relatório de performance do SSW (0017) — nenhum evento
-                  individual foi capturado para este CTRC via webhook.
-                </div>
-              )}
-          </Cartao>
+                )}
+              </Campo>
+            </Cartao>
 
-          <Cartao titulo="Enriquecimento">
-            {ctrc.bi2 ? (
-              <ol className="relative space-y-3 border-l border-border/70 px-3 py-3 pl-6">
-                <li className="relative">
-                  <span className="absolute top-0.5 -left-[13px] flex h-3.5 w-3.5 items-center justify-center rounded-full border border-emerald-500 bg-emerald-500 text-white">
-                    <Check className="h-2.5 w-2.5" />
+            <Painel titulo="Enriquecimento" icone={Database} classeDoCorpo="px-5 py-4">
+              {ctrc.bi2 ? (
+                <div className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-status-good/40 bg-status-good-bg text-status-good-fg">
+                    <Check className="h-4 w-4" aria-hidden />
                   </span>
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-[12px] font-medium">BI2 — dados operacionais</span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {formatarDataHora(ctrc.bi2.atualizadoEm, fuso)}
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <span className="text-[13px] font-semibold">BI2 — dados operacionais</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {formatarDataHora(ctrc.bi2.atualizadoEm, fuso)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">
+                      Relatório {ctrc.bi2.codigoRelatorio} · referência{" "}
+                      {formatarData(ctrc.bi2.dataAlvo)}. Trouxe NF, peso, volumes, placas,
+                      redespachante, cidade destino, valor do frete.
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-                    Relatório {ctrc.bi2.codigoRelatorio} · referência{" "}
-                    {formatarData(ctrc.bi2.dataAlvo)}. Trouxe NF, peso, volumes, placas,
-                    redespachante, cidade destino, valor do frete.
-                  </p>
-                </li>
-              </ol>
-            ) : (
-              <div className="px-3 py-3 text-[12px] text-muted-foreground">
-                Nenhum enriquecimento registrado ainda.
-              </div>
-            )}
-          </Cartao>
+                </div>
+              ) : (
+                <p className="text-[13px] text-muted-foreground">
+                  Nenhum enriquecimento registrado ainda.
+                </p>
+              )}
+            </Painel>
+          </div>
         </div>
+
+        <Painel
+          titulo="Ocorrências"
+          icone={History}
+          acoes={<Contagem>{ctrc.ocorrencias.length}</Contagem>}
+          classeDoCorpo="px-5 py-4"
+          className="xl:sticky xl:top-6"
+        >
+          <LinhaDoTempo ocorrencias={ctrc.ocorrencias} fuso={fuso} />
+        </Painel>
       </div>
 
-      <section className="rounded-[10px] border border-border/70 bg-card">
-        <header className="flex items-center justify-between border-b border-border/70 px-3 py-2">
-          <h2 className="text-[13px] font-medium">Ocorrências</h2>
-          <Selo variante="secundario" className="text-[10px]">
-            {ctrc.ocorrencias.length}
-          </Selo>
-        </header>
-        <ListaDeOcorrencias ocorrencias={ctrc.ocorrencias} fuso={fuso} />
-      </section>
-
-      <footer className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Criado em {formatarDataHora(ctrc.criadoEm, fuso)} · atualizado em{" "}
         {formatarDataHora(ctrc.atualizadoEm, fuso)}
-      </footer>
+      </p>
     </>
   );
 }
 
 // ---------------------------------------------------------------- peças
 
-type Variante = "secundario" | "contorno" | "perigo" | "sucesso" | "atencao";
-
-const SUCESSO =
-  "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300";
-const ATENCAO =
-  "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300";
-
-const VARIANTE: Record<Variante, { variant: BadgeProps["variant"]; className?: string }> = {
-  secundario: { variant: "secondary" },
-  contorno: { variant: "outline" },
-  perigo: { variant: "destructive" },
-  sucesso: { variant: "default", className: SUCESSO },
-  atencao: { variant: "default", className: ATENCAO },
-};
-
-/** Selo de situação (verde/âmbar além das variantes do Badge, como hoje). */
-function Selo({
-  variante,
-  className,
+/** Painel de um grupo de campos: rótulo em caixa alta sobre o valor, em duas colunas. */
+function Cartao({
+  titulo,
+  icone,
+  rodape,
   children,
 }: {
-  variante: Variante;
-  className?: string;
+  titulo: string;
+  icone: LucideIcon;
+  rodape?: ReactNode;
   children: ReactNode;
 }) {
-  const v = VARIANTE[variante];
   return (
-    <Badge variant={v.variant} className={cn(v.className, className)}>
-      {children}
-    </Badge>
+    <Painel
+      titulo={titulo}
+      icone={icone}
+      rodape={rodape && <p className="text-[12.5px] leading-snug">{rodape}</p>}
+    >
+      <dl className="grid grid-cols-2 gap-x-5 gap-y-4 px-5 py-4">{children}</dl>
+    </Painel>
   );
 }
 
-function Cartao({ titulo, children }: { titulo: string; children: ReactNode }) {
+/** Um campo do cartão; `largo` ocupa as duas colunas (nomes, endereço, textos longos). */
+function Campo({
+  rotulo,
+  largo,
+  children,
+}: {
+  rotulo: string;
+  largo?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="rounded-[10px] border border-border/70 bg-card">
-      <div className="border-b border-border/70 px-3 py-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-        {titulo}
-      </div>
-      <div className="divide-y divide-border/40">{children}</div>
-    </div>
-  );
-}
-
-function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-3 px-3 py-2 text-[12px]">
-      <span className="text-muted-foreground">{rotulo}</span>
-      <span className="text-right">{valor}</span>
+    <div className={cn("min-w-0", largo && "col-span-2")}>
+      <dt className="label-xs">{rotulo}</dt>
+      <dd className="mt-1 text-[13px] break-words text-foreground">{children}</dd>
     </div>
   );
 }
@@ -564,10 +562,9 @@ function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
 function CampoDeChave({ rotulo, chave }: { rotulo: string; chave: string }) {
   const [copiou, setCopiou] = useState(false);
   return (
-    <div className="flex items-start justify-between gap-3 px-3 py-2 text-[12px]">
-      <span className="text-muted-foreground">{rotulo}</span>
-      <span className="flex items-center gap-1 text-right">
-        <span className="font-mono text-[10.5px] leading-tight break-all">
+    <Campo rotulo={rotulo} largo>
+      <span className="flex items-start gap-2">
+        <span className="font-mono text-[12.5px] leading-relaxed break-all">
           {formatarChave(chave)}
         </span>
         <button
@@ -580,14 +577,35 @@ function CampoDeChave({ rotulo, chave }: { rotulo: string; chave: string }) {
               }, 1500);
             });
           }}
-          className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-muted"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label="Copiar chave"
           title="Copiar"
         >
-          {copiou ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+          {copiou ? (
+            <Check className="h-3.5 w-3.5 text-status-good-fg" aria-hidden />
+          ) : (
+            <Copy className="h-3.5 w-3.5" aria-hidden />
+          )}
         </button>
       </span>
-    </div>
+    </Campo>
+  );
+}
+
+/** Texto curto sem situação (origem do prazo, responsável da ocorrência). */
+function Etiqueta({ children }: { children: ReactNode }) {
+  return (
+    <SeloStatus tom="neutro" semIcone>
+      {children}
+    </SeloStatus>
+  );
+}
+
+function Contagem({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-muted px-2 text-[12px] font-semibold text-muted-foreground tabular-nums">
+      {children}
+    </span>
   );
 }
 
@@ -600,35 +618,40 @@ function SeloDeStatus({
   entregue: boolean;
   baixa: DetalheCtrc["finalizacao"]["baixa"];
 }) {
-  if (entregue) return <Selo variante="sucesso">Entregue</Selo>;
+  if (entregue) return <SeloStatus tom="sucesso">Entregue</SeloStatus>;
   if (baixa) {
     return (
-      <Selo variante="secundario">
+      <SeloStatus tom="neutro">
         Baixado sem entrega · {String(baixa.codigo).padStart(2, "0")}
         {baixa.descricao ? ` ${baixa.descricao}` : ""}
-      </Selo>
+      </SeloStatus>
     );
   }
-  if (!status) return <Selo variante="contorno">Sem status</Selo>;
-  return <Selo variante="secundario">{status}</Selo>;
+  if (!status) return <SeloStatus tom="neutro">Sem status</SeloStatus>;
+  return (
+    <SeloStatus tom="info" icone={Truck}>
+      {status}
+    </SeloStatus>
+  );
 }
 
 function SeloDoPrazo({ ctrc, fuso }: { ctrc: DetalheCtrc; fuso: string }) {
   const s = statusDoPrazo(ctrc, new Date(), fuso);
   const dias = (n: number) => `${n} ${n === 1 ? "dia" : "dias"}`;
+  const selo = (tom: Tom, texto: string) => <SeloStatus tom={tom}>{texto}</SeloStatus>;
   switch (s.tipo) {
     case "sem_previsao":
-      return <Selo variante="secundario">Sem previsão</Selo>;
+      return selo("neutro", "Sem previsão");
     case "baixado":
-      return <Selo variante="secundario">Baixado sem entrega</Selo>;
+      return selo("neutro", "Baixado sem entrega");
     case "entregue_no_prazo":
-      return <Selo variante="sucesso">Entregue no prazo</Selo>;
+      return selo("sucesso", "Entregue no prazo");
     case "entregue_com_atraso":
-      return <Selo variante="atencao">Entregue com {dias(s.dias)} de atraso</Selo>;
+      return selo("alerta", `Entregue com ${dias(s.dias)} de atraso`);
     case "no_prazo":
-      return <Selo variante="sucesso">No prazo</Selo>;
+      return selo("sucesso", "No prazo");
     case "atrasado":
-      return <Selo variante="perigo">Atrasado {dias(s.dias)}</Selo>;
+      return selo("erro", `Atrasado ${dias(s.dias)}`);
   }
 }
 
@@ -640,24 +663,24 @@ function SeloDePontualidade({ ctrc }: { ctrc: DetalheCtrc }) {
     baixado: ctrc.finalizacao.baixa !== null,
   });
   if (p === "responsabilidade_cliente") {
-    return <Selo variante="contorno">Responsabilidade cliente</Selo>;
+    return <SeloStatus tom="info">Responsabilidade cliente</SeloStatus>;
   }
   if (p === "baixado") {
-    return <Selo variante="secundario">Baixado sem entrega — fora da pontualidade</Selo>;
+    return <SeloStatus tom="neutro">Baixado sem entrega — fora da pontualidade</SeloStatus>;
   }
-  if (p === "no_prazo") return <Selo variante="sucesso">No prazo</Selo>;
-  if (p === "fora_do_prazo") return <Selo variante="perigo">Fora do prazo</Selo>;
+  if (p === "no_prazo") return <SeloStatus tom="sucesso">No prazo</SeloStatus>;
+  if (p === "fora_do_prazo") return <SeloStatus tom="erro">Fora do prazo</SeloStatus>;
   const emTransito = p === "em_transito";
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span>
-          <Selo variante="secundario" className="cursor-help">
+        <span tabIndex={0} className="inline-flex max-w-full cursor-help rounded-full">
+          <SeloStatus tom="neutro" icone={Clock}>
             {emTransito ? "Em trânsito — pontualidade não apurada" : "Pontualidade em apuração"}
-          </Selo>
+          </SeloStatus>
         </span>
       </TooltipTrigger>
-      <TooltipContent className="max-w-[280px] text-[11px] leading-snug">
+      <TooltipContent className="max-w-[280px] text-xs leading-snug">
         {emTransito
           ? "A pontualidade é apurada depois da entrega, comparando a data de entrega com a previsão dos relatórios do SSW."
           : "A entrega já foi registrada; a pontualidade é recalculada pelos relatórios do SSW a cada 30 minutos. Se continuar assim, falta a previsão de entrega deste CT-e."}
@@ -666,59 +689,57 @@ function SeloDePontualidade({ ctrc }: { ctrc: DetalheCtrc }) {
   );
 }
 
-function ItemDeOcorrencia({ o, fuso }: { o: OcorrenciaDoCtrc; fuso: string }) {
-  return (
-    <li className="flex items-start gap-3 px-3 py-2 text-[12px]">
-      <div className="mt-0.5">
-        {o.penaliza ? (
-          <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-        ) : (
-          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-        )}
-      </div>
-      <div className="flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[11px] text-muted-foreground">#{o.codigo}</span>
-          <span className="font-medium">{o.descricao ?? "—"}</span>
-          {o.penaliza && (
-            <Selo variante="perigo" className="text-[10px]">
-              penaliza
-            </Selo>
-          )}
-          {o.responsavel && (
-            <Selo variante="contorno" className="text-[10px]">
-              {o.responsavel}
-            </Selo>
-          )}
-        </div>
-        <div className="text-[11px] text-muted-foreground">
-          {formatarDataHora(o.dataHora, fuso)}
-        </div>
-      </div>
-    </li>
-  );
-}
-
-function ListaDeOcorrencias({
+/** Ocorrências na ordem recebida, ligadas por um trilho; as que penalizam em destaque. */
+function LinhaDoTempo({
   ocorrencias,
   fuso,
-  className,
 }: {
   ocorrencias: readonly OcorrenciaDoCtrc[];
   fuso: string;
-  className?: string;
 }) {
   if (ocorrencias.length === 0) {
     return (
-      <div className="px-3 py-6 text-center text-[12px] text-muted-foreground">
-        Nenhuma ocorrência registrada.
-      </div>
+      <EstadoVazio className="py-6" icone={History} mensagem="Nenhuma ocorrência registrada." />
     );
   }
   return (
-    <ol className={cn("divide-y divide-border/40", className)}>
-      {ocorrencias.map((o) => (
-        <ItemDeOcorrencia key={o.id} o={o} fuso={fuso} />
+    <ol>
+      {ocorrencias.map((o, i) => (
+        <li key={o.id} className="relative flex gap-3 pb-5 last:pb-0">
+          {i < ocorrencias.length - 1 && (
+            <span
+              aria-hidden
+              className="absolute top-9 bottom-1 left-[15px] w-0.5 rounded-full bg-muted-foreground/35"
+            />
+          )}
+          <span
+            aria-hidden
+            className={cn(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
+              o.penaliza
+                ? "border-status-bad/40 bg-status-bad-bg text-status-bad-fg"
+                : "border-border bg-superficie text-muted-foreground",
+            )}
+          >
+            {o.penaliza ? <AlertTriangle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+          </span>
+          <div className="min-w-0 flex-1 pt-1">
+            <div className="text-[13px] font-semibold text-foreground">{o.descricao ?? "—"}</div>
+            <time
+              dateTime={o.dataHora}
+              className="mt-0.5 block text-[12.5px] text-muted-foreground tabular-nums"
+            >
+              {formatarDataHora(o.dataHora, fuso)}
+            </time>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                #{o.codigo}
+              </span>
+              {o.penaliza && <SeloStatus tom="erro">penaliza</SeloStatus>}
+              {o.responsavel && <Etiqueta>{o.responsavel}</Etiqueta>}
+            </div>
+          </div>
+        </li>
       ))}
     </ol>
   );
@@ -737,23 +758,19 @@ function JanelaDeOcorrencias({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7 gap-1.5 text-[12px]">
-          <Eye className="h-3.5 w-3.5" />
+        <Button variant="outline" size="sm" className="h-8">
+          <Eye aria-hidden />
           Visualizar
-          <Selo variante="secundario" className="ml-0.5 h-4 px-1.5 text-[10px]">
-            {ocorrencias.length}
-          </Selo>
+          <Contagem>{ocorrencias.length}</Contagem>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-[14px]">Ocorrências · CTRC {numero}</DialogTitle>
+          <DialogTitle className="text-[17px] font-bold">Ocorrências · CTRC {numero}</DialogTitle>
         </DialogHeader>
-        <ListaDeOcorrencias
-          ocorrencias={ocorrencias}
-          fuso={fuso}
-          className="max-h-[60vh] overflow-y-auto rounded-[10px] border border-border/70"
-        />
+        <div className="rolagem-fina max-h-[60vh] overflow-y-auto rounded-xl border border-border px-4 py-4">
+          <LinhaDoTempo ocorrencias={ocorrencias} fuso={fuso} />
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -761,14 +778,16 @@ function JanelaDeOcorrencias({
 
 function Esqueleto() {
   return (
-    <div className="space-y-3">
-      <Skeleton className="h-10 w-full" />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-32 w-full" />
-        ))}
+    <div className="space-y-4" aria-busy>
+      <Skeleton className="h-14 w-full rounded-2xl bg-muted" />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-4 lg:grid-cols-2">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton key={i} className="h-44 w-full rounded-2xl bg-muted" />
+          ))}
+        </div>
+        <Skeleton className="h-96 w-full rounded-2xl bg-muted" />
       </div>
-      <Skeleton className="h-40 w-full" />
     </div>
   );
 }

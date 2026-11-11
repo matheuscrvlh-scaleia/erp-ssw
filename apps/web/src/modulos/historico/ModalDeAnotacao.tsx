@@ -5,18 +5,18 @@ import {
   type TipoAnotacao,
   TIPOS_ANOTACAO,
 } from "@erp/shared/contratos/historico";
-import { Calendar, Cloud, type LucideIcon, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { type KeyboardEvent, useEffect, useState } from "react";
 
 import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
+import { cn } from "@/lib/utils";
 
-const ICONE_DO_TIPO: Record<TipoAnotacao, LucideIcon> = {
-  clima: Cloud,
-  operacional: Settings2,
-  feriado: Calendar,
-  outro: MoreHorizontal,
-};
+import { COR_DO_TIPO, ICONE_DO_TIPO } from "./tipos";
+
+/** Campo nativo (data, unidade, texto) com o mesmo desenho do `Input`. */
+const CAMPO =
+  "w-full rounded-lg border border-input bg-card px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none";
 
 export interface AberturaDoModal {
   data?: string | undefined;
@@ -99,26 +99,26 @@ export function ModalDeAnotacao({
           Registre um evento de contexto (clima, operacional, externo).
         </DialogDescription>
         <div className="space-y-4 pt-2">
-          <div className="flex flex-wrap gap-3 text-[13px]">
-            <label className="flex items-center gap-2">
-              <span className="text-muted-foreground">Data</span>
+          <div className="grid gap-4 text-[13px] sm:grid-cols-2">
+            <label className="grid gap-1.5">
+              <span className="font-medium text-foreground">Data</span>
               <input
                 type="date"
                 value={data}
                 onChange={(e) => {
                   setData(e.target.value);
                 }}
-                className="rounded border border-border bg-background px-2 py-1"
+                className={cn(CAMPO, "h-9")}
               />
             </label>
-            <label className="flex items-center gap-2">
-              <span className="text-muted-foreground">Unidade</span>
+            <label className="grid gap-1.5">
+              <span className="font-medium text-foreground">Unidade</span>
               <select
                 value={unidadeId ?? ""}
                 onChange={(e) => {
                   setUnidadeId(e.target.value || null);
                 }}
-                className="rounded border border-border bg-background px-2 py-1"
+                className={cn(CAMPO, "h-9")}
               >
                 <option value="">Todas</option>
                 {unidades.map((u) => (
@@ -141,20 +141,21 @@ export function ModalDeAnotacao({
                   onClick={() => {
                     setTipo(t);
                   }}
-                  className={
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] transition " +
-                    (ativo
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-foreground/30")
-                  }
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors",
+                    ativo
+                      ? "border-brand bg-brand-suave text-brand"
+                      : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
                 >
-                  <Icone className="h-3.5 w-3.5" /> {ROTULO_DO_TIPO_DE_ANOTACAO[t]}
+                  <span aria-hidden className={cn("h-2 w-2 rounded-full", COR_DO_TIPO[t].ponto)} />
+                  <Icone className="h-3.5 w-3.5" aria-hidden /> {ROTULO_DO_TIPO_DE_ANOTACAO[t]}
                 </button>
               );
             })}
           </div>
-          <label className="block text-[13px]">
-            <span className="text-muted-foreground">O que aconteceu</span>
+          <label className="grid gap-1.5 text-[13px]">
+            <span className="font-medium text-foreground">O que aconteceu</span>
             <textarea
               value={texto}
               autoFocus
@@ -165,25 +166,23 @@ export function ModalDeAnotacao({
               onKeyDown={atalho}
               rows={4}
               placeholder="Ex.: chuva forte na região de Campinas atrasou as entregas da tarde"
-              className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5"
+              className={cn(CAMPO, "py-2")}
             />
           </label>
-          {erro && <p className="text-[12px] text-destructive">{erro}</p>}
-          <div className="flex items-center justify-between gap-2">
+          {erro && <p className="text-[12.5px] text-status-bad-fg">{erro}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
             {editando && podeExcluir ? (
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={salvando}
                 onClick={() => void excluir()}
-                className="text-destructive"
+                className="text-destructive hover:text-destructive"
               >
-                <Trash2 className="mr-1 h-4 w-4" /> Excluir
+                <Trash2 aria-hidden /> Excluir
               </Button>
             ) : (
-              <span className="text-[11px] text-muted-foreground">
-                Ctrl+Enter salva e abre outra
-              </span>
+              <span className="text-xs text-muted-foreground">Ctrl+Enter salva e abre outra</span>
             )}
             <div className="flex gap-2">
               {!editando && (
