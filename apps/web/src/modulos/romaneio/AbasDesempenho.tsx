@@ -1,6 +1,6 @@
 /**
  * Abas Romaneio de entrega, Performance por romaneio, Performance Motorista/Ajudante e Prejuízo.
- * Visual da tela de hoje (features/romaneio/Fase2Views.tsx).
+ * origem: features/romaneio/Fase2Views.tsx (sistema atual)
  */
 import { type FiltrosRomaneio, type LinhaPerformancePessoa } from "@erp/shared/contratos/romaneio";
 import {
@@ -12,13 +12,40 @@ import {
   formatarPeso,
 } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, EyeOff, Lock, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  Banknote,
+  CalendarClock,
+  Car,
+  CircleCheck,
+  CircleX,
+  Clock,
+  Eye,
+  EyeOff,
+  FileText,
+  Lock,
+  type LucideIcon,
+  MapPin,
+  Percent,
+  ThumbsDown,
+  ThumbsUp,
+  TrendingDown,
+  TriangleAlert,
+  Truck,
+  Undo2,
+  UserRound,
+  X,
+} from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltrandoPor } from "@/componentes/comum/FiltrosAvancados";
+import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 import {
@@ -34,10 +61,22 @@ import { type Abertura } from "./busca";
 import { CardsDoPeriodo, type PropsCardsDoPeriodo } from "./CardsDoPeriodo";
 import {
   AtribuicaoLegenda,
-  AvisoDoBloco,
-  CardAba,
+  Cabecalho,
+  CaixaDeBusca,
+  CLASSE_CODIGO,
+  CLASSE_NUMERO,
+  CLASSE_TD,
+  ComDica,
+  EstadoDaTabela,
+  GradeDeIndicadores,
+  Indicador,
   PrejuizoSubtitulo,
+  propsDaLinha,
+  TabelaPropria,
   textoDoPrejuizo,
+  Th,
+  TituloComDica,
+  Trilho,
 } from "./componentes";
 import { Distribuicao } from "./Distribuicao";
 
@@ -57,6 +96,27 @@ const TIP_PREJUDICADAS =
 
 const pctDe = (parte: number, todo: number) => (todo > 0 ? (parte / todo) * 100 : null);
 
+/** Título de bloco com o "i" da explicação ao lado. */
+function TituloDoBloco({ dica, children }: { dica: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {children}
+      <InfoTip texto={dica} />
+    </span>
+  );
+}
+
+/** Lista de barras horizontais carregando (mesma altura das linhas). */
+function BarrasCarregando() {
+  return (
+    <div className="space-y-3 py-1" aria-hidden>
+      {[92, 70, 54, 38, 20].map((w) => (
+        <Skeleton key={w} className="h-5 rounded-md bg-muted" style={{ width: `${w}%` }} />
+      ))}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------------------------
 // Aba Romaneio de entrega
 
@@ -66,121 +126,136 @@ export function AbaRomaneioEntrega({ filtros, aoAbrir }: PropsDaAba) {
   const linhas = carros.data ?? [];
   const maior = Math.max(1, ...linhas.map((c) => c.ctes));
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <CardAba
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Indicador
           rotulo="CTRC no período"
+          icone={FileText}
+          neutro
+          status="bom"
           valor={kpis.data ? formatarInteiro(kpis.data.total) : "—"}
-          dica="Base do período filtrado"
-          explicacao="Todas as cargas do período e dos filtros escolhidos, sem as canceladas no mesmo dia. É a base dos percentuais desta aba."
+          detalhe="Base do período filtrado"
+          dica="Todas as cargas do período e dos filtros escolhidos, sem as canceladas no mesmo dia. É a base dos percentuais desta aba."
           aoClicar={() => {
             aoAbrir({ recorte: "todos" });
           }}
         />
       </div>
-      <div className="rounded-[10px] border border-border/70 bg-card p-3">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-1 text-[13px] font-medium">
+      <Painel
+        icone={Car}
+        titulo={
+          <TituloDoBloco dica="Todas as placas que levaram cargas para entrega no período, da que mais levou para a que menos levou. Com a base “saída para entrega”, a placa vem do próprio romaneio do dia (036). CT-e que contam como saída sem romaneio de veículo próprio (entrega por parceiro, agência ou baixa administrativa) ficam na última linha, “Sem placa identificada”. Clique numa placa para ver as cargas daquele veículo.">
             CTRC por carro
-            <InfoTip texto="Todas as placas que levaram cargas para entrega no período, da que mais levou para a que menos levou. Com a base “saída para entrega”, a placa vem do próprio romaneio do dia (036). CT-e que contam como saída sem romaneio de veículo próprio (entrega por parceiro, agência ou baixa administrativa) ficam na última linha, “Sem placa identificada”. Clique numa placa para ver as cargas daquele veículo." />
-          </h3>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground">
-              {linhas.length > 0
-                ? `${formatarInteiro(linhas.filter((c) => c.placa).length)} placas · `
-                : ""}
-              CTRC · peso · vol. · frete
-            </span>
-            <ExportMenu
-              arquivo="romaneio-ctrc-por-carro"
-              titulo="CTRC por carro"
-              colunas={[
-                { chave: "placaExibida", titulo: "Placa" },
-                { chave: "motorista", titulo: "Motorista" },
-                { chave: "ctes", titulo: "CTRC", formato: "inteiro" },
-                { chave: "peso", titulo: "Peso (kg)", formato: "decimal" },
-                { chave: "volumes", titulo: "Volumes", formato: "inteiro" },
-                { chave: "frete", titulo: "Frete", formato: "moeda" },
-              ]}
-              linhas={linhas.map((c) => ({
-                ...c,
-                placaExibida: c.placa ?? "Sem placa identificada",
-              }))}
-              soIcone
-            />
-          </div>
-        </div>
-        {carros.isLoading && <AvisoDoBloco>carregando…</AvisoDoBloco>}
-        {!carros.isLoading && linhas.length === 0 && (
-          <AvisoDoBloco>Nenhum carro com saída para entrega no período.</AvisoDoBloco>
+          </TituloDoBloco>
+        }
+        descricao={`${
+          linhas.length > 0
+            ? `${formatarInteiro(linhas.filter((c) => c.placa).length)} placas · `
+            : ""
+        }CTRC · peso · vol. · frete`}
+        acoes={
+          <ExportMenu
+            arquivo="romaneio-ctrc-por-carro"
+            titulo="CTRC por carro"
+            colunas={[
+              { chave: "placaExibida", titulo: "Placa" },
+              { chave: "motorista", titulo: "Motorista" },
+              { chave: "ctes", titulo: "CTRC", formato: "inteiro" },
+              { chave: "peso", titulo: "Peso (kg)", formato: "decimal" },
+              { chave: "volumes", titulo: "Volumes", formato: "inteiro" },
+              { chave: "frete", titulo: "Frete", formato: "moeda" },
+            ]}
+            linhas={linhas.map((c) => ({
+              ...c,
+              placaExibida: c.placa ?? "Sem placa identificada",
+            }))}
+            soIcone
+          />
+        }
+        classeDoCorpo="px-3 py-3"
+      >
+        {carros.isLoading && <BarrasCarregando />}
+        {carros.isError && (
+          <MensagemErro erro={carros.error} aoTentarDeNovo={() => void carros.refetch()} />
         )}
-        <div className="max-h-[520px] space-y-1.5 overflow-y-auto pr-1">
-          {linhas.map((c) => {
-            const placa = c.placa;
-            return (
-              <div
-                key={placa ?? "__sem_placa__"}
-                {...(placa
-                  ? {
-                      role: "button" as const,
-                      tabIndex: 0,
-                      onClick: () => {
-                        aoAbrir({ placa });
-                      },
-                    }
-                  : {
-                      title:
-                        "CT-e que contam como saída para entrega sem romaneio de veículo próprio no período (entrega por parceiro, agência ou baixa administrativa).",
-                    })}
-                className={cn(
-                  "flex items-center gap-2 rounded text-[12px]",
-                  placa && "cursor-pointer hover:bg-muted/50",
-                )}
-              >
-                <span
-                  className={cn(
-                    "w-24 shrink-0 text-[11px]",
-                    placa ? "font-mono" : "italic text-muted-foreground",
-                  )}
-                >
-                  {placa ?? "Sem placa identificada"}
-                </span>
-                <span className="w-40 shrink-0 truncate text-muted-foreground">
-                  {c.motorista ?? "—"}
-                </span>
-                <div className="h-3 flex-1 rounded-sm bg-muted">
-                  <div
-                    className="h-3 rounded-sm bg-[var(--brand)]"
-                    style={{ width: `${(c.ctes / maior) * 100}%` }}
-                  />
-                </div>
-                <span className="w-14 shrink-0 text-right tabular-nums" title="CTRC">
-                  {formatarInteiro(c.ctes)}
-                </span>
-                <span
-                  className="hidden w-20 shrink-0 text-right tabular-nums text-muted-foreground sm:inline"
-                  title="Peso"
-                >
-                  {c.peso ? formatarPeso(c.peso, { fixas: true }) : "—"}
-                </span>
-                <span
-                  className="hidden w-14 shrink-0 text-right tabular-nums text-muted-foreground sm:inline"
-                  title="Volumes"
-                >
-                  {formatarInteiro(c.volumes)}
-                </span>
-                <span
-                  className="w-24 shrink-0 text-right tabular-nums text-muted-foreground"
-                  title="Frete"
-                >
-                  {formatarMoeda(c.frete, { centavos: false })}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+        {carros.isSuccess && linhas.length === 0 && (
+          <EstadoVazio mensagem="Nenhum carro com saída para entrega no período." />
+        )}
+        {linhas.length > 0 && (
+          <>
+            <div className="flex items-center gap-3 px-2 pb-1.5 label-xs" aria-hidden>
+              <span className="w-24 shrink-0">Placa</span>
+              <span className="hidden w-44 shrink-0 md:inline">Motorista</span>
+              <span className="flex-1" />
+              <span className="w-14 shrink-0 text-right">CTRC</span>
+              <span className="hidden w-20 shrink-0 text-right sm:inline">Peso</span>
+              <span className="hidden w-16 shrink-0 text-right sm:inline">Vol.</span>
+              <span className="w-24 shrink-0 text-right">Frete</span>
+            </div>
+            <ul className="rolagem-fina max-h-[520px] space-y-0.5 overflow-y-auto pr-1">
+              {linhas.map((c) => {
+                const placa = c.placa;
+                const resumo = `${formatarInteiro(c.ctes)} CTRC · ${c.peso ? formatarPeso(c.peso, { fixas: true }) : "—"} · ${formatarInteiro(c.volumes)} vol. · ${formatarMoeda(c.frete, { centavos: false })}`;
+                const conteudo = (
+                  <>
+                    <span
+                      className={cn(
+                        "w-24 shrink-0 text-[12px]",
+                        placa ? "font-mono" : "text-muted-foreground italic",
+                      )}
+                    >
+                      {placa ?? "Sem placa identificada"}
+                    </span>
+                    <span className="hidden w-44 shrink-0 truncate text-muted-foreground md:inline">
+                      {c.motorista ?? "—"}
+                    </span>
+                    <Trilho fracao={c.ctes / maior} className="h-2.5 flex-1" />
+                    <span className="w-14 shrink-0 text-right font-semibold tabular-nums">
+                      {formatarInteiro(c.ctes)}
+                    </span>
+                    <span className="hidden w-20 shrink-0 text-right text-muted-foreground tabular-nums sm:inline">
+                      {c.peso ? formatarPeso(c.peso, { fixas: true }) : "—"}
+                    </span>
+                    <span className="hidden w-16 shrink-0 text-right text-muted-foreground tabular-nums sm:inline">
+                      {formatarInteiro(c.volumes)}
+                    </span>
+                    <span className="w-24 shrink-0 text-right text-muted-foreground tabular-nums">
+                      {formatarMoeda(c.frete, { centavos: false })}
+                    </span>
+                  </>
+                );
+                const classe =
+                  "flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-[13px]";
+                return (
+                  <li key={placa ?? "__sem_placa__"}>
+                    {placa ? (
+                      <ComDica texto={`${placa} · ${resumo}`}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            aoAbrir({ placa });
+                          }}
+                          className={cn(classe, "hover:bg-muted/60")}
+                        >
+                          {conteudo}
+                        </button>
+                      </ComDica>
+                    ) : (
+                      <div
+                        className={classe}
+                        title="CT-e que contam como saída para entrega sem romaneio de veículo próprio no período (entrega por parceiro, agência ou baixa administrativa)."
+                      >
+                        {conteudo}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </Painel>
+    </>
   );
 }
 
@@ -201,62 +276,64 @@ function FretePerdidoPorHora({
   diaUnico: boolean;
   carregando: boolean;
 }) {
-  const horas = HORAS.map(
-    (h) => porHora.find((l) => l.hora === h) ?? { hora: h, ctes: 0, frete: 0 },
-  );
   const pontos = diaUnico
-    ? horas.map((h) => ({
-        chave: String(h.hora),
-        rotulo: h.hora % 3 === 0 ? String(h.hora) : "",
-        titulo: `${h.hora}h`,
-        ...h,
-      }))
+    ? HORAS.map((h) => {
+        const l = porHora.find((x) => x.hora === h) ?? { ctes: 0, frete: 0 };
+        return { rotulo: `${h}h`, titulo: `${h}h`, ctes: l.ctes, frete: l.frete };
+      })
     : porDia.map((d) => ({
-        chave: d.dia,
         rotulo: formatarDiaMes(d.dia),
         titulo: formatarData(d.dia),
-        ...d,
+        ctes: d.ctes,
+        frete: d.frete,
       }));
-  const maior = Math.max(1, ...pontos.map((p) => p.frete));
   const total = pontos.reduce((s, p) => s + p.frete, 0);
   return (
-    <div className="rounded-[10px] border border-border/70 bg-card p-3">
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-        <span>{diaUnico ? "Frete perdido por horário" : "Frete perdido por dia"}</span>
-        <InfoTip
-          texto={
+    <Painel
+      icone={Clock}
+      titulo={
+        <TituloDoBloco
+          dica={
             diaUnico
               ? "Frete das cargas prejudicadas, agrupado pela hora em que a ocorrência penalizante foi registrada. Mostra em que faixa de horário o prejuízo mais se concentra."
               : "Frete das cargas prejudicadas, agrupado pelo dia de emissão do CTRC (mesma base do gráfico Prejuízo por dia). Mostra em que dia do período o prejuízo mais se concentra. Filtre um único dia para ver por horário."
           }
+        >
+          {diaUnico ? "Frete perdido por horário" : "Frete perdido por dia"}
+        </TituloDoBloco>
+      }
+    >
+      {!carregando && total === 0 ? (
+        <EstadoVazio mensagem="Nenhum prejuízo registrado no período." />
+      ) : (
+        <GraficoBarras
+          dados={pontos}
+          eixoX="rotulo"
+          series={[{ chave: "frete", nome: "Frete perdido", cor: "var(--status-bad)" }]}
+          formato="inteiro"
+          altura={200}
+          carregando={carregando}
+          descricao={diaUnico ? "Frete perdido por horário" : "Frete perdido por dia"}
+          dica={(p) => <DicaDoPrejuizo titulo={p.titulo} frete={p.frete} ctes={p.ctes} />}
         />
+      )}
+    </Painel>
+  );
+}
+
+/** Dica do gráfico de prejuízo: dia/hora, frete e quantidade de cargas. */
+function DicaDoPrejuizo({ titulo, frete, ctes }: { titulo: string; frete: number; ctes: number }) {
+  return (
+    <>
+      <div className="label-xs mb-1.5">{titulo}</div>
+      <div className="flex items-center gap-2 tabular-nums">
+        <span aria-hidden className="h-2.5 w-2.5 rounded-[3px] bg-status-bad" />
+        <strong className="font-semibold text-foreground">
+          {formatarMoeda(frete, { centavos: false })}
+        </strong>
+        <span className="text-muted-foreground">· {formatarInteiro(ctes)} carga(s)</span>
       </div>
-      {carregando && <AvisoDoBloco>carregando…</AvisoDoBloco>}
-      {!carregando && total === 0 && (
-        <AvisoDoBloco>Nenhum prejuízo registrado no período.</AvisoDoBloco>
-      )}
-      {!carregando && total > 0 && (
-        <div className={cn("mt-3 flex h-[100px] items-end", diaUnico ? "gap-[2px]" : "gap-1")}>
-          {pontos.map((p) => (
-            <div
-              key={p.chave}
-              className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-              title={`${p.titulo} · ${formatarMoeda(p.frete, { centavos: false })} · ${formatarInteiro(p.ctes)} carga(s)`}
-            >
-              <div
-                className="w-full rounded-t bg-destructive/70 transition-colors group-hover:bg-destructive"
-                style={{
-                  height: `${Math.max(p.frete > 0 ? 3 : 0, (p.frete / maior) * 100)}%`,
-                }}
-              />
-              <span className="w-full truncate text-center text-[9px] text-muted-foreground">
-                {p.rotulo}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
@@ -275,133 +352,146 @@ export function AbaPerformanceRomaneio({
   const positiva = k ? pctDe(k.entregue, base) : null;
   const pPrejuizo = k ? pctDe(k.prejudicada, base) : null;
   const codigos = filtros.codigos;
+  const prejuizoDe = (resto: string | undefined) =>
+    [textoDoPrejuizo(codigos), resto].filter(Boolean).join(" · ");
   return (
-    <div className="space-y-3">
-      <p className="text-[11px] text-muted-foreground">
+    <>
+      <AtribuicaoLegenda codigos={codigos} />
+      <p className="text-[13px] text-muted-foreground">
         {k
           ? `Base desta aba: ${formatarInteiro(base)} cargas que já saíram para entrega (de ${formatarInteiro(k.total)} do período).`
           : "Base desta aba: cargas que já saíram para entrega."}
       </p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <CardAba
+      <GradeDeIndicadores max={5}>
+        <Indicador
           rotulo="CTRC romaneados"
+          icone={Truck}
+          neutro
+          status="bom"
           valor={k ? formatarInteiro(base) : "—"}
-          dica="Cargas que já saíram para entrega no período"
-          explicacao="Base desta aba: cargas com saída para entrega registrada, dentro do período e filtros escolhidos."
+          detalhe="Cargas que já saíram para entrega no período"
+          dica="Base desta aba: cargas com saída para entrega registrada, dentro do período e filtros escolhidos."
         />
-        <CardAba
+        <Indicador
           rotulo="Entregues"
+          icone={CircleCheck}
+          neutro
+          status="bom"
           valor={k ? formatarInteiro(k.entregue) : "—"}
-          dica={k ? `de ${formatarInteiro(base)} romaneados` : undefined}
-          tom="ok"
-          explicacao="Das cargas que já saíram para entrega, quantas foram entregues ao destinatário. Esta aba conta só quem já saiu para entrega — por isso o número é menor que o da tela de Performance, que conta todos os CTRCs do período."
+          detalhe={k ? `de ${formatarInteiro(base)} romaneados` : ""}
+          dica="Das cargas que já saíram para entrega, quantas foram entregues ao destinatário. Esta aba conta só quem já saiu para entrega — por isso o número é menor que o da tela de Performance, que conta todos os CTRCs do período."
           aoClicar={() => {
             aoAbrir({ recorte: "entregues" });
           }}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <CardAba
-          rotulo="Entregas prejudicadas"
-          sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={k ? formatarInteiro(k.prejudicada) : "—"}
-          dica={k ? pctBase(k.prejudicada) : undefined}
-          tom="alerta"
-          explicacao="Cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo número da aba Prejuízo, dos cards do topo e da tela de Performance."
-          aoClicar={() => {
-            aoAbrir({ recorte: "prejuizo" });
-          }}
-        />
-        <CardAba
-          rotulo="Frete perdido"
-          sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={k ? formatarMoeda(k.fretePerdido, { centavos: false }) : "—"}
-          dica={
-            k && k.freteRomaneado > 0
-              ? `${formatarPercentual((k.fretePerdido / k.freteRomaneado) * 100, { escala: "cem" })} do frete da base desta aba`
-              : undefined
-          }
-          tom={k && k.fretePerdido > 0 ? "ruim" : undefined}
-          explicacao="Frete das cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo valor da aba Prejuízo e da tela de Performance."
-          aoClicar={() => {
-            aoAbrir({ recorte: "prejuizo" });
-          }}
-        />
-        <CardAba
-          rotulo="Prejuízo (%)"
-          sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={pPrejuizo !== null ? formatarPercentual(pPrejuizo, { escala: "cem" }) : "—"}
-          dica={
-            k && pPrejuizo !== null
-              ? `${formatarInteiro(k.prejudicada)} de ${formatarInteiro(base)} CTRC prejudicados`
-              : undefined
-          }
-          tom={pPrejuizo !== null && pPrejuizo > 0 ? "alerta" : undefined}
-          explicacao="Mesmo cálculo de Entregas prejudicadas, em percentual: cargas com prejuízo atribuído ao(s) código(s) indicado(s) ÷ CTRC total da aba."
-          aoClicar={() => {
-            aoAbrir({ recorte: "prejuizo" });
-          }}
-        />
-        <CardAba
-          rotulo="Entregas no horário (%)"
-          sub={<PrejuizoSubtitulo codigos={codigos} />}
-          valor={pPrejuizo !== null ? formatarPercentual(100 - pPrejuizo, { escala: "cem" }) : "—"}
-          dica={
-            k && pPrejuizo !== null
-              ? `${formatarInteiro(base - k.prejudicada)} de ${formatarInteiro(base)} CTRC no horário`
-              : undefined
-          }
-          tom={pPrejuizo !== null && 100 - pPrejuizo >= 95 ? "ok" : undefined}
-          explicacao="Contraponto de Prejuízo (%): cargas sem prejuízo atribuído ao(s) código(s) indicado(s) ÷ CTRC total da aba. 100% − Prejuízo (%)."
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-        <CardAba
-          destaque
+        <Indicador
           rotulo="Não entregues"
-          tom="ruim"
+          icone={CircleX}
+          neutro
+          status="ruim"
           valor={k ? formatarInteiro(k.naoEntregue) : "—"}
-          dica={k ? pctBase(k.naoEntregue) : undefined}
-          explicacao="Cargas que saíram para entrega e até agora não foram entregues. Esta aba conta só quem já saiu para entrega — por isso o número é menor que o da tela de Performance, que conta todos os CTRCs do período."
+          detalhe={k ? pctBase(k.naoEntregue) : ""}
+          dica="Cargas que saíram para entrega e até agora não foram entregues. Esta aba conta só quem já saiu para entrega — por isso o número é menor que o da tela de Performance, que conta todos os CTRCs do período."
           aoClicar={() => {
             aoAbrir({ recorte: "em_rota", status: "andamento" });
           }}
         />
-        <CardAba
-          destaque
+        <Indicador
           rotulo="Performance positiva"
-          tom="ok"
+          icone={ThumbsUp}
+          neutro
+          status="bom"
           valor={positiva !== null ? formatarPercentual(positiva, { escala: "cem" }) : "—"}
-          dica={
+          detalhe={
             k && positiva !== null
               ? `${formatarInteiro(k.entregue)} de ${formatarInteiro(base)} entregues`
-              : undefined
+              : ""
           }
-          explicacao="Entregues ÷ CTRC total da aba — a mesma Produtividade calculada mais abaixo."
+          dica="Entregues ÷ CTRC total da aba — a mesma Produtividade calculada mais abaixo."
+          progresso={positiva !== null ? positiva / 100 : undefined}
         />
-        <CardAba
-          destaque
+        <Indicador
           rotulo="Performance negativa"
-          tom="ruim"
+          icone={ThumbsDown}
+          neutro
+          status="ruim"
           valor={positiva !== null ? formatarPercentual(100 - positiva, { escala: "cem" }) : "—"}
-          dica={
+          detalhe={
             k && positiva !== null
               ? `${formatarInteiro(base - k.entregue)} de ${formatarInteiro(base)} não entregues`
-              : undefined
+              : ""
           }
-          explicacao="Contraponto da Performance positiva: 100% − Performance positiva."
+          dica="Contraponto da Performance positiva: 100% − Performance positiva."
         />
-      </div>
+      </GradeDeIndicadores>
+      <GradeDeIndicadores>
+        <Indicador
+          rotulo="Entregas prejudicadas"
+          icone={TriangleAlert}
+          neutro
+          status="alerta"
+          valor={k ? formatarInteiro(k.prejudicada) : "—"}
+          detalhe={prejuizoDe(k ? pctBase(k.prejudicada) : undefined)}
+          dica="Cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo número da aba Prejuízo, dos cards do topo e da tela de Performance."
+          aoClicar={() => {
+            aoAbrir({ recorte: "prejuizo" });
+          }}
+        />
+        <Indicador
+          rotulo="Frete perdido"
+          icone={Banknote}
+          neutro={!(k && k.fretePerdido > 0)}
+          status="ruim"
+          valor={k ? formatarMoeda(k.fretePerdido, { centavos: false }) : "—"}
+          detalhe={prejuizoDe(
+            k && k.freteRomaneado > 0
+              ? `${formatarPercentual((k.fretePerdido / k.freteRomaneado) * 100, { escala: "cem" })} do frete da base desta aba`
+              : undefined,
+          )}
+          dica="Frete das cargas com prejuízo atribuído ao(s) código(s) indicado(s) no subtítulo. Usa a base completa de romaneados do período — o mesmo valor da aba Prejuízo e da tela de Performance."
+          aoClicar={() => {
+            aoAbrir({ recorte: "prejuizo" });
+          }}
+        />
+        <Indicador
+          rotulo="Prejuízo (%)"
+          icone={Percent}
+          neutro={!(pPrejuizo !== null && pPrejuizo > 0)}
+          status="alerta"
+          valor={pPrejuizo !== null ? formatarPercentual(pPrejuizo, { escala: "cem" }) : "—"}
+          detalhe={prejuizoDe(
+            k && pPrejuizo !== null
+              ? `${formatarInteiro(k.prejudicada)} de ${formatarInteiro(base)} CTRC prejudicados`
+              : undefined,
+          )}
+          dica="Mesmo cálculo de Entregas prejudicadas, em percentual: cargas com prejuízo atribuído ao(s) código(s) indicado(s) ÷ CTRC total da aba."
+          aoClicar={() => {
+            aoAbrir({ recorte: "prejuizo" });
+          }}
+        />
+        <Indicador
+          rotulo="Entregas no horário (%)"
+          icone={CalendarClock}
+          neutro={!(pPrejuizo !== null && 100 - pPrejuizo >= 95)}
+          status="bom"
+          valor={pPrejuizo !== null ? formatarPercentual(100 - pPrejuizo, { escala: "cem" }) : "—"}
+          detalhe={prejuizoDe(
+            k && pPrejuizo !== null
+              ? `${formatarInteiro(base - k.prejudicada)} de ${formatarInteiro(base)} CTRC no horário`
+              : undefined,
+          )}
+          dica="Contraponto de Prejuízo (%): cargas sem prejuízo atribuído ao(s) código(s) indicado(s) ÷ CTRC total da aba. 100% − Prejuízo (%)."
+        />
+      </GradeDeIndicadores>
       <FretePerdidoPorHora
         porHora={prejuizo.data?.porHora ?? []}
         porDia={prejuizo.data?.porDia ?? []}
         diaUnico={filtros.inicio === filtros.fim}
         carregando={prejuizo.isLoading}
       />
-      <AtribuicaoLegenda codigos={codigos} />
       {/* Totalizadores do período: nesta aba ficam aqui embaixo, a pedido do cliente. */}
       <CardsDoPeriodo {...cards} />
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
         Entregues e Não entregues consideram as cargas que já saíram para entrega. O card CTRC conta
         todo o período (inclusive o que ainda não saiu), por isso é maior que os cards de cima.
         Prejuízo usa a base completa de romaneados, igual às demais telas. Uma carga entra na base
@@ -411,7 +501,7 @@ export function AbaPerformanceRomaneio({
       </p>
       <Distribuicao filtros={filtros} nomeCurto={nomeCurto} aoAbrir={aoAbrir} />
       <TabelaPorViagem filtros={filtros} aoAbrir={aoAbrir} />
-    </div>
+    </>
   );
 }
 
@@ -433,180 +523,162 @@ function TabelaPorViagem({ filtros, aoAbrir }: PropsDaAba) {
     ajudantes: [r.ajudante, r.ajudante2, r.ajudante3].filter((a): a is string => !!a).join(", "),
   }));
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 text-[12px] font-medium">
-          <span>Por romaneio (viagem real)</span>
-          <InfoTip texto="Cada linha é um romaneio de entrega do sistema, com o motorista, os ajudantes e a placa que efetivamente saíram naquela viagem. Só aparecem as cargas que estão dentro dos filtros escolhidos." />
-        </div>
-        <div className="flex items-center gap-2">
-          <ExportMenu
-            arquivo="romaneio-por-viagem"
-            titulo="Por romaneio (viagem real)"
-            colunas={[
-              { chave: "romaneio", titulo: "Romaneio" },
-              { chave: "dataRomaneio", titulo: "Data", formato: "data" },
-              { chave: "situacao", titulo: "Situação" },
-              { chave: "placa", titulo: "Placa" },
-              { chave: "motorista", titulo: "Motorista" },
-              { chave: "ajudantes", titulo: "Ajudantes" },
-              { chave: "ctes", titulo: "CTRC", formato: "inteiro" },
-              { chave: "transferidas", titulo: "Remanejadas", formato: "inteiro" },
-              { chave: "frete", titulo: "Frete", formato: "moeda" },
-              { chave: "entregues", titulo: "Entregues", formato: "inteiro" },
-              { chave: "naoEntregues", titulo: "Não entregues", formato: "inteiro" },
-              { chave: "performanceFracao", titulo: "Performance", formato: "percentual" },
-              { chave: "fretePerdido", titulo: "Frete perdido", formato: "moeda" },
-            ]}
-            linhas={linhas.map((r) => ({
-              ...r,
-              performanceFracao: r.performance === null ? null : r.performance / 100,
-            }))}
-            soIcone
-          />
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={texto}
-              onChange={(e) => {
-                setTexto(e.target.value);
-              }}
-              placeholder="Buscar romaneio..."
-              aria-label="Buscar por número do romaneio"
-              className="h-[26px] w-[190px] rounded-md border border-border/70 bg-background pl-7 pr-6 text-[12px] outline-none focus:border-[var(--brand)]"
-            />
+    <Painel
+      icone={Truck}
+      titulo={
+        <TituloDoBloco dica="Cada linha é um romaneio de entrega do sistema, com o motorista, os ajudantes e a placa que efetivamente saíram naquela viagem. Só aparecem as cargas que estão dentro dos filtros escolhidos.">
+          Por romaneio (viagem real)
+        </TituloDoBloco>
+      }
+      acoes={
+        <ExportMenu
+          arquivo="romaneio-por-viagem"
+          titulo="Por romaneio (viagem real)"
+          colunas={[
+            { chave: "romaneio", titulo: "Romaneio" },
+            { chave: "dataRomaneio", titulo: "Data", formato: "data" },
+            { chave: "situacao", titulo: "Situação" },
+            { chave: "placa", titulo: "Placa" },
+            { chave: "motorista", titulo: "Motorista" },
+            { chave: "ajudantes", titulo: "Ajudantes" },
+            { chave: "ctes", titulo: "CTRC", formato: "inteiro" },
+            { chave: "transferidas", titulo: "Remanejadas", formato: "inteiro" },
+            { chave: "frete", titulo: "Frete", formato: "moeda" },
+            { chave: "entregues", titulo: "Entregues", formato: "inteiro" },
+            { chave: "naoEntregues", titulo: "Não entregues", formato: "inteiro" },
+            { chave: "performanceFracao", titulo: "Performance", formato: "percentual" },
+            { chave: "fretePerdido", titulo: "Frete perdido", formato: "moeda" },
+          ]}
+          linhas={linhas.map((r) => ({
+            ...r,
+            performanceFracao: r.performance === null ? null : r.performance / 100,
+          }))}
+          soIcone
+        />
+      }
+      barra={
+        <>
+          <CaixaDeBusca
+            valor={texto}
+            aoMudar={setTexto}
+            placeholder="Buscar romaneio..."
+            rotulo="Buscar por número do romaneio"
+            ativo={busca !== ""}
+            className="w-[220px]"
+          >
             {texto.length > 0 && (
               <button
                 type="button"
                 aria-label="Limpar busca de romaneio"
+                title="Limpar busca de romaneio"
                 onClick={() => {
                   setTexto("");
                 }}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" aria-hidden />
               </button>
             )}
-          </div>
-        </div>
-      </div>
-      <FiltrandoPor
-        etiquetas={[
-          busca && {
-            rotulo: "Romaneio",
-            valor: busca,
-            limpar: () => {
-              setTexto("");
-              setBusca("");
-            },
-          },
-        ]}
-      />
-      <div className="overflow-x-auto rounded-[10px] border border-border/70 bg-card">
-        <table className="w-full text-[12px]">
-          <thead className="bg-muted/40 text-muted-foreground">
-            <tr className="border-b border-border/70">
-              <th className="px-3 py-1.5 text-left font-normal">Romaneio</th>
-              <th className="px-3 py-1.5 text-left font-normal">Data</th>
-              <th className="px-3 py-1.5 text-left font-normal">Situação</th>
-              <th className="px-3 py-1.5 text-left font-normal">Placa</th>
-              <th className="px-3 py-1.5 text-left font-normal">Motorista</th>
-              <th className="px-3 py-1.5 text-left font-normal">Ajudantes</th>
-              <th className="px-3 py-1.5 text-right font-normal">CTRC</th>
-              <th className="px-3 py-1.5 text-right font-normal">
-                <span className="inline-flex items-center gap-1">
-                  Remanejadas
-                  <InfoTip texto="Cargas que saíram neste romaneio e saíram de novo em outra viagem depois. Elas contam na coluna CTRC deste romaneio como não entregues; a entrega conta na viagem em que aconteceu." />
-                </span>
-              </th>
-              <th className="px-3 py-1.5 text-right font-normal">Frete que saiu</th>
-              <th className="px-3 py-1.5 text-right font-normal">Entregues</th>
-              <th className="px-3 py-1.5 text-right font-normal">Não entregues</th>
-              <th className="px-3 py-1.5 text-right font-normal">Performance</th>
-              <th className="px-3 py-1.5 text-right font-normal">
-                Frete perdido
-                <div className="leading-tight">
-                  <PrejuizoSubtitulo codigos={filtros.codigos} />
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {q.isLoading && (
-              <tr>
-                <td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">
-                  carregando…
-                </td>
-              </tr>
-            )}
-            {!q.isLoading && linhas.length === 0 && (
-              <tr>
-                <td colSpan={13} className="px-3 py-10 text-center text-muted-foreground">
-                  {busca
-                    ? `Nenhum romaneio encontrado para "${busca}" no período e filtros escolhidos.`
-                    : "Nenhum romaneio importado para o período e filtros escolhidos."}
-                </td>
-              </tr>
-            )}
-            {linhas.map((r) => {
-              const placa = r.placa;
-              return (
-                <tr
-                  key={r.romaneio}
-                  {...(placa
-                    ? {
-                        onClick: () => {
-                          aoAbrir({ placa });
-                        },
+          </CaixaDeBusca>
+          <FiltrandoPor
+            etiquetas={[
+              busca && {
+                rotulo: "Romaneio",
+                valor: busca,
+                limpar: () => {
+                  setTexto("");
+                  setBusca("");
+                },
+              },
+            ]}
+          />
+        </>
+      }
+      rodape={
+        <span>
+          {busca
+            ? `${formatarInteiro(linhas.length)} romaneio(s) encontrado(s) para "${busca}".`
+            : "Mostra até 300 romaneios, dos maiores para os menores."}{" "}
+          Clique em uma linha para abrir as cargas daquela placa.
+        </span>
+      }
+    >
+      <TabelaPropria>
+        <Cabecalho>
+          <Th>Romaneio</Th>
+          <Th>Data</Th>
+          <Th>Situação</Th>
+          <Th>Placa</Th>
+          <Th>Motorista</Th>
+          <Th>Ajudantes</Th>
+          <Th direita>CTRC</Th>
+          <Th direita>
+            <TituloComDica dica="Cargas que saíram neste romaneio e saíram de novo em outra viagem depois. Elas contam na coluna CTRC deste romaneio como não entregues; a entrega conta na viagem em que aconteceu.">
+              Remanejadas
+            </TituloComDica>
+          </Th>
+          <Th direita>Frete que saiu</Th>
+          <Th direita>Entregues</Th>
+          <Th direita>Não entregues</Th>
+          <Th direita>Performance</Th>
+          <Th direita>
+            Frete perdido
+            <PrejuizoSubtitulo codigos={filtros.codigos} />
+          </Th>
+        </Cabecalho>
+        <tbody>
+          <EstadoDaTabela
+            colunas={13}
+            carregando={q.isLoading}
+            erro={q.error}
+            aoTentarDeNovo={() => void q.refetch()}
+            vazio={linhas.length === 0}
+            mensagem={
+              busca
+                ? `Nenhum romaneio encontrado para "${busca}" no período e filtros escolhidos.`
+                : "Nenhum romaneio importado para o período e filtros escolhidos."
+            }
+          />
+          {linhas.map((r) => {
+            const placa = r.placa;
+            return (
+              <tr
+                key={r.romaneio}
+                {...propsDaLinha(
+                  placa
+                    ? () => {
+                        aoAbrir({ placa });
                       }
-                    : {})}
-                  className={cn(
-                    "border-b border-border/40 last:border-0",
-                    placa && "cursor-pointer hover:bg-muted/40",
-                  )}
-                >
-                  <td className="px-3 py-1 font-mono text-[11px]">{r.romaneio}</td>
-                  <td className="px-3 py-1">{formatarData(r.dataRomaneio)}</td>
-                  <td className="px-3 py-1">{r.situacao ?? "—"}</td>
-                  <td className="px-3 py-1 font-mono text-[11px]">{placa ?? "—"}</td>
-                  <td className="px-3 py-1">{r.motorista ?? "—"}</td>
-                  <td className="px-3 py-1 text-[11px] text-muted-foreground">
-                    {r.ajudantes || "—"}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">{formatarInteiro(r.ctes)}</td>
-                  <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
-                    {r.transferidas > 0 ? formatarInteiro(r.transferidas) : "—"}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {formatarMoeda(r.frete, { centavos: false })}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {formatarInteiro(r.entregues)}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {formatarInteiro(r.naoEntregues)}
-                  </td>
-                  <td className="px-3 py-1 text-right font-medium tabular-nums">
-                    {r.performance !== null
-                      ? formatarPercentual(r.performance, { escala: "cem" })
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {r.fretePerdido > 0 ? formatarMoeda(r.fretePerdido, { centavos: false }) : "—"}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-[11px] text-muted-foreground">
-        {busca
-          ? `${formatarInteiro(linhas.length)} romaneio(s) encontrado(s) para "${busca}".`
-          : "Mostra até 300 romaneios, dos maiores para os menores."}{" "}
-        Clique em uma linha para abrir as cargas daquela placa.
-      </p>
-    </div>
+                    : undefined,
+                )}
+              >
+                <td className={CLASSE_CODIGO}>{r.romaneio}</td>
+                <td className={`${CLASSE_TD} whitespace-nowrap`}>{formatarData(r.dataRomaneio)}</td>
+                <td className={CLASSE_TD}>{r.situacao ?? "—"}</td>
+                <td className={CLASSE_CODIGO}>{placa ?? "—"}</td>
+                <td className={CLASSE_TD}>{r.motorista ?? "—"}</td>
+                <td className={`${CLASSE_TD} text-muted-foreground`}>{r.ajudantes || "—"}</td>
+                <td className={CLASSE_NUMERO}>{formatarInteiro(r.ctes)}</td>
+                <td className={`${CLASSE_NUMERO} text-muted-foreground`}>
+                  {r.transferidas > 0 ? formatarInteiro(r.transferidas) : "—"}
+                </td>
+                <td className={CLASSE_NUMERO}>{formatarMoeda(r.frete, { centavos: false })}</td>
+                <td className={CLASSE_NUMERO}>{formatarInteiro(r.entregues)}</td>
+                <td className={CLASSE_NUMERO}>{formatarInteiro(r.naoEntregues)}</td>
+                <td className={`${CLASSE_NUMERO} font-semibold`}>
+                  {r.performance !== null
+                    ? formatarPercentual(r.performance, { escala: "cem" })
+                    : "—"}
+                </td>
+                <td className={CLASSE_NUMERO}>
+                  {r.fretePerdido > 0 ? formatarMoeda(r.fretePerdido, { centavos: false }) : "—"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </TabelaPropria>
+    </Painel>
   );
 }
 
@@ -621,36 +693,41 @@ function Produtividade({ linhas }: { linhas: readonly LinhaPerformancePessoa[] }
   const pct = pctDe(entregues, total);
   const pctRetorno = pctDe(retornos, total);
   return (
-    <div className="space-y-1">
-      <p className="text-[11px] text-muted-foreground">
+    <>
+      <p className="text-[13px] text-muted-foreground">
         Base desta aba: {formatarInteiro(total)} CTRC no total — {formatarInteiro(entregues)}{" "}
         entregues. Cargas ainda em rota contam contra a produtividade até terem desfecho.
       </p>
-      <div className="grid grid-cols-2 gap-2">
-        <CardAba
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Indicador
           rotulo="Produtividade"
+          icone={CircleCheck}
+          neutro={!(pct !== null && pct >= 95)}
+          status="bom"
           valor={pct !== null ? formatarPercentual(pct, { escala: "cem" }) : "—"}
-          dica={
+          detalhe={
             pct !== null
               ? `${formatarInteiro(entregues)} de ${formatarInteiro(total)} CTRC entregues`
-              : undefined
+              : ""
           }
-          tom={pct !== null && pct >= 95 ? "ok" : undefined}
-          explicacao="Entregues ÷ CTRC total da aba (entregues + não entregues/em rota + finalizado em sistema). Cargas em rota contam contra até terem desfecho."
+          progresso={pct !== null ? pct / 100 : undefined}
+          dica="Entregues ÷ CTRC total da aba (entregues + não entregues/em rota + finalizado em sistema). Cargas em rota contam contra até terem desfecho."
         />
-        <CardAba
+        <Indicador
           rotulo="Taxa de retorno"
+          icone={Undo2}
+          neutro={retornos === 0}
+          status="ruim"
           valor={pctRetorno !== null ? formatarPercentual(pctRetorno, { escala: "cem" }) : "—"}
-          dica={
+          detalhe={
             pctRetorno !== null
               ? `${formatarInteiro(retornos)} CTRC sem entrega · de ${formatarInteiro(total)} da aba`
-              : undefined
+              : ""
           }
-          tom={retornos > 0 ? "ruim" : undefined}
-          explicacao={TIP_RETORNO}
+          dica={TIP_RETORNO}
         />
       </div>
-    </div>
+    </>
   );
 }
 
@@ -664,6 +741,7 @@ function CabecalhoPlaca({
   visivel: boolean;
   aoAlternar: () => void;
 }) {
+  const Olho = visivel ? EyeOff : Eye;
   return (
     <span className="inline-flex items-center gap-1">
       Placas
@@ -673,13 +751,13 @@ function CabecalhoPlaca({
           onClick={aoAlternar}
           aria-label={visivel ? "Ocultar placas" : "Mostrar placas"}
           title={visivel ? "Ocultar placas" : "Mostrar placas"}
-          className="rounded p-0.5 hover:bg-muted hover:text-foreground"
+          className="rounded-md p-1 hover:bg-card hover:text-foreground"
         >
-          {visivel ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          <Olho className="h-3.5 w-3.5" aria-hidden />
         </button>
       ) : (
         <span title="Placa disponível só para quem tem a permissão “Romaneio · Ver placa”.">
-          <Lock className="h-3 w-3" />
+          <Lock className="h-3.5 w-3.5" aria-hidden />
         </span>
       )}
     </span>
@@ -704,132 +782,113 @@ function TabelaDePessoas({
   const titulo = ehMotorista ? "Motorista" : "Ajudante";
   const colunas = 7 + (ehMotorista ? 1 : 0);
   return (
-    <div className="space-y-3">
+    <>
       <AtribuicaoLegenda codigos={filtros.codigos} />
       <Produtividade linhas={linhas} />
-      <div className="flex items-center justify-end">
-        <ExportMenu
-          arquivo={`romaneio-${tipo}`}
-          titulo={`Performance por ${tipo}`}
-          colunas={[
-            { chave: "nome", titulo },
-            // Placa só sai na exportação para quem tem a permissão.
-            ...(podeVerPlaca ? [{ chave: "placas", titulo: "Placas" }] : []),
-            ...(ehMotorista ? [{ chave: "equipe", titulo: "Equipe" }] : []),
-            { chave: "viagens", titulo: "Qtd. viagens", formato: "inteiro" },
-            { chave: "romaneados", titulo: "CTRC — levados", formato: "inteiro" },
-            { chave: "entregues", titulo: "CTRC — entregues", formato: "inteiro" },
-            { chave: "prejudicadas", titulo: "CTRC — prejudicadas", formato: "inteiro" },
-            { chave: "prejudicadas13", titulo: "Prejudicadas (cód. 13)", formato: "inteiro" },
-            { chave: "performanceFracao", titulo: "% Performance", formato: "percentual" },
-          ]}
-          linhas={linhas.map((r) => ({
-            ...r,
-            performanceFracao: r.romaneados > 0 ? r.performance / 100 : null,
-          }))}
-          soIcone
-        />
-      </div>
-      <div className="overflow-x-auto rounded-[10px] border border-border/70 bg-card">
-        <table className="w-full text-[12px]">
-          <thead className="bg-muted/40 text-muted-foreground">
-            <tr className="border-b border-border/70">
-              <th className="px-3 py-1.5 text-left font-normal">
-                {ehMotorista ? (
-                  titulo
-                ) : (
-                  <span className="inline-flex items-center gap-1">
-                    Ajudante
-                    <InfoTip texto="CTRC com mais de um ajudante conta integralmente para cada um; o total desta aba é maior que o número de CTRCs." />
-                  </span>
-                )}
-              </th>
-              <th className="px-3 py-1.5 text-left font-normal">
-                <CabecalhoPlaca
-                  pode={podeVerPlaca}
-                  visivel={mostrarPlaca}
-                  aoAlternar={() => {
-                    setPlacaVisivel((v) => !v);
-                  }}
-                />
-              </th>
-              {ehMotorista && <th className="px-3 py-1.5 text-left font-normal">Equipe</th>}
-              <th className="px-3 py-1.5 text-right font-normal">
-                <span className="inline-flex items-center gap-1">
-                  Qtd. viagens
-                  <InfoTip texto={TIP_VIAGENS} />
-                </span>
-              </th>
-              <th className="px-3 py-1.5 text-right font-normal">CTRC — levados</th>
-              <th className="px-3 py-1.5 text-right font-normal">CTRC — entregues</th>
-              <th className="px-3 py-1.5 text-right font-normal">
-                <span className="inline-flex items-center gap-1">
-                  CTRC — prejudicadas
-                  <InfoTip texto={TIP_PREJUDICADAS} />
-                </span>
-                <div className="leading-tight">
-                  <PrejuizoSubtitulo codigos={filtros.codigos} />
-                </div>
-              </th>
-              <th className="px-3 py-1.5 text-right font-normal">
-                <span className="inline-flex items-center gap-1">
-                  % Performance
-                  <InfoTip texto={TIP_PERFORMANCE} />
-                </span>
-              </th>
-            </tr>
-          </thead>
+      <Painel
+        icone={UserRound}
+        titulo={`Performance por ${tipo}`}
+        acoes={
+          <ExportMenu
+            arquivo={`romaneio-${tipo}`}
+            titulo={`Performance por ${tipo}`}
+            colunas={[
+              { chave: "nome", titulo },
+              // Placa só sai na exportação para quem tem a permissão.
+              ...(podeVerPlaca ? [{ chave: "placas", titulo: "Placas" }] : []),
+              ...(ehMotorista ? [{ chave: "equipe", titulo: "Equipe" }] : []),
+              { chave: "viagens", titulo: "Qtd. viagens", formato: "inteiro" },
+              { chave: "romaneados", titulo: "CTRC — levados", formato: "inteiro" },
+              { chave: "entregues", titulo: "CTRC — entregues", formato: "inteiro" },
+              { chave: "prejudicadas", titulo: "CTRC — prejudicadas", formato: "inteiro" },
+              { chave: "prejudicadas13", titulo: "Prejudicadas (cód. 13)", formato: "inteiro" },
+              { chave: "performanceFracao", titulo: "% Performance", formato: "percentual" },
+            ]}
+            linhas={linhas.map((r) => ({
+              ...r,
+              performanceFracao: r.romaneados > 0 ? r.performance / 100 : null,
+            }))}
+            soIcone
+          />
+        }
+        rodape={
+          !ehMotorista && (
+            <span>
+              O CTRC conta inteiro para cada ajudante listado nele, então o total desta aba não
+              fecha com o universo de CTRCs do período.
+            </span>
+          )
+        }
+      >
+        <TabelaPropria>
+          <Cabecalho>
+            <Th>
+              {ehMotorista ? (
+                titulo
+              ) : (
+                <TituloComDica dica="CTRC com mais de um ajudante conta integralmente para cada um; o total desta aba é maior que o número de CTRCs.">
+                  Ajudante
+                </TituloComDica>
+              )}
+            </Th>
+            <Th>
+              <CabecalhoPlaca
+                pode={podeVerPlaca}
+                visivel={mostrarPlaca}
+                aoAlternar={() => {
+                  setPlacaVisivel((v) => !v);
+                }}
+              />
+            </Th>
+            {ehMotorista && <Th>Equipe</Th>}
+            <Th direita>
+              <TituloComDica dica={TIP_VIAGENS}>Qtd. viagens</TituloComDica>
+            </Th>
+            <Th direita>CTRC — levados</Th>
+            <Th direita>CTRC — entregues</Th>
+            <Th direita>
+              <TituloComDica dica={TIP_PREJUDICADAS}>CTRC — prejudicadas</TituloComDica>
+              <PrejuizoSubtitulo codigos={filtros.codigos} />
+            </Th>
+            <Th direita>
+              <TituloComDica dica={TIP_PERFORMANCE}>% Performance</TituloComDica>
+            </Th>
+          </Cabecalho>
           <tbody>
-            {q.isLoading && (
-              <tr>
-                <td colSpan={colunas} className="px-3 py-8 text-center text-muted-foreground">
-                  carregando…
-                </td>
-              </tr>
-            )}
-            {!q.isLoading && linhas.length === 0 && (
-              <tr>
-                <td colSpan={colunas} className="px-3 py-10 text-center text-muted-foreground">
-                  Nenhum {tipo} com saída para entrega no período.
-                </td>
-              </tr>
-            )}
+            <EstadoDaTabela
+              colunas={colunas}
+              carregando={q.isLoading}
+              erro={q.error}
+              aoTentarDeNovo={() => void q.refetch()}
+              vazio={linhas.length === 0}
+              mensagem={`Nenhum ${tipo} com saída para entrega no período.`}
+            />
             {linhas.map((r) => (
               <tr
                 key={r.nome}
-                {...(ehMotorista
-                  ? {
-                      onClick: () => {
+                {...propsDaLinha(
+                  ehMotorista
+                    ? () => {
                         aoAbrir({ motorista: r.nome });
-                      },
-                    }
-                  : {})}
-                className={cn(
-                  "border-b border-border/40 last:border-0",
-                  ehMotorista && "cursor-pointer hover:bg-muted/40",
+                      }
+                    : undefined,
                 )}
               >
-                <td className="px-3 py-1">{r.nome}</td>
-                <td className="px-3 py-1 font-mono text-[11px] text-muted-foreground">
+                <td className={CLASSE_TD}>{r.nome}</td>
+                <td className={`${CLASSE_CODIGO} text-muted-foreground`}>
                   {mostrarPlaca ? (
                     (r.placas ?? "—")
                   ) : (
                     <span aria-label="Placa oculta">•••••••</span>
                   )}
                 </td>
-                {ehMotorista && <td className="px-3 py-1">{r.equipe ?? "—"}</td>}
-                <td className="px-3 py-1 text-right tabular-nums">{formatarInteiro(r.viagens)}</td>
-                <td className="px-3 py-1 text-right tabular-nums">
-                  {formatarInteiro(r.romaneados)}
-                </td>
-                <td className="px-3 py-1 text-right tabular-nums">
-                  {formatarInteiro(r.entregues)}
-                </td>
-                <td className="px-3 py-1 text-right tabular-nums">
-                  {formatarInteiro(r.prejudicadas)}
-                </td>
+                {ehMotorista && <td className={CLASSE_TD}>{r.equipe ?? "—"}</td>}
+                <td className={CLASSE_NUMERO}>{formatarInteiro(r.viagens)}</td>
+                <td className={CLASSE_NUMERO}>{formatarInteiro(r.romaneados)}</td>
+                <td className={CLASSE_NUMERO}>{formatarInteiro(r.entregues)}</td>
+                <td className={CLASSE_NUMERO}>{formatarInteiro(r.prejudicadas)}</td>
                 <td
-                  className="px-3 py-1 text-right font-medium tabular-nums"
+                  className={`${CLASSE_NUMERO} font-semibold`}
                   title={`${formatarInteiro(r.romaneados)} levados − ${formatarInteiro(r.prejudicadas13)} prejudicados (cód. 13)`}
                 >
                   {r.romaneados > 0
@@ -839,16 +898,10 @@ function TabelaDePessoas({
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
-      {!ehMotorista && (
-        <p className="text-[11px] text-muted-foreground">
-          O CTRC conta inteiro para cada ajudante listado nele, então o total desta aba não fecha
-          com o universo de CTRCs do período.
-        </p>
-      )}
+        </TabelaPropria>
+      </Painel>
       <MotivosNaoEntrega filtros={filtros} aoAbrir={aoAbrir} />
-    </div>
+    </>
   );
 }
 
@@ -866,69 +919,59 @@ function MotivosNaoEntrega({ filtros, aoAbrir }: PropsDaAba) {
   const linhas = q.data ?? [];
   const maior = Math.max(1, ...linhas.map((r) => r.qtd));
   return (
-    <div className="rounded-[10px] border border-border/70 bg-card p-3">
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-        <span>Motivos de não entrega</span>
-        <InfoTip texto="Principais motivos que impediram a entrega no período — pendências do cliente ou da operação. Uma mesma carga pode aparecer em mais de um motivo. Clique num motivo para ver as cargas." />
-      </div>
-      <div className="text-[10px] text-muted-foreground/80">
-        somente ocorrências classificadas como pendência (cliente ou transportadora)
-      </div>
-      {q.isLoading && <div className="mt-2 text-[12px] text-muted-foreground">carregando…</div>}
-      {q.isError && (
-        <div className="mt-2 text-[12px] text-[var(--status-bad)]">{mensagemAmigavel(q.error)}</div>
+    <Painel
+      icone={TriangleAlert}
+      titulo={
+        <TituloDoBloco dica="Principais motivos que impediram a entrega no período — pendências do cliente ou da operação. Uma mesma carga pode aparecer em mais de um motivo. Clique num motivo para ver as cargas.">
+          Motivos de não entrega
+        </TituloDoBloco>
+      }
+      descricao="somente ocorrências classificadas como pendência (cliente ou transportadora)"
+      classeDoCorpo="px-3 py-3"
+    >
+      {q.isLoading && <BarrasCarregando />}
+      {q.isError && <MensagemErro erro={q.error} aoTentarDeNovo={() => void q.refetch()} />}
+      {q.isSuccess && linhas.length === 0 && (
+        <EstadoVazio mensagem="Nenhuma ocorrência de insucesso no período." />
       )}
-      {!q.isLoading && !q.isError && linhas.length === 0 && (
-        <div className="mt-2 text-[12px] text-muted-foreground">
-          Nenhuma ocorrência de insucesso no período.
-        </div>
-      )}
-      <div className="mt-2 space-y-1.5">
+      <ul className="space-y-0.5">
         {linhas.map((r) => {
           // 13 (entrega prejudicada) é o motivo acompanhado de perto pela operação.
-          const destaque = Number(r.codigo) === 13;
           const codigo = Number(r.codigo);
+          const destaque = codigo === 13;
           return (
-            <div
-              key={r.codigo}
-              role="button"
-              tabIndex={0}
-              onClick={() => {
-                if (Number.isInteger(codigo)) aoAbrir({ codigos: [codigo] });
-              }}
-              className={cn(
-                "flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-[12px] hover:bg-muted/50",
-                destaque && "bg-destructive/10 font-medium text-destructive",
-              )}
-            >
-              <span
-                className={cn(
-                  "w-[52px] shrink-0 font-mono text-[11px]",
-                  destaque ? "text-destructive" : "text-muted-foreground",
-                )}
-              >
-                {r.codigo}
-              </span>
-              <span className="min-w-0 flex-1 truncate" title={r.descricao}>
-                {r.descricao || "—"}
-              </span>
-              <div className="h-1.5 w-[120px] shrink-0 rounded bg-muted">
-                <div
-                  className="h-1.5 rounded"
-                  style={{
-                    width: `${(r.qtd / maior) * 100}%`,
-                    background: destaque ? "var(--destructive)" : "var(--brand)",
+            <li key={r.codigo}>
+              <ComDica texto={`${r.codigo} · ${r.descricao || "—"}: ${formatarInteiro(r.qtd)}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (Number.isInteger(codigo)) aoAbrir({ codigos: [codigo] });
                   }}
-                />
-              </div>
-              <span className="w-[52px] shrink-0 text-right tabular-nums">
-                {formatarInteiro(r.qtd)}
-              </span>
-            </div>
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-[13px] hover:bg-muted/60",
+                    destaque && "bg-status-bad-bg font-semibold text-status-bad-fg",
+                  )}
+                >
+                  <span className="inline-flex w-[52px] shrink-0 items-center gap-1 font-mono text-[12px]">
+                    {destaque && <TriangleAlert className="h-3.5 w-3.5" aria-hidden />}
+                    <span className={cn(!destaque && "text-muted-foreground")}>{r.codigo}</span>
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{r.descricao || "—"}</span>
+                  <Trilho
+                    fracao={r.qtd / maior}
+                    cor={destaque ? "var(--status-bad)" : "var(--brand)"}
+                    className="w-[72px] shrink-0 sm:w-[140px]"
+                  />
+                  <span className="w-[52px] shrink-0 text-right tabular-nums">
+                    {formatarInteiro(r.qtd)}
+                  </span>
+                </button>
+              </ComDica>
+            </li>
           );
         })}
-      </div>
-    </div>
+      </ul>
+    </Painel>
   );
 }
 
@@ -946,6 +989,7 @@ interface LinhaDoRanking {
 function RankingDoPrejuizo({
   titulo,
   dica,
+  icone,
   linhas,
   carregando,
   arquivo,
@@ -953,6 +997,7 @@ function RankingDoPrejuizo({
 }: {
   titulo: string;
   dica: string;
+  icone: LucideIcon;
   linhas: readonly LinhaDoRanking[];
   carregando: boolean;
   arquivo: string;
@@ -960,12 +1005,10 @@ function RankingDoPrejuizo({
 }) {
   const maior = Math.max(1, ...linhas.map((l) => l.frete));
   return (
-    <div className="rounded-[10px] border border-border/70 bg-card p-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          <span>{titulo}</span>
-          <InfoTip texto={dica} />
-        </div>
+    <Painel
+      icone={icone}
+      titulo={<TituloDoBloco dica={dica}>{titulo}</TituloDoBloco>}
+      acoes={
         <ExportMenu
           arquivo={arquivo}
           titulo={`Prejuízo — ${titulo}`}
@@ -978,48 +1021,47 @@ function RankingDoPrejuizo({
           linhas={linhas}
           soIcone
         />
-      </div>
-      {carregando && <div className="mt-2 text-[12px] text-muted-foreground">carregando…</div>}
-      {!carregando && linhas.length === 0 && (
-        <div className="mt-2 text-[12px] text-muted-foreground">Nada a mostrar no período.</div>
-      )}
-      <div className="mt-2 space-y-1.5">
+      }
+      classeDoCorpo="px-3 py-3"
+    >
+      {carregando && <BarrasCarregando />}
+      {!carregando && linhas.length === 0 && <EstadoVazio mensagem="Nada a mostrar no período." />}
+      <ul className="space-y-0.5">
         {linhas.map((l, i) => (
-          <div
-            key={`${l.nome}-${i}`}
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              aoAbrir(l.abertura);
-            }}
-            className="cursor-pointer rounded px-1 py-0.5 text-[12px] hover:bg-muted/50"
-          >
-            <div className="flex items-center gap-2">
-              <span className="min-w-0 flex-1 truncate" title={l.nome}>
-                {l.nome}
-                {l.placa && (
-                  <span className="ml-1 font-mono text-[10px] text-muted-foreground">
-                    {l.placa}
+          <li key={`${l.nome}-${i}`}>
+            <ComDica
+              texto={`${l.nome}${l.placa ? ` (${l.placa})` : ""}: ${formatarMoeda(l.frete, { centavos: false })} · ${formatarInteiro(l.ctes)} CTRC`}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  aoAbrir(l.abertura);
+                }}
+                className="w-full rounded-lg px-2 py-1.5 text-left text-[13px] hover:bg-muted/60"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate">
+                    {l.nome}
+                    {l.placa && (
+                      <span className="ml-1.5 font-mono text-[12px] text-muted-foreground">
+                        {l.placa}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-              <span className="shrink-0 tabular-nums text-destructive">
-                {formatarMoeda(l.frete, { centavos: false })}
-              </span>
-              <span className="w-[44px] shrink-0 text-right tabular-nums text-muted-foreground">
-                {formatarInteiro(l.ctes)}
-              </span>
-            </div>
-            <div className="mt-0.5 h-1.5 w-full rounded bg-muted">
-              <div
-                className="h-1.5 rounded bg-destructive/70"
-                style={{ width: `${(l.frete / maior) * 100}%` }}
-              />
-            </div>
-          </div>
+                  <span className="shrink-0 font-semibold text-status-bad-fg tabular-nums">
+                    {formatarMoeda(l.frete, { centavos: false })}
+                  </span>
+                  <span className="w-[44px] shrink-0 text-right text-muted-foreground tabular-nums">
+                    {formatarInteiro(l.ctes)}
+                  </span>
+                </span>
+                <Trilho fracao={l.frete / maior} cor="var(--status-bad)" className="mt-1.5 h-1.5" />
+              </button>
+            </ComDica>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </Painel>
   );
 }
 
@@ -1028,26 +1070,27 @@ export function AbaPrejuizo({ filtros, aoAbrir }: PropsDaAba) {
   const q = useQuery(consultaPrejuizo(filtros));
   const d = q.data;
   const porDia = d?.porDia ?? [];
-  const maior = Math.max(1, ...porDia.map((x) => x.frete));
   const prejuizo: Abertura = { recorte: "prejuizo" };
   const ranking = (
     linhas: readonly { nome: string; placa: string | null; ctes: number; frete: number }[],
     abertura: (nome: string) => Abertura,
   ) => linhas.map((l) => ({ ...l, abertura: abertura(l.nome) }));
   return (
-    <div className="space-y-3">
+    <>
       <AtribuicaoLegenda codigos={filtros.codigos} />
-      <p className="rounded-[10px] border border-border/70 bg-card px-3 py-2 text-[12px] text-muted-foreground">
+      <Aviso tom="info">
         Prejuízo aqui são as cargas com {textoDoPrejuizo(filtros.codigos)}. Sem filtro de código, o
         padrão é o código 13 (Entrega Prejudicada). Os totais estão no card Prejuízo do topo;
         abaixo, o frete dessas cargas por dia e onde ele se concentra.
-      </p>
-      <div className="rounded-[10px] border border-border/70 bg-card p-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-            <span>Prejuízo por dia</span>
-            <InfoTip texto="Valor de frete comprometido em cada dia do período. Passe o mouse para ver a quantidade de cargas." />
-          </div>
+      </Aviso>
+      <Painel
+        icone={TrendingDown}
+        titulo={
+          <TituloDoBloco dica="Valor de frete comprometido em cada dia do período. Passe o mouse para ver a quantidade de cargas.">
+            Prejuízo por dia
+          </TituloDoBloco>
+        }
+        acoes={
           <ExportMenu
             arquivo="romaneio-prejuizo-tendencia"
             titulo="Prejuízo por dia"
@@ -1059,41 +1102,34 @@ export function AbaPrejuizo({ filtros, aoAbrir }: PropsDaAba) {
             linhas={porDia}
             soIcone
           />
-        </div>
-        {q.isLoading && <div className="mt-2 text-[12px] text-muted-foreground">carregando…</div>}
-        {q.isError && (
-          <div className="mt-2 text-[12px] text-[var(--status-bad)]">
-            Não foi possível carregar os dados do gráfico. {mensagemAmigavel(q.error)}
-          </div>
+        }
+      >
+        {q.isError ? (
+          <MensagemErro
+            erro={q.error}
+            titulo="Não foi possível carregar os dados do gráfico"
+            aoTentarDeNovo={() => void q.refetch()}
+          />
+        ) : (
+          <GraficoBarras
+            dados={porDia.map((x) => ({ ...x, rotulo: formatarDiaMes(x.dia) }))}
+            eixoX="rotulo"
+            series={[{ chave: "frete", nome: "Frete", cor: "var(--status-bad)" }]}
+            formato="inteiro"
+            altura={240}
+            carregando={q.isLoading}
+            mensagemVazia="Nenhum prejuízo registrado no período."
+            descricao="Prejuízo por dia: frete das cargas prejudicadas em cada dia do período"
+            dica={(x) => (
+              <DicaDoPrejuizo titulo={formatarData(x.dia)} frete={x.frete} ctes={x.ctes} />
+            )}
+          />
         )}
-        {!q.isLoading && !q.isError && porDia.length === 0 && (
-          <div className="mt-2 text-[12px] text-muted-foreground">
-            Nenhum prejuízo registrado no período.
-          </div>
-        )}
-        {porDia.length > 0 && (
-          <div className="mt-3 flex h-[120px] items-end gap-1">
-            {porDia.map((x) => (
-              <div
-                key={x.dia}
-                className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-                title={`${formatarData(x.dia)} · ${formatarMoeda(x.frete, { centavos: false })} · ${formatarInteiro(x.ctes)} carga(s)`}
-              >
-                <div
-                  className="w-full rounded-t bg-destructive/70 transition-colors group-hover:bg-destructive"
-                  style={{ height: `${Math.max(2, (x.frete / maior) * 100)}%` }}
-                />
-                <span className="w-full truncate text-center text-[9px] text-muted-foreground">
-                  {formatarDiaMes(x.dia)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="grid gap-2 lg:grid-cols-3">
+      </Painel>
+      <div className="grid gap-4 lg:grid-cols-3">
         <RankingDoPrejuizo
           titulo="Cidades"
+          icone={MapPin}
           dica="Cidades de destino onde o prejuízo se concentra no período."
           carregando={q.isLoading}
           linhas={ranking(d?.cidades ?? [], () => prejuizo)}
@@ -1102,6 +1138,7 @@ export function AbaPrejuizo({ filtros, aoAbrir }: PropsDaAba) {
         />
         <RankingDoPrejuizo
           titulo="Pagadores"
+          icone={Banknote}
           dica="Clientes pagadores das cargas com prejuízo no período."
           carregando={q.isLoading}
           linhas={ranking(d?.pagadores ?? [], () => prejuizo)}
@@ -1110,6 +1147,7 @@ export function AbaPrejuizo({ filtros, aoAbrir }: PropsDaAba) {
         />
         <RankingDoPrejuizo
           titulo="Motoristas"
+          icone={UserRound}
           dica="Motoristas e placas envolvidos nas cargas com prejuízo. Clique para ver as cargas do motorista."
           carregando={q.isLoading}
           linhas={ranking(d?.motoristas ?? [], (nome) => ({
@@ -1120,6 +1158,6 @@ export function AbaPrejuizo({ filtros, aoAbrir }: PropsDaAba) {
           aoAbrir={aoAbrir}
         />
       </div>
-    </div>
+    </>
   );
 }

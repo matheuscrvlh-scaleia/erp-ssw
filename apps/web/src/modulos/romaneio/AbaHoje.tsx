@@ -7,26 +7,38 @@ import {
   formatarPercentual,
 } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
+import { ClipboardList, FileText, PackageCheck, TrendingDown, Truck } from "lucide-react";
 import { useState } from "react";
 
+import { Aviso } from "@/componentes/comum/Aviso";
+import { DrawerDetalhe } from "@/componentes/comum/Detalhe";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
-import { FiltrandoPor, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
-import { InfoTip } from "@/componentes/comum/InfoTip";
+import { FiltrandoPor, FiltrosAvancados, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { ordenarPorPlaca } from "@/componentes/comum/ordenar-por-placa";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/componentes/ui/sheet";
+import { Painel } from "@/componentes/comum/Painel";
+import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 
 import { consultaCtesDoDia, consultaHoje, consultaOpcoes } from "./api";
 import { type Abertura } from "./busca";
-import { CardAba, FaixaChip, GradeCards, PrejuizoSubtitulo } from "./componentes";
+import {
+  Cabecalho,
+  CLASSE_CODIGO,
+  CLASSE_NUMERO,
+  CLASSE_TD,
+  EstadoDaTabela,
+  FaixasDePrazo,
+  GradeDeIndicadores,
+  Indicador,
+  PrejuizoSubtitulo,
+  propsDaLinha,
+  TabelaPropria,
+  textoDoPrejuizo,
+  Th,
+  TituloComDica,
+} from "./componentes";
 
 const SEM_TIPO = "__SEM_TIPO__";
 
@@ -38,6 +50,19 @@ const ROTULO_FAIXA: Record<Faixa, string> = {
   futuro: "Vencimento futuro",
   sem_prev: "Sem prazo definido",
 };
+
+/** Unidade e tipo de documento da aba Hoje (ficam só na visita à aba, fora da URL). */
+export interface FiltrosHoje {
+  filiais: string[];
+  tipos: string[];
+}
+
+export const FILTROS_DA_HOJE_VAZIOS: FiltrosHoje = { filiais: [], tipos: [] };
+
+const entradaDaHoje = ({ filiais, tipos }: FiltrosHoje) => ({
+  ...(filiais.length > 0 ? { filiais } : {}),
+  ...(tipos.length > 0 ? { tipos } : {}),
+});
 
 /**
  * Bairros em no máximo 3 linhas: a coluna cresce até 60ch; passou disso, a célula mostra 3
@@ -54,19 +79,32 @@ const ajudantesDa = (l: LinhaDoDia) =>
 const cidadeUf = (l: CteDaFaixa) =>
   l.cidadeDestino ? `${l.cidadeDestino}${l.ufDestino ? `/${l.ufDestino}` : ""}` : null;
 
-/** Painel lateral com os CT-e da faixa clicada. */
+type CteDaGaveta = CteDaFaixa & { cidadeUf: string | null };
+
+const COLUNAS_DA_GAVETA: readonly ColunaTabela<CteDaGaveta>[] = [
+  { chave: "numeroNf", titulo: "NF", classe: "font-mono text-[12px]" },
+  { chave: "numero", titulo: "CT-e", classe: "font-mono text-[12px]" },
+  { chave: "romaneio", titulo: "Romaneio", classe: "font-mono text-[12px]" },
+  { chave: "destinatario", titulo: "Destinatário" },
+  { chave: "pagador", titulo: "Pagador" },
+  { chave: "cidadeUf", titulo: "Cidade/UF" },
+  { chave: "dataEmissao", titulo: "Emissão", formato: "data" },
+  { chave: "dataPrevista", titulo: "Prazo", formato: "data" },
+  { chave: "status", titulo: "Situação" },
+  { chave: "placa", titulo: "Placa", classe: "font-mono text-[12px]" },
+];
+
+/** Gaveta lateral com os CT-e da faixa clicada. */
 function GavetaDaFaixa({
   faixa,
   somenteEmRota,
-  filiais,
-  tipos,
+  filtros,
   aoFechar,
 }: {
   faixa: Faixa | null;
   /** Só os ainda não entregues (os do card "Em rota de entrega"). */
   somenteEmRota: boolean;
-  filiais: string[];
-  tipos: string[];
+  filtros: FiltrosHoje;
   aoFechar: () => void;
 }) {
   const abrirCte = useAbrirCte();
@@ -74,8 +112,7 @@ function GavetaDaFaixa({
     ...consultaCtesDoDia({
       faixa: faixa ?? "todas",
       apenasNaoEntregues: somenteEmRota,
-      ...(filiais.length > 0 ? { filiais } : {}),
-      ...(tipos.length > 0 ? { tipos } : {}),
+      ...entradaDaHoje(filtros),
     }),
     enabled: faixa !== null,
   });
@@ -87,166 +124,93 @@ function GavetaDaFaixa({
   const total = q.data?.total ?? 0;
   const rotulo = faixa ? ROTULO_FAIXA[faixa] : "";
   return (
-    <Sheet
-      open={faixa !== null}
-      onOpenChange={(aberta) => {
-        if (!aberta) aoFechar();
-      }}
+    <DrawerDetalhe
+      aberto={faixa !== null}
+      aoFechar={aoFechar}
+      largura="larga"
+      titulo={`${rotulo}${somenteEmRota ? " · em rota" : ""}${q.data ? ` · ${formatarInteiro(total)} CT-e` : ""}`}
+      descricao={`${
+        somenteEmRota
+          ? "CT-e desta faixa que ainda não foram entregues, inclusive os que receberam ocorrência depois da saída."
+          : "CT-e dos romaneios emitidos hoje nesta faixa de prazo, em qualquer status."
+      }${
+        q.data && total > q.data.limite
+          ? ` Mostrando os ${formatarInteiro(q.data.limite)} primeiros de ${formatarInteiro(total)}.`
+          : ""
+      }`}
+      acoes={
+        <ExportMenu
+          arquivo="romaneio-hoje-faixa"
+          titulo={`Romaneio · ${rotulo || "faixa de prazo"}`}
+          subtitulo={rotulo}
+          colunas={[
+            { chave: "numeroNf", titulo: "NF" },
+            { chave: "numero", titulo: "CT-e" },
+            { chave: "romaneio", titulo: "Romaneio" },
+            { chave: "destinatario", titulo: "Destinatário" },
+            { chave: "pagador", titulo: "Pagador" },
+            { chave: "cidadeUf", titulo: "Cidade/UF" },
+            { chave: "dataEmissao", titulo: "Emissão", formato: "data" },
+            { chave: "dataPrevista", titulo: "Prazo", formato: "data" },
+            { chave: "status", titulo: "Situação" },
+            { chave: "placa", titulo: "Placa" },
+            { chave: "linkSsw", titulo: COLUNA_LINK_SSW },
+          ]}
+          linhas={linhas.map((l) => ({
+            ...l,
+            linkSsw: urlCtrcNoSsw(l.sigla, l.numero, l.dataEmissao),
+          }))}
+          soIcone
+        />
+      }
     >
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-3xl">
-        <SheetHeader>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <SheetTitle>
-                {rotulo}
-                {somenteEmRota ? " · em rota" : ""}
-                {q.data ? ` · ${formatarInteiro(total)} CT-e` : ""}
-              </SheetTitle>
-              <SheetDescription>
-                {somenteEmRota
-                  ? "CT-e desta faixa que ainda não foram entregues, inclusive os que receberam ocorrência depois da saída."
-                  : "CT-e dos romaneios emitidos hoje nesta faixa de prazo, em qualquer status."}
-                {q.data && total > q.data.limite
-                  ? ` Mostrando os ${formatarInteiro(q.data.limite)} primeiros de ${formatarInteiro(total)}.`
-                  : ""}
-              </SheetDescription>
-            </div>
-            <ExportMenu
-              arquivo="romaneio-hoje-faixa"
-              titulo={`Romaneio · ${rotulo || "faixa de prazo"}`}
-              subtitulo={rotulo}
-              colunas={[
-                { chave: "numeroNf", titulo: "NF" },
-                { chave: "numero", titulo: "CT-e" },
-                { chave: "romaneio", titulo: "Romaneio" },
-                { chave: "destinatario", titulo: "Destinatário" },
-                { chave: "pagador", titulo: "Pagador" },
-                { chave: "cidadeUf", titulo: "Cidade/UF" },
-                { chave: "dataEmissao", titulo: "Emissão", formato: "data" },
-                { chave: "dataPrevista", titulo: "Prazo", formato: "data" },
-                { chave: "status", titulo: "Situação" },
-                { chave: "placa", titulo: "Placa" },
-                { chave: "linkSsw", titulo: COLUNA_LINK_SSW },
-              ]}
-              linhas={linhas.map((l) => ({
-                ...l,
-                linkSsw: urlCtrcNoSsw(l.sigla, l.numero, l.dataEmissao),
-              }))}
-              soIcone
-            />
-          </div>
-        </SheetHeader>
-        <div className="mt-3 overflow-x-auto rounded-[10px] border border-border/70">
-          <table className="w-full text-[12px]">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr className="border-b border-border/70">
-                {[
-                  "NF",
-                  "CT-e",
-                  "Romaneio",
-                  "Destinatário",
-                  "Pagador",
-                  "Cidade/UF",
-                  "Emissão",
-                  "Prazo",
-                  "Situação",
-                  "Placa",
-                ].map((t) => (
-                  <th key={t} className="px-2 py-1.5 text-left font-normal">
-                    {t}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {q.isLoading && (
-                <tr>
-                  <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
-                    carregando…
-                  </td>
-                </tr>
-              )}
-              {!q.isLoading && linhas.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
-                    Nenhum CT-e nesta faixa.
-                  </td>
-                </tr>
-              )}
-              {linhas.map((l) => (
-                <tr
-                  key={`${l.sigla ?? ""}-${l.numero}-${l.romaneio ?? ""}`}
-                  onClick={() => {
-                    abrirCte(l.numero);
-                  }}
-                  className="cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/40"
-                >
-                  <td className="px-2 py-1 font-mono text-[11px]">{l.numeroNf ?? "—"}</td>
-                  <td className="px-2 py-1 font-mono text-[11px]">{l.numero}</td>
-                  <td className="px-2 py-1 font-mono text-[11px]">{l.romaneio ?? "—"}</td>
-                  <td className="px-2 py-1">{l.destinatario ?? "—"}</td>
-                  <td className="px-2 py-1">{l.pagador ?? "—"}</td>
-                  <td className="px-2 py-1">{l.cidadeUf ?? "—"}</td>
-                  <td className="px-2 py-1 tabular-nums">{formatarData(l.dataEmissao)}</td>
-                  <td className="px-2 py-1 tabular-nums">{formatarData(l.dataPrevista)}</td>
-                  <td className="px-2 py-1">{l.status}</td>
-                  <td className="px-2 py-1 font-mono text-[11px]">{l.placa ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SheetContent>
-    </Sheet>
+      <TabelaDados
+        colunas={COLUNAS_DA_GAVETA}
+        linhas={linhas}
+        chaveDaLinha={(l) => `${l.sigla ?? ""}-${l.numero}-${l.romaneio ?? ""}`}
+        aoClicarLinha={(l) => {
+          abrirCte(l.numero);
+        }}
+        carregando={q.isLoading}
+        erro={q.error}
+        aoTentarDeNovo={() => void q.refetch()}
+        mensagemVazia="Nenhum CT-e nesta faixa."
+        porPagina={0}
+        rotuloTotal={(n) => `${formatarInteiro(n)} CT-e`}
+      />
+    </DrawerDetalhe>
   );
 }
 
-/**
- * Aba "Hoje" — romaneios emitidos no dia corrente (dia de Brasília), ao vivo. O recorte é pela
- * data de emissão DO ROMANEIO (relatório 036), não do CT-e. Prejuízo pelo código 13.
- */
-export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura) => void }) {
-  const [gaveta, setGaveta] = useState<{ faixa: Faixa; somenteEmRota: boolean } | null>(null);
-  const [filiais, setFiliais] = useState<string[]>([]);
-  const [tipos, setTipos] = useState<string[]>([]);
-  const [bairrosAbertos, setBairrosAbertos] = useState<ReadonlySet<string>>(new Set());
-  const q = useQuery(
-    consultaHoje({
-      ...(filiais.length > 0 ? { filiais } : {}),
-      ...(tipos.length > 0 ? { tipos } : {}),
-    }),
-  );
-  const d = q.data;
+/** Filtros da aba Hoje (slot `filtros` da página): unidade e tipo de documento do dia. */
+export function FiltrosDaHoje({
+  fuso,
+  filtros,
+  aoMudar,
+}: {
+  fuso: string;
+  filtros: FiltrosHoje;
+  aoMudar: (filtros: FiltrosHoje) => void;
+}) {
+  const d = useQuery(consultaHoje(entradaDaHoje(filtros))).data;
   const dia = d?.dia ?? hojeNoFuso(fuso);
   const opcoes = useQuery(consultaOpcoes({ campo: "emissao", inicio: dia, fim: dia }));
-  const linhas = d?.linhas ?? [];
-  // Uma coluna por ajudante, tantas quanto o romaneio com mais ajudantes do dia.
-  const qtdAjudantes = linhas.reduce((max, l) => Math.max(max, ajudantesDa(l).length), 1);
-  const posAjudantes = Array.from({ length: qtdAjudantes }, (_, i) => i);
-  const larguraColBairros = larguraBairros(linhas.map((l) => l.bairros));
-  const r = d?.resumo;
-  const perf = r && r.ctes > 0 ? (r.entregues / r.ctes) * 100 : null;
-  const emRota = r ? Math.max(0, r.ctes - r.entregues) : 0;
-  const abrir = (faixa: Faixa, somenteEmRota: boolean) => {
-    setGaveta({ faixa, somenteEmRota });
-  };
-
+  const { filiais, tipos } = filtros;
   return (
-    <div className="space-y-3">
-      <p className="text-[11px] text-muted-foreground">
-        Romaneios emitidos hoje{d ? ` (${formatarData(d.dia)})` : ""} — o recorte usa a{" "}
-        <strong>data de emissão do romaneio</strong> (campo DATA EMISSAO do relatório 036), não a
-        data de emissão de cada CT-e. Visão ao vivo: atualiza sozinha a cada minuto e inclui viagens
-        ainda em andamento. Esta aba não usa os filtros gerais da tela (período, parceiro): é sempre
-        o dia de hoje, por romaneio. Para outros dias, use a aba “Performance por romaneio”.
-      </p>
-
-      <div className="flex flex-wrap items-center gap-1.5">
+    <>
+      <FiltrosAvancados
+        ativos={filiais.length > 0 || tipos.length > 0}
+        aoLimpar={() => {
+          aoMudar(FILTROS_DA_HOJE_VAZIOS);
+        }}
+      >
         <FiltroMultiplo
           rotulo="Unidade responsável"
           opcoes={opcoes.data?.filiais.map((f) => ({ valor: f.sigla, detalhe: f.nome }))}
           selecionados={filiais}
-          aoMudar={setFiliais}
+          aoMudar={(v) => {
+            aoMudar({ ...filtros, filiais: v });
+          }}
           monoespacado
         />
         <FiltroMultiplo
@@ -256,260 +220,231 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
             { valor: SEM_TIPO, rotulo: "sem tipo" },
           ]}
           selecionados={tipos}
-          aoMudar={setTipos}
+          aoMudar={(v) => {
+            aoMudar({ ...filtros, tipos: v });
+          }}
         />
-      </div>
-
+      </FiltrosAvancados>
       <FiltrandoPor
         etiquetas={[
           filiais.length > 0 && {
             rotulo: "Unidade responsável",
             ...resumirNomes(filiais),
             limpar: () => {
-              setFiliais([]);
+              aoMudar({ ...filtros, filiais: [] });
             },
           },
           tipos.length > 0 && {
             rotulo: "Tipo documento",
             ...resumirNomes(tipos.map((t) => (t === SEM_TIPO ? "sem tipo" : t))),
             limpar: () => {
-              setTipos([]);
+              aoMudar({ ...filtros, tipos: [] });
             },
           },
         ]}
       />
+    </>
+  );
+}
 
-      <GradeCards>
-        <CardAba
+/**
+ * Aba "Hoje" — romaneios emitidos no dia corrente (dia de Brasília), ao vivo. O recorte é pela
+ * data de emissão DO ROMANEIO (relatório 036), não do CT-e. Prejuízo pelo código 13.
+ */
+export function AbaHoje({
+  fuso,
+  filtros,
+  aoAbrir,
+}: {
+  fuso: string;
+  filtros: FiltrosHoje;
+  aoAbrir: (a: Abertura) => void;
+}) {
+  const [gaveta, setGaveta] = useState<{ faixa: Faixa; somenteEmRota: boolean } | null>(null);
+  const [bairrosAbertos, setBairrosAbertos] = useState<ReadonlySet<string>>(new Set());
+  const q = useQuery(consultaHoje(entradaDaHoje(filtros)));
+  const d = q.data;
+  const dia = d?.dia ?? hojeNoFuso(fuso);
+  const linhas = d?.linhas ?? [];
+  // Uma coluna por ajudante, tantas quanto o romaneio com mais ajudantes do dia.
+  const qtdAjudantes = linhas.reduce((max, l) => Math.max(max, ajudantesDa(l).length), 1);
+  const posAjudantes = Array.from({ length: qtdAjudantes }, (_, i) => i);
+  const colunas = 12 + qtdAjudantes;
+  const larguraColBairros = larguraBairros(linhas.map((l) => l.bairros));
+  const r = d?.resumo;
+  const perf = r && r.ctes > 0 ? (r.entregues / r.ctes) * 100 : null;
+  const emRota = r ? Math.max(0, r.ctes - r.entregues) : 0;
+  const abrir = (faixa: Faixa, somenteEmRota: boolean) => {
+    setGaveta({ faixa, somenteEmRota });
+  };
+
+  return (
+    <>
+      <Aviso tom="info">
+        Romaneios emitidos hoje{d ? ` (${formatarData(d.dia)})` : ""} — o recorte usa a{" "}
+        <strong>data de emissão do romaneio</strong> (campo DATA EMISSAO do relatório 036), não a
+        data de emissão de cada CT-e. Visão ao vivo: atualiza sozinha a cada minuto e inclui viagens
+        ainda em andamento. Esta aba não usa os filtros gerais da tela (período, parceiro): é sempre
+        o dia de hoje, por romaneio. Para outros dias, use a aba “Performance por romaneio”.
+      </Aviso>
+
+      <GradeDeIndicadores max={5}>
+        <Indicador
           rotulo="Romaneios de hoje"
+          icone={ClipboardList}
+          neutro
+          status="bom"
           valor={r ? formatarInteiro(r.romaneios) : "—"}
-          explicacao="Quantidade de romaneios de entrega emitidos hoje."
+          detalhe=""
+          dica="Quantidade de romaneios de entrega emitidos hoje."
         />
-        <CardAba
+        <Indicador
           rotulo="CT-e nos romaneios"
+          icone={FileText}
+          neutro
+          status="bom"
           valor={r ? formatarInteiro(r.ctes) : "—"}
-          dica={r ? `${formatarMoeda(r.frete, { centavos: false })} de frete` : undefined}
+          detalhe={r ? `${formatarMoeda(r.frete, { centavos: false })} de frete` : ""}
         />
-        <CardAba
+        <Indicador
           rotulo="Já entregues"
+          icone={PackageCheck}
+          neutro={!(perf !== null && perf >= 90)}
+          status="bom"
           valor={r ? formatarInteiro(r.entregues) : "—"}
-          dica={
-            perf !== null
-              ? `${formatarPercentual(perf, { escala: "cem" })} de performance`
-              : undefined
+          detalhe={
+            perf !== null ? `${formatarPercentual(perf, { escala: "cem" })} de performance` : ""
           }
-          tom={perf !== null && perf >= 90 ? "ok" : undefined}
         />
-        <CardAba
+        <Indicador
           rotulo="Em rota de entrega"
+          icone={Truck}
+          neutro
+          status="alerta"
           valor={r ? formatarInteiro(emRota) : "—"}
-          dica={
-            r
-              ? `${formatarInteiro(r.ctes)} CT-e − ${formatarInteiro(r.entregues)} entregues`
-              : undefined
+          detalhe={
+            r ? `${formatarInteiro(r.ctes)} CT-e − ${formatarInteiro(r.entregues)} entregues` : ""
           }
-          explicacao="CT-e nos romaneios − Já entregues: o que saiu hoje e ainda não foi entregue, inclusive o que recebeu ocorrência depois da saída. As faixas de “Em rota agora” somam este número."
+          dica="CT-e nos romaneios − Já entregues: o que saiu hoje e ainda não foi entregue, inclusive o que recebeu ocorrência depois da saída. As faixas de “Em rota agora” somam este número."
         />
-        <CardAba
+        <Indicador
           rotulo="Prejuízo"
-          sub={<PrejuizoSubtitulo />}
+          icone={TrendingDown}
+          neutro={!(r && r.prejuizoFrete > 0)}
+          status="ruim"
           valor={r ? formatarMoeda(r.prejuizoFrete, { centavos: false }) : "—"}
-          dica={r ? `${formatarInteiro(r.prejuizoCtes)} CT-e` : undefined}
-          tom={r && r.prejuizoFrete > 0 ? "ruim" : undefined}
+          detalhe={[textoDoPrejuizo(undefined), r ? `${formatarInteiro(r.prejuizoCtes)} CT-e` : ""]
+            .filter(Boolean)
+            .join(" · ")}
         />
-      </GradeCards>
+      </GradeDeIndicadores>
 
-      <div className="space-y-1.5 rounded-[10px] border border-border/70 bg-card p-2.5">
+      <Painel classeDoCorpo="grid gap-6 px-5 py-4 lg:grid-cols-2">
         {/* Fotografia: o que nasceu em cada faixa (não diminui com a entrega). */}
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-          <span className="text-muted-foreground">
-            Total no romaneio{r ? ` (${formatarInteiro(r.ctes)} CT-e)` : ""}:
-          </span>
-          <FaixaChip
-            rotulo="Vencida"
-            valor={r?.prazo.vencida ?? 0}
-            tom="ruim"
-            aoClicar={() => {
-              abrir("vencida", false);
-            }}
-          />
-          <FaixaChip
-            rotulo="Vencendo no dia"
-            valor={r?.prazo.hoje ?? 0}
-            tom="alerta"
-            aoClicar={() => {
-              abrir("hoje", false);
-            }}
-          />
-          <FaixaChip
-            rotulo="Vencimento futuro"
-            valor={r?.prazo.futuro ?? 0}
-            tom="ok"
-            aoClicar={() => {
-              abrir("futuro", false);
-            }}
-          />
-          <button
-            type="button"
-            className="text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => {
-              abrir("sem_prev", false);
-            }}
-          >
-            sem prazo definido: {formatarInteiro(r?.prazo.semPrev ?? 0)}
-          </button>
-          <InfoTip texto="Fotografia: TODOS os CT-e dos romaneios emitidos hoje, em qualquer status (em rota, entregue, devolvido, travado). Compara a data prevista com o dia de hoje, por isso a soma das faixas é igual ao total de CT-e. Este número NÃO diminui quando a carga é entregue — é o retrato do que nasceu em cada faixa. Clique para ver a lista." />
-        </div>
+        <FaixasDePrazo
+          rotulo={`Total no romaneio${r ? ` (${formatarInteiro(r.ctes)} CT-e)` : ""}`}
+          dica="Fotografia: TODOS os CT-e dos romaneios emitidos hoje, em qualquer status (em rota, entregue, devolvido, travado). Compara a data prevista com o dia de hoje, por isso a soma das faixas é igual ao total de CT-e. Este número NÃO diminui quando a carga é entregue — é o retrato do que nasceu em cada faixa. Clique para ver a lista."
+          faixas={r?.prazo}
+          aoAbrir={(faixa) => {
+            abrir(faixa, false);
+          }}
+        />
         {/* Quebra do card "Em rota de entrega" por prazo. */}
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-          <span className="text-muted-foreground">
-            Em rota agora{r ? ` (${formatarInteiro(emRota)} CT-e)` : ""}:
-          </span>
-          <FaixaChip
-            rotulo="Vencida"
-            valor={r?.prazoNaoEntregue.vencida ?? 0}
-            tom="ruim"
-            aoClicar={() => {
-              abrir("vencida", true);
-            }}
-          />
-          <FaixaChip
-            rotulo="Vencendo no dia"
-            valor={r?.prazoNaoEntregue.hoje ?? 0}
-            tom="alerta"
-            aoClicar={() => {
-              abrir("hoje", true);
-            }}
-          />
-          <FaixaChip
-            rotulo="Vencimento futuro"
-            valor={r?.prazoNaoEntregue.futuro ?? 0}
-            tom="ok"
-            aoClicar={() => {
-              abrir("futuro", true);
-            }}
-          />
-          <button
-            type="button"
-            className="text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => {
-              abrir("sem_prev", true);
-            }}
-          >
-            sem prazo definido: {formatarInteiro(r?.prazoNaoEntregue.semPrev ?? 0)}
-          </button>
-          <InfoTip texto="Os mesmos CT-e do card “Em rota de entrega” (CT-e nos romaneios − Já entregues), separados pelo prazo: a soma das faixas é igual ao card. Inclui quem recebeu ocorrência depois da saída (ausente, recusa, pendência…) e ainda não foi entregue. Clique para ver a lista." />
-        </div>
-      </div>
+        <FaixasDePrazo
+          rotulo={`Em rota agora${r ? ` (${formatarInteiro(emRota)} CT-e)` : ""}`}
+          dica="Os mesmos CT-e do card “Em rota de entrega” (CT-e nos romaneios − Já entregues), separados pelo prazo: a soma das faixas é igual ao card. Inclui quem recebeu ocorrência depois da saída (ausente, recusa, pendência…) e ainda não foi entregue. Clique para ver a lista."
+          faixas={r?.prazoNaoEntregue}
+          aoAbrir={(faixa) => {
+            abrir(faixa, true);
+          }}
+        />
+      </Painel>
 
       <GavetaDaFaixa
         faixa={gaveta?.faixa ?? null}
         somenteEmRota={gaveta?.somenteEmRota ?? false}
-        filiais={filiais}
-        tipos={tipos}
+        filtros={filtros}
         aoFechar={() => {
           setGaveta(null);
         }}
       />
 
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[12px] font-medium">Romaneios de hoje</span>
-        <ExportMenu
-          arquivo="romaneio-hoje"
-          titulo="Romaneios de hoje"
-          subtitulo={formatarData(dia)}
-          colunas={[
-            { chave: "romaneio", titulo: "Romaneio" },
-            { chave: "dataRomaneio", titulo: "Data", formato: "data" },
-            { chave: "situacao", titulo: "Situação" },
-            { chave: "placa", titulo: "Placa" },
-            { chave: "motorista", titulo: "Motorista" },
-            ...posAjudantes.map((i) => ({
-              chave: `ajudante${i + 1}`,
-              titulo: `Ajudante ${i + 1}`,
-            })),
-            { chave: "rota", titulo: "Rota" },
-            { chave: "bairros", titulo: "Bairros" },
-            { chave: "ctes", titulo: "CT-e", formato: "inteiro" },
-            { chave: "frete", titulo: "Frete", formato: "moeda" },
-            { chave: "entregues", titulo: "Entregues", formato: "inteiro" },
-            { chave: "naoEntregues", titulo: "Não entregues", formato: "inteiro" },
-            { chave: "performance", titulo: "Performance", formato: "percentual" },
-            { chave: "fretePerdido", titulo: "Prejuízo", formato: "moeda" },
-          ]}
-          linhas={linhas.map((l) => {
-            const ajudantes = ajudantesDa(l);
-            return {
-              ...l,
-              ...Object.fromEntries(posAjudantes.map((i) => [`ajudante${i + 1}`, ajudantes[i]])),
-              performance: l.performance === null ? null : l.performance / 100,
-            };
-          })}
-        />
-      </div>
-
-      <div className="overflow-x-auto rounded-[10px] border border-border/70 bg-card">
-        <table className="w-full text-[12px]">
-          <thead className="bg-muted/40 text-muted-foreground">
-            <tr className="border-b border-border/70">
-              <th className="px-3 py-1.5 text-left font-normal">Romaneio</th>
-              <th className="px-3 py-1.5 text-left font-normal">Situação</th>
-              <th className="px-3 py-1.5 text-left font-normal">Placa</th>
-              <th className="px-3 py-1.5 text-left font-normal">Motorista</th>
-              {posAjudantes.map((i) => (
-                <th key={i} className="whitespace-nowrap px-3 py-1.5 text-left font-normal">
-                  Ajudante {i + 1}
-                </th>
-              ))}
-              <th className="px-3 py-1.5 text-left font-normal">
-                <span className="inline-flex items-center gap-1">
-                  Rota
-                  <InfoTip texto="Cidades de entrega dos CT-e deste romaneio, cada uma uma vez só. A cidade com mais CT-e aparece primeiro." />
-                </span>
-              </th>
-              <th
-                className="px-3 py-1.5 text-left font-normal"
-                style={{ width: larguraColBairros }}
-              >
-                <span className="inline-flex items-center gap-1">
-                  Bairros
-                  <InfoTip texto="Bairros de entrega dos CT-e deste romaneio (relatório 036), cada um uma vez só. O bairro com mais CT-e aparece primeiro. Quando não cabem em 3 linhas, clique na célula para ver todos." />
-                </span>
-              </th>
-              <th className="px-3 py-1.5 text-right font-normal">CT-e</th>
-              <th className="px-3 py-1.5 text-right font-normal">Frete que saiu</th>
-              <th className="px-3 py-1.5 text-right font-normal">Entregues</th>
-              <th className="px-3 py-1.5 text-right font-normal">Não entregues</th>
-              <th className="px-3 py-1.5 text-right font-normal">Performance</th>
-              <th className="px-3 py-1.5 text-right font-normal">
-                Prejuízo
-                <div className="leading-tight">
-                  <PrejuizoSubtitulo />
-                </div>
-              </th>
-            </tr>
-          </thead>
+      <Painel
+        titulo="Romaneios de hoje"
+        icone={ClipboardList}
+        acoes={
+          <ExportMenu
+            arquivo="romaneio-hoje"
+            titulo="Romaneios de hoje"
+            subtitulo={formatarData(dia)}
+            colunas={[
+              { chave: "romaneio", titulo: "Romaneio" },
+              { chave: "dataRomaneio", titulo: "Data", formato: "data" },
+              { chave: "situacao", titulo: "Situação" },
+              { chave: "placa", titulo: "Placa" },
+              { chave: "motorista", titulo: "Motorista" },
+              ...posAjudantes.map((i) => ({
+                chave: `ajudante${i + 1}`,
+                titulo: `Ajudante ${i + 1}`,
+              })),
+              { chave: "rota", titulo: "Rota" },
+              { chave: "bairros", titulo: "Bairros" },
+              { chave: "ctes", titulo: "CT-e", formato: "inteiro" },
+              { chave: "frete", titulo: "Frete", formato: "moeda" },
+              { chave: "entregues", titulo: "Entregues", formato: "inteiro" },
+              { chave: "naoEntregues", titulo: "Não entregues", formato: "inteiro" },
+              { chave: "performance", titulo: "Performance", formato: "percentual" },
+              { chave: "fretePerdido", titulo: "Prejuízo", formato: "moeda" },
+            ]}
+            linhas={linhas.map((l) => {
+              const ajudantes = ajudantesDa(l);
+              return {
+                ...l,
+                ...Object.fromEntries(posAjudantes.map((i) => [`ajudante${i + 1}`, ajudantes[i]])),
+                performance: l.performance === null ? null : l.performance / 100,
+              };
+            })}
+          />
+        }
+      >
+        <TabelaPropria>
+          <Cabecalho>
+            <Th>Romaneio</Th>
+            <Th>Situação</Th>
+            <Th>Placa</Th>
+            <Th>Motorista</Th>
+            {posAjudantes.map((i) => (
+              <Th key={i}>Ajudante {i + 1}</Th>
+            ))}
+            <Th>
+              <TituloComDica dica="Cidades de entrega dos CT-e deste romaneio, cada uma uma vez só. A cidade com mais CT-e aparece primeiro.">
+                Rota
+              </TituloComDica>
+            </Th>
+            <Th style={{ width: larguraColBairros }}>
+              <TituloComDica dica="Bairros de entrega dos CT-e deste romaneio (relatório 036), cada um uma vez só. O bairro com mais CT-e aparece primeiro. Quando não cabem em 3 linhas, clique na célula para ver todos.">
+                Bairros
+              </TituloComDica>
+            </Th>
+            <Th direita>CT-e</Th>
+            <Th direita>Frete que saiu</Th>
+            <Th direita>Entregues</Th>
+            <Th direita>Não entregues</Th>
+            <Th direita>Performance</Th>
+            <Th direita>
+              Prejuízo
+              <PrejuizoSubtitulo />
+            </Th>
+          </Cabecalho>
           <tbody>
-            {q.isLoading && (
-              <tr>
-                <td
-                  colSpan={12 + qtdAjudantes}
-                  className="px-3 py-8 text-center text-muted-foreground"
-                >
-                  carregando…
-                </td>
-              </tr>
-            )}
-            {!q.isLoading && linhas.length === 0 && (
-              <tr>
-                <td
-                  colSpan={12 + qtdAjudantes}
-                  className="px-3 py-10 text-center text-muted-foreground"
-                >
-                  Nenhum romaneio emitido hoje até agora.
-                </td>
-              </tr>
-            )}
+            <EstadoDaTabela
+              colunas={colunas}
+              carregando={q.isLoading}
+              erro={q.error}
+              aoTentarDeNovo={() => void q.refetch()}
+              vazio={linhas.length === 0}
+              mensagem="Nenhum romaneio emitido hoje até agora."
+            />
             {linhas.map((l) => {
               const ajudantes = ajudantesDa(l);
               const placa = l.placa;
@@ -517,35 +452,32 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
               return (
                 <tr
                   key={l.romaneio}
-                  {...(placa
-                    ? {
-                        onClick: () => {
+                  {...propsDaLinha(
+                    placa
+                      ? () => {
                           aoAbrir({ placa });
-                        },
-                      }
-                    : {})}
-                  className={
-                    "border-b border-border/40 last:border-0 " +
-                    (placa ? "cursor-pointer hover:bg-muted/40" : "")
-                  }
+                        }
+                      : undefined,
+                  )}
                 >
-                  <td className="px-3 py-1 font-mono text-[11px]">{l.romaneio}</td>
-                  <td className="px-3 py-1">{l.situacao ?? "—"}</td>
-                  <td className="px-3 py-1 font-mono text-[11px]">{placa ?? "—"}</td>
-                  <td className="px-3 py-1">{l.motorista ?? "—"}</td>
+                  <td className={CLASSE_CODIGO}>{l.romaneio}</td>
+                  <td className={CLASSE_TD}>{l.situacao ?? "—"}</td>
+                  <td className={CLASSE_CODIGO}>{placa ?? "—"}</td>
+                  <td className={CLASSE_TD}>{l.motorista ?? "—"}</td>
                   {posAjudantes.map((i) => (
-                    <td key={i} className="px-3 py-1 text-[11px] text-muted-foreground">
+                    <td key={i} className={`${CLASSE_TD} text-muted-foreground`}>
                       {ajudantes[i] ?? "—"}
                     </td>
                   ))}
-                  <td className="min-w-[180px] px-3 py-1">{l.rota ?? "—"}</td>
+                  <td className="min-w-[180px] px-4 py-2.5">{l.rota ?? "—"}</td>
                   <td
-                    className="px-3 py-1 text-[11px] leading-snug"
+                    className="px-4 py-2.5 text-[12.5px] leading-snug"
                     style={{ minWidth: larguraColBairros }}
                   >
                     {l.bairros ? (
                       <button
                         type="button"
+                        aria-expanded={aberto}
                         onClick={(e) => {
                           // Só expande os bairros; não abre a lista da placa.
                           e.stopPropagation();
@@ -557,7 +489,7 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
                           });
                         }}
                         title={aberto ? "Recolher" : l.bairros}
-                        className={"text-left " + (aberto ? "" : "line-clamp-3")}
+                        className={`rounded text-left hover:text-brand ${aberto ? "" : "line-clamp-3"}`}
                       >
                         {l.bairros}
                       </button>
@@ -565,30 +497,24 @@ export function AbaHoje({ fuso, aoAbrir }: { fuso: string; aoAbrir: (a: Abertura
                       "—"
                     )}
                   </td>
-                  <td className="px-3 py-1 text-right tabular-nums">{formatarInteiro(l.ctes)}</td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {formatarMoeda(l.frete, { centavos: false })}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {formatarInteiro(l.entregues)}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {formatarInteiro(l.naoEntregues)}
-                  </td>
-                  <td className="px-3 py-1 text-right font-medium tabular-nums">
+                  <td className={CLASSE_NUMERO}>{formatarInteiro(l.ctes)}</td>
+                  <td className={CLASSE_NUMERO}>{formatarMoeda(l.frete, { centavos: false })}</td>
+                  <td className={CLASSE_NUMERO}>{formatarInteiro(l.entregues)}</td>
+                  <td className={CLASSE_NUMERO}>{formatarInteiro(l.naoEntregues)}</td>
+                  <td className={`${CLASSE_NUMERO} font-semibold`}>
                     {l.performance !== null
                       ? formatarPercentual(l.performance, { escala: "cem" })
                       : "—"}
                   </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
+                  <td className={CLASSE_NUMERO}>
                     {l.fretePerdido > 0 ? formatarMoeda(l.fretePerdido, { centavos: false }) : "—"}
                   </td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
-      </div>
-    </div>
+        </TabelaPropria>
+      </Painel>
+    </>
   );
 }

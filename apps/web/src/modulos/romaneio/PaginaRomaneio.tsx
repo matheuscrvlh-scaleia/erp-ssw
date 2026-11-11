@@ -7,18 +7,20 @@ import { CAMPOS_DATA, type Recorte } from "@erp/shared/contratos/romaneio";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { useIsFetching, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { RefreshCw, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { Abas } from "@/componentes/comum/Abas";
+import { Aviso } from "@/componentes/comum/Aviso";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { cn } from "@/lib/utils";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
-import { AbaHoje } from "./AbaHoje";
+import { AbaHoje, FILTROS_DA_HOJE_VAZIOS, FiltrosDaHoje, type FiltrosHoje } from "./AbaHoje";
 import {
   AbaPerformanceAjudante,
   AbaPerformanceMotorista,
@@ -27,7 +29,7 @@ import {
   AbaRomaneioEntrega,
 } from "./AbasDesempenho";
 import { CHAVE_DO_ROMANEIO, consultaTotais } from "./api";
-import { BarraDeFiltros, BaseDeData } from "./BarraDeFiltros";
+import { BarraDeFiltros } from "./BarraDeFiltros";
 import {
   type Aba,
   ABAS,
@@ -55,6 +57,26 @@ const ROTULO_ABA: Record<Aba, string> = {
 
 const CHAVE_DA_BASE = "romaneio:ver";
 
+/** Pílula do aviso "Tabela abaixo filtrada". */
+function PilulaDoRecorte({ children, aoTirar }: { children: string; aoTirar?: () => void }) {
+  return (
+    <span className="inline-flex h-6 items-center gap-1 rounded-full border border-border bg-card px-2.5 text-[12px] font-medium text-foreground">
+      {children}
+      {aoTirar && (
+        <button
+          type="button"
+          aria-label="Remover recorte"
+          title="Remover recorte"
+          onClick={aoTirar}
+          className="-mr-1 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      )}
+    </span>
+  );
+}
+
 export function PaginaRomaneio() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const fuso = useFusoDaEmpresa();
@@ -65,6 +87,8 @@ export function PaginaRomaneio() {
   const atualizando = useIsFetching({ queryKey: CHAVE_DO_ROMANEIO }) > 0;
   const cardsSecundarios = useCardsSecundarios();
   const listaRef = useRef<HTMLDivElement>(null);
+  // Filtros da aba Hoje: só da visita à aba (não vão para a URL) e zeram ao sair dela.
+  const [filtrosHoje, setFiltrosHoje] = useState<FiltrosHoje>(FILTROS_DA_HOJE_VAZIOS);
 
   // Base de data escolhida: sem `ver` na URL, retoma a última escolha guardada no navegador.
   useEffect(() => {
@@ -84,6 +108,7 @@ export function PaginaRomaneio() {
   }, [b.ver]);
 
   const ehHoje = b.tab === "hoje";
+  if (!ehHoje && filtrosHoje !== FILTROS_DA_HOJE_VAZIOS) setFiltrosHoje(FILTROS_DA_HOJE_VAZIOS);
   const intervalo = resolverPeriodo(b.periodo, b.de, b.ate, hojeNoFuso(fuso));
   const filtros = filtrosDaBarra(b, intervalo);
   const verTodos = veTodos(b);
@@ -117,24 +142,21 @@ export function PaginaRomaneio() {
   const recorteAtivo = b.romaneado !== "todos" || b.status === "andamento" || b.recorte !== "todos";
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[24px] font-semibold">Romaneio</h1>
-          <SeloDosDados />
-        </div>
+    <Pagina
+      titulo="Romaneio"
+      meta={<SeloDosDados />}
+      acoes={
         <Button
           size="sm"
           variant="ghost"
           disabled={atualizando}
           onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DO_ROMANEIO })}
         >
-          <RefreshCw className={cn("mr-1.5 h-3 w-3", atualizando && "animate-spin")} /> Atualizar
+          <RefreshCw className={cn(atualizando && "motion-safe:animate-spin")} aria-hidden />
+          Atualizar
         </Button>
-      </header>
-
-      {/* As abas ficam logo abaixo do cabeçalho em todas as abas: trocar nunca desloca os botões. */}
-      <div className="sticky top-0 z-20 -mx-1 bg-background px-1 py-1.5">
+      }
+      abas={
         <Abas
           abas={ABAS.map((aba) => ({ valor: aba, rotulo: ROTULO_ABA[aba] }))}
           valor={b.tab}
@@ -144,62 +166,58 @@ export function PaginaRomaneio() {
           rotulo="Abas do Romaneio"
           className="max-w-full justify-start overflow-x-auto"
         />
-      </div>
-
+      }
+      filtros={
+        ehHoje ? (
+          // A aba Hoje não usa a barra geral: só unidade e tipo de documento, do dia.
+          <FiltrosDaHoje fuso={fuso} filtros={filtrosHoje} aoMudar={setFiltrosHoje} />
+        ) : (
+          <BarraDeFiltros busca={b} definir={definir} intervalo={intervalo} filtros={filtros} />
+        )
+      }
+    >
       {ehHoje ? (
-        // A aba Hoje não tem a barra de filtros: o prejuízo usa o padrão (código 13).
-        <AbaHoje fuso={fuso} aoAbrir={abrir} />
+        <AbaHoje fuso={fuso} filtros={filtrosHoje} aoAbrir={abrir} />
       ) : (
         <>
-          <div className="space-y-4">
-            <BaseDeData busca={b} definir={definir} />
-            <BarraDeFiltros busca={b} definir={definir} intervalo={intervalo} filtros={filtros} />
-            {/* Na aba Performance por romaneio os totalizadores ficam lá dentro. */}
-            {b.tab !== "performance" && (
-              <>
-                {(recorteAtivo || !verTodos) && (
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+          {/* Na aba Performance por romaneio os totalizadores ficam lá dentro. */}
+          {b.tab !== "performance" && (
+            <>
+              {(recorteAtivo || !verTodos) && (
+                <Aviso tom="info">
+                  <span className="inline-flex flex-wrap items-center gap-1.5">
                     <span>Tabela abaixo filtrada:</span>
                     {!verTodos && (
-                      <span className="rounded-full border border-border/70 bg-muted px-2 py-0.5">
-                        somente romaneados (sem os parados)
-                      </span>
+                      <PilulaDoRecorte>somente romaneados (sem os parados)</PilulaDoRecorte>
                     )}
                     {b.recorte !== "todos" && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-[var(--brand)]/40 bg-[var(--brand)]/10 px-2 py-0.5 text-foreground">
+                      <PilulaDoRecorte
+                        aoTirar={() => {
+                          definir({ recorte: "todos", page: 1 });
+                        }}
+                      >
                         {ROTULO_RECORTE[b.recorte]}
-                        <button
-                          type="button"
-                          aria-label="Remover recorte"
-                          onClick={() => {
-                            definir({ recorte: "todos", page: 1 });
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
+                      </PilulaDoRecorte>
                     )}
                     {b.romaneado !== "todos" && (
-                      <span className="rounded-full border border-border/70 bg-muted px-2 py-0.5">
+                      <PilulaDoRecorte>
                         {b.romaneado === "sim" ? "só em rota agora" : "só fora de rota agora"}
-                      </span>
+                      </PilulaDoRecorte>
                     )}
                     {b.status === "andamento" && (
-                      <span className="rounded-full border border-border/70 bg-muted px-2 py-0.5">
-                        excluindo entregues e baixados
-                      </span>
+                      <PilulaDoRecorte>excluindo entregues e baixados</PilulaDoRecorte>
                     )}
                     <span>· os cards abaixo mostram o total do universo ativo do período.</span>
-                  </div>
-                )}
-                <CardsDoPeriodo {...cards} />
-              </>
-            )}
-          </div>
+                  </span>
+                </Aviso>
+              )}
+              <CardsDoPeriodo {...cards} />
+            </>
+          )}
 
-          <div ref={listaRef} className="scroll-mt-14">
+          <div ref={listaRef} className="scroll-mt-4 space-y-5 md:scroll-mt-44 md:space-y-6">
             {b.tab === "andamento" && (
-              <div className="space-y-3">
+              <>
                 <Distribuicao filtros={filtros} nomeCurto={nomeCurto} aoAbrir={abrir} />
                 <ListaTotal
                   busca={b}
@@ -207,7 +225,7 @@ export function PaginaRomaneio() {
                   filtros={filtros}
                   otifVisivel={cards.otifVisivel}
                 />
-              </div>
+              </>
             )}
             {b.tab === "romaneio" && <AbaRomaneioEntrega filtros={filtros} aoAbrir={abrir} />}
             {b.tab === "performance" && (
@@ -236,6 +254,6 @@ export function PaginaRomaneio() {
           </div>
         </>
       )}
-    </div>
+    </Pagina>
   );
 }
