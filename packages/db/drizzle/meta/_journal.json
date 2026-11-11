@@ -71,6 +71,13 @@
       "when": 1794399097704,
       "tag": "0009_empresas_leitura_do_worker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794402822426,
+      "tag": "0010_conferente_chave_de_ordem",
+      "breakpoints": true
     }
   ]
 }

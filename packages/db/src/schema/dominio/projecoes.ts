@@ -220,6 +220,15 @@ export const romaneioConferenteCte = erp.table(
     numero: text("numero").notNull(),
     conferente: text("conferente"),
     romaneio: text("romaneio").notNull(),
+
+    // Chave de ordem da linha 036 vencedora. As linhas expiram (60 dias) e a de hoje lê a staging
+    // inteira: no recálculo, a linha gravada concorre com as guardadas por esta chave. Nulas nas
+    // linhas gravadas antes destas colunas (aí vale só o que está guardado).
+    dataOcorrCtrc: dia("data_ocorr_ctrc"),
+    horaOcorrCtrc: text("hora_ocorr_ctrc"),
+    situacao: text("situacao"),
+    dataEmissao: dia("data_emissao"),
+    importadoEm: instante("importado_em"),
     atualizadoEm: atualizadoEm(),
   },
   (t) => [
