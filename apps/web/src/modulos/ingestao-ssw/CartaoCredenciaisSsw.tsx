@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  PowerOff,
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
@@ -15,16 +16,18 @@ import {
 import { type SyntheticEvent, useState } from "react";
 import { toast } from "sonner";
 
+import { Aviso } from "@/componentes/comum/Aviso";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
-import { Badge } from "@/componentes/ui/badge";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
 
 import { CHAVE_DA_INGESTAO, consultaCredenciais } from "./api";
-import { Cartao } from "./Cartao";
 
 const MENSAGEM_DA_FALHA = {
   upstream_unavailable: "SSW está com instabilidade — não é problema das credenciais.",
@@ -100,10 +103,17 @@ export function CartaoCredenciaisSsw() {
   const resultado = testar.data;
 
   return (
-    <Cartao
+    <Painel
+      icone={KeyRound}
       titulo="Credenciais da SSW API"
-      icone={<KeyRound className="h-4 w-4" aria-hidden />}
-      direita={dados && !dados.ativo ? "integração desligada na empresa" : undefined}
+      descricao={
+        dados && !dados.ativo ? (
+          <SeloStatus tom="neutro" icone={PowerOff}>
+            integração desligada na empresa
+          </SeloStatus>
+        ) : undefined
+      }
+      classeDoCorpo="space-y-4 p-5"
     >
       {consulta.error ? (
         <MensagemErro
@@ -112,40 +122,37 @@ export function CartaoCredenciaisSsw() {
           aoTentarDeNovo={() => void consulta.refetch()}
         />
       ) : (
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-wrap gap-1.5">
             {dados?.temSenha ? (
-              <Badge variant="outline" className="gap-1 border-emerald-500/40 text-emerald-600">
-                <ShieldCheck className="h-3 w-3" aria-hidden /> Senha cadastrada
-              </Badge>
+              <SeloStatus tom="sucesso" icone={ShieldCheck}>
+                Senha cadastrada
+              </SeloStatus>
             ) : (
-              <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600">
-                <AlertTriangle className="h-3 w-3" aria-hidden /> Sem senha
-              </Badge>
+              <SeloStatus tom="alerta" icone={AlertTriangle}>
+                Sem senha
+              </SeloStatus>
             )}
             {dados?.tokenStatus === "valido" && (
-              <Badge variant="outline" className="gap-1 border-emerald-500/40 text-emerald-600">
-                <ShieldCheck className="h-3 w-3" aria-hidden /> Token válido
-              </Badge>
+              <SeloStatus tom="sucesso" icone={ShieldCheck}>
+                Token válido
+              </SeloStatus>
             )}
             {dados?.tokenStatus === "expirado" && (
-              <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600">
-                <ShieldAlert className="h-3 w-3" aria-hidden /> Token expirado
-              </Badge>
+              <SeloStatus tom="alerta" icone={ShieldAlert}>
+                Token expirado
+              </SeloStatus>
             )}
             {dados?.tokenStatus === "ausente" && (
-              <Badge
-                variant="outline"
-                className="gap-1 border-muted-foreground/40 text-muted-foreground"
-              >
-                <ShieldOff className="h-3 w-3" aria-hidden /> Token ausente
-              </Badge>
+              <SeloStatus tom="neutro" icone={ShieldOff}>
+                Token ausente
+              </SeloStatus>
             )}
           </div>
-          <div className="space-y-0.5 text-[10px] text-muted-foreground md:text-right">
+          <div className="space-y-1 text-xs text-muted-foreground tabular-nums md:text-right">
             {dados?.tokenAtualizadoEm ? (
-              <div className="flex items-center gap-1 md:justify-end">
-                <Clock className="h-3 w-3 shrink-0" aria-hidden />
+              <div className="flex items-center gap-1.5 md:justify-end">
+                <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Gerado em {formatarDataHora(dados.tokenAtualizadoEm)}
               </div>
             ) : (
@@ -162,9 +169,12 @@ export function CartaoCredenciaisSsw() {
             )}
             {verificacao ? (
               <div
-                className={`flex items-center gap-1 md:justify-end ${verificacao.ok ? "" : "text-destructive"}`}
+                className={cn(
+                  "flex items-center gap-1.5 md:justify-end",
+                  !verificacao.ok && "font-medium text-status-bad-fg",
+                )}
               >
-                <RefreshCw className="h-3 w-3 shrink-0" aria-hidden />
+                <RefreshCw className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Última verificação: {formatarDataHora(verificacao.em)}
                 {verificacao.ok ? " · OK" : " · falhou"}
               </div>
@@ -176,26 +186,21 @@ export function CartaoCredenciaisSsw() {
       )}
 
       {verificacao && !verificacao.ok && verificacao.mensagem && (
-        <div
-          role="alert"
-          className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-[12px]"
+        <Aviso
+          tom="erro"
+          icone={ShieldAlert}
+          titulo={`Renovação do token SSW falhou em ${formatarDataHora(verificacao.em)}`}
         >
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <div className="font-medium text-destructive">
-              Renovação do token SSW falhou em {formatarDataHora(verificacao.em)}
-            </div>
-            <div className="mt-1 break-words text-foreground/80">{verificacao.mensagem}</div>
-            <div className="mt-1 text-muted-foreground">
-              Revise as credenciais abaixo e clique em &quot;Testar conexão&quot; para forçar uma
-              nova tentativa.
-            </div>
-          </div>
-        </div>
+          <p className="break-words">{verificacao.mensagem}</p>
+          <p className="mt-1">
+            Revise as credenciais abaixo e clique em &quot;Testar conexão&quot; para forçar uma nova
+            tentativa.
+          </p>
+        </Aviso>
       )}
 
-      <form className="space-y-3" onSubmit={aoSalvar}>
-        <div className="grid gap-3 md:grid-cols-2">
+      <form className="space-y-4 border-t border-border pt-4" onSubmit={aoSalvar}>
+        <div className="grid gap-4 md:grid-cols-2">
           <Campo
             id="ssw-dominio"
             rotulo="Domínio"
@@ -210,11 +215,13 @@ export function CartaoCredenciaisSsw() {
             aoMudar={setUsuario}
             dica={dados?.usuario || "usuario.api"}
           />
-          <div className="space-y-1">
-            <Label htmlFor="ssw-senha" className="text-[12px]">
+          <div className="space-y-1.5">
+            <Label htmlFor="ssw-senha" className="text-[13px]">
               Senha{" "}
               {dados?.temSenha && (
-                <span className="text-muted-foreground">(deixe vazio para manter a atual)</span>
+                <span className="font-normal text-muted-foreground">
+                  (deixe vazio para manter a atual)
+                </span>
               )}
             </Label>
             <div className="relative">
@@ -236,13 +243,18 @@ export function CartaoCredenciaisSsw() {
                   setMostrarSenha((v) => !v);
                 }}
                 aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
-                className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                className="absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-r-lg text-muted-foreground hover:text-foreground"
               >
-                {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {mostrarSenha ? (
+                  <EyeOff className="h-4 w-4" aria-hidden />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden />
+                )}
               </button>
             </div>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Campo
               id="ssw-cnpj"
               rotulo="CNPJ EDI"
@@ -250,9 +262,12 @@ export function CartaoCredenciaisSsw() {
               aoMudar={setCnpj}
               dica={dados?.cnpjEdi || "14 dígitos"}
               numerico
+              invalido={!cnpjOk}
             />
             {!cnpjOk && (
-              <p className="text-[11px] text-destructive">O CNPJ precisa ter 14 dígitos.</p>
+              <p id="ssw-cnpj-erro" className="text-xs text-status-bad-fg">
+                O CNPJ precisa ter 14 dígitos.
+              </p>
             )}
           </div>
         </div>
@@ -269,33 +284,30 @@ export function CartaoCredenciaisSsw() {
               testar.mutate();
             }}
           >
-            <RefreshCw
-              className={`mr-1.5 h-3 w-3 ${testar.isPending ? "animate-spin" : ""}`}
-              aria-hidden
-            />
+            <RefreshCw className={cn(testar.isPending && "motion-safe:animate-spin")} aria-hidden />
             {testar.isPending ? "Testando…" : "Testar conexão"}
           </Button>
         </div>
       </form>
 
       {resultado && !resultado.pendente && (
-        <div
-          className={`rounded-md border p-3 text-[12px] ${resultado.ok ? "border-emerald-500/40 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"}`}
+        <Aviso
+          tom={resultado.ok ? "sucesso" : "erro"}
+          titulo={
+            <>
+              {resultado.ok ? "Conexão OK" : "Falha na conexão"}
+              {resultado.renovado && " · token renovado"}
+              {resultado.tokenPrevia && (
+                <span className="ml-1 font-mono font-normal">{resultado.tokenPrevia}</span>
+              )}
+            </>
+          }
         >
-          <div className="font-medium">
-            {resultado.ok ? "Conexão OK" : "Falha na conexão"}
-            {resultado.renovado && " · token renovado"}
-            {resultado.tokenPrevia && (
-              <span className="ml-1 font-mono text-muted-foreground">{resultado.tokenPrevia}</span>
-            )}
-          </div>
-          <div className="break-words text-muted-foreground">{resultado.mensagem}</div>
-          {resultado.tipoFalha && (
-            <div className="text-muted-foreground">{MENSAGEM_DA_FALHA[resultado.tipoFalha]}</div>
-          )}
-        </div>
+          <p className="break-words">{resultado.mensagem}</p>
+          {resultado.tipoFalha && <p>{MENSAGEM_DA_FALHA[resultado.tipoFalha]}</p>}
+        </Aviso>
       )}
-    </Cartao>
+    </Painel>
   );
 }
 
@@ -306,6 +318,7 @@ function Campo({
   aoMudar,
   dica,
   numerico = false,
+  invalido = false,
 }: {
   id: string;
   rotulo: string;
@@ -313,10 +326,11 @@ function Campo({
   aoMudar: (v: string) => void;
   dica: string;
   numerico?: boolean;
+  invalido?: boolean;
 }) {
   return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-[12px]">
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-[13px]">
         {rotulo}
       </Label>
       <Input
@@ -328,6 +342,8 @@ function Campo({
         placeholder={dica}
         autoComplete="off"
         maxLength={numerico ? 18 : 64}
+        aria-invalid={invalido || undefined}
+        {...(invalido ? { "aria-describedby": `${id}-erro` } : {})}
         {...(numerico ? { inputMode: "numeric" as const } : {})}
       />
     </div>

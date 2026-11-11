@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { situacaoDoEvento } from "./Cartao";
+import { situacaoDoEvento } from "./eventos";
 
 describe("situacaoDoEvento", () => {
   it("segue a mesma classificação dos contadores do diagnóstico", () => {

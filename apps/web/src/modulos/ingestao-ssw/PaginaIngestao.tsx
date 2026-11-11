@@ -4,24 +4,27 @@ import {
   type SincronizacaoBi2,
 } from "@erp/shared/contratos/ingestao-ssw";
 import { formatarData, formatarDataHora, formatarInteiro } from "@erp/shared/formatacao";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsFetching, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Database, History, Play, RotateCw } from "lucide-react";
+import { Database, Play, RefreshCw, RotateCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
-import { Badge } from "@/componentes/ui/badge";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
+import { SeloDaSituacao, TABELA_NO_PAINEL } from "@/modulos/ingestao/pecas";
 
 import { CHAVE_DA_INGESTAO, consultaBi2, consultaEventosWebhook } from "./api";
-import { Cartao, SeloDoEvento, situacaoDoEvento } from "./Cartao";
 import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";
+import { SeloDoEvento, situacaoDoEvento } from "./eventos";
 
 /**
  * Admin › Ingestão SSW (só a Plataforma, na empresa ativa): BI2 0017, credenciais da SSW API e
@@ -29,38 +32,52 @@ import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";
  * origem: routes/_authenticated/admin.ingestao.tsx (sistema atual)
  */
 export function PaginaIngestao() {
+  const queryClient = useQueryClient();
   const eventos = useQuery(consultaEventosWebhook);
+  const atualizando = useIsFetching({ queryKey: CHAVE_DA_INGESTAO }) > 0;
   const ultima = eventos.data?.ultimaAtividade ?? null;
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-[24px] font-medium tracking-tight">Ingestão SSW</h1>
-        <p className="text-[12px] text-muted-foreground">
+    <Pagina
+      titulo="Ingestão SSW"
+      descricao={
+        <>
           Última atividade do webhook:{" "}
           {ultima ? formatarDataHora(ultima) : "nenhum evento recebido ainda"}
-        </p>
-      </div>
+        </>
+      }
+      acoes={
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DA_INGESTAO })}
+          disabled={atualizando}
+        >
+          <RefreshCw className={cn(atualizando && "motion-safe:animate-spin")} aria-hidden />
+          Atualizar
+        </Button>
+      }
+    >
       <CartaoBi2 />
       <CartaoCredenciaisSsw />
       <CartaoEventosWebhook />
-    </div>
+    </Pagina>
   );
 }
 
 const COLUNAS_DO_BI2: ColunaTabela<SincronizacaoBi2>[] = [
-  { chave: "iniciadoEm", titulo: "Início", formato: "datahora" },
+  { chave: "iniciadoEm", titulo: "Início", formato: "datahora", classe: "whitespace-nowrap" },
   { chave: "dataAlvo", titulo: "Data", formato: "data" },
   { chave: "modo", titulo: "Modo" },
-  { chave: "status", titulo: "Status", celula: (s) => <SeloDoStatus status={s.status} /> },
+  {
+    chave: "status",
+    titulo: "Status",
+    celula: (s) => <SeloDaSituacao status={s.status} />,
+    valor: (s) => s.status,
+  },
   { chave: "totalLinhas", titulo: "Linhas", formato: "inteiro" },
   { chave: "atualizados", titulo: "Atualizados", formato: "inteiro" },
   { chave: "erro", titulo: "Erro", classe: "max-w-[320px] truncate" },
 ];
-
-function SeloDoStatus({ status }: { status: string }) {
-  const variante = status === "erro" ? "destructive" : status === "ok" ? "default" : "secondary";
-  return <Badge variant={variante}>{status}</Badge>;
-}
 
 function CartaoBi2() {
   const queryClient = useQueryClient();
@@ -82,62 +99,67 @@ function CartaoBi2() {
   const ultima = consulta.data?.ultima ?? null;
 
   return (
-    <Cartao
+    <Painel
+      icone={Database}
       titulo="SSW BI2 (0017)"
-      icone={<Database className="h-4 w-4" aria-hidden />}
-      direita="cron contínuo às :12 e :42, lookback de 2 dias"
+      descricao="cron contínuo às :12 e :42, lookback de 2 dias"
+      classeDoCorpo="space-y-4 p-5"
     >
-      <p className="text-[12px] text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         Atualiza entrega, previsão e prazo dos CT-e pelo relatório 0017. O BI2 nunca altera CT-e em
         andamento; depois da entrega, só o ajuste de prazo entra.
       </p>
-      {consulta.error ? (
-        <MensagemErro
-          erro={consulta.error}
-          titulo="Não foi possível carregar o BI2"
-          aoTentarDeNovo={() => void consulta.refetch()}
-        />
-      ) : (
-        <div className="text-[12px]">
-          {ultima ? (
-            <span>
-              Última execução: {formatarDataHora(ultima.iniciadoEm)} · data{" "}
-              {formatarData(ultima.dataAlvo)} · <SeloDoStatus status={ultima.status} /> ·{" "}
-              {formatarInteiro(ultima.totalLinhas)} linha(s) · {formatarInteiro(ultima.atualizados)}{" "}
-              atualizado(s)
-              {ultima.erro && <span className="text-destructive"> · {ultima.erro}</span>}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">Nenhuma execução registrada ainda.</span>
-          )}
-        </div>
-      )}
-      <form
-        className="flex flex-wrap items-end gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (data) rodar.mutate(data);
-        }}
-      >
-        <div className="space-y-1">
-          <Label htmlFor="bi2-data" className="text-[12px]">
-            Data específica
-          </Label>
-          <Input
-            id="bi2-data"
-            type="date"
-            value={data}
-            onChange={(e) => {
-              setData(e.target.value);
-            }}
-            className="h-8 w-[160px]"
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        {consulta.error ? (
+          <MensagemErro
+            erro={consulta.error}
+            titulo="Não foi possível carregar o BI2"
+            aoTentarDeNovo={() => void consulta.refetch()}
+            className="items-start py-0 text-left"
           />
-        </div>
-        <Button type="submit" size="sm" disabled={!data || rodar.isPending}>
-          <Play className="mr-1.5 h-3 w-3" aria-hidden />
-          {rodar.isPending ? "Rodando…" : "Rodar data específica"}
-        </Button>
-      </form>
+        ) : ultima ? (
+          <div className="min-w-0 space-y-1.5">
+            <div className="label-xs">Última execução</div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] tabular-nums">
+              <span className="font-semibold">{formatarDataHora(ultima.iniciadoEm)}</span>
+              <SeloDaSituacao status={ultima.status} />
+              <span className="text-muted-foreground">
+                data {formatarData(ultima.dataAlvo)} · {formatarInteiro(ultima.totalLinhas)}{" "}
+                linha(s) · {formatarInteiro(ultima.atualizados)} atualizado(s)
+              </span>
+            </div>
+            {ultima.erro && <p className="text-[13px] text-status-bad-fg">{ultima.erro}</p>}
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">Nenhuma execução registrada ainda.</p>
+        )}
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (data) rodar.mutate(data);
+          }}
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="bi2-data" className="text-[13px]">
+              Data específica
+            </Label>
+            <Input
+              id="bi2-data"
+              type="date"
+              value={data}
+              onChange={(e) => {
+                setData(e.target.value);
+              }}
+              className="h-9 w-[170px]"
+            />
+          </div>
+          <Button type="submit" disabled={!data || rodar.isPending}>
+            <Play aria-hidden />
+            {rodar.isPending ? "Rodando…" : "Rodar data específica"}
+          </Button>
+        </form>
+      </div>
       <TabelaDados
         titulo="Últimas execuções"
         colunas={COLUNAS_DO_BI2}
@@ -146,8 +168,9 @@ function CartaoBi2() {
         carregando={consulta.isLoading}
         mensagemVazia="Nenhuma execução registrada ainda."
         porPagina={0}
+        className={TABELA_NO_PAINEL}
       />
-    </Cartao>
+    </Painel>
   );
 }
 
@@ -187,9 +210,9 @@ function CartaoEventosWebhook() {
       titulo: "Status",
       valor: (e) => situacaoDoEvento(e),
       celula: (e) => (
-        <span className="whitespace-nowrap">
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
           <SeloDoEvento situacao={situacaoDoEvento(e)} />
-          <span className="ml-1 text-[10px] text-muted-foreground">HTTP {e.statusHttp}</span>
+          <span className="font-mono text-xs text-muted-foreground">HTTP {e.statusHttp}</span>
         </span>
       ),
     },
@@ -201,7 +224,7 @@ function CartaoEventosWebhook() {
           <Link
             to="/ctrc/$numero"
             params={{ numero: e.numeroCte }}
-            className="font-mono text-[var(--marca-primaria,inherit)] hover:underline"
+            className="font-mono font-semibold text-brand hover:underline"
           >
             {e.numeroCte}
           </Link>
@@ -224,13 +247,12 @@ function CartaoEventosWebhook() {
           <Button
             size="sm"
             variant="outline"
-            className="h-7"
             disabled={reprocessar.isPending && reprocessar.variables === e.id}
             onClick={() => {
               reprocessar.mutate(e.id);
             }}
           >
-            <RotateCw className="mr-1.5 h-3 w-3" aria-hidden />
+            <RotateCw aria-hidden />
             Reprocessar
           </Button>
         ) : null,
@@ -238,21 +260,21 @@ function CartaoEventosWebhook() {
   ];
 
   return (
-    <Cartao
+    <TabelaDados
       titulo="Últimos eventos do webhook"
-      icone={<History className="h-4 w-4" aria-hidden />}
-      direita={`${eventos.length} evento(s) · atualiza a cada 15s`}
-    >
-      <TabelaDados
-        colunas={colunas}
-        linhas={eventos}
-        chaveDaLinha={(e) => e.id}
-        carregando={consulta.isLoading}
-        erro={consulta.error}
-        aoTentarDeNovo={() => void consulta.refetch()}
-        mensagemVazia="Nenhum evento recebido ainda."
-        porPagina={0}
-      />
-    </Cartao>
+      acoes={
+        <span className="text-[13px] text-muted-foreground tabular-nums">
+          {eventos.length} evento(s) · atualiza a cada 15s
+        </span>
+      }
+      colunas={colunas}
+      linhas={eventos}
+      chaveDaLinha={(e) => e.id}
+      carregando={consulta.isLoading}
+      erro={consulta.error}
+      aoTentarDeNovo={() => void consulta.refetch()}
+      mensagemVazia="Nenhum evento recebido ainda."
+      porPagina={0}
+    />
   );
 }

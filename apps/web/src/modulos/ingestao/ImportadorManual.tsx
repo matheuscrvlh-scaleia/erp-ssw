@@ -5,16 +5,18 @@
 import { lerRelatorio, type Relatorio } from "@erp/dominio/ingestao/relatorios";
 import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, FileUp, Loader2 } from "lucide-react";
+import { FileText, FileUp, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Aviso } from "@/componentes/comum/Aviso";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
-import { Badge } from "@/componentes/ui/badge";
-import { Button } from "@/componentes/ui/button";
+import { Button, buttonVariants } from "@/componentes/ui/button";
 import { Checkbox } from "@/componentes/ui/checkbox";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
 
 import { CHAVE_DA_INGESTAO } from "./api";
 import { AreaDeTexto } from "./pecas";
@@ -97,8 +99,13 @@ export function ImportadorManual({ relatorio }: { relatorio: Relatorio }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-[12px] hover:bg-muted">
-          <FileUp className="h-4 w-4" aria-hidden />
+        <label
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
+          )}
+        >
+          <FileUp aria-hidden />
           Escolher arquivo
           <input
             type="file"
@@ -110,7 +117,7 @@ export function ImportadorManual({ relatorio }: { relatorio: Relatorio }) {
             }}
           />
         </label>
-        {nome && <span className="text-[12px] text-muted-foreground">{nome}</span>}
+        {nome && <span className="font-mono text-xs text-muted-foreground">{nome}</span>}
       </div>
       <AreaDeTexto
         aria-label="Conteúdo do relatório"
@@ -121,26 +128,25 @@ export function ImportadorManual({ relatorio }: { relatorio: Relatorio }) {
           setAnalise(null);
         }}
       />
-      <Button size="sm" onClick={processar} disabled={conteudo.trim() === ""}>
+      <Button
+        size="sm"
+        variant={a ? "outline" : "default"}
+        onClick={processar}
+        disabled={conteudo.trim() === ""}
+      >
         Processar
       </Button>
 
       {a && (
         <div className="space-y-3">
           {a.cabecalhoDivergente && (
-            <div
-              role="alert"
-              className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900"
-            >
-              <p className="flex items-center gap-2 font-medium">
-                <AlertTriangle className="h-4 w-4" aria-hidden /> Cabeçalho diferente do esperado
-              </p>
-              <ul className="list-disc pl-5">
+            <Aviso tom="alerta" titulo="Cabeçalho diferente do esperado">
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
                 {a.cabecalhoDiferencas.map((d) => (
                   <li key={d}>{d}</li>
                 ))}
               </ul>
-              <label className="flex items-center gap-2">
+              <label className="mt-2 flex items-center gap-2 font-medium">
                 <Checkbox
                   checked={aceitarDivergencia}
                   onCheckedChange={(v) => {
@@ -149,18 +155,22 @@ export function ImportadorManual({ relatorio }: { relatorio: Relatorio }) {
                 />
                 Conferi o arquivo e quero gravar mesmo assim
               </label>
-            </div>
+            </Aviso>
           )}
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{a.registros.length} linha(s) lida(s)</Badge>
-            <Badge variant={a.erros.length > 0 ? "destructive" : "outline"}>
+            <SeloStatus tom="info" icone={FileText}>
+              {a.registros.length} linha(s) lida(s)
+            </SeloStatus>
+            <SeloStatus tom={a.erros.length > 0 ? "erro" : "neutro"}>
               {a.erros.length} com erro
-            </Badge>
+            </SeloStatus>
           </div>
           {a.erros.length > 0 && (
-            <details className="rounded-md border p-2 text-[12px]">
-              <summary className="cursor-pointer">Ver linhas com erro</summary>
-              <ul className="mt-2 max-h-60 space-y-1 overflow-auto font-mono">
+            <details className="group rounded-xl border border-border bg-card text-[13px]">
+              <summary className="cursor-pointer rounded-xl px-3 py-2 font-medium hover:bg-muted/60">
+                Ver linhas com erro
+              </summary>
+              <ul className="rolagem-fina max-h-60 space-y-1 overflow-auto border-t border-border px-3 py-2 font-mono text-xs text-status-bad-fg">
                 {a.erros.slice(0, 500).map((e) => (
                   <li key={`${e.linha}-${e.motivo}`}>
                     Linha {e.linha}: {e.motivo}
@@ -179,7 +189,7 @@ export function ImportadorManual({ relatorio }: { relatorio: Relatorio }) {
             />
           )}
           <Button size="sm" onClick={() => void gravar()} disabled={!podeGravar || gravando}>
-            {gravando && <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden />}
+            {gravando && <Loader2 className="motion-safe:animate-spin" aria-hidden />}
             Gravar na staging
           </Button>
         </div>
