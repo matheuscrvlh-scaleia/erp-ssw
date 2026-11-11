@@ -11,7 +11,7 @@ import {
   formatarPercentual,
 } from "@erp/shared/formatacao";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { ChartColumn, FileCheck2, FileClock, PackageCheck, Percent, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 import { DrawerDetalhe } from "@/componentes/comum/Detalhe";
@@ -26,9 +26,12 @@ import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
@@ -72,9 +75,9 @@ const COLUNAS_DA_LISTA: ColunaTabela<LinhaDeComprovante>[] = [
     valor: (l) => (l.digitalizado ? "Digitalizado" : "Pendente"),
     celula: (l) =>
       l.digitalizado ? (
-        <span className="text-emerald-700">Digitalizado</span>
+        <SeloStatus tom="sucesso">Digitalizado</SeloStatus>
       ) : (
-        <span className="text-[var(--status-bad)]">Pendente</span>
+        <SeloStatus tom="erro">Pendente</SeloStatus>
       ),
   },
   {
@@ -134,17 +137,28 @@ export function PaginaComprovantes() {
     destino: busca.destino,
   };
 
+  const atualizar = (
+    <Button
+      size="sm"
+      variant="ghost"
+      disabled={painel.isFetching}
+      onClick={() => {
+        void painel.refetch();
+      }}
+    >
+      <RefreshCw className={painel.isFetching ? "animate-spin" : undefined} aria-hidden />
+      Atualizar
+    </Button>
+  );
+
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[24px] font-medium tracking-tight">Comprovantes</h1>
-          <SeloDosDados />
-          <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Entre as entregas concluídas, quantas já têm comprovante digitalizado (ocorrência 88)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <Pagina
+      titulo="Comprovantes"
+      descricao="Entre as entregas concluídas, quantas já têm comprovante digitalizado (ocorrência 88)"
+      meta={<SeloDosDados className="" />}
+      acoes={
+        <>
+          {atualizar}
           <ExportMenu
             arquivo={`comprovantes-${busca.status}`}
             titulo={`Comprovantes — ${TITULO_DO_STATUS[busca.status]}`}
@@ -164,101 +178,93 @@ export function PaginaComprovantes() {
             }
             desabilitado={painel.isFetching}
           />
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={painel.isFetching}
-            onClick={() => {
-              void painel.refetch();
+        </>
+      }
+      filtros={
+        <>
+          <FiltrosAvancados
+            ativos={temFiltro(ativos, busca.periodo, NAO_SAO_FILTRO)}
+            aoLimpar={() => {
+              limpar(busca.periodo === "custom" ? ["size"] : ["periodo", "size"]);
             }}
           >
-            <RefreshCw className={`mr-1.5 h-3 w-3 ${painel.isFetching ? "animate-spin" : ""}`} />{" "}
-            Atualizar
-          </Button>
-        </div>
-      </header>
-
-      <FiltrosAvancados
-        ativos={temFiltro(ativos, busca.periodo, NAO_SAO_FILTRO)}
-        aoLimpar={() => {
-          limpar(busca.periodo === "custom" ? ["size"] : ["periodo", "size"]);
-        }}
-      >
-        <FiltroPeriodo
-          periodo={busca.periodo}
-          de={busca.de}
-          ate={busca.ate}
-          rotulo="Entrega"
-          aoMudar={mudar}
-        />
-        <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
-          por data de entrega
-          <InfoTip texto="O período filtra pelo dia da entrega concluída em Brasília (data de entrega realizada ou, na falta dela, a data da ocorrência de conclusão)." />
-        </span>
-        <SeletorDeFilial
-          selecionadas={busca.filiais}
-          contexto={contexto}
-          aoMudar={(filiais) => {
-            mudar({ filiais });
-          }}
-        />
-        <SeletorDePagador
-          rotulo="Pagador"
-          opcoes={pagadores.data}
-          selecionados={busca.pagadores}
-          aoMudar={(pagadores) => {
-            mudar({ pagadores });
-          }}
-        />
-        <SeletorDeTexto
-          rotulo="Remetente"
-          campo="remetente"
-          valor={busca.remetente}
-          contexto={contexto}
-          aoMudar={(remetente) => {
-            mudar({ remetente });
-          }}
-        />
-        <SeletorDeTexto
-          rotulo="Destino"
-          campo="cidade_destino"
-          valor={busca.destino}
-          contexto={contexto}
-          aoMudar={(destino) => {
-            mudar({ destino });
-          }}
-        />
-        <SeletorDeTipoDocumento
-          selecionados={busca.tipos}
-          contagens={painel.data?.tiposContagem}
-          aoMudar={(tipos) => {
-            mudar({ tipos });
-          }}
-        />
-        <BuscaDocumento
-          valor={busca.ctrc}
-          placeholder="CTRC..."
-          className="w-[150px]"
-          aoMudar={(ctrc) => {
-            mudar({ ctrc });
-          }}
-        />
-        <BuscaDocumento
-          valor={busca.nf}
-          placeholder="Nota fiscal..."
-          className="w-[150px]"
-          aoMudar={(nf) => {
-            mudar({ nf });
-          }}
-        />
-      </FiltrosAvancados>
-      <FiltrandoPor
-        etiquetas={etiquetasQueLimpam(
-          etiquetasDaBusca(busca, nomesDosPagadores(pagadores.data ?? [], busca.pagadores)),
-          mudar,
-        )}
-      />
-
+            <FiltroPeriodo
+              periodo={busca.periodo}
+              de={busca.de}
+              ate={busca.ate}
+              rotulo="Entrega"
+              aoMudar={mudar}
+            />
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              por data de entrega
+              <InfoTip texto="O período filtra pelo dia da entrega concluída em Brasília (data de entrega realizada ou, na falta dela, a data da ocorrência de conclusão)." />
+            </span>
+            <SeletorDeFilial
+              selecionadas={busca.filiais}
+              contexto={contexto}
+              aoMudar={(filiais) => {
+                mudar({ filiais });
+              }}
+            />
+            <SeletorDePagador
+              rotulo="Pagador"
+              opcoes={pagadores.data}
+              selecionados={busca.pagadores}
+              aoMudar={(pagadores) => {
+                mudar({ pagadores });
+              }}
+            />
+            <SeletorDeTexto
+              rotulo="Remetente"
+              campo="remetente"
+              valor={busca.remetente}
+              contexto={contexto}
+              aoMudar={(remetente) => {
+                mudar({ remetente });
+              }}
+            />
+            <SeletorDeTexto
+              rotulo="Destino"
+              campo="cidade_destino"
+              valor={busca.destino}
+              contexto={contexto}
+              aoMudar={(destino) => {
+                mudar({ destino });
+              }}
+            />
+            <SeletorDeTipoDocumento
+              selecionados={busca.tipos}
+              contagens={painel.data?.tiposContagem}
+              aoMudar={(tipos) => {
+                mudar({ tipos });
+              }}
+            />
+            <BuscaDocumento
+              valor={busca.ctrc}
+              placeholder="CTRC..."
+              className="w-[150px]"
+              aoMudar={(ctrc) => {
+                mudar({ ctrc });
+              }}
+            />
+            <BuscaDocumento
+              valor={busca.nf}
+              placeholder="Nota fiscal..."
+              className="w-[150px]"
+              aoMudar={(nf) => {
+                mudar({ nf });
+              }}
+            />
+          </FiltrosAvancados>
+          <FiltrandoPor
+            etiquetas={etiquetasQueLimpam(
+              etiquetasDaBusca(busca, nomesDosPagadores(pagadores.data ?? [], busca.pagadores)),
+              mudar,
+            )}
+          />
+        </>
+      }
+    >
       {painel.isError ? (
         <MensagemErro
           erro={painel.error}
@@ -269,11 +275,13 @@ export function PaginaComprovantes() {
         />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
               rotulo="CT-e entregue"
               valor={formatarInteiro(totais.entregues)}
               status="bom"
+              neutro
+              icone={PackageCheck}
               detalhe="Período completo"
               aoClicar={() => {
                 abrir("todos");
@@ -283,6 +291,7 @@ export function PaginaComprovantes() {
               rotulo="Digitalizados"
               valor={formatarInteiro(totais.digitalizados)}
               status="bom"
+              icone={FileCheck2}
               detalhe="Com ocorrência 88"
               aoClicar={() => {
                 abrir("digitalizados");
@@ -292,6 +301,8 @@ export function PaginaComprovantes() {
               rotulo="% digitalizados"
               valor={pct(totais.pct)}
               status="bom"
+              icone={Percent}
+              progresso={totais.pct ?? undefined}
               detalhe="Digitalizados ÷ entregues (dias com o 930 importado)"
               aoClicar={() => {
                 abrir("digitalizados");
@@ -301,6 +312,7 @@ export function PaginaComprovantes() {
               rotulo="Pendentes"
               valor={formatarInteiro(totais.pendentes)}
               status="ruim"
+              icone={FileClock}
               detalhe="Sem ocorrência 88"
               aoClicar={() => {
                 abrir("pendentes");
@@ -308,8 +320,7 @@ export function PaginaComprovantes() {
             />
           </div>
 
-          <section className="rounded-[10px] border border-border/70 bg-card p-4">
-            <h2 className="label-xs mb-2">Tendência por dia de entrega</h2>
+          <Painel titulo="Tendência por dia de entrega" icone={ChartColumn}>
             <GraficoBarras
               descricao="Entregues e digitalizados por dia de entrega"
               dados={(painel.data?.porDia ?? []).map((d) => ({
@@ -320,11 +331,11 @@ export function PaginaComprovantes() {
               formato="inteiro"
               carregando={painel.isLoading}
               series={[
-                { chave: "entregues", nome: "Entregues", cor: "var(--muted-foreground)" },
+                { chave: "entregues", nome: "Entregues", cor: "var(--grafico-comparacao)" },
                 { chave: "digitalizados", nome: "Digitalizados", cor: "var(--brand)" },
               ]}
               dica={(d) => (
-                <div className="text-[12px]">
+                <div className="text-xs">
                   <p className="font-semibold">{formatarData(d.dia)}</p>
                   <p>
                     {formatarInteiro(d.digitalizados)} de {formatarInteiro(d.entregues)} ·{" "}
@@ -334,9 +345,9 @@ export function PaginaComprovantes() {
                 </div>
               )}
             />
-          </section>
+          </Painel>
 
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-4 2xl:grid-cols-2">
             <TabelaDados
               titulo="Por unidade"
               colunas={colunasDoResumo("Unidade")}
@@ -400,6 +411,6 @@ export function PaginaComprovantes() {
           rotuloTotal={(n) => `${formatarInteiro(n)} CT-e`}
         />
       </DrawerDetalhe>
-    </div>
+    </Pagina>
   );
 }

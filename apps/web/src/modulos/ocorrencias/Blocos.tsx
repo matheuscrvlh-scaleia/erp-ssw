@@ -12,15 +12,32 @@ import {
   formatarParticipacao,
   formatarPercentual,
 } from "@erp/shared/formatacao";
-import { AlertTriangle, TrendingDown } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  ChartColumn,
+  CircleCheckBig,
+  Hourglass,
+  ListOrdered,
+  type LucideIcon,
+  MapPin,
+  Minus,
+  TrendingDown,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { type ReactNode } from "react";
 
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { GraficoBarras } from "@/componentes/comum/Graficos";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { Painel } from "@/componentes/comum/Painel";
 import { Skeleton } from "@/componentes/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 import { type RecorteFinalizacao, ROTULO_DA_FAIXA } from "./busca";
-import { classeDoResponsavel, rotulosDoResponsavel } from "./rotulos";
+import { SeloDoResponsavel } from "./Lista";
+import { rotulosDoResponsavel } from "./rotulos";
 
 /** Recortes que os blocos aplicam na tela (clicar de novo desfaz). */
 interface RecortesDosBlocos {
@@ -37,44 +54,44 @@ interface RecortesDosBlocos {
   aoFinalizacao: (v: RecorteFinalizacao) => void;
 }
 
+/** Título de bloco com a explicação no (i). */
+function TituloComDica({ titulo, dica }: { titulo: string; dica: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {titulo}
+      <InfoTip texto={dica} />
+    </span>
+  );
+}
+
+/** Bloco de barras horizontais clicáveis (cada linha recorta a tela). */
 function Bloco({
   titulo,
   dica,
-  discreto,
+  icone,
   children,
 }: {
   titulo: string;
   dica: string;
-  discreto?: boolean;
+  icone: LucideIcon;
   children: ReactNode;
 }) {
   return (
-    <section
-      className={
-        "rounded-[10px] border p-3 " +
-        (discreto ? "border-border/50 bg-muted/20" : "border-border/70 bg-card")
-      }
+    <Painel
+      titulo={<TituloComDica titulo={titulo} dica={dica} />}
+      icone={icone}
+      classeDoCorpo="p-2"
     >
-      <div className="flex items-center gap-1.5">
-        <h2
-          className={
-            discreto ? "text-[14px] font-semibold text-muted-foreground" : "text-[16px] font-bold"
-          }
-        >
-          {titulo}
-        </h2>
-        <InfoTip texto={dica} />
-      </div>
-      <ul className="mt-3 max-h-[320px] space-y-1.5 overflow-auto">{children}</ul>
-    </section>
+      <ul className="rolagem-fina max-h-[320px] space-y-1 overflow-auto">{children}</ul>
+    </Painel>
   );
 }
 
 const COR_DA_BARRA = {
-  ruim: "bg-[var(--status-bad)]",
-  alerta: "bg-amber-500",
-  bom: "bg-emerald-600",
-  neutro: "bg-muted-foreground/40",
+  ruim: "bg-status-bad",
+  alerta: "bg-status-warn",
+  bom: "bg-status-good",
+  neutro: "bg-muted-foreground/45",
 } as const;
 
 function LinhaDeBarra({
@@ -104,27 +121,30 @@ function LinhaDeBarra({
         onClick={aoClicar}
         disabled={!aoClicar}
         aria-pressed={ativo}
-        className={
-          "block w-full rounded-md border px-2 py-1.5 text-left transition-colors " +
-          (ativo
-            ? "border-[var(--brand)] bg-[var(--status-good-bg)]"
+        className={cn(
+          "block w-full rounded-lg border px-3 py-2 text-left transition-colors",
+          ativo
+            ? "border-brand bg-accent text-accent-foreground"
             : aoClicar
-              ? "border-transparent hover:bg-muted/50"
-              : "border-transparent")
-        }
+              ? "border-transparent hover:bg-muted"
+              : "border-transparent",
+        )}
       >
-        <div className="flex items-center gap-2 text-[14px] font-semibold">
-          <span className="flex-1 truncate">{rotulo}</span>
+        <div className="flex items-center gap-2 text-[13px] font-semibold">
+          <span className="min-w-0 flex-1 truncate">{rotulo}</span>
           <span className="font-bold tabular-nums">{formatarInteiro(valor)}</span>
           {total !== undefined && (
-            <span className="text-[12px] font-semibold text-muted-foreground tabular-nums">
+            <span className="text-xs font-semibold text-muted-foreground tabular-nums">
               {formatarParticipacao(valor, total)}
             </span>
           )}
         </div>
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1.5 flex items-center gap-2">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <div className={`h-full ${COR_DA_BARRA[tom]}`} style={{ width: `${largura}%` }} />
+            <div
+              className={cn("h-full rounded-full", COR_DA_BARRA[tom])}
+              style={{ width: `${String(largura)}%` }}
+            />
           </div>
           {apoio}
         </div>
@@ -135,8 +155,12 @@ function LinhaDeBarra({
 
 function SemDados() {
   return (
-    <li className="py-4 text-center text-[13px] font-medium text-muted-foreground">
-      Sem dados no período.
+    <li>
+      <EstadoVazio
+        mensagem="Sem dados no período."
+        detalhe="Amplie o período ou tire algum filtro."
+        className="py-6"
+      />
     </li>
   );
 }
@@ -144,21 +168,26 @@ function SemDados() {
 function Esqueletos({ n = 5 }: { n?: number }) {
   return Array.from({ length: n }, (_, i) => (
     <li key={i}>
-      <Skeleton className="h-8 rounded bg-muted/60" />
+      <Skeleton className="h-11 rounded-lg bg-muted" />
     </li>
   ));
 }
 
-/** Variação contra o mês anterior: piora em vermelho, melhora em verde. */
+/** Variação contra o mês anterior: piora em vermelho, melhora em verde (com seta, não só cor). */
 function SeloDeVariacao({ delta }: { delta: number }) {
-  const cor =
-    delta > 0
-      ? "bg-[var(--status-bad-bg)] text-[var(--status-bad)]"
-      : delta < 0
-        ? "bg-emerald-50 text-emerald-700"
-        : "bg-muted text-muted-foreground";
+  const Icone = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
   return (
-    <span className={`rounded px-1.5 py-px text-[12px] font-bold tabular-nums ${cor}`}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-px text-xs font-bold tabular-nums",
+        delta > 0
+          ? "bg-status-bad-bg text-status-bad-fg"
+          : delta < 0
+            ? "bg-status-good-bg text-status-good-fg"
+            : "bg-muted text-muted-foreground",
+      )}
+    >
+      <Icone className="h-3 w-3" aria-hidden />
       {delta > 0 ? `+${formatarInteiro(delta)}` : formatarInteiro(delta)} vs anterior
     </span>
   );
@@ -184,9 +213,10 @@ export function BlocosDestaque({
   const maxUnidade = Math.max(1, ...unidades.map((u) => u.ocorrencias));
   const fin = painel?.finalizacao;
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
       <Bloco
         titulo="Ocorrências mais frequentes"
+        icone={ListOrdered}
         dica="Top 10 códigos por quantidade de ocorrências (cada ocorrência conta, não o CT-e). Percentual sobre todas as ocorrências do recorte. A variação compara com as mesmas datas do mês anterior, com os mesmos filtros."
       >
         {carregando && <Esqueletos />}
@@ -197,15 +227,13 @@ export function BlocosDestaque({
               key={c.codigo}
               rotulo={
                 <span className="flex items-center gap-2">
-                  <span className="font-mono text-[12px] font-bold text-muted-foreground">
+                  <span className="font-mono text-xs font-bold text-muted-foreground">
                     #{c.codigo}
                   </span>
-                  <span className="flex-1 truncate">{c.descricao}</span>
-                  <span
-                    className={`rounded-full px-1.5 py-px text-[11px] font-semibold ${classeDoResponsavel(c.responsavel)}`}
-                  >
+                  <span className="min-w-0 flex-1 truncate">{c.descricao}</span>
+                  <SeloDoResponsavel responsavel={c.responsavel}>
                     {rotulos[c.responsavel]}
-                  </span>
+                  </SeloDoResponsavel>
                 </span>
               }
               valor={c.count}
@@ -223,13 +251,14 @@ export function BlocosDestaque({
 
       <Bloco
         titulo="CT-e finalizados e em aberto"
+        icone={CircleCheckBig}
         dica="Todos os CT-e que tiveram ocorrência no recorte, cada um contado uma vez, pela situação atual. Entregues: ocorrência 1, 18 ou 67 (ou data de entrega). Baixados sem entrega: códigos de baixa do cadastro da empresa. Em aberto: o restante; 'em atraso' são os que já passaram da previsão de entrega."
       >
         {carregando && <Esqueletos n={3} />}
         {!carregando && (!fin || fin.ctrcs === 0) && <SemDados />}
         {!carregando && fin && fin.ctrcs > 0 && (
           <>
-            <li className="px-2 pb-1 text-[13px] font-semibold text-muted-foreground">
+            <li className="px-3 pt-1 pb-1.5 text-[13px] font-semibold text-muted-foreground">
               {formatarInteiro(fin.ctrcs)} CT-e com ocorrência
             </li>
             <LinhaDeBarra
@@ -276,7 +305,7 @@ export function BlocosDestaque({
                     e.stopPropagation();
                     r.aoFinalizacao("ocorr_em_atraso");
                   }}
-                  className="rounded px-1 text-[12px] font-bold text-[var(--status-bad)] tabular-nums underline-offset-2 hover:underline"
+                  className="rounded px-1 text-xs font-bold text-status-bad-fg tabular-nums underline-offset-2 hover:underline"
                 >
                   {formatarInteiro(fin.emAtraso)} em atraso
                 </span>
@@ -288,6 +317,7 @@ export function BlocosDestaque({
 
       <Bloco
         titulo="Onde atuar"
+        icone={MapPin}
         dica={`Unidade responsável pelo CT-e (destino, senão local atual, senão filial emissora). Percentual sobre todas as ocorrências do recorte. 'penal.' conta as ocorrências de responsabilidade da ${nomeCurto} em CT-e ainda em atraso (mesma regra do card Penalizantes); ordenado por elas.`}
       >
         {carregando && <Esqueletos />}
@@ -303,7 +333,7 @@ export function BlocosDestaque({
               tom={u.penalizantes > 0 ? "ruim" : "neutro"}
               ativo={r.unidadeResp === u.unidade}
               apoio={
-                <span className="text-[12px] font-semibold text-muted-foreground tabular-nums">
+                <span className="text-xs font-semibold text-muted-foreground tabular-nums">
                   {formatarInteiro(u.penalizantes)} penal. · {formatarInteiro(u.ctrcs)} CT-e
                 </span>
               }
@@ -317,7 +347,7 @@ export function BlocosDestaque({
   );
 }
 
-/** Prazo, faixas de atraso e pagador: mais abaixo e sem destaque. */
+/** Prazo, faixas de atraso e pagador: mais abaixo, como apoio. */
 export function BlocosApoio({
   painel,
   carregando,
@@ -345,7 +375,7 @@ export function BlocosApoio({
       maximo={totalPrazo}
       ativo={r.prazo === chave}
       apoio={
-        <span className="text-[12px] font-semibold text-muted-foreground">
+        <span className="text-xs font-semibold text-muted-foreground">
           {formatarParticipacao(valor, totalPrazo)}
         </span>
       }
@@ -356,10 +386,10 @@ export function BlocosApoio({
   );
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <Bloco
-        discreto
         titulo="Prazo"
+        icone={CalendarClock}
         dica="Conta CT-e distintos que tiveram ocorrência no período — um CT-e com 5 ocorrências conta uma vez. 'Prazo não apurado' são CT-e ainda em aberto ou baixados sem entrega: o prazo só é apurado na entrega."
       >
         {carregando && <Esqueletos n={3} />}
@@ -374,8 +404,8 @@ export function BlocosApoio({
       </Bloco>
 
       <Bloco
-        discreto
         titulo="Faixas de atraso"
+        icone={Hourglass}
         dica="CT-e distintos com ocorrência, ainda em aberto e com a previsão de entrega vencida, agrupados pelos dias desde a previsão. Entregues e baixados sem entrega não entram. O percentual considera todos os CT-e destas faixas."
       >
         {carregando && <Esqueletos />}
@@ -398,8 +428,8 @@ export function BlocosApoio({
       </Bloco>
 
       <Bloco
-        discreto
         titulo="CT-e por pagador"
+        icone={Users}
         dica="Top 15 pagadores por CT-e distintos com ocorrência. O percentual considera todos os CT-e com ocorrência do recorte, incluindo pagadores fora do top 15."
       >
         {carregando && <Esqueletos />}
@@ -444,14 +474,16 @@ export function ComparativoDoMes({
     anterior: c.countAnterior,
   }));
   return (
-    <section className="rounded-[10px] border border-border/70 bg-card p-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <h2 className="text-[16px] font-bold">Ocorrências: mês atual × mês anterior</h2>
-        <InfoTip texto="Os 10 códigos com mais ocorrências no período, cada ocorrência contada (um CT-e com três 13 conta três vezes). A barra cinza são as mesmas datas um mês antes, com os mesmos filtros. Clique numa barra para filtrar a tela pelo código." />
-      </div>
-      <div className="mb-2 text-[13px] font-semibold text-muted-foreground">
-        {carregando ? "carregando…" : "clique numa barra para filtrar pelo código"}
-      </div>
+    <Painel
+      titulo={
+        <TituloComDica
+          titulo="Ocorrências: mês atual × mês anterior"
+          dica="Os 10 códigos com mais ocorrências no período, cada ocorrência contada (um CT-e com três 13 conta três vezes). A barra cinza são as mesmas datas um mês antes, com os mesmos filtros. Clique numa barra para filtrar a tela pelo código."
+        />
+      }
+      descricao={carregando ? "carregando…" : "clique numa barra para filtrar pelo código"}
+      icone={ChartColumn}
+    >
       <GraficoBarras
         descricao="Ocorrências por código no período e nas mesmas datas do mês anterior"
         dados={dados}
@@ -471,11 +503,11 @@ export function ComparativoDoMes({
             nome: anterior
               ? `Mês anterior (${formatarDiaMes(anterior.inicio)}–${formatarDiaMes(anterior.fim)})`
               : "Mês anterior",
-            cor: "color-mix(in srgb, var(--muted-foreground) 45%, transparent)",
+            cor: "var(--grafico-comparacao)",
           },
         ]}
         dica={(d) => (
-          <div className="text-[12px] font-semibold">
+          <div className="text-xs font-semibold">
             <p>
               {d.rotulo} {d.descricao}
             </p>
@@ -488,7 +520,7 @@ export function ComparativoDoMes({
           r.aoCodigo(r.codigo === d.codigo ? null : d.codigo);
         }}
       />
-    </section>
+    </Painel>
   );
 }
 
@@ -511,36 +543,34 @@ export function ImpactoPorCodigo({
   const ctes = impacto?.ctrcs ?? 0;
   const ctesAnterior = impacto?.ctrcsAnterior ?? 0;
   const base = campoData === "emissao" ? "emitidos" : "com previsão";
-  const grade = "grid-cols-[70px_minmax(0,1fr)_90px_80px_90px_80px_90px]";
+  const grade = "grid-cols-[70px_minmax(0,1fr)_100px_90px_100px_90px_90px]";
   const pct = (v: number | null) => (v === null ? "—" : formatarPercentual(v));
   return (
-    <section className="rounded-[10px] border border-border/70 bg-card">
-      <header className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
-        <TrendingDown className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <h2 className="flex items-center gap-1.5 text-[16px] font-bold">
-            Impacto por código de ocorrência
-            <InfoTip
-              texto={`% = quantidade de ocorrências do código ÷ total de CT-e ${base} no período (finalizados ou não). Conta cada ocorrência, não o CT-e: um CT-e com três ocorrências 13 entra três vezes. A comparação usa as mesmas datas do mês anterior, com os mesmos filtros. Clique numa linha para filtrar a tela.`}
-            />
-          </h2>
-          <p className="text-[13px] font-semibold text-muted-foreground">
-            {carregando
-              ? "carregando…"
-              : `${formatarInteiro(ctes)} CT-e ${base} no período · ${formatarInteiro(ctesAnterior)} no mês anterior`}
-          </p>
-        </div>
-      </header>
+    <Painel
+      titulo={
+        <TituloComDica
+          titulo="Impacto por código de ocorrência"
+          dica={`% = quantidade de ocorrências do código ÷ total de CT-e ${base} no período (finalizados ou não). Conta cada ocorrência, não o CT-e: um CT-e com três ocorrências 13 entra três vezes. A comparação usa as mesmas datas do mês anterior, com os mesmos filtros. Clique numa linha para filtrar a tela.`}
+        />
+      }
+      descricao={
+        carregando
+          ? "carregando…"
+          : `${formatarInteiro(ctes)} CT-e ${base} no período · ${formatarInteiro(ctesAnterior)} no mês anterior`
+      }
+      icone={TrendingDown}
+    >
       {!carregando && linhas.length === 0 && (
-        <div className="px-4 py-8 text-center text-[13px] font-medium text-muted-foreground">
-          Sem ocorrências no período com os filtros atuais.
-        </div>
+        <EstadoVazio
+          mensagem="Sem ocorrências no período com os filtros atuais."
+          detalhe="Amplie o período ou tire algum filtro."
+        />
       )}
       {linhas.length > 0 && (
-        <div className="overflow-x-auto">
-          <div className="min-w-[720px]">
+        <div className="rolagem-fina overflow-x-auto">
+          <div className="min-w-[760px]">
             <div
-              className={`grid ${grade} items-center gap-3 border-b border-border/60 bg-muted/30 px-4 py-2 text-[11px] font-bold tracking-wider text-muted-foreground uppercase`}
+              className={`grid ${grade} items-center gap-3 border-b border-border bg-muted/70 px-4 py-2.5 text-[11.5px] font-semibold tracking-[0.04em] text-muted-foreground uppercase`}
             >
               <span>Código</span>
               <span>Descrição</span>
@@ -550,7 +580,7 @@ export function ImpactoPorCodigo({
               <span className="text-right">% anterior</span>
               <span className="text-right">Variação</span>
             </div>
-            <ul className="max-h-[420px] divide-y divide-border/60 overflow-y-auto">
+            <ul className="rolagem-fina max-h-[420px] divide-y divide-border overflow-y-auto">
               {linhas.map((l) => {
                 const atual = fracao(l.ocorrencias, ctes);
                 const antes = fracao(l.ocorrenciasAnterior, ctesAnterior);
@@ -560,8 +590,8 @@ export function ImpactoPorCodigo({
                   delta === null || Math.abs(delta) < 0.0005
                     ? "text-muted-foreground"
                     : delta > 0
-                      ? "text-[var(--status-bad)]"
-                      : "text-emerald-700";
+                      ? "text-status-bad-fg"
+                      : "text-status-good-fg";
                 return (
                   <li key={l.codigo}>
                     <button
@@ -571,13 +601,21 @@ export function ImpactoPorCodigo({
                       onClick={() => {
                         r.aoCodigo(ativo ? null : l.codigo);
                       }}
-                      className={`grid w-full ${grade} items-center gap-3 px-4 py-2 text-left text-[14px] font-semibold hover:bg-muted/40 ${ativo ? "bg-[var(--status-warn-bg)]" : ""}`}
+                      className={cn(
+                        `grid w-full ${grade} items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors`,
+                        ativo ? "bg-accent text-accent-foreground" : "hover:bg-muted/60",
+                      )}
                     >
-                      <span className="inline-flex items-center gap-1 font-bold tabular-nums">
-                        {l.penaliza && <AlertTriangle className="h-3.5 w-3.5 text-red-600" />}
+                      <span className="inline-flex items-center gap-1 font-mono font-bold tabular-nums">
+                        {l.penaliza && (
+                          <AlertTriangle
+                            className="h-3.5 w-3.5 text-status-bad"
+                            aria-label="Penaliza"
+                          />
+                        )}
                         {l.codigo}
                       </span>
-                      <span className="truncate">{l.descricao}</span>
+                      <span className="truncate font-medium">{l.descricao}</span>
                       <span className="text-right font-bold tabular-nums">
                         {formatarInteiro(l.ocorrencias)}
                       </span>
@@ -601,6 +639,6 @@ export function ImpactoPorCodigo({
           </div>
         </div>
       )}
-    </section>
+    </Painel>
   );
 }

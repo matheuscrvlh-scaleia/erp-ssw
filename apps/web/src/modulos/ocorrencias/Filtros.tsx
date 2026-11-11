@@ -1,11 +1,11 @@
 import { type PagadorOpcao } from "@erp/shared/contratos/filtros";
 import { RESPONSAVEIS_DO_FILTRO } from "@erp/shared/contratos/ocorrencias";
 
+import { Alternador } from "@/componentes/comum/Alternador";
 import { FiltroMultiplo, type OpcaoFiltro } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { InfoTip } from "@/componentes/comum/InfoTip";
-import { classeDoSegmento } from "@/modulos/compartilhado/segmento";
 import {
   BuscaDocumento,
   type ContextoDosFiltros,
@@ -17,6 +17,11 @@ import {
 
 import { type BuscaOcorrencias } from "./busca";
 import { rotulosDoResponsavel } from "./rotulos";
+
+const OPCOES_DE_DATA = [
+  { valor: "emissao", rotulo: "Por emissão" },
+  { valor: "prevista", rotulo: "Por previsão" },
+] as const;
 
 interface OpcoesDosFiltros {
   parceiros: readonly PagadorOpcao[] | undefined;
@@ -53,25 +58,14 @@ export function BarraDeFiltros({
   };
   return (
     <FiltrosAvancados ativos={filtrando} aoLimpar={aoLimpar}>
-      <div
-        role="group"
-        aria-label="Visualizar ocorrências por"
-        className="flex rounded-md border border-border/70 p-0.5"
-      >
-        {(["emissao", "prevista"] as const).map((campoData) => (
-          <button
-            key={campoData}
-            type="button"
-            aria-pressed={busca.campoData === campoData}
-            onClick={() => {
-              mudar({ campoData });
-            }}
-            className={classeDoSegmento(busca.campoData === campoData)}
-          >
-            {campoData === "emissao" ? "Por emissão" : "Por previsão"}
-          </button>
-        ))}
-      </div>
+      <Alternador
+        rotulo="Visualizar ocorrências por"
+        opcoes={OPCOES_DE_DATA}
+        valor={busca.campoData}
+        aoMudar={(campoData) => {
+          mudar({ campoData });
+        }}
+      />
       <FiltroPeriodo
         periodo={busca.periodo}
         de={busca.de}
@@ -79,7 +73,7 @@ export function BarraDeFiltros({
         rotulo={porEmissao ? "Emissão" : "Previsão"}
         aoMudar={mudar}
       />
-      <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
         {porEmissao ? "por data de emissão" : "por previsão de entrega"}
         <InfoTip
           texto={
@@ -90,27 +84,11 @@ export function BarraDeFiltros({
         />
       </span>
       {codigosAcompanhados !== null && (
-        <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
           recorte: {codigosAcompanhados} códigos de pendência
           <InfoTip texto="Esta tela considera apenas os códigos de pendência marcados como acompanhados no cadastro de códigos, menos os que a empresa tirou da tela na configuração. É um recorte independente da classificação penaliza/responsável." />
         </span>
       )}
-      <BuscaDocumento
-        valor={busca.ctrc}
-        placeholder="CTRC..."
-        className="w-[150px]"
-        aoMudar={(ctrc) => {
-          mudar({ ctrc });
-        }}
-      />
-      <BuscaDocumento
-        valor={busca.nf}
-        placeholder="Nota fiscal..."
-        className="w-[150px]"
-        aoMudar={(nf) => {
-          mudar({ nf });
-        }}
-      />
       <SeletorDePagador
         rotulo="Parceiros"
         opcoes={opcoes.parceiros}
@@ -175,6 +153,22 @@ export function BarraDeFiltros({
         selecionados={busca.conferentes}
         aoMudar={(conferentes) => {
           mudar({ conferentes });
+        }}
+      />
+      <BuscaDocumento
+        valor={busca.ctrc}
+        placeholder="CTRC..."
+        className="w-[150px]"
+        aoMudar={(ctrc) => {
+          mudar({ ctrc });
+        }}
+      />
+      <BuscaDocumento
+        valor={busca.nf}
+        placeholder="Nota fiscal..."
+        className="w-[150px]"
+        aoMudar={(nf) => {
+          mudar({ nf });
         }}
       />
     </FiltrosAvancados>
