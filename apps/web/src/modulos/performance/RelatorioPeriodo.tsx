@@ -29,28 +29,29 @@ import {
   DialogTitle,
 } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
-import { exportarCsv, exportarExcel, imprimir } from "@/lib/exportacao";
+import { exportarCsvEmSecoes, exportarExcel, imprimirDocumento } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaRelatorio } from "./api";
 import { DistribuicaoPontualidade } from "./Kpis";
 import {
+  etiquetasDoRelatorio,
   excelDoRelatorio,
-  type FiltrosDoExcel,
+  type FiltrosDoRelatorio,
   type Indicador,
   indicadoresDoRelatorio,
-  linhasDoCsv,
 } from "./relatorio";
+import { csvDoRelatorio } from "./relatorio-csv";
+import { impressaoDoRelatorio } from "./relatorio-impressao";
 
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
 interface FiltrosHerdados {
   entrada: Omit<FiltroPerformanceEntrada, "inicio" | "fim" | "baseData">;
   codigos: string[];
-  etiquetas: { rotulo: string; valor: string }[];
-  /** Filtros por extenso para as notas da aba "Resumo" do Excel. */
-  filtrosDoExcel: FiltrosDoExcel;
+  /** Filtros por extenso: etiquetas, CSV, impressão e notas da aba "Resumo" do Excel. */
+  filtros: FiltrosDoRelatorio;
 }
 
 /** Relatório de período: janela própria (padrão "Hoje"), comparativo opcional e exportação. */
@@ -74,7 +75,7 @@ export function DialogoRelatorio({
   const [comparar, setComparar] = useState(false);
   const [cmpDe, setCmpDe] = useState("");
   const [cmpAte, setCmpAte] = useState("");
-  const [modoPrevistos, setModoPrevistos] = useState<"todos" | "periodo">("periodo");
+  const [modoPrevistos, setModoPrevistos] = useState<"todos" | "periodo">("todos");
 
   const { inicio, fim } = resolverPeriodo(preset, de, ate, hojeNoFuso(fuso));
   const comparativoAtivo = comparar && Boolean(cmpDe && cmpAte);
@@ -90,19 +91,7 @@ export function DialogoRelatorio({
   });
 
   const marca = useEmpresaDaExportacao();
-  const exportacao = (r: RelatorioPeriodo) => ({
-    arquivo: "relatorio-periodo",
-    titulo: "Relatório de período",
-    subtitulo: `${dataBr(inicio)} → ${dataBr(fim)}${herdados.etiquetas.length ? ` · ${herdados.etiquetas.map((e) => `${e.rotulo}: ${e.valor}`).join(" | ")}` : ""}`,
-    empresa: marca,
-    colunas: [
-      { chave: "secao", titulo: "Seção" },
-      { chave: "item", titulo: "Indicador" },
-      { chave: "valor", titulo: "Valor" },
-      { chave: "comparativo", titulo: "Comparativo" },
-    ],
-    linhas: linhasDoCsv(r, herdados.codigos),
-  });
+  const etiquetas = etiquetasDoRelatorio(herdados.filtros);
   const falhou = (e: unknown) => {
     toast.error("Não foi possível gerar o arquivo", { description: mensagemAmigavel(e) });
   };
@@ -199,12 +188,12 @@ export function DialogoRelatorio({
               )}
             </div>
 
-            {herdados.etiquetas.length > 0 && (
+            {etiquetas.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] text-muted-foreground">
                   Filtros herdados da barra principal:
                 </span>
-                {herdados.etiquetas.map((e) => (
+                {etiquetas.map((e) => (
                   <span
                     key={e.rotulo}
                     className="rounded-md border border-border/70 bg-muted/50 px-1.5 text-[11px]"
@@ -241,7 +230,10 @@ export function DialogoRelatorio({
             variant="outline"
             size="sm"
             onClick={() => {
-              if (data) exportarCsv({ ...exportacao(data), fuso });
+              if (data) {
+                const csv = csvDoRelatorio(data, modoPrevistos, herdados.filtros);
+                exportarCsvEmSecoes(csv.arquivo, csv.linhas);
+              }
             }}
             disabled={!data}
           >
@@ -253,7 +245,7 @@ export function DialogoRelatorio({
             onClick={() => {
               if (data)
                 exportarExcel({
-                  ...excelDoRelatorio(data, herdados.codigos, herdados.filtrosDoExcel),
+                  ...excelDoRelatorio(data, herdados.codigos, herdados.filtros),
                   empresa: marca,
                 }).catch(falhou);
             }}
@@ -265,7 +257,11 @@ export function DialogoRelatorio({
             variant="outline"
             size="sm"
             onClick={() => {
-              if (data) imprimir(exportacao(data)).catch(falhou);
+              if (data)
+                imprimirDocumento({
+                  ...impressaoDoRelatorio(data, modoPrevistos, herdados.filtros),
+                  empresa: marca,
+                }).catch(falhou);
             }}
             disabled={!data}
           >

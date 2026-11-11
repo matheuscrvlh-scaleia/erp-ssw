@@ -78,6 +78,7 @@ import { GraficoSerie } from "./GraficoSerie";
 import { EsqueletoDeCards, LinhaDeKpis } from "./Kpis";
 import { type CliqueNosPrevistos, SecaoPrevistos } from "./Previstos";
 import { type CardDeProducao, LinhaDeProducao, VerificacaoDaParticao } from "./Producao";
+import { nomesConhecidos } from "./relatorio";
 import { DialogoRelatorio } from "./RelatorioPeriodo";
 import { TabelaDeUnidades } from "./TabelaUnidades";
 
@@ -627,9 +628,11 @@ export function PaginaPerformance() {
           }
           pontos={serie.data}
           granularidade={janela.granularidade}
+          metricas={["sla_op", "sla_cli", "volume"]}
           meta={configuracao.slaMetaPct / 100}
           carregando={serie.isFetching || (!serie.data && !serie.error)}
           erro={serie.error}
+          nomeExport="performance-evolucao"
         />
       </div>
 
@@ -641,10 +644,10 @@ export function PaginaPerformance() {
         herdados={{
           entrada: filtros,
           codigos: busca.codigos,
-          etiquetas: etiquetas.flatMap((e) => (e ? [{ rotulo: e.rotulo, valor: e.valor }] : [])),
-          filtrosDoExcel: {
-            unidades: nomesUnidades,
-            parceiros: nomesParceiros,
+          // Unidade ou parceiro sem nome fica de fora do relatório, como hoje.
+          filtros: {
+            unidades: nomesConhecidos(busca.unidades, r?.unidades),
+            parceiros: nomesConhecidos(busca.parceiros, pagadores.data),
             remetente: busca.remetente,
             destino: busca.destino,
             filiais: busca.filiais,

@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { type AbaExcel } from "@/lib/exportacao";
 
-import { excelDoRelatorio, type FiltrosDoExcel, notasDosFiltros } from "./relatorio";
+import { excelDoRelatorio, type FiltrosDoRelatorio, notasDosFiltros } from "./relatorio";
 
 // origem dos rótulos e da ordem: exportRelatorioXlsx (relatorio-semanal-export.ts, sistema atual)
 
@@ -81,7 +81,7 @@ const relatorio: RelatorioPeriodo = {
   limites: { slaMetaPct: 95, taxaRetornoMetaPct: 3 },
 };
 
-const semFiltro: FiltrosDoExcel = {
+const semFiltro: FiltrosDoRelatorio = {
   unidades: [],
   parceiros: [],
   remetente: "",

@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { nomeDoArquivo, sufixoHoje } from "./arquivo";
 import { celulaExcel, paraDiaIso, textoCsv, textoDaCelula, valorDaLinha } from "./celulas";
-import { montarCsv } from "./csv";
+import { montarCsv, montarCsvEmSecoes } from "./csv";
 import { carregarExcelJs, montarPlanilha } from "./excel";
-import { escaparHtml, montarHtmlImpressao } from "./impressao";
+import { escaparHtml, montarDocumentoImpresso, montarHtmlImpressao } from "./impressao";
 import { formatoDoLogo, resolverMarca, rodapeDaMarca } from "./marca";
 import { montarCorpoPdf, textoPdf } from "./pdf";
 import { ehLinkSsw, urlCtrcNoSsw } from "./ssw";
@@ -108,6 +108,9 @@ describe("nome do arquivo", () => {
     expect(nomeDoArquivo("relatorio-periodo-2026-11-01-2026-11-10", "xlsx", dia)).toBe(
       "relatorio-periodo-2026-11-01-2026-11-10.xlsx",
     );
+    expect(nomeDoArquivo("relatorio-periodo-2026-11-01_2026-11-10", "csv", dia)).toBe(
+      "relatorio-periodo-2026-11-01_2026-11-10.csv",
+    );
   });
 });
 
@@ -162,6 +165,30 @@ describe("CSV", () => {
   });
 });
 
+describe("CSV em seções", () => {
+  it("títulos crus, células com ; e aspas também na vírgula; fórmula com ', número não", () => {
+    expect(
+      montarCsvEmSecoes([
+        "# Título, com vírgula",
+        "",
+        ["Indicador", "Valor"],
+        ["Prejuízo (R$) — códigos 13, 69", "1234,50"],
+        ["=SOMA(A1)", -3],
+        ["-2+3", "-1,50"],
+        ['Texto "x"; y', 120.5],
+      ]).split("\n"),
+    ).toEqual([
+      "# Título, com vírgula",
+      "",
+      "Indicador;Valor",
+      '"Prejuízo (R$) — códigos 13, 69";"1234,50"',
+      "'=SOMA(A1);-3",
+      `'-2+3;"-1,50"`,
+      '"Texto ""x""; y";120.5',
+    ]);
+  });
+});
+
 describe("PDF", () => {
   it("troca setas e ≥ que a fonte do PDF não tem", () => {
     expect(textoPdf("A → B ≥ C")).toBe("A -> B >= C");
@@ -199,6 +226,31 @@ describe("impressão", () => {
     expect(html).toContain("size: A4 portrait");
     expect(html).not.toContain("<img");
     expect(escaparHtml(`<a href="x">'`)).toBe("&lt;a href=&quot;x&quot;&gt;&#39;");
+  });
+});
+
+describe("documento impresso", () => {
+  it("cabeçalho da empresa com extra, CSS próprio e cor da marca em variável", () => {
+    const html = montarDocumentoImpresso(
+      {
+        empresa: FR,
+        tituloDaJanela: "Relatório de período — 01/11/2026 a 10/11/2026",
+        titulo: "Relatório <de> Período",
+        subtitulo: "Período: 01/11/2026 a 10/11/2026",
+        extraHtml: '<div class="print-sub">extra</div>',
+        estilos: "@page { size: A4 portrait; margin: 15mm; }",
+        corpoHtml: "<section>corpo</section>",
+      },
+      null,
+      new Date("2026-11-10T15:00:00Z"),
+    );
+    expect(html).toContain("<title>Relatório de período — 01/11/2026 a 10/11/2026</title>");
+    expect(html).toContain("Relatório &lt;de&gt; Período");
+    expect(html).toContain('<div class="print-sub">extra</div>');
+    expect(html).toContain("--marca-primaria: #212a63");
+    expect(html).toContain("margin: 15mm");
+    expect(html).toContain("<section>corpo</section>");
+    expect(html).toContain("Gerado em 10/11/2026 12:00");
   });
 });
 

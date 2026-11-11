@@ -84,3 +84,18 @@ export interface OpcoesImpressao extends OpcoesComMarca {
   /** Padrão: retrato. */
   orientacao?: Orientacao | undefined;
 }
+
+/** Impressão de layout próprio (cards, várias tabelas) com o cabeçalho da empresa. */
+export interface OpcoesDocumentoImpresso {
+  empresa: EmpresaExportacao;
+  /** Título da janela (vira o nome sugerido ao salvar em PDF). */
+  tituloDaJanela: string;
+  titulo: string;
+  subtitulo?: string | undefined;
+  /** HTML já escapado que entra abaixo do subtítulo (comparativo, filtros). */
+  extraHtml?: string | undefined;
+  /** CSS do documento (`@page`, corpo); o do cabeçalho entra sozinho. */
+  estilos: string;
+  /** Corpo já escapado. */
+  corpoHtml: string;
+}
