@@ -11,8 +11,9 @@ Leia `docs/arquitetura.md` antes de qualquer coisa. Resumo do que não se negoci
 - O usuário não pode perceber diferença em relação ao sistema atual (telas, números, URLs, textos,
   exportações, login). A especificação está em `docs/regras/`; a referência é o repo `fr-transportes`
   e `C:\Users\Matheus Carvalho\Desktop\erp-ssw-referencia\`.
-- Banco de desenvolvimento: Supabase DEVELOP (`vyockehhhvomqcjqnuwb`), schema `erp`. **Nunca** o
-  projeto de produção (`quyrhwmfbqikkpmiivuq`). Não escrever no schema `public` (é o sistema atual).
+- Banco do ERP: Supabase `phjsyaeeklnzkxzdmrmn` (projeto `erp-ssw`), schema `erp`, já com os dados.
+  As regras saíram do DEVELOP do sistema atual (`vyockehhhvomqcjqnuwb`, só referência). **Nunca** o
+  projeto de produção do sistema atual (`quyrhwmfbqikkpmiivuq`). Não escrever no schema `public`.
 - Português no domínio, rotas, UI e erros. TS strict, sem `any`, sem código morto.
 - bun (nunca npm). Cada agente trabalha num worktree em `.worktrees/<nome>` com branch própria;
   só o coordenador faz merge na `main`.

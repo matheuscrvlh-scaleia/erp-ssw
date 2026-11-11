@@ -12,8 +12,9 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
    `current_setting(...)`), como defesa em profundidade.
 3. **Login, sessão e permissão são do backend + front.** Senhas atuais migradas sem o usuário
    perceber (hash bcrypt de hoje validado no 1º login e regravado em argon2id).
-4. **Banco: Postgres do Supabase, projeto DEVELOP** (`vyockehhhvomqcjqnuwb`), usado como Postgres
-   comum. Schema novo próprio (`erp`), sem tocar no `public` legado.
+4. **Banco: Postgres do Supabase, projeto `erp-ssw`** (`phjsyaeeklnzkxzdmrmn`), usado como Postgres
+   comum, schema próprio (`erp`). As regras foram tiradas do DEVELOP do sistema atual
+   (`vyockehhhvomqcjqnuwb`), que fica só como referência.
 5. Base funcional = versão multiempresa (empresas, módulos por empresa, Plataforma, logs).
 6. Nada de código morto: só entra o que alguma tela, rota pública ou job usa hoje.
 
