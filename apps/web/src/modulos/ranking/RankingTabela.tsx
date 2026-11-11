@@ -1,6 +1,5 @@
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/filtros";
 import { type TipoRecorte } from "@erp/shared/contratos/listagem";
-import { type PontoSerie as PontoDaSerie } from "@erp/shared/contratos/performance";
 import { type FiltroDoRanking, type LinhaDoRanking } from "@erp/shared/contratos/ranking";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
@@ -25,7 +24,6 @@ import {
   FiltrandoPor,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
-import { GraficoLinha } from "@/componentes/comum/Graficos";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { type Periodo, resolverPeriodo, ROTULO_ATALHO } from "@/componentes/comum/periodo";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
@@ -42,6 +40,7 @@ import {
 } from "@/modulos/filtros/componentes";
 import { nomesDosPagadoresAgrupados, unirParceiros } from "@/modulos/filtros/regras";
 import { caminhoDaLista } from "@/modulos/listagem/busca";
+import { GraficoSerie } from "@/modulos/performance/GraficoSerie";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";
 import {
@@ -463,14 +462,17 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
         />
       </div>
 
-      <section className="rounded-[10px] border border-border/70 bg-card p-3">
-        <header className="mb-2 flex items-start justify-between gap-2">
-          <div>
-            <h3 className="text-[13px] font-semibold">SLA mês a mês — {ano}</h3>
-            <p className="text-[11px] text-muted-foreground">
-              {escopoDoGrafico} · por {ROTULO_DA_BASE[base]} · não segue o período acima
-            </p>
-          </div>
+      <GraficoSerie
+        titulo={`SLA mês a mês — ${String(ano)}`}
+        subtitulo={`${escopoDoGrafico} · por ${ROTULO_DA_BASE[base]} · não segue o período acima`}
+        pontos={serie.data}
+        granularidade="mes"
+        metricas={["sla_ranking", "volume"]}
+        meta={meta}
+        carregando={serie.isFetching || (!serie.data && !serie.error)}
+        erro={serie.error}
+        nomeExport={`ranking-${grupo}-mensal-${String(ano)}`}
+        filtrosExtra={
           <select
             aria-label="Ano do gráfico"
             value={ano}
@@ -485,21 +487,8 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
               </option>
             ))}
           </select>
-        </header>
-        <GraficoLinha
-          descricao={`SLA mês a mês em ${String(ano)}`}
-          dados={pontosDoGrafico(serie.data)}
-          eixoX="mes"
-          series={[{ chave: "sla", nome: "SLA" }]}
-          formato="percentual"
-          meta={{ valor: meta, rotulo: `meta ${formatarPercentual(meta)}` }}
-          dica={(p) =>
-            `${p.mes}: SLA ${formatarPercentual(p.sla)} · ${formatarInteiro(p.totalCtes)} CT-e`
-          }
-          carregando={serie.isLoading}
-          erro={serie.error}
-        />
-      </section>
+        }
+      />
 
       {filtroCard !== "todos" && (
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
@@ -681,15 +670,4 @@ export function RankingTabela({ grupo }: { grupo: "pagador" | "cidade" }) {
       </p>
     </div>
   );
-}
-
-const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-
-/** Ponto do gráfico: SLA do mês = (entregue − fora por culpa da transportadora) ÷ entregue. */
-function pontosDoGrafico(pontos: readonly PontoDaSerie[] | undefined) {
-  return (pontos ?? []).map((p) => ({
-    mes: MESES[Number(p.periodo.slice(5, 7)) - 1] ?? p.periodo,
-    sla: p.entregue > 0 ? (p.entregue - p.foraTransp) / p.entregue : null,
-    totalCtes: p.totalCtrcs,
-  }));
 }

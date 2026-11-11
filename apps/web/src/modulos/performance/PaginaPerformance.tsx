@@ -628,9 +628,11 @@ export function PaginaPerformance() {
           }
           pontos={serie.data}
           granularidade={janela.granularidade}
+          metricas={["sla_op", "sla_cli", "volume"]}
           meta={configuracao.slaMetaPct / 100}
           carregando={serie.isFetching || (!serie.data && !serie.error)}
           erro={serie.error}
+          nomeExport="performance-evolucao"
         />
       </div>
 
