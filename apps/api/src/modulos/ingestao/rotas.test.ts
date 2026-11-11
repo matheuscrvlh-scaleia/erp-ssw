@@ -243,7 +243,10 @@ describe("telas de ingestão (só Plataforma)", () => {
     const r = await app.inject({ method: "POST", url: `${BASE}/ftp/liberar-trava`, headers });
     expect(r.statusCode).toBe(503);
     expect(r.json()).toMatchObject({
-      erro: { mensagem: "Integração com o worker do SSW não configurada." },
+      erro: {
+        mensagem:
+          "Integração com o worker do SSW não configurada. Configure em Plataforma › Integrações.",
+      },
     });
     expect(cenario.banco.auditoria).toEqual([]);
     const ftp = await app.inject({ url: `${BASE}/ftp`, headers });

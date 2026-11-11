@@ -1,4 +1,4 @@
-import { createPrivateKey, createPublicKey, type KeyObject } from "node:crypto";
+import { createHash, createPrivateKey, createPublicKey, type KeyObject } from "node:crypto";
 
 import { z } from "@erp/shared/zod";
 import { errors, jwtVerify, SignJWT } from "jose";
@@ -31,26 +31,41 @@ const reivindicacoes = z.object({
 
 export interface ConfigTokens {
   chavePrivadaPem: string;
-  kid: string;
-  /** Chaves públicas de rotações anteriores, aceitas até os tokens delas expirarem. */
-  chavesAnteriores: Record<string, string>;
+  /** PEM públicos de rotações anteriores, aceitos até os tokens delas expirarem. */
+  chavesAnteriores: readonly string[];
   emissor: string;
   audiencia: string;
+}
+
+/**
+ * `kid` = impressão digital da chave pública (RFC 7638, SHA-256 do JWK): sai da própria chave, sem
+ * variável à parte, e muda sozinho na rotação.
+ */
+function kidDa(publica: KeyObject): string {
+  const { crv, kty, x } = publica.export({ format: "jwk" });
+  return createHash("sha256").update(JSON.stringify({ crv, kty, x })).digest("base64url");
+}
+
+export function kidDaChave(chavePrivadaPem: string): string {
+  return kidDa(createPublicKey(createPrivateKey(chavePrivadaPem)));
 }
 
 /** JWT EdDSA (Ed25519) de 15 min, com `kid` para trocar a chave sem derrubar ninguém. */
 export function criarEmissorDeTokens(config: ConfigTokens): EmissorDeTokens {
   const privada = createPrivateKey(config.chavePrivadaPem);
-  const publicas = new Map<string, KeyObject>([[config.kid, createPublicKey(privada)]]);
-  for (const [kid, pem] of Object.entries(config.chavesAnteriores)) {
-    publicas.set(kid, createPublicKey(pem));
+  const atual = createPublicKey(privada);
+  const kid = kidDa(atual);
+  const publicas = new Map<string, KeyObject>([[kid, atual]]);
+  for (const pem of config.chavesAnteriores) {
+    const publica = createPublicKey(pem);
+    publicas.set(kidDa(publica), publica);
   }
 
   return {
     validadeSegundos: VALIDADE_SEGUNDOS,
     emitir: (sessao) =>
       new SignJWT({ emp: sessao.empresaId, sid: sessao.familiaId })
-        .setProtectedHeader({ alg: ALGORITMO, kid: config.kid })
+        .setProtectedHeader({ alg: ALGORITMO, kid })
         .setSubject(sessao.usuarioId)
         .setIssuer(config.emissor)
         .setAudience(config.audiencia)
@@ -84,10 +99,11 @@ export function criarEmissorDeTokens(config: ConfigTokens): EmissorDeTokens {
   };
 }
 
-export function lerChavesAnteriores(json: string | undefined): Record<string, string> {
-  if (!json) return {};
-  const chaves = z.record(z.string(), z.string()).parse(JSON.parse(json));
-  return Object.fromEntries(
-    Object.entries(chaves).map(([kid, pem]) => [kid, pem.replace(/\\n/g, "\n")]),
-  );
+/** `JWT_CHAVES_ANTERIORES`: lista JSON de PEM públicos (`\n` literal aceito). */
+export function lerChavesAnteriores(json: string | undefined): string[] {
+  if (!json) return [];
+  return z
+    .array(z.string())
+    .parse(JSON.parse(json))
+    .map((pem) => pem.replace(/\\n/g, "\n"));
 }

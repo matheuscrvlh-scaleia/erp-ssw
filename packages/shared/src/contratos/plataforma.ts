@@ -1,6 +1,6 @@
 import { contrato } from "../contrato";
 import { ehDataIso } from "../datas";
-import { STATUS_EMPRESA, TIPOS_INTEGRACAO } from "../plataforma";
+import { STATUS_EMPRESA, TIPOS_INTEGRACAO, TIPOS_INTEGRACAO_PLATAFORMA } from "../plataforma";
 import { z } from "../zod";
 import { cargo, departamentoDaEmpresa, emailDeUsuario, novoUsuario } from "./admin";
 
@@ -137,6 +137,34 @@ export type AdminDaPlataforma = z.infer<typeof adminDaPlataforma>;
 
 const parametroTipo = z.object({ id: z.uuid(), tipo: z.enum(TIPOS_INTEGRACAO) });
 
+/** Integração da própria Plataforma (domínio, e-mail, worker-ssw). O segredo nunca sai da API. */
+export const integracaoDaPlataforma = z.object({
+  tipo: z.enum(TIPOS_INTEGRACAO_PLATAFORMA),
+  parametros: z.record(z.string(), valorDeParametro),
+  segredoDefinidoEm: z.iso.datetime().nullable(),
+  atualizadoEm: z.iso.datetime().nullable(),
+});
+export type IntegracaoDaPlataforma = z.infer<typeof integracaoDaPlataforma>;
+
+const enderecoHttp = z.url({ protocol: /^https?$/, error: "Informe um endereço http(s) válido." });
+/** Parâmetros aceitos por tipo (a API valida; a tela usa os mesmos campos do catálogo). */
+export const PARAMETROS_DA_INTEGRACAO_PLATAFORMA = {
+  dominio: z.object({ url: enderecoHttp }),
+  email: z.object({
+    remetente: z
+      .string()
+      .trim()
+      .max(200)
+      .regex(
+        /^([^<>]+<)?[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>?$/,
+        "Remetente no formato Nome <email@dominio>.",
+      ),
+  }),
+  worker_ssw: z.object({ url: enderecoHttp }),
+} as const;
+
+const parametroTipoDaPlataforma = z.object({ tipo: z.enum(TIPOS_INTEGRACAO_PLATAFORMA) });
+
 export const contratosPlataforma = {
   listarEmpresas: contrato({
     metodo: "GET",
@@ -263,6 +291,33 @@ export const contratosPlataforma = {
     /** Vazio remove o segredo. */
     entrada: z.object({ segredo: z.string().trim().max(4096) }),
     saida: z.object({ segredoDefinidoEm: z.iso.datetime().nullable() }),
+  }),
+  listarIntegracoesDaPlataforma: contrato({
+    metodo: "GET",
+    caminho: "/api/v1/plataforma/integracoes",
+    saida: z.object({ integracoes: z.array(integracaoDaPlataforma) }),
+  }),
+  salvarIntegracaoDaPlataforma: contrato({
+    metodo: "PUT",
+    caminho: "/api/v1/plataforma/integracoes/:tipo",
+    parametros: parametroTipoDaPlataforma,
+    entrada: z.object({ parametros: z.record(z.string().min(1).max(60), valorDeParametro) }),
+    saida: ok,
+  }),
+  definirSegredoDaPlataforma: contrato({
+    metodo: "PUT",
+    caminho: "/api/v1/plataforma/integracoes/:tipo/segredo",
+    parametros: parametroTipoDaPlataforma,
+    /** Vazio remove o segredo. */
+    entrada: z.object({ segredo: z.string().trim().max(4096) }),
+    saida: z.object({ segredoDefinidoEm: z.iso.datetime().nullable() }),
+  }),
+  /** Manda um e-mail de teste com a configuração gravada. */
+  testarEmailDaPlataforma: contrato({
+    metodo: "POST",
+    caminho: "/api/v1/plataforma/integracoes/email/teste",
+    entrada: z.object({ para: emailDeUsuario }),
+    saida: ok,
   }),
   listarAdmins: contrato({
     metodo: "GET",

@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 
 import { type codigosOcorrencia } from "@erp/db/schema";
-import { type ChavesDeSegredo, cifrarSegredo, contextoDoSegredo } from "@erp/db/segredos";
+import {
+  type ChavesDeSegredo,
+  cifrarSegredo,
+  contextoDaPlataforma,
+  contextoDoSegredo,
+  type SegredoCifrado,
+} from "@erp/db/segredos";
 import { modulosVigentes } from "@erp/dominio/acesso";
 import {
   caminhoDoLogo,
@@ -24,7 +30,9 @@ import {
   type EmpresaCompleta,
   type EmpresaResumo,
   type IntegracaoDaEmpresa,
+  type IntegracaoDaPlataforma,
   type ModuloDaEmpresa,
+  PARAMETROS_DA_INTEGRACAO_PLATAFORMA,
   type ValorDeParametro,
   valorDeParametro,
   type VinculoNaEmpresa,
@@ -32,14 +40,18 @@ import {
 import { hojeNoFuso } from "@erp/shared/datas";
 import {
   INFO_DA_INTEGRACAO,
+  INFO_DA_INTEGRACAO_PLATAFORMA,
   type StatusEmpresa,
   type TipoIntegracao,
+  type TipoIntegracaoPlataforma,
   TIPOS_INTEGRACAO,
+  TIPOS_INTEGRACAO_PLATAFORMA,
 } from "@erp/shared/plataforma";
 import { type FastifyBaseLogger } from "fastify";
 
 import { conflito, naoEncontrado } from "../../http/erros";
 import type { Armazenamento } from "../../infra/armazenamento";
+import { type Correio } from "../../infra/correio";
 import { type Executor } from "../../repositorios";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
 import { registrarVinculo } from "../usuarios/casos-de-uso";
@@ -87,6 +99,14 @@ export interface IntegracaoGravada {
   ultimoTesteEm: Date | null;
   ultimoTesteOk: boolean | null;
   ultimoTesteMsg: string | null;
+  atualizadoEm: Date;
+}
+
+export interface IntegracaoDaPlataformaGravada {
+  tipo: TipoIntegracaoPlataforma;
+  parametros: Record<string, unknown>;
+  segredo: SegredoCifrado | null;
+  segredoDefinidoEm: Date | null;
   atualizadoEm: Date;
 }
 
@@ -142,6 +162,18 @@ export interface RepositorioPlataforma {
   ): Promise<void>;
   copiaDoModelo(modeloId: string): Promise<CopiaDoModelo>;
   copiarParaEmpresa(empresaId: string, copia: Omit<CopiaDoModelo, "telasDosCargos">): Promise<void>;
+  integracoesDaPlataforma(): Promise<IntegracaoDaPlataformaGravada[]>;
+  gravarIntegracaoDaPlataforma(
+    tipo: TipoIntegracaoPlataforma,
+    parametros: Record<string, ValorDeParametro>,
+    atualizadoPor: string,
+  ): Promise<void>;
+  /** Cria a linha se não existir e grava ou apaga o segredo. */
+  gravarSegredoDaPlataforma(
+    tipo: TipoIntegracaoPlataforma,
+    segredo: { cifrado: string; versaoChave: number; definidoEm: Date } | null,
+    atualizadoPor: string,
+  ): Promise<void>;
   admins(): Promise<{ usuarioId: string; nome: string | null; email: string; criadoEm: Date }[]>;
   /** Trava a lista (duas remoções ao mesmo tempo não zeram a equipe) e devolve quantos são. */
   travarAdmins(): Promise<number>;
@@ -605,6 +637,112 @@ export async function definirSegredo(
     });
   });
   return { segredoDefinidoEm: segredo?.definidoEm.toISOString() ?? null };
+}
+
+// --- Integrações da própria Plataforma (domínio, e-mail, worker-ssw) ------------------------------
+
+/** Uma linha por tipo, mesmo sem configuração. O segredo nunca sai: só quando foi definido. */
+export async function listarIntegracoesDaPlataforma(
+  db: Executor<"plataforma">,
+): Promise<IntegracaoDaPlataforma[]> {
+  const gravadas = new Map(
+    (await db(({ plataforma }) => plataforma.integracoesDaPlataforma())).map((l) => [l.tipo, l]),
+  );
+  return TIPOS_INTEGRACAO_PLATAFORMA.map((tipo) => {
+    const l = gravadas.get(tipo);
+    return {
+      tipo,
+      parametros: parametrosValidos(l?.parametros ?? {}),
+      segredoDefinidoEm: l?.segredoDefinidoEm?.toISOString() ?? null,
+      atualizadoEm: l?.atualizadoEm.toISOString() ?? null,
+    };
+  });
+}
+
+/** Grava os parâmetros do tipo (só os campos conhecidos, validados). `aoGravar` limpa o cache. */
+export async function salvarIntegracaoDaPlataforma(
+  db: Executor<"plataforma" | "auditoria">,
+  ator: Ator,
+  tipo: TipoIntegracaoPlataforma,
+  parametros: Record<string, ValorDeParametro>,
+  aoGravar: () => void,
+): Promise<void> {
+  const lido = PARAMETROS_DA_INTEGRACAO_PLATAFORMA[tipo].safeParse(parametros);
+  if (!lido.success) {
+    throw new ErroDeNegocio(
+      "ENTRADA_INVALIDA",
+      lido.error.issues[0]?.message ?? "Parâmetros inválidos.",
+    );
+  }
+  const depois: Record<string, ValorDeParametro> = lido.data;
+  await db(async ({ plataforma, auditoria }) => {
+    const antes = (await plataforma.integracoesDaPlataforma()).find((l) => l.tipo === tipo);
+    await plataforma.gravarIntegracaoDaPlataforma(tipo, depois, ator.usuarioId);
+    await registrarCadastro(auditoria, ator, {
+      empresaId: null,
+      acao: antes ? "alterar" : "criar",
+      entidade: "integracao_plataforma",
+      entidadeId: tipo,
+      antes: antes ? { parametros: antes.parametros } : null,
+      depois: { tipo, parametros: depois },
+    });
+  });
+  aoGravar();
+}
+
+/**
+ * Grava (cifrado com o contexto `plataforma:<tipo>`) ou, com valor vazio, apaga a chave/token. O
+ * valor nunca vai para resposta, log ou auditoria.
+ */
+export async function definirSegredoDaPlataforma(
+  chaves: ChavesDeSegredo | null,
+  db: Executor<"plataforma" | "auditoria">,
+  ator: Ator,
+  tipo: TipoIntegracaoPlataforma,
+  valor: string,
+  agora: Date,
+  aoGravar: () => void,
+): Promise<{ segredoDefinidoEm: string | null }> {
+  const rotulo = INFO_DA_INTEGRACAO_PLATAFORMA[tipo].segredo;
+  if (!rotulo) {
+    throw new ErroDeNegocio("ENTRADA_INVALIDA", "Esta integração não tem senha nem token.");
+  }
+  const remover = valor === "";
+  if (!remover && !chaves) throw cofreDesligado();
+  const segredo =
+    remover || !chaves
+      ? null
+      : { ...cifrarSegredo(chaves, valor, contextoDaPlataforma(tipo)), definidoEm: agora };
+  await db(async ({ plataforma, auditoria }) => {
+    await plataforma.gravarSegredoDaPlataforma(tipo, segredo, ator.usuarioId);
+    await auditoria.registrar(ator, {
+      empresaId: null,
+      acao: remover ? "remover_segredo" : "definir_segredo",
+      entidade: "integracao_plataforma",
+      entidadeId: tipo,
+      resumo: `${rotulo} ${remover ? "removido" : "definido"}`,
+      antes: null,
+      depois: null,
+    });
+  });
+  aoGravar();
+  return { segredoDefinidoEm: segredo?.definidoEm.toISOString() ?? null };
+}
+
+/** E-mail de teste com a configuração gravada (erro do Resend chega ao operador). */
+export async function testarEmailDaPlataforma(correio: Correio, para: string): Promise<void> {
+  try {
+    await correio.enviar({
+      para,
+      assunto: "Teste de e-mail do ERP",
+      texto: "Se você recebeu esta mensagem, o envio de e-mail do ERP está funcionando.",
+      html: "<p>Se você recebeu esta mensagem, o envio de e-mail do ERP está funcionando.</p>",
+    });
+  } catch (erro) {
+    if (erro instanceof ErroDeNegocio) throw erro;
+    const detalhe = erro instanceof Error ? erro.message : "erro desconhecido";
+    throw new ErroDeNegocio("INDISPONIVEL", `O Resend recusou o envio: ${detalhe}`);
+  }
 }
 
 export async function listarAdmins(db: Executor<"plataforma">): Promise<AdminDaPlataforma[]> {

@@ -19,40 +19,27 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORTA: "3000"
-      # Obrigatórias vazias: a api recusa no boot (src/config/env.ts) e diz qual falta.
       # O web (Caddy) fica na frente: o IP do cliente sai do X-Forwarded-For.
       PROXIES_CONFIAVEIS: "1"
-      LOG_NIVEL: ${LOG_NIVEL:-info}
-      DATABASE_URL: ${DATABASE_URL:-}
-      DB_MAX_CONEXOES: ${API_DB_MAX_CONEXOES:-10}
-      DB_TIMEOUT_CONSULTA_MS: ${API_DB_TIMEOUT_CONSULTA_MS:-30000}
       REDIS_URL: redis://redis:6379/0
-      WEB_URL: https://${DOMINIO:-}
-      CORS_ORIGENS: ${CORS_ORIGENS:-}
+      # Obrigatórias (a api recusa no boot e diz qual falta). Domínio, e-mail (Resend) e
+      # worker-ssw ficam na tela Plataforma › Integrações, não aqui.
+      DATABASE_URL: ${DATABASE_URL:-}
       JWT_CHAVE_PRIVADA: ${JWT_CHAVE_PRIVADA:-}
-      JWT_KID: ${JWT_KID:-}
-      COOKIE_SEGREDO: ${COOKIE_SEGREDO:-}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORTA: ${SMTP_PORTA:-587}
-      SMTP_SEGURO: ${SMTP_SEGURO:-false}
-      EMAIL_REMETENTE: ${EMAIL_REMETENTE:-}
+      SEGREDOS_CHAVES: ${SEGREDOS_CHAVES:-}
+      DB_MAX_CONEXOES: ${API_DB_MAX_CONEXOES:-10}
+      LOG_NIVEL: ${LOG_NIVEL:-info}
       JOBS_LIGADOS: ${JOBS_LIGADOS:-true}
       AGENDAMENTOS_LIGADOS: ${AGENDAMENTOS_LIGADOS:-false}
       # Opcionais: só entram se estiverem no .env (ausente ≠ vazio).
       JWT_CHAVES_ANTERIORES:
+      SEGREDOS_CHAVE_ATUAL:
       REFRESH_DIAS:
-      SMTP_USUARIO:
-      SMTP_SENHA:
       GOOGLE_CLIENT_ID:
       GOOGLE_CLIENT_SECRET:
       GOOGLE_REDIRECT_URI:
       LOGO_URL_BASE:
       METRICAS_TOKEN:
-      SEGREDOS_CHAVES:
-      SEGREDOS_CHAVE_ATUAL:
-      # HTTP interno do worker-ssw (ex.: http://worker-ssw:3000) e o token de serviço.
-      WORKER_SSW_URL:
-      WORKER_SSW_TOKEN:
     volumes:
       # CA do Supabase para sslmode=verify-full.
       - ./certs:/etc/erp/certs:ro

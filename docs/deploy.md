@@ -16,8 +16,8 @@ rede externa "erp-interna": api e web ↔ worker-ssw (outro compose, porta 3000;
 
 - O sistema inteiro responde na 8081; a 3001 expõe a api direto (`/healthz`, `/readyz`).
 - O Docker ignora o ufw para porta publicada: 3001 e 8081 ficam abertas para a internet.
-- HTTPS fica com o proxy que estiver na frente da VPS (a api monta os links com
-  `https://$DOMINIO`).
+- HTTPS fica com o proxy que estiver na frente da VPS. Os links dos e-mails usam o domínio
+  cadastrado em Plataforma › Integrações.
 
 ## 2. Primeiro deploy
 
@@ -57,21 +57,35 @@ A pasta `certs/` da raiz é montada em `/etc/erp/certs` (fora do git). Migration
 Conexões no Postgres: `API_DB_MAX_CONEXOES` (padrão 10) + as do worker-ssw; tem de caber no Pool
 Size do pooler junto com o que o sistema atual usa.
 
-## 5. Chaves e segredos
+## 5. Chaves, segredos e Plataforma › Integrações
 
-Ficam só no `.env` da VPS (`chmod 600`) e numa cópia no gerenciador de senhas. Nenhum vai para
-imagem, git ou GitHub.
+O `.env` tem só três variáveis obrigatórias, guardadas também no gerenciador de senhas. Nenhuma vai
+para imagem, git ou GitHub:
 
-- **JWT (Ed25519)**:
+- **`DATABASE_URL`**: papel `erp_app` (§4).
+- **`JWT_CHAVE_PRIVADA`** (Ed25519). O `kid` sai da própria chave (RFC 7638):
   ```bash
   openssl genpkey -algorithm ed25519 -out jwt.pem
   printf "JWT_CHAVE_PRIVADA='%s'\n" "$(awk 'NF{printf "%s\\n",$0}' jwt.pem)"   # para o .env
   shred -u jwt.pem
   ```
-- **`COOKIE_SEGREDO`**: `openssl rand -base64 48`.
-- **`SEGREDOS_CHAVES`** (cifra os segredos de integração no banco):
-  `echo "SEGREDOS_CHAVES=1:$(openssl rand -base64 32)"`, com `SEGREDOS_CHAVE_ATUAL=1`. O **mesmo
-  valor** vai no `.env` do worker-ssw. Sem ela os segredos do banco não decifram: guardar separada
-  do backup do banco.
-- **worker-ssw**: `WORKER_SSW_URL=http://worker-ssw:3000` e `WORKER_SSW_TOKEN` (um dos tokens que
-  o worker-ssw aceita). Sem eles as ações das telas de ingestão respondem 503 e as leituras seguem.
+  Rotação: a chave nova entra em `JWT_CHAVE_PRIVADA` e a pública da antiga em
+  `JWT_CHAVES_ANTERIORES='["<PEM público>"]'` até os tokens dela vencerem (15 min).
+- **`SEGREDOS_CHAVES`** (chave mestra): `echo "SEGREDOS_CHAVES=1:$(openssl rand -base64 32)"`. Cifra
+  os segredos das integrações (das empresas e da Plataforma) e deriva o segredo do cookie do login
+  pelo Google. O **mesmo valor** vai no `.env` do worker-ssw. Fica no ambiente, nunca no banco:
+  guardada junto do que protege, não protegeria nada. Sem ela os segredos do banco não decifram.
+  Rotação: `SEGREDOS_CHAVES=1:<antiga>,2:<nova>` (a maior vira a atual), recriar a api e o
+  worker-ssw e pedir o job `docker compose run --rm --no-deps api --enable-source-maps
+  dist/server.js --recifrar-segredos`. Só tirar a `1:` quando o log disser `falhas: []`.
+
+O resto se configura na tela **Plataforma › Integrações** (só admin da Plataforma). Os segredos
+vão cifrados com a chave mestra, e o que se salva vale em até 30 s, sem reiniciar:
+
+- **Domínio do sistema**: endereço público (ex.: `https://erp.empresa.com.br`), usado nos links do
+  convite e do "esqueci minha senha".
+- **E-mail (Resend)**: remetente (domínio verificado no Resend) e a chave da API. O botão
+  **Testar** manda um e-mail na hora. Sem isso, em produção, o convite e o "esqueci minha senha"
+  falham com aviso.
+- **worker-ssw**: endereço interno (`http://worker-ssw:3000`) e o token de serviço (um dos que o
+  worker-ssw aceita). Sem eles as ações das telas de ingestão respondem 503 e as leituras seguem.

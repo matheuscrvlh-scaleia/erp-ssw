@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import {
   cifrarSegredo,
+  contextoDaPlataforma,
   contextoDoSegredo,
   decifrarSegredo,
   lerChavesDeSegredo,
@@ -25,8 +26,8 @@ function repositorio(linhas: IntegracaoCifrada[]): RepositorioSegredos {
           [l.segredo, l.segredoAnterior].some((s) => s !== null && s.versaoChave !== versao),
         ),
       ),
-    regravar: (id, segredos) => {
-      const linha = linhas.find((l) => l.id === id);
+    regravar: (alvo, segredos) => {
+      const linha = linhas.find((l) => l.id === alvo.id && l.empresaId === alvo.empresaId);
       if (linha) Object.assign(linha, segredos);
       return Promise.resolve();
     },
@@ -75,5 +76,24 @@ describe("recifrarSegredos", () => {
     const r = await recifrarSegredos(repositorio([linha]), novas);
     expect(r).toEqual({ recifrados: 0, falhas: [{ empresaId: "e1", tipo: "sftp" }] });
     expect(linha.segredo).toBe(original);
+  });
+
+  it("segredo da Plataforma é recifrado no contexto plataforma:<tipo>", async () => {
+    const ctx = contextoDaPlataforma("email");
+    const linha: IntegracaoCifrada = {
+      id: "email",
+      empresaId: null,
+      tipo: "email",
+      segredo: cifrarSegredo(antigas, "re_chave", ctx),
+      segredoAnterior: null,
+    };
+    expect(await recifrarSegredos(repositorio([linha]), novas)).toEqual({
+      recifrados: 1,
+      falhas: [],
+    });
+    expect(linha.segredo?.versaoChave).toBe(2);
+    const recifrado = linha.segredo;
+    if (!recifrado) throw new Error("segredo sumiu");
+    expect(decifrarSegredo(lerChavesDeSegredo(`2:${k2}`), recifrado, ctx)).toBe("re_chave");
   });
 });

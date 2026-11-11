@@ -28,7 +28,6 @@ export function ambienteDeTeste(extra: Record<string, string> = {}): Ambiente {
     DATABASE_URL: "postgres://teste@localhost/teste",
     WEB_URL: "http://localhost:5173",
     JWT_CHAVE_PRIVADA: gerarChavePem(),
-    JWT_KID: "teste-1",
     COOKIE_SEGREDO: "segredo-de-teste-com-mais-de-32-caracteres",
     ...extra,
   });
@@ -91,8 +90,7 @@ export function criarCenario(): Cenario {
   const correio = new CorreioFalso();
   const tokens = criarEmissorDeTokens({
     chavePrivadaPem: ambiente.JWT_CHAVE_PRIVADA,
-    kid: ambiente.JWT_KID,
-    chavesAnteriores: {},
+    chavesAnteriores: [],
     emissor: ambiente.JWT_EMISSOR,
     audiencia: ambiente.JWT_AUDIENCIA,
   });
@@ -104,7 +102,7 @@ export function criarCenario(): Cenario {
     correio,
     agora: relogio.agora,
     refreshDias: 30,
-    webUrl: ambiente.WEB_URL,
+    webUrl: () => Promise.resolve("http://localhost:5173"),
     urlDoLogo: () => null,
   };
   return {

@@ -33,6 +33,7 @@ export const TELAS = [
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
+  "plataforma_integracoes",
 ] as const;
 
 export type Tela = (typeof TELAS)[number];
@@ -46,6 +47,7 @@ export const TELAS_SO_PLATAFORMA: readonly Tela[] = [
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
+  "plataforma_integracoes",
   "admin_ingestao",
   "admin_importacao_ssw",
   "admin_xml_cte",
@@ -78,6 +80,7 @@ export const TELAS_ADMIN: readonly Tela[] = [
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
+  "plataforma_integracoes",
 ];
 
 /**
@@ -116,6 +119,7 @@ export const CAMINHO_DA_TELA: Record<Tela, string> = {
   plataforma_empresas: "/plataforma/empresas",
   plataforma_logs: "/plataforma/logs",
   plataforma_admins: "/plataforma/administradores",
+  plataforma_integracoes: "/plataforma/integracoes",
 };
 
 export const ROTULO_DA_TELA: Record<Tela, string> = {
@@ -148,6 +152,7 @@ export const ROTULO_DA_TELA: Record<Tela, string> = {
   plataforma_empresas: "Plataforma · Empresas",
   plataforma_logs: "Plataforma · Logs",
   plataforma_admins: "Plataforma · Administradores",
+  plataforma_integracoes: "Plataforma · Integrações",
 };
 
 /** Tela de um caminho: a primeira do catálogo que casa (igual ao guard de hoje). */

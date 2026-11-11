@@ -8,6 +8,7 @@ import {
   empresas,
   empresaUsuarios,
   plataformaAdmins,
+  plataformaIntegracoes,
   usuarios,
 } from "@erp/db/schema";
 import { ehTela, type Tela } from "@erp/shared/acesso/telas";
@@ -195,6 +196,46 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
           target: [empresaIntegracoes.empresaId, empresaIntegracoes.tipo],
           set: { ...valores, ...guardaAnterior },
         });
+    },
+
+    integracoesDaPlataforma: async () => {
+      const t = plataformaIntegracoes;
+      const linhas = await tx
+        .select({
+          tipo: t.tipo,
+          parametros: t.parametros,
+          cifrado: t.segredoCifrado,
+          versaoChave: t.segredoVersaoChave,
+          segredoDefinidoEm: t.segredoDefinidoEm,
+          atualizadoEm: t.atualizadoEm,
+        })
+        .from(t);
+      return linhas.map(({ cifrado, versaoChave, ...l }) => ({
+        ...l,
+        segredo: cifrado === null || versaoChave === null ? null : { cifrado, versaoChave },
+      }));
+    },
+
+    gravarIntegracaoDaPlataforma: async (tipo, parametros, atualizadoPor) => {
+      const valores = { parametros, atualizadoPor, atualizadoEm: new Date() };
+      await tx
+        .insert(plataformaIntegracoes)
+        .values({ tipo, ...valores })
+        .onConflictDoUpdate({ target: plataformaIntegracoes.tipo, set: valores });
+    },
+
+    gravarSegredoDaPlataforma: async (tipo, segredo, atualizadoPor) => {
+      const valores = {
+        segredoCifrado: segredo?.cifrado ?? null,
+        segredoVersaoChave: segredo?.versaoChave ?? null,
+        segredoDefinidoEm: segredo?.definidoEm ?? null,
+        atualizadoPor,
+        atualizadoEm: new Date(),
+      };
+      await tx
+        .insert(plataformaIntegracoes)
+        .values({ tipo, ...valores })
+        .onConflictDoUpdate({ target: plataformaIntegracoes.tipo, set: valores });
     },
 
     copiaDoModelo: async (modeloId) => {

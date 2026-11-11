@@ -1,5 +1,6 @@
 import { type Transacao } from "@erp/db";
-import { empresaIntegracoes } from "@erp/db/schema";
+import { empresaIntegracoes, plataformaIntegracoes } from "@erp/db/schema";
+import { TIPOS_INTEGRACAO_PLATAFORMA } from "@erp/shared/plataforma";
 import { and, eq, isNotNull, ne, or } from "drizzle-orm";
 
 import { type RepositorioSegredos } from "./recifrar";
@@ -29,16 +30,43 @@ export function criarRepositorioSegredos(tx: Transacao): RepositorioSegredos {
             and(isNotNull(t.segredoAnteriorVersaoChave), ne(t.segredoAnteriorVersaoChave, versao)),
           ),
         );
-      return linhas.map((l) => ({
-        id: l.id,
-        empresaId: l.empresaId,
-        tipo: l.tipo,
-        segredo: segredoDe(l.cifrado, l.versaoChave),
-        segredoAnterior: segredoDe(l.anteriorCifrado, l.anteriorVersaoChave),
-      }));
+      const p = plataformaIntegracoes;
+      const daPlataforma = await tx
+        .select({ tipo: p.tipo, cifrado: p.segredoCifrado, versaoChave: p.segredoVersaoChave })
+        .from(p)
+        .where(and(isNotNull(p.segredoVersaoChave), ne(p.segredoVersaoChave, versao)));
+      return [
+        ...linhas.map((l) => ({
+          id: l.id,
+          empresaId: l.empresaId,
+          tipo: l.tipo,
+          segredo: segredoDe(l.cifrado, l.versaoChave),
+          segredoAnterior: segredoDe(l.anteriorCifrado, l.anteriorVersaoChave),
+        })),
+        ...daPlataforma.map((l) => ({
+          id: l.tipo,
+          empresaId: null,
+          tipo: l.tipo,
+          segredo: segredoDe(l.cifrado, l.versaoChave),
+          segredoAnterior: null,
+        })),
+      ];
     },
 
-    regravar: async (id, { segredo, segredoAnterior }) => {
+    regravar: async (linha, { segredo, segredoAnterior }) => {
+      if (linha.empresaId === null) {
+        const p = plataformaIntegracoes;
+        const tipo = TIPOS_INTEGRACAO_PLATAFORMA.find((t) => t === linha.tipo);
+        if (!tipo) throw new Error(`Tipo de integração da Plataforma desconhecido: ${linha.tipo}`);
+        await tx
+          .update(p)
+          .set({
+            segredoCifrado: segredo?.cifrado ?? null,
+            segredoVersaoChave: segredo?.versaoChave ?? null,
+          })
+          .where(eq(p.tipo, tipo));
+        return;
+      }
       await tx
         .update(empresaIntegracoes)
         .set({
@@ -47,7 +75,7 @@ export function criarRepositorioSegredos(tx: Transacao): RepositorioSegredos {
           segredoAnteriorCifrado: segredoAnterior?.cifrado ?? null,
           segredoAnteriorVersaoChave: segredoAnterior?.versaoChave ?? null,
         })
-        .where(eq(empresaIntegracoes.id, id));
+        .where(eq(empresaIntegracoes.id, linha.id));
     },
   };
 }

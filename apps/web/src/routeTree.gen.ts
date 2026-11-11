@@ -40,6 +40,7 @@ import { Route as AutenticadoHistoricoFeriadosRouteImport } from './routes/_aute
 import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
 import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
 import { Route as AutenticadoPlataformaAdministradoresRouteImport } from './routes/_autenticado/plataforma.administradores'
+import { Route as AutenticadoPlataformaIntegracoesRouteImport } from './routes/_autenticado/plataforma.integracoes'
 import { Route as AutenticadoPlataformaLogsRouteImport } from './routes/_autenticado/plataforma.logs'
 import { Route as AutenticadoPrazoParceiroIdRouteImport } from './routes/_autenticado/prazo-parceiro_.$id'
 import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
@@ -215,6 +216,12 @@ const AutenticadoPlataformaAdministradoresRoute =
     path: '/plataforma/administradores',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoPlataformaIntegracoesRoute =
+  AutenticadoPlataformaIntegracoesRouteImport.update({
+    id: '/plataforma/integracoes',
+    path: '/plataforma/integracoes',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoPlataformaLogsRoute =
   AutenticadoPlataformaLogsRouteImport.update({
     id: '/plataforma/logs',
@@ -292,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
   '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
@@ -332,6 +340,7 @@ export interface FileRoutesByTo {
   '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
   '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
@@ -374,6 +383,7 @@ export interface FileRoutesById {
   '/_autenticado/historico_/feriados': typeof AutenticadoHistoricoFeriadosRoute
   '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
   '/_autenticado/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
+  '/_autenticado/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
   '/_autenticado/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
   '/_autenticado/prazo-parceiro_/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/historico/feriados'
     | '/performance/lista'
     | '/plataforma/administradores'
+    | '/plataforma/integracoes'
     | '/plataforma/logs'
     | '/prazo-parceiro/$id'
     | '/ranking/regras'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/historico/feriados'
     | '/performance/lista'
     | '/plataforma/administradores'
+    | '/plataforma/integracoes'
     | '/plataforma/logs'
     | '/prazo-parceiro/$id'
     | '/ranking/regras'
@@ -497,6 +509,7 @@ export interface FileRouteTypes {
     | '/_autenticado/historico_/feriados'
     | '/_autenticado/performance/lista'
     | '/_autenticado/plataforma/administradores'
+    | '/_autenticado/plataforma/integracoes'
     | '/_autenticado/plataforma/logs'
     | '/_autenticado/prazo-parceiro_/$id'
     | '/_autenticado/ranking/regras'
@@ -735,6 +748,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoPlataformaAdministradoresRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/plataforma/integracoes': {
+      id: '/_autenticado/plataforma/integracoes'
+      path: '/plataforma/integracoes'
+      fullPath: '/plataforma/integracoes'
+      preLoaderRoute: typeof AutenticadoPlataformaIntegracoesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/plataforma/logs': {
       id: '/_autenticado/plataforma/logs'
       path: '/plataforma/logs'
@@ -821,6 +841,7 @@ interface AutenticadoRouteChildren {
   AutenticadoHistoricoFeriadosRoute: typeof AutenticadoHistoricoFeriadosRoute
   AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
   AutenticadoPlataformaAdministradoresRoute: typeof AutenticadoPlataformaAdministradoresRoute
+  AutenticadoPlataformaIntegracoesRoute: typeof AutenticadoPlataformaIntegracoesRoute
   AutenticadoPlataformaLogsRoute: typeof AutenticadoPlataformaLogsRoute
   AutenticadoPrazoParceiroIdRoute: typeof AutenticadoPrazoParceiroIdRoute
   AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
@@ -860,6 +881,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
   AutenticadoPlataformaAdministradoresRoute:
     AutenticadoPlataformaAdministradoresRoute,
+  AutenticadoPlataformaIntegracoesRoute: AutenticadoPlataformaIntegracoesRoute,
   AutenticadoPlataformaLogsRoute: AutenticadoPlataformaLogsRoute,
   AutenticadoPrazoParceiroIdRoute: AutenticadoPrazoParceiroIdRoute,
   AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,

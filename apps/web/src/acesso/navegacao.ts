@@ -20,6 +20,7 @@ import {
   type LucideIcon,
   Medal,
   PackageOpen,
+  Plug,
   Scale,
   ScrollText,
   Settings,
@@ -62,6 +63,7 @@ const ICONE_DA_TELA: Record<Tela, LucideIcon> = {
   plataforma_empresas: Building,
   plataforma_logs: ScrollText,
   plataforma_admins: UserCog,
+  plataforma_integracoes: Plug,
 };
 
 /** Ordem do menu principal. `ranking` e `ranking_novo` levam a /ranking: viram um item só. */
@@ -94,6 +96,7 @@ const ORDEM_PLATAFORMA: readonly Tela[] = [
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
+  "plataforma_integracoes",
   "admin_ingestao",
   "admin_importacao_ssw",
   "admin_xml_cte",

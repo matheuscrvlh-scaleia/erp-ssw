@@ -91,7 +91,8 @@ export const VALIDADE_CONVITE_HORAS = 72;
 export interface DependenciasUsuarios {
   correio: Correio;
   senhas: ServicoDeSenhas;
-  webUrl: string;
+  /** Origem pública do ERP (Plataforma › Integrações › Domínio) para os links dos e-mails. */
+  webUrl: () => Promise<string>;
   agora: () => Date;
 }
 
@@ -157,7 +158,7 @@ async function emitirConvite(
     },
     agora,
   );
-  return linkDeConvite(deps.webUrl, token);
+  return linkDeConvite(await deps.webUrl(), token);
 }
 
 /**

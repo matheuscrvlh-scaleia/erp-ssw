@@ -7,6 +7,7 @@ export const CHAVES_DA_PLATAFORMA = {
   empresas: ["plataforma", "empresas"],
   empresa: (id: string) => ["plataforma", "empresa", id],
   admins: ["plataforma", "administradores"],
+  integracoes: ["plataforma", "integracoes"],
 } as const;
 
 export const consultaEmpresas = queryOptions({
@@ -35,6 +36,11 @@ export const consultaCadastros = (id: string) =>
 
 export const consultaIntegracoes = (id: string) =>
   consultaDaEmpresa(id, "integracoes", () => chamar(p.listarIntegracoes, { parametros: { id } }));
+
+export const consultaIntegracoesDaPlataforma = queryOptions({
+  queryKey: CHAVES_DA_PLATAFORMA.integracoes,
+  queryFn: () => chamar(p.listarIntegracoesDaPlataforma),
+});
 
 export const consultaAdmins = queryOptions({
   queryKey: CHAVES_DA_PLATAFORMA.admins,

@@ -6,13 +6,11 @@ import { construirApp } from "./app";
 import { criarRepositorioCteNucleo } from "./compartilhado/gravacao-cte";
 import { carregarAmbiente } from "./config/env";
 import { criarArmazenamentoS3 } from "./infra/armazenamento";
-import { criarCorreioSmtp } from "./infra/correio";
 import { filaDesligada } from "./infra/fila";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
-import { criarClienteWorkerSsw } from "./infra/worker-ssw";
 import { criarFilasDosJobs, ligarWorkersDosJobs, pedirRecifragemDeSegredos } from "./jobs/iniciar";
 import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
 import { criarRepositorioSegredos } from "./jobs/manutencao/repositorio-segredos";
@@ -35,7 +33,7 @@ const redis = ambiente.REDIS_URL
   ? new Redis(ambiente.REDIS_URL, { maxRetriesPerRequest: 1, connectTimeout: 2_000 })
   : null;
 
-// Subcomando: `node dist/server.js --recifrar-segredos` só pede o job (docs/deploy.md §5.3) e sai.
+// Subcomando: `node dist/server.js --recifrar-segredos` só pede o job (docs/deploy.md §5) e sai.
 if (process.argv.includes("--recifrar-segredos")) {
   if (redis === null) throw new Error("--recifrar-segredos precisa de REDIS_URL.");
   await pedirRecifragemDeSegredos(redis);
@@ -76,18 +74,6 @@ const filasDosJobs = redis ? criarFilasDosJobs(redis) : null;
 const agora = () => new Date();
 const cacheDeConfiguracoes = criarCacheDeConfiguracoes(agora);
 
-const workerSsw =
-  ambiente.WORKER_SSW_URL && ambiente.WORKER_SSW_TOKEN
-    ? criarClienteWorkerSsw({
-        url: ambiente.WORKER_SSW_URL,
-        token: ambiente.WORKER_SSW_TOKEN,
-        buscar: fetch,
-        aoFalhar: (erro, operacao) => {
-          app.log.warn({ err: erro, operacao }, "worker-ssw não respondeu");
-        },
-      })
-    : null;
-
 const app = await construirApp({
   ambiente,
   executar: (contexto, fn) =>
@@ -98,23 +84,12 @@ const app = await construirApp({
   redis,
   tokens: criarEmissorDeTokens({
     chavePrivadaPem: ambiente.JWT_CHAVE_PRIVADA,
-    kid: ambiente.JWT_KID,
     chavesAnteriores: lerChavesAnteriores(ambiente.JWT_CHAVES_ANTERIORES),
     emissor: ambiente.JWT_EMISSOR,
     audiencia: ambiente.JWT_AUDIENCIA,
   }),
   senhas: criarServicoDeSenhas(),
   limitador: redis ? criarLimitadorRedis(redis) : criarLimitadorEmMemoria(),
-  correio: ambiente.SMTP_HOST
-    ? criarCorreioSmtp({
-        host: ambiente.SMTP_HOST,
-        porta: ambiente.SMTP_PORTA,
-        seguro: ambiente.SMTP_SEGURO,
-        usuario: ambiente.SMTP_USUARIO,
-        senha: ambiente.SMTP_SENHA,
-        remetente: ambiente.EMAIL_REMETENTE,
-      })
-    : null,
   google:
     ambiente.GOOGLE_CLIENT_ID && ambiente.GOOGLE_CLIENT_SECRET && ambiente.GOOGLE_REDIRECT_URI
       ? criarProvedorGoogle({
@@ -123,7 +98,6 @@ const app = await construirApp({
           redirectUri: ambiente.GOOGLE_REDIRECT_URI,
         })
       : null,
-  workerSsw,
   fila: filasDosJobs?.fila ?? filaDesligada,
   ...(ambiente.JOBS_LIGADOS
     ? { verificarJobs: () => workers?.verificar() ?? Promise.resolve() }

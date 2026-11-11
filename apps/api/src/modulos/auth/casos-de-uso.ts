@@ -116,7 +116,8 @@ export interface DependenciasAuth {
   correio: Correio;
   agora: () => Date;
   refreshDias: number;
-  webUrl: string;
+  /** Origem pública do ERP (Plataforma › Integrações › Domínio) para os links dos e-mails. */
+  webUrl: () => Promise<string>;
   urlDoLogo: (caminho: string | null) => string | null;
 }
 
@@ -403,7 +404,7 @@ export async function pedirRedefinicao(deps: DependenciasAuth, emailInformado: s
       agora,
     ),
   );
-  const link = new URL("/redefinir-senha", deps.webUrl);
+  const link = new URL("/redefinir-senha", await deps.webUrl());
   link.searchParams.set("token", token);
   await deps.correio.enviar(
     emailDeRedefinicao({ para: usuario.email, nome: usuario.nome, link: link.href }),

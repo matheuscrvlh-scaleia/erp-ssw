@@ -24,6 +24,8 @@ import {
 import { type CodigoErro } from "@erp/shared/erros";
 import { type z } from "@erp/shared/zod";
 
+import { type FonteDaConfiguracao } from "./configuracao-da-plataforma";
+
 /**
  * Operações manuais da tela Admin › Importação SSW (ADR 0012, "Operações manuais"). O corpo é o
  * da tela, já validado pelo contrato dela; a resposta vem no formato que a tela usa.
@@ -86,11 +88,11 @@ const SO_LEITURA_OU_RAPIDA: ReadonlySet<OperacaoManual> = new Set([
 ]);
 
 export const MENSAGEM_WORKER_SSW_NAO_CONFIGURADO =
-  "Integração com o worker do SSW não configurada.";
+  "Integração com o worker do SSW não configurada. Configure em Plataforma › Integrações.";
 const MENSAGEM_WORKER_SSW_FORA =
   "O worker do SSW não respondeu. Tente de novo em instantes; se continuar, fale com o suporte.";
 
-/** Ações pedem o worker-ssw; sem `WORKER_SSW_URL`/`WORKER_SSW_TOKEN`, 503 com o aviso. */
+/** Ações pedem o worker-ssw; sem endereço e token (Plataforma › Integrações), 503 com o aviso. */
 export function exigirWorkerSsw(cliente: ClienteWorkerSsw | null): ClienteWorkerSsw {
   if (cliente === null)
     throw new ErroDeNegocio("INDISPONIVEL", MENSAGEM_WORKER_SSW_NAO_CONFIGURADO);
@@ -207,5 +209,33 @@ export function criarClienteWorkerSsw(config: ConfigWorkerSsw): ClienteWorkerSsw
         ),
       );
     },
+  };
+}
+
+/**
+ * Cliente com o endereço e o token da tela Plataforma › Integrações, lidos a cada uso (com o cache
+ * da fonte). Sem configuração, toda chamada responde 503 com o aviso, como `exigirWorkerSsw(null)`;
+ * as leituras que toleram o worker fora (situação, FTP) seguem sem ele.
+ */
+export function criarClienteWorkerSswDaPlataforma(
+  fonte: FonteDaConfiguracao,
+  base: Omit<ConfigWorkerSsw, "url" | "token">,
+): ClienteWorkerSsw {
+  let atual: { url: string; token: string; cliente: ClienteWorkerSsw } | null = null;
+  const cliente = async () => {
+    const { workerSsw } = await fonte.obter();
+    if (!workerSsw) throw new ErroDeNegocio("INDISPONIVEL", MENSAGEM_WORKER_SSW_NAO_CONFIGURADO);
+    if (atual?.url !== workerSsw.url || atual.token !== workerSsw.token) {
+      atual = { ...workerSsw, cliente: criarClienteWorkerSsw({ ...base, ...workerSsw }) };
+    }
+    return atual.cliente;
+  };
+  return {
+    pedirExecucao: async (empresaId, pedido) => (await cliente()).pedirExecucao(empresaId, pedido),
+    consultarExecucao: async (job, execucaoId, aguardarMs) =>
+      (await cliente()).consultarExecucao(job, execucaoId, aguardarMs),
+    situacao: async (empresaId) => (await cliente()).situacao(empresaId),
+    operacao: async (empresaId, operacao, saida, pedido) =>
+      (await cliente()).operacao(empresaId, operacao, saida, pedido),
   };
 }

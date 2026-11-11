@@ -160,15 +160,16 @@ jobs:
           cat >> .env <<'EOF'
           DATABASE_URL=postgres://erp_app:x@banco.invalido:5432/postgres
           JWT_CHAVE_PRIVADA=ci
-          COOKIE_SEGREDO=ci
-          SMTP_HOST=smtp.invalido
+          SEGREDOS_CHAVES=ci
           EOF
           docker compose config --quiet
 
       - name: Caddyfile do web (validate + fmt)
         run: |
-          docker run --rm -v "$PWD/apps/web:/web:ro" "$CADDY_IMAGEM"             caddy validate --config /web/Caddyfile --adapter caddyfile
-          docker run --rm -v "$PWD/apps/web:/web:ro" "$CADDY_IMAGEM" caddy fmt --diff /web/Caddyfile             || { echo "::error file=apps/web/Caddyfile::rode 'caddy fmt --overwrite apps/web/Caddyfile'"; exit 1; }
+          docker run --rm -v "$PWD/apps/web:/web:ro" "$CADDY_IMAGEM" \
+            caddy validate --config /web/Caddyfile --adapter caddyfile
+          docker run --rm -v "$PWD/apps/web:/web:ro" "$CADDY_IMAGEM" caddy fmt --diff /web/Caddyfile \
+            ||{ echo "::error file=apps/web/Caddyfile::rode 'caddy fmt --overwrite apps/web/Caddyfile'"; exit 1; }
 
       - name: hadolint
         run: |

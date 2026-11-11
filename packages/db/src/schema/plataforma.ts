@@ -1,3 +1,4 @@
+import { TIPOS_INTEGRACAO_PLATAFORMA } from "@erp/shared/plataforma";
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
@@ -201,6 +202,36 @@ export const empresaIntegracoes = erp.table(
       update: ehPlataforma,
       delete: ehPlataforma,
     }),
+  ],
+);
+
+/**
+ * Integração da própria Plataforma (domínio, e-mail pelo Resend, worker-ssw), igual para todas as
+ * empresas. Segredo cifrado pela aplicação com o contexto `plataforma:<tipo>` (`segredos.ts`).
+ * Leitura livre para o app: o e-mail do "esqueci minha senha" sai sem sessão, e o segredo está
+ * cifrado. Só a Plataforma grava.
+ */
+export const plataformaIntegracoes = erp.table(
+  "plataforma_integracoes",
+  {
+    tipo: text("tipo", { enum: TIPOS_INTEGRACAO_PLATAFORMA }).primaryKey(),
+    parametros: jsonb("parametros").$type<Record<string, unknown>>().notNull().default({}),
+    segredoCifrado: text("segredo_cifrado"),
+    segredoVersaoChave: integer("segredo_versao_chave"),
+    segredoDefinidoEm: timestamp("segredo_definido_em", { withTimezone: true, mode: "date" }),
+    atualizadoEm: atualizadoEm(),
+    atualizadoPor: uuid("atualizado_por").references(() => usuarios.id),
+  },
+  (t) => [
+    check(
+      "plataforma_integracoes_segredo_coerente",
+      sql`(${t.segredoCifrado} is null) = (${t.segredoVersaoChave} is null)`,
+    ),
+    ...politicas(
+      "plataforma_integracoes",
+      { select: sql`true`, insert: ehPlataforma, update: ehPlataforma, delete: ehPlataforma },
+      [papelApp],
+    ),
   ],
 );
 

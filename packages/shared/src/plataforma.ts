@@ -110,6 +110,40 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
   },
 };
 
+/**
+ * Integrações da própria Plataforma (valem para todas as empresas): o que antes ficava no .env da
+ * VPS. O segredo de cada uma vai cifrado com a chave mestra (`SEGREDOS_CHAVES`), que fica no .env.
+ */
+export const TIPOS_INTEGRACAO_PLATAFORMA = ["dominio", "email", "worker_ssw"] as const;
+export type TipoIntegracaoPlataforma = (typeof TIPOS_INTEGRACAO_PLATAFORMA)[number];
+
+export const INFO_DA_INTEGRACAO_PLATAFORMA: Record<TipoIntegracaoPlataforma, InfoDaIntegracao> = {
+  dominio: {
+    nome: "Domínio do sistema",
+    descricao: "Endereço público do ERP: monta os links do convite e do “esqueci minha senha”.",
+    campos: [{ chave: "url", rotulo: "Endereço", dica: "Ex.: https://erp.suaempresa.com.br" }],
+  },
+  email: {
+    nome: "E-mail (Resend)",
+    descricao: "Envio do convite e do “esqueci minha senha” pelo Resend.",
+    campos: [
+      {
+        chave: "remetente",
+        rotulo: "Remetente",
+        dica: "Ex.: Painel Logístico <nao-responda@suaempresa.com.br> (domínio verificado no Resend)",
+      },
+    ],
+    segredo: "Chave da API do Resend",
+  },
+  worker_ssw: {
+    nome: "worker-ssw",
+    descricao:
+      "HTTP interno do worker-ssw (rede erp-interna). Sem ele, as ações das telas de ingestão ficam indisponíveis.",
+    campos: [{ chave: "url", rotulo: "Endereço interno", dica: "Ex.: http://worker-ssw:3000" }],
+    segredo: "Token de serviço",
+  },
+};
+
 /** Nome de parâmetro que parece segredo: nunca vai em `parametros` (vai cifrado à parte). */
 export const CHAVE_COM_CARA_DE_SEGREDO = /(senha|token|secret|segredo|apikey|api_key|password)/i;
 

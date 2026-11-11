@@ -5,28 +5,31 @@ import { carregarAmbiente, origensPermitidas } from "./env";
 
 describe("ambiente", () => {
   it("falha no boot listando o que falta", () => {
-    expect(() => carregarAmbiente({})).toThrow(/DATABASE_URL[\s\S]*WEB_URL/);
+    expect(() => carregarAmbiente({})).toThrow(/DATABASE_URL[\s\S]*JWT_CHAVE_PRIVADA/);
   });
 
-  it("Google exige as três variáveis juntas; produção exige Redis e SMTP", () => {
+  it("Google exige as três variáveis juntas; produção exige Redis e a chave mestra", () => {
     expect(() => ambienteDeTeste({ GOOGLE_CLIENT_ID: "x" })).toThrow("GOOGLE_CLIENT_SECRET");
-    expect(() => ambienteDeTeste({ NODE_ENV: "production" })).toThrow(/REDIS_URL[\s\S]*SMTP_HOST/);
-  });
-
-  it("worker-ssw: URL e token juntos; jobs do ERP precisam de Redis", () => {
-    expect(() => ambienteDeTeste({ WORKER_SSW_URL: "http://worker-ssw:3003" })).toThrow(
-      "WORKER_SSW_TOKEN",
+    expect(() => ambienteDeTeste({ NODE_ENV: "production" })).toThrow(
+      /REDIS_URL[\s\S]*SEGREDOS_CHAVES/,
     );
-    expect(() => ambienteDeTeste({ JOBS_LIGADOS: "true" })).toThrow("JOBS_LIGADOS");
-    expect(
-      ambienteDeTeste({
-        WORKER_SSW_URL: "http://worker-ssw:3003",
-        WORKER_SSW_TOKEN: "t".repeat(32),
-      }).WORKER_SSW_URL,
-    ).toBe("http://worker-ssw:3003");
   });
 
-  it("aceita PEM com \\n literal e monta as origens do CORS", () => {
+  it("jobs do ERP precisam de Redis; o cookie precisa da chave mestra ou de segredo próprio", () => {
+    expect(() => ambienteDeTeste({ JOBS_LIGADOS: "true" })).toThrow("JOBS_LIGADOS");
+    expect(() =>
+      carregarAmbiente({ DATABASE_URL: "postgres://x", JWT_CHAVE_PRIVADA: gerarChavePem() }),
+    ).toThrow("SEGREDOS_CHAVES");
+    expect(
+      carregarAmbiente({
+        DATABASE_URL: "postgres://x",
+        JWT_CHAVE_PRIVADA: gerarChavePem(),
+        SEGREDOS_CHAVES: `1:${Buffer.alloc(32).toString("base64")}`,
+      }).SEGREDOS_CHAVE_ATUAL,
+    ).toBeUndefined();
+  });
+
+  it("aceita PEM com \n literal e monta as origens do CORS", () => {
     const pemEmUmaLinha = gerarChavePem().replaceAll("\n", "\\n");
     const ambiente = ambienteDeTeste({
       JWT_CHAVE_PRIVADA: pemEmUmaLinha,
@@ -39,5 +42,8 @@ describe("ambiente", () => {
       "https://a.com",
       "https://b.com",
     ]);
+    expect(origensPermitidas({ ...ambiente, WEB_URL: undefined, CORS_ORIGENS: undefined })).toEqual(
+      [],
+    );
   });
 });

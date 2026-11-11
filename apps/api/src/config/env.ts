@@ -22,24 +22,22 @@ const esquema = z
     DB_TIMEOUT_CONSULTA_MS: z.coerce.number().int().positive().default(30_000),
     REDIS_URL: z.string().min(1).optional(),
 
-    WEB_URL: z.url(),
+    /**
+     * Origem do web fora da mesma origem (desenvolvimento: o Vite). Em produção o domínio vem de
+     * Plataforma › Integrações; aqui só serve de reserva e para o CORS.
+     */
+    WEB_URL: z.url().optional(),
     CORS_ORIGENS: z.string().optional(),
 
+    /** Ed25519 (PKCS8 PEM). O `kid` sai da própria chave. */
     JWT_CHAVE_PRIVADA: pem,
-    JWT_KID: z.string().min(1),
-    /** JSON `{ "<kid>": "<PEM público>" }` das chaves anteriores, aceitas até expirarem. */
+    /** JSON `["<PEM público>", …]` das chaves anteriores, aceitas até os tokens expirarem. */
     JWT_CHAVES_ANTERIORES: z.string().optional(),
     JWT_EMISSOR: z.string().default("erp-ssw"),
     JWT_AUDIENCIA: z.string().default("erp-ssw-web"),
     REFRESH_DIAS: z.coerce.number().int().positive().default(30),
-    COOKIE_SEGREDO: z.string().min(32),
-
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORTA: z.coerce.number().int().positive().default(587),
-    SMTP_SEGURO: booleano.default(false),
-    SMTP_USUARIO: z.string().optional(),
-    SMTP_SENHA: z.string().optional(),
-    EMAIL_REMETENTE: z.string().min(1).default("Painel Logístico <nao-responda@localhost>"),
+    /** Assina o cookie do login pelo Google. Sem ele, derivado de `SEGREDOS_CHAVES`. */
+    COOKIE_SEGREDO: z.string().min(32).optional(),
 
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
@@ -58,19 +56,19 @@ const esquema = z
     /** Token de leitura de /metrics; sem ele a rota não existe. */
     METRICAS_TOKEN: z.string().min(16).optional(),
 
-    /** Chaves mestras dos segredos de integração: "1:<base64 de 32 bytes>,2:<…>". */
+    /**
+     * Chaves mestras: "1:<base64 de 32 bytes>,2:<…>". Cifram os segredos das integrações (das
+     * empresas e da Plataforma) e derivam o segredo do cookie. Nunca vão para o banco.
+     */
     SEGREDOS_CHAVES: z.string().optional(),
-    /** Versão da chave usada para cifrar segredos novos. */
-    SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().default(1),
+    /** Versão da chave usada para cifrar segredos novos (padrão: a maior). */
+    SEGREDOS_CHAVE_ATUAL: z.coerce.number().int().positive().optional(),
     /**
      * Jobs do ERP no processo da API (ADR 0012): workers do BullMQ ligados nesta réplica. Os
      * agendados (cron) só com `AGENDAMENTOS_LIGADOS` também.
      */
     JOBS_LIGADOS: booleano.default(false),
     AGENDAMENTOS_LIGADOS: booleano.default(false),
-    /** HTTP interno do worker-ssw (rede interna do Docker) e o token de serviço dele. */
-    WORKER_SSW_URL: z.url().optional(),
-    WORKER_SSW_TOKEN: z.string().min(32).optional(),
     /** Transição da FR: credencial do Ahgora no ambiente (só com parametros.usar_env). */
     AHGORA_API_USUARIO: z.string().optional(),
     AHGORA_API_SENHA: z.string().optional(),
@@ -89,12 +87,6 @@ const esquema = z
     if (env.JOBS_LIGADOS && !env.REDIS_URL) {
       ctx.addIssue({ code: "custom", message: "JOBS_LIGADOS precisa de REDIS_URL." });
     }
-    if (Boolean(env.WORKER_SSW_URL) !== Boolean(env.WORKER_SSW_TOKEN)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "worker-ssw: defina WORKER_SSW_URL e WORKER_SSW_TOKEN (os dois ou nenhum).",
-      });
-    }
     const s3 = [env.S3_BUCKET, env.S3_CHAVE_ACESSO, env.S3_SEGREDO];
     if (s3.some(Boolean) && !s3.every(Boolean)) {
       ctx.addIssue({
@@ -105,8 +97,11 @@ const esquema = z
     if (env.NODE_ENV === "production" && !env.SEGREDOS_CHAVES) {
       ctx.addIssue({ code: "custom", message: "Em produção, SEGREDOS_CHAVES é obrigatório." });
     }
-    if (env.NODE_ENV === "production" && !env.SMTP_HOST) {
-      ctx.addIssue({ code: "custom", message: "Em produção, SMTP_HOST é obrigatório." });
+    if (!env.SEGREDOS_CHAVES && !env.COOKIE_SEGREDO) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Defina SEGREDOS_CHAVES (o segredo do cookie sai dela) ou COOKIE_SEGREDO.",
+      });
     }
   });
 
@@ -123,5 +118,6 @@ export function carregarAmbiente(fonte: Record<string, string | undefined>): Amb
 
 export function origensPermitidas(ambiente: Ambiente): string[] {
   const extras = ambiente.CORS_ORIGENS?.split(",").map((o) => o.trim()) ?? [];
-  return [new URL(ambiente.WEB_URL).origin, ...extras.filter(Boolean)];
+  const web = ambiente.WEB_URL ? [new URL(ambiente.WEB_URL).origin] : [];
+  return [...web, ...extras.filter(Boolean)];
 }

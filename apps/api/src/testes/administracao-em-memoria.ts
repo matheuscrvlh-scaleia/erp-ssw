@@ -4,7 +4,7 @@ import { type ContextoBanco } from "@erp/db";
 import { configuracoesVigentes } from "@erp/dominio/configuracoes";
 import { ehTela, type Tela } from "@erp/shared/acesso/telas";
 import { type OrigemIntegracao } from "@erp/shared/contratos/auditoria";
-import { type TipoIntegracao } from "@erp/shared/plataforma";
+import { type TipoIntegracao, type TipoIntegracaoPlataforma } from "@erp/shared/plataforma";
 
 import { type RepositorioCadastros } from "../modulos/cadastros/casos-de-uso";
 import { type RepositorioConfiguracoes } from "../modulos/configuracoes/casos-de-uso";
@@ -12,6 +12,7 @@ import { type Execucao, type RepositorioLogs } from "../modulos/logs/casos-de-us
 import {
   type CopiaDoModelo,
   type EmpresaGravada,
+  type IntegracaoDaPlataformaGravada,
   type IntegracaoGravada,
   type RepositorioPlataforma,
 } from "../modulos/plataforma/casos-de-uso";
@@ -74,6 +75,7 @@ export class EstadoDeAdministracao {
   codigos: { empresaId: string; codigo: number; descricao: string }[] = [];
   observacoesDeModulo = new Map<string, { observacao: string | null; atualizadoEm: Date }>();
   integracoes: IntegracaoFalsa[] = [];
+  integracoesDaPlataforma: IntegracaoDaPlataformaGravada[] = [];
   execucoes: { empresaId: string; origem: OrigemIntegracao; execucao: Execucao }[] = [];
   adminsDesde = new Map<string, Date>();
   logos: string[] = [];
@@ -611,6 +613,19 @@ export function criarRepositoriosDeAdministracao(
       });
       return Promise.resolve();
     },
+    integracoesDaPlataforma: () =>
+      Promise.resolve(adm.integracoesDaPlataforma.map((i) => ({ ...i }))),
+    gravarIntegracaoDaPlataforma: (tipo, parametros) => {
+      Object.assign(integracaoDaPlataformaFalsa(tipo), { parametros, atualizadoEm: agoraFixo() });
+      return Promise.resolve();
+    },
+    gravarSegredoDaPlataforma: (tipo, segredo) => {
+      Object.assign(integracaoDaPlataformaFalsa(tipo), {
+        segredo: segredo ? { cifrado: segredo.cifrado, versaoChave: segredo.versaoChave } : null,
+        segredoDefinidoEm: segredo?.definidoEm ?? null,
+      });
+      return Promise.resolve();
+    },
     copiaDoModelo: (modeloId): Promise<CopiaDoModelo> =>
       Promise.resolve({
         codigos: adm.codigos
@@ -678,6 +693,21 @@ export function criarRepositoriosDeAdministracao(
         atualizadoEm: agoraFixo(),
       };
       adm.integracoes.push(atual);
+    }
+    return atual;
+  }
+
+  function integracaoDaPlataformaFalsa(tipo: TipoIntegracaoPlataforma) {
+    let atual = adm.integracoesDaPlataforma.find((i) => i.tipo === tipo);
+    if (!atual) {
+      atual = {
+        tipo,
+        parametros: {},
+        segredo: null,
+        segredoDefinidoEm: null,
+        atualizadoEm: agoraFixo(),
+      };
+      adm.integracoesDaPlataforma.push(atual);
     }
     return atual;
   }

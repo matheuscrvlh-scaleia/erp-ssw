@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
 
 /**
  * Segredos de integração (senha de SFTP, token do SSW…) cifrados pela aplicação com AES-256-GCM.
@@ -14,8 +14,11 @@ export interface ChavesDeSegredo {
   porVersao: ReadonlyMap<number, Buffer>;
 }
 
-/** `"1:<base64 de 32 bytes>,2:<…>"` + versão atual → chaves validadas (falha no boot se errado). */
-export function lerChavesDeSegredo(texto: string, atual: number): ChavesDeSegredo {
+/**
+ * `"1:<base64 de 32 bytes>,2:<…>"` + versão atual (padrão: a maior) → chaves validadas (falha no
+ * boot se errado).
+ */
+export function lerChavesDeSegredo(texto: string, versaoAtual?: number): ChavesDeSegredo {
   const porVersao = new Map<number, Buffer>();
   for (const item of texto
     .split(",")
@@ -29,8 +32,19 @@ export function lerChavesDeSegredo(texto: string, atual: number): ChavesDeSegred
     }
     porVersao.set(versao, chave);
   }
+  const atual = versaoAtual ?? Math.max(0, ...porVersao.keys());
   if (!porVersao.has(atual)) throw new Error(`Chave de segredo atual (${atual}) não informada.`);
   return { atual, porVersao };
+}
+
+/**
+ * Segredo derivado da chave mestra atual (HKDF-SHA256) para outra finalidade (ex.: assinar
+ * cookie): uma variável a menos no ambiente, e as finalidades não se misturam.
+ */
+export function derivarSegredo(chaves: ChavesDeSegredo, finalidade: string): string {
+  const chave = chaves.porVersao.get(chaves.atual);
+  if (!chave) throw new Error(`Chave de segredo atual (${chaves.atual}) não informada.`);
+  return Buffer.from(hkdfSync("sha256", chave, "", `erp-ssw:${finalidade}`, 32)).toString("base64");
 }
 
 export interface SegredoCifrado {
@@ -77,6 +91,11 @@ export function decifrarSegredo(
 }
 
 /** Dado autenticado do segredo de uma integração (o par empresa + tipo da linha). */
+/** Contexto do segredo de uma integração da própria Plataforma (`plataforma_integracoes`). */
+export function contextoDaPlataforma(tipo: string): string {
+  return `plataforma:${tipo}`;
+}
+
 export function contextoDoSegredo(empresaId: string, tipo: string): string {
   return `${empresaId}:${tipo}`;
 }

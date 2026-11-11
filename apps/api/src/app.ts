@@ -1,4 +1,10 @@
-import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/segredos";
+import {
+  type ChavesDeSegredo,
+  cifrarSegredo,
+  decifrarSegredo,
+  derivarSegredo,
+} from "@erp/db/segredos";
+import { ErroDeNegocio } from "@erp/dominio/erros";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -6,14 +12,22 @@ import { type Redis } from "ioredis";
 import { type Ambiente } from "./config/env";
 import { registrarTratadorDeErros } from "./http/tratador-erros";
 import type { Armazenamento } from "./infra/armazenamento";
-import { type Correio, criarCorreioDeDesenvolvimento } from "./infra/correio";
+import {
+  criarFonteDaConfiguracao,
+  type FonteDaConfiguracao,
+} from "./infra/configuracao-da-plataforma";
+import {
+  type Correio,
+  criarCorreioDaPlataforma,
+  criarCorreioDeDesenvolvimento,
+} from "./infra/correio";
 import type { FilaDeJobs } from "./infra/fila";
 import { type ProvedorGoogle } from "./infra/google";
 import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
 import { type EmissorDeTokens } from "./infra/tokens";
-import { type ClienteWorkerSsw } from "./infra/worker-ssw";
+import { type ClienteWorkerSsw, criarClienteWorkerSswDaPlataforma } from "./infra/worker-ssw";
 import { type DependenciasAhgora } from "./modulos/ahgora/casos-de-uso";
 import { rotasAhgora } from "./modulos/ahgora/rotas";
 import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
@@ -63,14 +77,19 @@ export interface Dependencias {
   tokens: EmissorDeTokens;
   senhas: ServicoDeSenhas;
   limitador: LimitadorDeFalhas;
-  /** Nulo = desenvolvimento sem SMTP (o e-mail vai para o log). */
-  correio: Correio | null;
+  /**
+   * Ausente = e-mail pelo Resend com a configuração de Plataforma › Integrações (sem ela, o log em
+   * desenvolvimento e erro em produção). Os testes passam um falso.
+   */
+  correio?: Correio;
   google: ProvedorGoogle | null;
   /**
-   * HTTP interno do worker-ssw (ADR 0012). Nulo = `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` ausentes: as
-   * ações de ingestão respondem 503 e as leituras continuam.
+   * HTTP interno do worker-ssw (ADR 0012). Ausente = endereço e token de Plataforma › Integrações;
+   * nulo (testes) = não configurado: as ações de ingestão respondem 503 e as leituras continuam.
    */
-  workerSsw: ClienteWorkerSsw | null;
+  workerSsw?: ClienteWorkerSsw | null;
+  /** Ausente = lida do banco (`plataforma_integracoes`) com cache curto. */
+  configuracaoDaPlataforma?: FonteDaConfiguracao;
   /** Fila dos jobs do ERP (recálculos); desligada sem Redis. */
   fila: FilaDeJobs;
   /** Saúde dos workers dos jobs do ERP (`JOBS_LIGADOS`); ausente = jobs desligados. */
@@ -109,7 +128,16 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   registrarTratadorDeErros(app);
 
   const comDocumentacao = ambiente.NODE_ENV !== "production";
-  await registrarSeguranca(app, { ambiente, redis: deps.redis, comDocumentacao });
+  const chaves = deps.chavesDeSegredo;
+  // O env exige um dos dois (SEGREDOS_CHAVES ou COOKIE_SEGREDO).
+  const segredoDoCookie =
+    ambiente.COOKIE_SEGREDO ?? (chaves ? derivarSegredo(chaves, "cookie") : "");
+  await registrarSeguranca(app, {
+    ambiente,
+    redis: deps.redis,
+    comDocumentacao,
+    segredoDoCookie,
+  });
   if (comDocumentacao) await registrarDocumentacao(app);
   registrarMetricas(app, ambiente.METRICAS_TOKEN);
   const redis = deps.redis;
@@ -127,6 +155,45 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     },
   });
 
+  const configuracao =
+    deps.configuracaoDaPlataforma ??
+    criarFonteDaConfiguracao({
+      ler: () =>
+        deps.executar({ empresaId: null, usuarioId: null, plataforma: false }, ({ plataforma }) =>
+          plataforma.integracoesDaPlataforma(),
+        ),
+      chaves,
+      agora: deps.agora,
+      aoFalhar: (erro, tipo) => {
+        app.log.error({ err: erro, tipo }, "segredo da Plataforma não decifra com SEGREDOS_CHAVES");
+      },
+    });
+  const correio =
+    deps.correio ??
+    criarCorreioDaPlataforma(
+      configuracao,
+      ambiente.NODE_ENV === "production" ? null : criarCorreioDeDesenvolvimento(app.log),
+    );
+  const workerSsw =
+    deps.workerSsw === undefined
+      ? criarClienteWorkerSswDaPlataforma(configuracao, {
+          buscar: fetch,
+          aoFalhar: (erro, operacao) => {
+            app.log.warn({ err: erro, operacao }, "worker-ssw não respondeu");
+          },
+        })
+      : deps.workerSsw;
+  const webUrl = async () => {
+    const url = (await configuracao.obter()).dominio ?? ambiente.WEB_URL;
+    if (!url) {
+      throw new ErroDeNegocio(
+        "INDISPONIVEL",
+        "O domínio do sistema não está configurado. Configure em Plataforma › Integrações.",
+      );
+    }
+    return url;
+  };
+
   const acesso = { executar: deps.executar, agora: deps.agora, urlDoLogo: urlDoLogo(ambiente) };
   await app.register(pluginSessao, { ...acesso, tokens: deps.tokens });
 
@@ -135,9 +202,9 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     senhas: deps.senhas,
     tokens: deps.tokens,
     limitador: deps.limitador,
-    correio: deps.correio ?? criarCorreioDeDesenvolvimento(app.log),
+    correio,
     refreshDias: ambiente.REFRESH_DIAS,
-    webUrl: ambiente.WEB_URL,
+    webUrl,
   };
   await app.register(rotasAuth, {
     deps: auth,
@@ -145,7 +212,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
-  await app.register(rotasIngestao, { deps: { workerSsw: deps.workerSsw } });
+  await app.register(rotasIngestao, { deps: { workerSsw } });
   await app.register(rotasRomaneio, { agora: deps.agora });
   await app.register(rotasPrazoParceiro);
   await app.register(rotasOcorrencias, { agora: deps.agora });
@@ -165,10 +232,9 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   await app.register(rotasBonificacaoEntrega, { ahgora });
   await app.register(rotasAhgora, { ahgora });
 
-  const chaves = deps.chavesDeSegredo;
   await app.register(rotasIngestaoSsw, {
     deps: {
-      workerSsw: deps.workerSsw,
+      workerSsw,
       cifrador: chaves
         ? {
             cifrar: (texto, contexto) => cifrarSegredo(chaves, texto, contexto),
@@ -186,9 +252,9 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   });
 
   const usuarios: DependenciasUsuarios = {
-    correio: auth.correio,
+    correio,
     senhas: deps.senhas,
-    webUrl: ambiente.WEB_URL,
+    webUrl,
     agora: deps.agora,
   };
   await app.register(rotasUsuarios, { deps: usuarios, executar: deps.executar });
@@ -205,6 +271,8 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     chavesDeSegredo: deps.chavesDeSegredo,
     urlDoLogo: acesso.urlDoLogo,
     agora: deps.agora,
+    configuracao,
+    correio,
   });
 
   return app;

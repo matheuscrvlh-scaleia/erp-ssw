@@ -1,5 +1,5 @@
 import { TIPOS_INTEGRACAO as TIPOS_DO_BANCO } from "@erp/db/schema";
-import { contextoDoSegredo, decifrarSegredo } from "@erp/db/segredos";
+import { contextoDaPlataforma, contextoDoSegredo, decifrarSegredo } from "@erp/db/segredos";
 import { TIPOS_INTEGRACAO } from "@erp/shared/plataforma";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -26,6 +26,9 @@ describe("só a Plataforma acessa /api/v1/plataforma/*", () => {
       ["GET", `/api/v1/plataforma/empresas/${id}/integracoes`],
       ["PUT", `/api/v1/plataforma/empresas/${id}/integracoes/ssw_bi2/segredo`],
       ["GET", `/api/v1/plataforma/empresas/${id}/usuarios`],
+      ["GET", "/api/v1/plataforma/integracoes"],
+      ["PUT", "/api/v1/plataforma/integracoes/email/segredo"],
+      ["POST", "/api/v1/plataforma/integracoes/email/teste"],
       ["GET", "/api/v1/plataforma/administradores"],
       ["DELETE", `/api/v1/plataforma/administradores/${id}`],
     ] as const;
@@ -261,6 +264,105 @@ describe("integrações e segredos", () => {
   it("o log do servidor esconde o campo segredo", () => {
     expect(CAMINHOS_SENSIVEIS).toContain("segredo");
     expect(CAMINHOS_SENSIVEIS).toContain("*.segredo");
+  });
+});
+
+describe("integrações da Plataforma (domínio, e-mail, worker-ssw)", () => {
+  const BASE = "/api/v1/plataforma/integracoes";
+
+  it("chave do Resend vai cifrada no contexto da Plataforma e nunca volta", async () => {
+    const { headers } = await t.comoPlataforma();
+    const chave = "re_chave_super_secreta_123";
+    const r = await t.app.inject({
+      method: "PUT",
+      url: `${BASE}/email/segredo`,
+      headers,
+      payload: { segredo: chave },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(r.body).not.toContain(chave);
+
+    const gravada = t.banco.adm.integracoesDaPlataforma.find((i) => i.tipo === "email");
+    if (!gravada?.segredo) throw new Error("segredo não gravado");
+    expect(gravada.segredo.cifrado).not.toContain(chave);
+    expect(
+      decifrarSegredo(t.cenario.chavesDeSegredo, gravada.segredo, contextoDaPlataforma("email")),
+    ).toBe(chave);
+
+    const lista = await t.app.inject({ url: BASE, headers });
+    expect(lista.body).not.toContain(chave);
+    expect(lista.body).not.toContain(gravada.segredo.cifrado);
+    const email = lista
+      .json<{ integracoes: { tipo: string; segredoDefinidoEm: string | null }[] }>()
+      .integracoes.find((i) => i.tipo === "email");
+    expect(typeof email?.segredoDefinidoEm).toBe("string");
+    expect(JSON.stringify(t.banco.auditoria)).not.toContain(chave);
+    expect(t.banco.auditoria.at(-1)).toMatchObject({
+      acao: "definir_segredo",
+      entidade: "integracao_plataforma",
+      empresaId: null,
+    });
+  });
+
+  it("parâmetros são validados por tipo; o domínio não tem segredo", async () => {
+    const { headers } = await t.comoPlataforma();
+    const salvar = (tipo: string, parametros: Record<string, string>) =>
+      t.app.inject({ method: "PUT", url: `${BASE}/${tipo}`, headers, payload: { parametros } });
+    expect((await salvar("dominio", { url: "ftp://erp" })).statusCode).toBe(422);
+    expect((await salvar("email", { remetente: "sem arroba" })).statusCode).toBe(422);
+    expect((await salvar("tipo_inventado", { url: "https://erp.com" })).statusCode).toBe(422);
+    const segredo = await t.app.inject({
+      method: "PUT",
+      url: `${BASE}/dominio/segredo`,
+      headers,
+      payload: { segredo: "x" },
+    });
+    expect(segredo.statusCode).toBe(422);
+
+    const ok = await salvar("email", { remetente: "Painel <nao-responda@fr.com.br>", extra: "x" });
+    expect(ok.statusCode).toBe(200);
+    // Só os campos conhecidos são gravados.
+    expect(t.banco.adm.integracoesDaPlataforma.find((i) => i.tipo === "email")?.parametros).toEqual(
+      { remetente: "Painel <nao-responda@fr.com.br>" },
+    );
+  });
+
+  it("o domínio salvo vale na hora para o link do convite", async () => {
+    const { headers } = await t.comoPlataforma();
+    await t.app.inject({
+      method: "PUT",
+      url: `${BASE}/dominio`,
+      headers,
+      payload: { parametros: { url: "https://erp.fr.com.br/" } },
+    });
+    const r = await t.app.inject({
+      method: "POST",
+      url: `/api/v1/plataforma/empresas/${t.empresaA.id}/usuarios`,
+      headers,
+      payload: {
+        modo: "convite",
+        email: "nova@fr.com.br",
+        nome: "Nova",
+        papel: "admin",
+        departamento: null,
+      },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(t.cenario.correio.enviados.at(-1)?.texto).toContain(
+      "https://erp.fr.com.br/aceitar-convite?token=",
+    );
+  });
+
+  it("e-mail de teste sai pelo correio configurado", async () => {
+    const { headers } = await t.comoPlataforma();
+    const r = await t.app.inject({
+      method: "POST",
+      url: `${BASE}/email/teste`,
+      headers,
+      payload: { para: "ti@fr.com.br" },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(t.cenario.correio.enviados.at(-1)).toMatchObject({ para: "ti@fr.com.br" });
   });
 });
 

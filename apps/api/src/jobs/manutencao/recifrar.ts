@@ -1,12 +1,14 @@
 /**
- * Job `recifrar-segredos` (sob demanda, docs/deploy.md §5.3): regrava com a chave atual todo
- * segredo de integração (e o segredo anterior do webhook) que ainda está numa versão antiga da
- * chave mestra. Depois dele, a versão antiga pode sair de `SEGREDOS_CHAVES`. Escopo Plataforma
- * (só a Plataforma escreve em `empresa_integracoes`); nunca loga nem devolve o texto do segredo.
+ * Job `recifrar-segredos` (sob demanda, docs/deploy.md §5): regrava com a chave atual todo
+ * segredo de integração (das empresas, o anterior do webhook e os da própria Plataforma) que ainda
+ * está numa versão antiga da chave mestra. Depois dele, a versão antiga pode sair de
+ * `SEGREDOS_CHAVES`. Escopo Plataforma (só a Plataforma escreve nessas tabelas); nunca loga nem
+ * devolve o texto do segredo.
  */
 import {
   type ChavesDeSegredo,
   cifrarSegredo,
+  contextoDaPlataforma,
   contextoDoSegredo,
   decifrarSegredo,
   type SegredoCifrado,
@@ -16,8 +18,10 @@ import { z } from "@erp/shared/zod";
 import { definirJob } from "../registro";
 
 export interface IntegracaoCifrada {
+  /** Id da linha da empresa; nas da Plataforma, o próprio tipo. */
   id: string;
-  empresaId: string;
+  /** Nulo = integração da Plataforma (`plataforma_integracoes`). */
+  empresaId: string | null;
   tipo: string;
   segredo: SegredoCifrado | null;
   segredoAnterior: SegredoCifrado | null;
@@ -27,7 +31,7 @@ export interface RepositorioSegredos {
   /** Integrações com segredo (atual ou anterior) cifrado numa versão diferente de `versao`. */
   foraDaVersao(versao: number): Promise<IntegracaoCifrada[]>;
   regravar(
-    id: string,
+    linha: IntegracaoCifrada,
     segredos: { segredo: SegredoCifrado | null; segredoAnterior: SegredoCifrado | null },
   ): Promise<void>;
 }
@@ -35,23 +39,26 @@ export interface RepositorioSegredos {
 export interface ResultadoDaRecifragem {
   recifrados: number;
   /** Linhas que não decifram com as chaves configuradas (ficam como estão). */
-  falhas: { empresaId: string; tipo: string }[];
+  falhas: { empresaId: string | null; tipo: string }[];
 }
 
-/** Decifra com a versão da linha e cifra de novo com a atual; mesmo contexto `empresa:tipo`. */
+/** Decifra com a versão da linha e cifra de novo com a atual, no mesmo contexto. */
 export async function recifrarSegredos(
   repo: RepositorioSegredos,
   chaves: ChavesDeSegredo,
 ): Promise<ResultadoDaRecifragem> {
   const resultado: ResultadoDaRecifragem = { recifrados: 0, falhas: [] };
   for (const linha of await repo.foraDaVersao(chaves.atual)) {
-    const contexto = contextoDoSegredo(linha.empresaId, linha.tipo);
+    const contexto =
+      linha.empresaId === null
+        ? contextoDaPlataforma(linha.tipo)
+        : contextoDoSegredo(linha.empresaId, linha.tipo);
     const recifrar = (s: SegredoCifrado | null) =>
       s === null || s.versaoChave === chaves.atual
         ? s
         : cifrarSegredo(chaves, decifrarSegredo(chaves, s, contexto), contexto);
     try {
-      await repo.regravar(linha.id, {
+      await repo.regravar(linha, {
         segredo: recifrar(linha.segredo),
         segredoAnterior: recifrar(linha.segredoAnterior),
       });

@@ -217,7 +217,7 @@ function registrarGoogle(
       const { url, desafio } = await google.iniciar();
       const guardado = {
         ...desafio, // Volta do Google só para caminho interno da mesma origem (evita redirecionamento aberto).
-        destino: destinoInterno(request.query.redirect, deps.webUrl),
+        destino: destinoInterno(request.query.redirect, await deps.webUrl()),
       };
       // SameSite=Lax: a volta do Google é navegação de outro site e precisa trazer o cookie.
       reply.setCookie(COOKIE_GOOGLE, JSON.stringify(guardado), {

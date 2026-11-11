@@ -6,6 +6,8 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import { executorDePlataforma } from "../../http/contexto";
 import { exigirAdminPlataforma } from "../../http/guardas";
 import type { Armazenamento } from "../../infra/armazenamento";
+import { type FonteDaConfiguracao } from "../../infra/configuracao-da-plataforma";
+import { type Correio } from "../../infra/correio";
 import { atorDa } from "../../plugins/sessao";
 import { type ExecutorComContexto } from "../../repositorios";
 import { listarCargos, listarDepartamentos } from "../cadastros/casos-de-uso";
@@ -14,10 +16,12 @@ import {
   adicionarAdmin,
   criarEmpresa,
   definirSegredo,
+  definirSegredoDaPlataforma,
   enviarLogo,
   listarAdmins,
   listarEmpresas,
   listarIntegracoes,
+  listarIntegracoesDaPlataforma,
   listarModulos,
   listarVinculos,
   obterEmpresa,
@@ -25,8 +29,10 @@ import {
   removerLogo,
   salvarEmpresa,
   salvarIntegracao,
+  salvarIntegracaoDaPlataforma,
   salvarModulo,
   salvarVinculo,
+  testarEmailDaPlataforma,
 } from "./casos-de-uso";
 
 export interface OpcoesRotasPlataforma {
@@ -36,6 +42,9 @@ export interface OpcoesRotasPlataforma {
   chavesDeSegredo: ChavesDeSegredo | null;
   urlDoLogo: (caminho: string | null) => string | null;
   agora: () => Date;
+  /** Configuração da Plataforma (domínio, e-mail, worker-ssw): a tela salva e limpa o cache. */
+  configuracao: FonteDaConfiguracao;
+  correio: Correio;
 }
 
 const ok = { ok: true as const };
@@ -301,6 +310,77 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
         request.body.segredo,
         opcoes.agora(),
       );
+    },
+  );
+
+  app.get(
+    c.listarIntegracoesDaPlataforma.caminho,
+    { schema: { response: { 200: c.listarIntegracoesDaPlataforma.saida } }, onRequest },
+    async (request) => ({
+      integracoes: await listarIntegracoesDaPlataforma(naEmpresa(request)(null)),
+    }),
+  );
+
+  app.put(
+    c.salvarIntegracaoDaPlataforma.caminho,
+    {
+      schema: {
+        params: c.salvarIntegracaoDaPlataforma.parametros,
+        body: c.salvarIntegracaoDaPlataforma.entrada,
+        response: { 200: c.salvarIntegracaoDaPlataforma.saida },
+      },
+      onRequest,
+    },
+    async (request) => {
+      await salvarIntegracaoDaPlataforma(
+        naEmpresa(request)(null),
+        await atorDa(request),
+        request.params.tipo,
+        request.body.parametros,
+        () => {
+          opcoes.configuracao.invalidar();
+        },
+      );
+      return ok;
+    },
+  );
+
+  app.put(
+    c.definirSegredoDaPlataforma.caminho,
+    {
+      schema: {
+        params: c.definirSegredoDaPlataforma.parametros,
+        body: c.definirSegredoDaPlataforma.entrada,
+        response: { 200: c.definirSegredoDaPlataforma.saida },
+      },
+      onRequest,
+    },
+    async (request) =>
+      definirSegredoDaPlataforma(
+        opcoes.chavesDeSegredo,
+        naEmpresa(request)(null),
+        await atorDa(request),
+        request.params.tipo,
+        request.body.segredo,
+        opcoes.agora(),
+        () => {
+          opcoes.configuracao.invalidar();
+        },
+      ),
+  );
+
+  app.post(
+    c.testarEmailDaPlataforma.caminho,
+    {
+      schema: {
+        body: c.testarEmailDaPlataforma.entrada,
+        response: { 200: c.testarEmailDaPlataforma.saida },
+      },
+      onRequest,
+    },
+    async (request) => {
+      await testarEmailDaPlataforma(opcoes.correio, request.body.para);
+      return ok;
     },
   );
 

@@ -143,7 +143,7 @@ export async function ligarWorkersDosJobs(
 }
 
 /**
- * `node dist/server.js --recifrar-segredos` (docs/deploy.md §5.3): só pede o job e sai; uma
+ * `node dist/server.js --recifrar-segredos` (docs/deploy.md §5): só pede o job e sai; uma
  * réplica da API no ar com `JOBS_LIGADOS` o roda.
  */
 export async function pedirRecifragemDeSegredos(redis: Redis): Promise<void> {

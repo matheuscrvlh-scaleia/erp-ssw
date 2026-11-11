@@ -101,7 +101,7 @@ export interface RepositorioIngestao {
 }
 
 export interface DependenciasIngestao {
-  /** Nulo = `WORKER_SSW_URL`/`WORKER_SSW_TOKEN` não configurados: as ações respondem 503. */
+  /** Nulo (testes) ou sem configuração em Plataforma › Integrações: as ações respondem 503. */
   workerSsw: ClienteWorkerSsw | null;
 }
 
