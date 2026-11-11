@@ -23,6 +23,7 @@ import {
   ehPlataforma,
   empresaDaSessao,
   erp,
+  papelApp,
   papelWorker,
   politicas,
   usuarioDaSessao,
@@ -59,16 +60,27 @@ export const empresas = erp.table(
     check("empresas_slug_formato", sql`${t.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
     check("empresas_cor_primaria_hex", sql`${t.corPrimaria} ~ '^#[0-9a-fA-F]{6}$'`),
     check("empresas_cor_destaque_hex", sql`${t.corDestaque} ~ '^#[0-9a-fA-F]{6}$'`),
-    ...politicas("empresas", {
-      // A empresa da sessão, as empresas em que o usuário tem vínculo (seletor) e, para a
-      // Plataforma, todas. Cadastro e alteração de empresa são só da Plataforma.
-      select: sql`(${t.id} = ${empresaDaSessao} or ${ehPlataforma} or exists (
+    // API: a empresa da sessão, as empresas em que o usuário tem vínculo (seletor) e, para a
+    // Plataforma, todas.
+    ...politicas(
+      "empresas",
+      {
+        select: sql`(${t.id} = ${empresaDaSessao} or ${ehPlataforma} or exists (
         select 1 from erp.empresa_usuarios eu
         where eu.empresa_id = ${t.id} and eu.usuario_id = ${usuarioDaSessao}))`,
-      insert: ehPlataforma,
-      update: ehPlataforma,
-      delete: ehPlataforma,
+      },
+      [papelApp],
+    ),
+    // worker-ssw: sem usuário na sessão e sem GRANT em empresa_usuarios (a subconsulta acima
+    // falharia por permissão); vê a empresa da sessão ou, como Plataforma, todas.
+    pgPolicy("empresas_select_worker", {
+      as: "permissive",
+      for: "select",
+      to: [papelWorker],
+      using: daEmpresaOuPlataforma(t.id),
     }),
+    // Cadastro e alteração de empresa são só da Plataforma.
+    ...politicas("empresas", { insert: ehPlataforma, update: ehPlataforma, delete: ehPlataforma }),
   ],
 );
 

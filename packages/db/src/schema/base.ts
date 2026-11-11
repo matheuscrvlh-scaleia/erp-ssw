@@ -32,14 +32,17 @@ export function daEmpresaOuPlataforma(coluna: AnyPgColumn): SQL {
 const OPERACOES = ["select", "insert", "update", "delete"] as const;
 type Operacao = (typeof OPERACOES)[number];
 
-function politica(tabela: string, operacao: Operacao, regra: SQL) {
+type Papel = typeof papelApp;
+const PAPEIS_DA_SESSAO: readonly Papel[] = [papelApp, papelWorker];
+
+function politica(tabela: string, operacao: Operacao, regra: SQL, papeis: readonly Papel[]) {
   const usaUsing = operacao !== "insert";
   const usaCheck = operacao === "insert" || operacao === "update";
   return pgPolicy(`${tabela}_${operacao}`, {
     as: "permissive",
     for: operacao,
     // O mesmo contexto (`SET LOCAL`) vale para a API e para o worker-ssw.
-    to: [papelApp, papelWorker],
+    to: [...papeis],
     ...(usaUsing ? { using: regra } : {}),
     ...(usaCheck ? { withCheck: regra } : {}),
   });
@@ -52,10 +55,11 @@ function politica(tabela: string, operacao: Operacao, regra: SQL) {
 export function politicas(
   tabela: string,
   regras: Partial<Record<Operacao, SQL>>,
+  papeis: readonly Papel[] = PAPEIS_DA_SESSAO,
 ): ReturnType<typeof pgPolicy>[] {
   return OPERACOES.flatMap((operacao) => {
     const regra = regras[operacao];
-    return regra ? [politica(tabela, operacao, regra)] : [];
+    return regra ? [politica(tabela, operacao, regra, papeis)] : [];
   });
 }
 

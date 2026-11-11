@@ -1,0 +1,4 @@
+CREATE POLICY "empresas_select_worker" ON "erp"."empresas" AS PERMISSIVE FOR SELECT TO "erp_worker" USING (("erp"."empresas"."id" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on'));--> statement-breakpoint
+ALTER POLICY "empresas_select" ON "erp"."empresas" TO erp_app USING (("erp"."empresas"."id" = nullif(current_setting('app.empresa_id', true), '')::uuid or coalesce(current_setting('app.plataforma', true), 'off') = 'on' or exists (
+        select 1 from erp.empresa_usuarios eu
+        where eu.empresa_id = "erp"."empresas"."id" and eu.usuario_id = nullif(current_setting('app.usuario_id', true), '')::uuid)));
