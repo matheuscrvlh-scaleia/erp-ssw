@@ -29,16 +29,16 @@ function PaginaSemAcesso() {
 
   return (
     <div className="mx-auto max-w-lg py-16">
-      <div className="rounded-[12px] border border-border/70 bg-card p-6">
+      <div className="rounded-2xl border border-border bg-card p-8 shadow-cartao">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
             <ShieldOff className="h-4 w-4 text-muted-foreground" />
           </div>
           <div>
-            <h1 className="text-[18px] font-medium tracking-tight">
+            <h1 className="text-[18px] font-bold tracking-tight">
               {inativa ? "Conta desativada" : "Sem acesso a nenhuma tela"}
             </h1>
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               {inativa
                 ? "Sua conta foi desativada por um administrador."
                 : "Seu nível de acesso ainda não libera nenhum módulo."}
@@ -47,7 +47,7 @@ function PaginaSemAcesso() {
         </div>
 
         {data && (
-          <div className="mt-5 space-y-3 border-t border-border/60 pt-4 text-[12px]">
+          <div className="mt-5 space-y-3 border-t border-border pt-4 text-[13px]">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Usuário</span>
               <span>{data.nome ?? data.email}</span>
@@ -60,19 +60,17 @@ function PaginaSemAcesso() {
         )}
 
         {data && data.admins.length > 0 && (
-          <div className="mt-5 border-t border-border/60 pt-4">
-            <p className="text-[11px] tracking-wider text-muted-foreground uppercase">
-              Quem pode liberar
-            </p>
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="label-xs">Quem pode liberar</p>
             <ul className="mt-2 space-y-1.5">
               {data.admins.map((a) => (
-                <li key={a.email} className="flex items-center justify-between text-[12px]">
+                <li key={a.email} className="flex items-center justify-between text-[13px]">
                   <span>{a.nome ?? a.email}</span>
                   <a
                     href={`mailto:${a.email}?subject=${encodeURIComponent("Liberação de acesso")}`}
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                    className="inline-flex items-center gap-1 text-brand hover:underline"
                   >
-                    <Mail className="h-3 w-3" />
+                    <Mail className="h-3.5 w-3.5" aria-hidden />
                     {a.email}
                   </a>
                 </li>

@@ -1,8 +1,7 @@
-import { ROTULO_DO_SETOR } from "@erp/shared/acesso/papeis";
 import { type Acesso } from "@erp/shared/contratos/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -26,14 +25,29 @@ import {
   useSidebar,
 } from "@/componentes/ui/sidebar";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
 
-export function BarraLateral({ acesso, aoSair }: { acesso: Acesso; aoSair: () => void }) {
+import { RodapeDaBarra } from "./RodapeDaBarra";
+
+/** Atalho da busca rápida exibido no campo (a busca em si mora no layout). */
+const ATALHO =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.userAgent)
+    ? "⌘K"
+    : "Ctrl K";
+
+export function BarraLateral({
+  acesso,
+  aoSair,
+  aoBuscar,
+}: {
+  acesso: Acesso;
+  aoSair: () => void;
+  aoBuscar: () => void;
+}) {
   const caminhoAtual = useRouterState({ select: (s) => s.location.pathname });
-  const { state, setOpenMobile, isMobile } = useSidebar();
+  const { state, setOpenMobile, isMobile, toggleSidebar } = useSidebar();
   const recolhida = state === "collapsed" && !isMobile;
   const menu = montarMenu(acesso.telas);
-  const { nome, email } = acesso.usuario;
-  const iniciais = (nome ?? email).slice(0, 2).toUpperCase();
 
   const ativo = (caminho: string) =>
     caminho !== "/" && (caminhoAtual === caminho || caminhoAtual.startsWith(`${caminho}/`));
@@ -42,12 +56,16 @@ export function BarraLateral({ acesso, aoSair }: { acesso: Acesso; aoSair: () =>
     const Icone = item.icone;
     const estaAtivo = ativo(item.caminho);
     return (
-      <SidebarMenuItem key={item.caminho}>
+      <SidebarMenuItem key={item.caminho} className="relative">
         <SidebarMenuButton
           asChild
           isActive={estaAtivo}
           tooltip={item.rotulo}
-          className="text-[12.5px]"
+          className={cn(
+            "h-9 gap-3 rounded-lg border border-transparent px-3 text-[13px] font-medium",
+            "data-[active=true]:border-sidebar-border data-[active=true]:bg-sidebar-accent",
+            "data-[active=true]:font-semibold [&[data-active=true]>svg]:text-sidebar-primary",
+          )}
         >
           <Link
             to={item.caminho}
@@ -56,45 +74,76 @@ export function BarraLateral({ acesso, aoSair }: { acesso: Acesso; aoSair: () =>
             }}
             aria-current={estaAtivo ? "page" : undefined}
           >
-            <Icone className="h-[15px] w-[15px] shrink-0" />
+            <Icone className="h-[18px] w-[18px] shrink-0" aria-hidden />
             <span className="truncate">{item.rotulo}</span>
           </Link>
         </SidebarMenuButton>
+        {estaAtivo && !recolhida && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute top-1.5 -right-2 bottom-1.5 w-[3px] rounded-full bg-sidebar-primary"
+          />
+        )}
       </SidebarMenuItem>
     );
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/60">
-      <SidebarHeader>
-        <div className="flex items-center gap-2.5 px-2 py-1.5">
-          {acesso.empresa?.logoUrl ? (
-            <img
-              src={acesso.empresa.logoUrl}
-              alt={acesso.empresa.nome}
-              className="h-10 w-10 shrink-0 rounded-md object-cover group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8"
-            />
-          ) : (
-            <span
-              aria-hidden
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-[13px] font-semibold text-[var(--sidebar)] group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8"
-            >
-              {(acesso.empresa?.nomeCurto ?? "BI").slice(0, 3).toUpperCase()}
-            </span>
-          )}
+    <Sidebar collapsible="icon" variant="floating">
+      <SidebarHeader className="gap-3 px-3 pt-4 pb-2">
+        <div className="flex items-center gap-2.5">
+          <Logo acesso={acesso} />
           {!recolhida && (
-            <span className="flex flex-col leading-tight">
-              <span className="text-[14px] font-semibold">
+            <span className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="truncate text-[15px] font-bold text-white">
                 {acesso.empresa?.nome ?? "Painel BI"}
               </span>
-              <span className="text-[10px] text-muted-foreground">Painel Logístico</span>
+              <span className="truncate text-[11px] text-muted-foreground">Painel Logístico</span>
             </span>
           )}
+          {!isMobile && !recolhida && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              title="Recolher menu (Ctrl B)"
+              aria-label="Recolher menu"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-sidebar-border text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-white"
+            >
+              <PanelLeftClose className="h-4 w-4" aria-hidden />
+            </button>
+          )}
         </div>
-        {!recolhida && <SeletorDeEmpresa acesso={acesso} />}
+        {recolhida ? (
+          <div className="flex flex-col items-center gap-1">
+            <BotaoIcone rotulo="Expandir menu (Ctrl B)" aoClicar={toggleSidebar}>
+              <PanelLeftOpen className="h-4 w-4" aria-hidden />
+            </BotaoIcone>
+            <BotaoIcone rotulo={`Buscar (${ATALHO})`} aoClicar={aoBuscar}>
+              <Search className="h-4 w-4" aria-hidden />
+            </BotaoIcone>
+          </div>
+        ) : (
+          <>
+            <div className="border-t border-dashed border-sidebar-border" />
+            <button
+              type="button"
+              onClick={aoBuscar}
+              className="flex h-10 w-full items-center gap-2.5 rounded-lg border border-sidebar-border bg-campo px-3 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-white"
+            >
+              <Search className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="flex-1 text-left">Buscar</span>
+              <kbd className="rounded-md border border-sidebar-border bg-sidebar-accent px-1.5 py-0.5 font-sans text-[11px] text-sidebar-foreground">
+                {ATALHO}
+              </kbd>
+            </button>
+            <SeletorDeEmpresa acesso={acesso} />
+          </>
+        )}
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>{menu.principal.map(desenharItem)}</SidebarMenu>
+      <SidebarContent className="gap-1 px-3 pb-2">
+        <Secao titulo="Menu principal" recolhida={recolhida}>
+          <SidebarMenu className="gap-1">{menu.principal.map(desenharItem)}</SidebarMenu>
+        </Secao>
         <SecaoRecolhivel
           titulo="Admin"
           chave="admin"
@@ -112,34 +161,76 @@ export function BarraLateral({ acesso, aoSair }: { acesso: Acesso; aoSair: () =>
           desenharItem={desenharItem}
         />
       </SidebarContent>
-      <SidebarFooter>
-        <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
-            {iniciais}
-          </div>
-          {!recolhida && (
-            <>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[11.5px] font-medium text-foreground">
-                  {nome ?? "—"}
-                </div>
-                <div className="truncate text-[9.5px] text-muted-foreground">
-                  {acesso.setor ? ROTULO_DO_SETOR[acesso.setor] : "Sem setor"}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={aoSair}
-                className="text-muted-foreground transition-colors hover:text-destructive"
-                title="Sair"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
-            </>
-          )}
-        </div>
+      <SidebarFooter className="px-3 pt-2 pb-3">
+        <RodapeDaBarra acesso={acesso} recolhida={recolhida} aoSair={aoSair} />
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function Logo({ acesso }: { acesso: Acesso }) {
+  const classe =
+    "h-9 w-9 shrink-0 rounded-lg group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8";
+  if (acesso.empresa?.logoUrl) {
+    return (
+      <img
+        src={acesso.empresa.logoUrl}
+        alt={acesso.empresa.nome}
+        className={cn(classe, "bg-white object-cover")}
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        classe,
+        "flex items-center justify-center bg-sidebar-primary text-[12px] font-bold text-sidebar-primary-foreground",
+      )}
+    >
+      {(acesso.empresa?.nomeCurto ?? "BI").slice(0, 3).toUpperCase()}
+    </span>
+  );
+}
+
+function BotaoIcone({
+  rotulo,
+  aoClicar,
+  children,
+}: {
+  rotulo: string;
+  aoClicar: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={aoClicar}
+      title={rotulo}
+      aria-label={rotulo}
+      className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-white"
+    >
+      {children}
+    </button>
+  );
+}
+
+function Secao({
+  titulo,
+  recolhida,
+  children,
+}: {
+  titulo: string;
+  recolhida: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="pt-2">
+      {!recolhida && (
+        <div className="px-1 pb-2 text-[12px] font-semibold text-white/90">{titulo}</div>
+      )}
+      {children}
+    </div>
   );
 }
 
@@ -184,7 +275,7 @@ function SecaoRecolhivel({
 
   if (itens.length === 0) return null;
   return (
-    <div className="mt-3 border-t border-border/60 pt-2">
+    <div className="mt-2 border-t border-dashed border-sidebar-border pt-3">
       {!recolhida && (
         <button
           type="button"
@@ -192,18 +283,19 @@ function SecaoRecolhivel({
             setAberta((v) => !v);
           }}
           aria-expanded={aberta}
-          className="flex w-full items-center justify-between rounded-md px-3 py-1 text-[10px] tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-[var(--brand)] focus-visible:outline-none"
+          className="flex w-full items-center justify-between rounded-md px-1 pb-2 text-[12px] font-semibold text-white/90 transition-colors hover:text-white"
         >
           <span>
-            {titulo} <span className="text-muted-foreground/70">· {itens.length}</span>
+            {titulo} <span className="font-normal text-muted-foreground">· {itens.length}</span>
           </span>
           <ChevronDown
-            className={`h-3.5 w-3.5 transition-transform ${aberta ? "rotate-0" : "-rotate-90"}`}
+            className={cn("h-4 w-4 transition-transform", aberta ? "rotate-0" : "-rotate-90")}
+            aria-hidden
           />
         </button>
       )}
       {(recolhida || aberta) && (
-        <SidebarMenu className="pt-1">{itens.map(desenharItem)}</SidebarMenu>
+        <SidebarMenu className="gap-1">{itens.map(desenharItem)}</SidebarMenu>
       )}
     </div>
   );
@@ -234,23 +326,24 @@ function SeletorDeEmpresa({ acesso }: { acesso: Acesso }) {
   };
 
   return (
-    <div className="px-2 pb-1">
-      <Select
-        value={acesso.empresa?.id ?? ""}
-        onValueChange={(id) => void aoTrocar(id)}
-        disabled={trocando}
+    <Select
+      value={acesso.empresa?.id ?? ""}
+      onValueChange={(id) => void aoTrocar(id)}
+      disabled={trocando}
+    >
+      <SelectTrigger
+        className="h-9 border-sidebar-border bg-campo text-[13px] text-white"
+        aria-label="Empresa ativa"
       >
-        <SelectTrigger className="h-8 text-[12px]" aria-label="Empresa ativa">
-          <SelectValue placeholder="Escolha a empresa" />
-        </SelectTrigger>
-        <SelectContent>
-          {acesso.empresas.map((e) => (
-            <SelectItem key={e.id} value={e.id} className="text-[12px]">
-              {e.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+        <SelectValue placeholder="Escolha a empresa" />
+      </SelectTrigger>
+      <SelectContent>
+        {acesso.empresas.map((e) => (
+          <SelectItem key={e.id} value={e.id} className="text-[13px]">
+            {e.nome}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

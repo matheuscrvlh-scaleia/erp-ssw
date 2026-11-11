@@ -23,10 +23,10 @@ export function InfoTip({ texto, className }: { texto: string; className?: strin
               className,
             )}
           >
-            <Info className="h-3 w-3" />
+            <Info className="h-3.5 w-3.5" />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[280px] text-[11px] leading-snug">
+        <TooltipContent side="top" className="max-w-[300px] text-[12px] leading-snug">
           {texto}
         </TooltipContent>
       </Tooltip>

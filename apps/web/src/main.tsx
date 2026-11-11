@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
+import { aplicarTemaSalvo } from "@/lib/tema";
 import { instalarAvisoDeVersao } from "@/lib/versao";
 
 import { criarQueryClient, criarRoteador } from "./roteador";
@@ -19,6 +20,7 @@ const queryClient = criarQueryClient(() => {
   });
 });
 const roteador = criarRoteador(queryClient);
+aplicarTemaSalvo();
 instalarAvisoDeVersao();
 
 const raiz = document.getElementById("app");

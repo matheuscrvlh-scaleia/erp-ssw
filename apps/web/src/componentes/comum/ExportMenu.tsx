@@ -134,7 +134,7 @@ export function ExportMenu<T extends LinhaExportacao>({
         <Button
           variant="outline"
           size="sm"
-          className={cn("h-7 text-[12px]", soIcone && "w-7 px-0", className)}
+          className={cn("h-9", soIcone && "w-9 px-0", className)}
           disabled={desabilitado || ocupado || (!carregarLinhas && linhas.length === 0)}
           title={`Exportar ${titulo}`}
           aria-label={`Exportar ${titulo}`}
@@ -142,7 +142,7 @@ export function ExportMenu<T extends LinhaExportacao>({
           // O botão não entra na captura da tela que vai para o PDF.
           data-exportacao-ignorar
         >
-          <Download className={cn("h-3 w-3", !soIcone && "mr-1.5")} />
+          <Download className="h-4 w-4" aria-hidden />
           {soIcone ? null : ocupado ? "Exportando…" : "Exportar"}
         </Button>
       </DropdownMenuTrigger>
@@ -151,7 +151,7 @@ export function ExportMenu<T extends LinhaExportacao>({
           const Icone = ICONE[formato];
           return (
             <DropdownMenuItem key={formato} onSelect={() => void exportar(formato)}>
-              <Icone className="mr-2 h-3 w-3" aria-hidden /> {ROTULO[formato]}
+              <Icone className="h-4 w-4 text-muted-foreground" aria-hidden /> {ROTULO[formato]}
             </DropdownMenuItem>
           );
         })}

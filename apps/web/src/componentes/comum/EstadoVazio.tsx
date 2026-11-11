@@ -26,13 +26,17 @@ export function EstadoVazio({
     <div
       role="status"
       className={cn(
-        "flex flex-col items-center justify-center gap-1 px-3 py-6 text-center text-[12px] text-muted-foreground",
+        "flex flex-col items-center justify-center gap-1.5 px-4 py-10 text-center text-[13px] text-muted-foreground",
         className,
       )}
     >
-      {Icone && <Icone className="mb-1 h-5 w-5 opacity-60" aria-hidden />}
-      <p>{mensagem}</p>
-      {detalhe && <p className="text-[11px]">{detalhe}</p>}
+      {Icone && (
+        <span className="mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+          <Icone className="h-5 w-5" aria-hidden />
+        </span>
+      )}
+      <p className="font-semibold text-foreground">{mensagem}</p>
+      {detalhe && <p className="text-[12.5px]">{detalhe}</p>}
       {acao && <div className="mt-2">{acao}</div>}
     </div>
   );

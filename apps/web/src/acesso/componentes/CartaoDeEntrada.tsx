@@ -1,37 +1,56 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
-/** Moldura das telas fora do painel (login, nova senha, convite): mesma marca e espaçamento. */
+import { aplicarPaleta, ultimaCorDaMarca } from "@/acesso/marca";
+
+import { IlustracaoLogistica } from "./IlustracaoLogistica";
+
+/**
+ * Moldura das telas fora do painel (login, nova senha, convite), no desenho de
+ * mockups/login.png: cartão largo com a ilustração à esquerda e o formulário à direita. A cor é a
+ * da última empresa usada neste navegador (antes do login não se sabe a empresa).
+ */
 export function CartaoDeEntrada({
   titulo,
   subtitulo,
   aviso,
+  rodape,
   children,
 }: {
   titulo: string;
   subtitulo: string;
   aviso?: ReactNode;
+  /** Linha no pé do formulário (ex.: "Sem conta? Peça um convite…"). */
+  rodape?: ReactNode;
   children: ReactNode;
 }) {
+  useEffect(() => aplicarPaleta(ultimaCorDaMarca()), []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm rounded-[10px] border border-border bg-card p-6">
-        {aviso}
-        <div className="mb-6">
-          <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--brand)] text-[13px] font-medium text-white">
-              BI
-            </div>
-            <span className="text-[15px] font-medium tracking-tight">Painel BI</span>
-          </div>
-          <h1
-            className="text-[20px] font-medium text-foreground"
-            style={{ letterSpacing: "-0.02em" }}
-          >
-            {titulo}
-          </h1>
-          <p className="mt-1 text-[12px] text-muted-foreground">{subtitulo}</p>
+    <div className="flex min-h-screen items-center justify-center bg-secondary p-0 sm:p-6 lg:p-10">
+      <div className="grid min-h-screen w-full max-w-[1120px] overflow-hidden bg-card shadow-flutuante sm:min-h-[620px] sm:rounded-2xl lg:grid-cols-[1.35fr_1fr]">
+        <div
+          aria-hidden
+          className="relative hidden items-center justify-center overflow-hidden bg-gradient-to-br from-superficie to-muted p-8 lg:flex"
+        >
+          <IlustracaoLogistica className="h-auto w-full max-w-[640px]" />
         </div>
-        {children}
+        <div className="flex flex-col bg-card/80 px-6 py-10 backdrop-blur sm:px-12 lg:border-l lg:border-border">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-[12px] font-bold text-primary-foreground">
+              BI
+            </span>
+            <span className="text-[15px] font-semibold tracking-tight">Painel BI</span>
+          </div>
+          <div className="flex flex-1 flex-col justify-center py-10">
+            {aviso}
+            <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.02em] text-foreground">
+              {titulo}
+            </h1>
+            <p className="mt-2 mb-8 text-[13.5px] text-muted-foreground">{subtitulo}</p>
+            {children}
+          </div>
+          {rodape && <div className="text-[13px] text-muted-foreground">{rodape}</div>}
+        </div>
       </div>
     </div>
   );
@@ -39,5 +58,13 @@ export function CartaoDeEntrada({
 
 export function ErroDoCampo({ mensagem }: { mensagem: string | undefined }) {
   if (!mensagem) return null;
-  return <p className="mt-1 text-[11px] text-destructive">{mensagem}</p>;
+  return (
+    <p role="alert" className="mt-1.5 text-[12px] text-destructive">
+      {mensagem}
+    </p>
+  );
 }
+
+/** Campo do login: fundo cinza sem borda, como no mockup. */
+export const CLASSE_CAMPO_DE_ENTRADA =
+  "h-12 rounded-md border-transparent bg-campo px-4 text-[14px] shadow-none focus-visible:border-primary focus-visible:bg-card";

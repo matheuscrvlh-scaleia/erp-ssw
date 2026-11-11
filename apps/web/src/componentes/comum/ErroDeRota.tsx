@@ -21,19 +21,19 @@ export function ErroDeRota({ error, reset }: ErrorComponentProps) {
     reset();
   };
   return (
-    <div className="mx-auto max-w-md rounded-[10px] border border-border/70 bg-card p-6 text-center">
-      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-        <AlertTriangle className="h-5 w-5 text-amber-600" />
+    <div className="mx-auto mt-10 max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-cartao">
+      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-status-warn-bg">
+        <AlertTriangle className="h-5 w-5 text-status-warn-fg" />
       </div>
-      <h2 className="text-[15px] font-medium tracking-tight">
+      <h2 className="text-[16px] font-bold tracking-tight">
         Não foi possível carregar esta página
       </h2>
-      <p className="mt-1 text-[12px] text-muted-foreground">
+      <p className="mt-1 text-[13px] text-muted-foreground">
         {obsoleto ? MENSAGEM_RECARREGAR : mensagemDoErro(error)}
       </p>
       <div className="mt-4">
         <Button size="sm" variant="outline" onClick={tentarDeNovo}>
-          <RefreshCw className="mr-1.5 h-3 w-3" />
+          <RefreshCw aria-hidden />
           {obsoleto ? "Recarregar" : "Tentar novamente"}
         </Button>
       </div>

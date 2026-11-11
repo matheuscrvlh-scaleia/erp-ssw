@@ -37,9 +37,9 @@ function Cabecalho({ titulo, descricao, acoes, Titulo, Descricao }: CabecalhoPro
   return (
     <div className="flex items-start justify-between gap-3 pr-8">
       <div className="min-w-0">
-        <Titulo className="text-[15px]">{titulo}</Titulo>
+        <Titulo className="text-[17px] font-bold">{titulo}</Titulo>
         {descricao ? (
-          <Descricao className="text-[12px]">{descricao}</Descricao>
+          <Descricao className="text-[13px]">{descricao}</Descricao>
         ) : (
           <Descricao className="sr-only">Detalhe</Descricao>
         )}
@@ -133,8 +133,8 @@ export function GradeDetalhe({ children }: { children: ReactNode }) {
 export function CampoDetalhe({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] text-muted-foreground">{rotulo}</dt>
-      <dd className="text-[12.5px]">
+      <dt className="label-xs">{rotulo}</dt>
+      <dd className="mt-1 text-[13.5px]">
         {valor === null || valor === undefined || valor === "" ? "—" : valor}
       </dd>
     </div>

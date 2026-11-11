@@ -7,7 +7,7 @@ import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
 
-import { ErroDoCampo } from "./CartaoDeEntrada";
+import { CLASSE_CAMPO_DE_ENTRADA, ErroDoCampo } from "./CartaoDeEntrada";
 
 const esquema = z
   .object({
@@ -47,18 +47,28 @@ export function FormularioNovaSenha({
   });
 
   return (
-    <form onSubmit={enviar} className="space-y-3" noValidate>
+    <form onSubmit={enviar} className="space-y-5" noValidate>
       {pedirNome && (
         <div>
-          <Label htmlFor="nome">Seu nome</Label>
-          <Input id="nome" autoComplete="name" {...formulario.register("nome")} />
+          <Label htmlFor="nome" className="mb-2 block text-[13px] text-muted-foreground">
+            Seu nome
+          </Label>
+          <Input
+            id="nome"
+            autoComplete="name"
+            className={CLASSE_CAMPO_DE_ENTRADA}
+            {...formulario.register("nome")}
+          />
           <ErroDoCampo mensagem={errors.nome?.message} />
         </div>
       )}
       <div>
-        <Label htmlFor="senha">Nova senha</Label>
+        <Label htmlFor="senha" className="mb-2 block text-[13px] text-muted-foreground">
+          Nova senha
+        </Label>
         <Input
           id="senha"
+          className={CLASSE_CAMPO_DE_ENTRADA}
           type="password"
           autoComplete="new-password"
           {...formulario.register("senha")}
@@ -66,16 +76,19 @@ export function FormularioNovaSenha({
         <ErroDoCampo mensagem={errors.senha?.message} />
       </div>
       <div>
-        <Label htmlFor="confirmacao">Repita a senha</Label>
+        <Label htmlFor="confirmacao" className="mb-2 block text-[13px] text-muted-foreground">
+          Repita a senha
+        </Label>
         <Input
           id="confirmacao"
+          className={CLASSE_CAMPO_DE_ENTRADA}
           type="password"
           autoComplete="new-password"
           {...formulario.register("confirmacao")}
         />
         <ErroDoCampo mensagem={errors.confirmacao?.message} />
       </div>
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <Button type="submit" disabled={isSubmitting} className="h-12 w-full text-[14px]">
         {isSubmitting ? "Aguarde..." : rotuloDoBotao}
       </Button>
     </form>

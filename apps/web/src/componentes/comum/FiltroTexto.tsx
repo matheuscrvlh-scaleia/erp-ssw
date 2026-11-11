@@ -103,7 +103,10 @@ export function FiltroTexto({
         >
           {rotulo}{" "}
           {ativo ? (
-            <Badge variant="secondary" className="h-4 max-w-[140px] truncate px-1.5 text-[10px]">
+            <Badge
+              variant="secondary"
+              className="h-5 max-w-[160px] truncate border-transparent bg-brand-suave px-2 text-[11.5px] text-brand"
+            >
               {selecionados.length === 1
                 ? selecionados[0]
                 : `${String(selecionados.length)} selecionados`}
@@ -126,7 +129,7 @@ export function FiltroTexto({
             }}
             placeholder={placeholder ?? `Buscar ${rotulo.toLowerCase()}…`}
             aria-label={`Buscar ${rotulo.toLowerCase()}`}
-            className="w-full rounded-md border border-border/70 bg-background px-2 py-1 text-[12px] outline-none focus:border-[var(--brand)]"
+            className="h-8 w-full rounded-lg border border-input bg-card px-2.5 text-[13px] outline-none focus:border-ring"
           />
           <div className="mt-1 flex items-center justify-between gap-2">
             <span className="text-[10px] text-muted-foreground">
@@ -155,7 +158,7 @@ export function FiltroTexto({
             )}
           </div>
         </div>
-        <ul className="max-h-72 overflow-auto py-1" aria-label={rotulo}>
+        <ul className="rolagem-fina max-h-72 overflow-auto p-1" aria-label={rotulo}>
           {lista.map((s) => {
             const marcado = selecionados.includes(s);
             return (

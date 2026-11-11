@@ -19,14 +19,12 @@ export function FiltrosAvancados({ children, ativos, aoLimpar, className }: Filt
     <div
       role="group"
       aria-label="Filtros"
-      className={cn(
-        "flex flex-wrap items-center gap-2 rounded-[10px] border border-border/70 bg-card p-2",
-        className,
-      )}
+      className={cn("flex flex-wrap items-center gap-2", className)}
     >
       {children}
       {ativos && aoLimpar && (
-        <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={aoLimpar}>
+        <Button size="sm" variant="ghost" className="h-9 text-brand" onClick={aoLimpar}>
+          <X aria-hidden />
           Limpar filtros
         </Button>
       )}
@@ -95,19 +93,12 @@ export function FiltrandoPor({
   const ativas = etiquetas.filter((e): e is EtiquetaFiltro => Boolean(e && e.valor));
   if (ativas.length === 0) return null;
   return (
-    <div
-      className={cn(
-        "flex flex-wrap items-center gap-2 rounded-[10px] border border-[var(--brand)]/40 bg-[var(--brand)]/5 px-3 py-2.5",
-        className,
-      )}
-    >
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        Filtrando por
-      </span>
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+      <span className="label-xs">Filtrando por</span>
       {ativas.map((e) => (
         <span
           key={e.rotulo}
-          className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--brand)]/60 bg-card py-1 pl-3 pr-1.5 text-[15px]"
+          className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-full border border-brand/40 bg-brand-suave pr-1 pl-3 text-[13px]"
         >
           <span className="shrink-0 text-muted-foreground">{e.rotulo}:</span>
           <span className="truncate font-semibold text-foreground" title={e.completo ?? e.valor}>

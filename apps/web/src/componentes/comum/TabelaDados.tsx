@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { BotoesDePagina } from "./BotoesDePagina";
 import { EstadoVazio } from "./EstadoVazio";
 import { ExportMenu, type ExportMenuProps } from "./ExportMenu";
+import { LinhasCarregando } from "./LinhasCarregando";
 import { MensagemErro } from "./MensagemErro";
 import {
   alinhamentoDa,
@@ -102,13 +103,13 @@ function SeletorDeColunas<T>({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7 text-[12px]" data-exportacao-ignorar>
-          <Columns3 className="mr-1.5 h-3 w-3" aria-hidden />
+        <Button variant="outline" size="sm" className="h-9" data-exportacao-ignorar>
+          <Columns3 aria-hidden />
           Colunas
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-80 overflow-auto">
-        <DropdownMenuLabel className="text-[11px]">Colunas visíveis</DropdownMenuLabel>
+        <DropdownMenuLabel className="label-xs">Colunas visíveis</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {colunas.map((c) => (
           <DropdownMenuCheckboxItem
@@ -236,137 +237,142 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
   const vazio = !carregando && !erro && pagina.linhas.length === 0;
 
   return (
-    <div className={cn("rounded-[10px] border border-border/70 bg-card", className)}>
-      {temFaixa && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-3">
-          {titulo && <h2 className="label-xs mr-2">{titulo}</h2>}
-          {acoes}
-          <div className="ml-auto flex items-center gap-2">
-            {configurarColunas && (
-              <SeletorDeColunas colunas={colunas} ocultas={ocultas} alternar={alternarColuna} />
-            )}
-            {exportacao && (
-              <ExportMenu
-                {...exportacao}
-                colunas={colunasExportacao}
-                linhas={paraExportar(ordenadas)}
-                carregarLinhas={
-                  exportacao.carregarLinhas
-                    ? async () => {
-                        const todas = await exportacao.carregarLinhas?.();
-                        return paraExportar(todas ?? []);
-                      }
-                    : undefined
-                }
-              />
-            )}
-          </div>
-        </div>
+    <div
+      className={cn(
+        "flex min-w-0 flex-col rounded-2xl border border-border bg-superficie p-1 shadow-cartao",
+        className,
       )}
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-[12px]" aria-busy={carregando}>
-          <thead>
-            <tr className="border-b border-border/60 text-left text-muted-foreground">
-              {visiveis.map((c) => {
-                const ativa = ordenacao?.chave === c.chave ? ordenacao.direcao : null;
-                const ordenavel = c.ordenavel ?? true;
-                return (
-                  <th
-                    key={c.chave}
-                    scope="col"
-                    className={cn("px-3 py-2 font-medium", ALINHAR[alinhamentoDa(c)])}
-                    aria-sort={
-                      ativa === "asc" ? "ascending" : ativa === "desc" ? "descending" : undefined
-                    }
-                  >
-                    {ordenavel ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          ordenarPor(c.chave);
-                        }}
-                        className="inline-flex items-center whitespace-nowrap text-[11px] font-medium hover:text-foreground"
-                      >
-                        {c.titulo}
-                        <IconeOrdem direcao={ativa} />
-                      </button>
-                    ) : (
-                      <span className="whitespace-nowrap text-[11px]">{c.titulo}</span>
-                    )}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {carregando && (
-              <tr>
-                <td
-                  colSpan={visiveis.length}
-                  className="px-3 py-6 text-center text-muted-foreground"
-                >
-                  Carregando…
-                </td>
-              </tr>
-            )}
-            {!carregando && erro !== undefined && erro !== null && (
-              <tr>
-                <td colSpan={visiveis.length}>
-                  <MensagemErro erro={erro} aoTentarDeNovo={aoTentarDeNovo} />
-                </td>
-              </tr>
-            )}
-            {vazio && (
-              <tr>
-                <td colSpan={visiveis.length}>
-                  <EstadoVazio mensagem={mensagemVazia} />
-                </td>
-              </tr>
-            )}
-            {!carregando &&
-              !erro &&
-              pagina.linhas.map((linha) => {
-                const chave = chaveDaLinha(linha);
-                return (
-                  <tr
-                    key={chave}
-                    className={cn(
-                      "border-b border-border/40 last:border-0 hover:bg-muted/60",
-                      aoClicarLinha &&
-                        "cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-none",
-                      linhaAtiva === chave && "bg-muted/60",
-                    )}
-                    {...(aoClicarLinha
-                      ? {
-                          tabIndex: 0,
-                          onClick: () => {
-                            aoClicarLinha(linha);
-                          },
-                          onKeyDown: (e: KeyboardEvent) => {
-                            teclaNaLinha(e, linha);
-                          },
+    >
+      <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+        {temFaixa && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+            {titulo && <h2 className="mr-2 text-[14px] font-bold text-foreground">{titulo}</h2>}
+            {acoes}
+            <div className="ml-auto flex items-center gap-2">
+              {configurarColunas && (
+                <SeletorDeColunas colunas={colunas} ocultas={ocultas} alternar={alternarColuna} />
+              )}
+              {exportacao && (
+                <ExportMenu
+                  {...exportacao}
+                  colunas={colunasExportacao}
+                  linhas={paraExportar(ordenadas)}
+                  carregarLinhas={
+                    exportacao.carregarLinhas
+                      ? async () => {
+                          const todas = await exportacao.carregarLinhas?.();
+                          return paraExportar(todas ?? []);
                         }
-                      : {})}
-                  >
-                    {visiveis.map((c) => (
-                      <td
-                        key={c.chave}
-                        className={cn("px-3 py-2", ALINHAR[alinhamentoDa(c)], c.classe)}
-                      >
-                        {c.celula
-                          ? c.celula(linha)
-                          : textoDaCelula(valorDaColuna(c, linha), c.formato) || "—"}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {carregando && (
+          <span className="sr-only" role="status">
+            Carregando…
+          </span>
+        )}
+        <div className="rolagem-fina overflow-x-auto">
+          <table className="w-full text-[13px] tabular-nums" aria-busy={carregando}>
+            <thead>
+              <tr className="border-b border-border bg-muted/70 text-left text-muted-foreground">
+                {visiveis.map((c) => {
+                  const ativa = ordenacao?.chave === c.chave ? ordenacao.direcao : null;
+                  const ordenavel = c.ordenavel ?? true;
+                  return (
+                    <th
+                      key={c.chave}
+                      scope="col"
+                      className={cn("px-4 py-2.5 font-semibold", ALINHAR[alinhamentoDa(c)])}
+                      aria-sort={
+                        ativa === "asc" ? "ascending" : ativa === "desc" ? "descending" : undefined
+                      }
+                    >
+                      {ordenavel ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ordenarPor(c.chave);
+                          }}
+                          className="inline-flex items-center gap-0.5 text-[11.5px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase hover:text-foreground"
+                        >
+                          {c.titulo}
+                          <IconeOrdem direcao={ativa} />
+                        </button>
+                      ) : (
+                        <span className="text-[11.5px] tracking-[0.04em] whitespace-nowrap uppercase">
+                          {c.titulo}
+                        </span>
+                      )}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {carregando && <LinhasCarregando linhas={6} colunas={visiveis.length} />}
+              {!carregando && erro !== undefined && erro !== null && (
+                <tr>
+                  <td colSpan={visiveis.length}>
+                    <MensagemErro erro={erro} aoTentarDeNovo={aoTentarDeNovo} />
+                  </td>
+                </tr>
+              )}
+              {vazio && (
+                <tr>
+                  <td colSpan={visiveis.length}>
+                    <EstadoVazio mensagem={mensagemVazia} />
+                  </td>
+                </tr>
+              )}
+              {!carregando &&
+                !erro &&
+                pagina.linhas.map((linha) => {
+                  const chave = chaveDaLinha(linha);
+                  return (
+                    <tr
+                      key={chave}
+                      className={cn(
+                        "border-b border-border transition-colors last:border-0 hover:bg-muted/60",
+                        aoClicarLinha &&
+                          "cursor-pointer focus-visible:bg-accent focus-visible:outline-none",
+                        linhaAtiva === chave && "bg-accent",
+                      )}
+                      {...(aoClicarLinha
+                        ? {
+                            tabIndex: 0,
+                            onClick: () => {
+                              aoClicarLinha(linha);
+                            },
+                            onKeyDown: (e: KeyboardEvent) => {
+                              teclaNaLinha(e, linha);
+                            },
+                          }
+                        : {})}
+                    >
+                      {visiveis.map((c) => (
+                        <td
+                          key={c.chave}
+                          className={cn("px-4 py-2.5", ALINHAR[alinhamentoDa(c)], c.classe)}
+                        >
+                          {c.celula
+                            ? c.celula(linha)
+                            : textoDaCelula(valorDaColuna(c, linha), c.formato) || "—"}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-4 py-2.5 text-[12px]">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[12.5px]">
         <span className="text-muted-foreground" aria-live="polite">
           {rotuloTotal(total)}
           {paginas > 1 && ` · Página ${String(pagina.pagina)} de ${String(paginas)}`}

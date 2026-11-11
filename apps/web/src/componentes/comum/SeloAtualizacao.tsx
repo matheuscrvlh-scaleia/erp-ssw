@@ -32,7 +32,7 @@ export function SeloAtualizacao({
   return (
     <p
       className={cn(
-        "flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground",
+        "flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted-foreground",
         className,
       )}
       aria-live="polite"
@@ -44,14 +44,14 @@ export function SeloAtualizacao({
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400"
+                className="inline-flex items-center gap-1 rounded-full border border-status-warn/40 bg-status-warn-bg px-2 py-0.5 text-[11.5px] font-semibold text-status-warn-fg"
               >
                 <AlertTriangle className="h-3 w-3" aria-hidden />
                 {inteiro.format(xmlAguardando.pendentes)} XML aguardando
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" align="start" className="max-w-[320px] text-white">
-              <span className="text-[12px] text-white">
+            <TooltipContent side="bottom" align="start" className="max-w-[320px]">
+              <span className="text-[12px]">
                 XMLs de CT-e recebidos por FTP que ainda não encontraram o documento no BI2. A fila
                 é reprocessada automaticamente e expira em 5 dias.
                 {xmlAguardando.expirados > 0

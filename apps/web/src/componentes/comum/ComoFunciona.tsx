@@ -50,11 +50,11 @@ export function ComoFunciona({
         <button
           type="button"
           aria-label={`Como funciona: ${titulo}`}
-          className="group inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 py-0.5 pl-0.5 pr-2.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
+          className="group inline-flex h-8 items-center gap-1.5 rounded-full border border-brand/30 bg-brand-suave py-0.5 pr-3 pl-1 text-[12.5px] font-semibold text-brand transition-colors hover:border-brand/60"
         >
           <span className="relative flex h-5 w-5 items-center justify-center">
             {!visto && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/40" />
+              <span className="absolute inline-flex h-full w-full rounded-full bg-primary/40 motion-safe:animate-ping" />
             )}
             <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <Info className="h-3.5 w-3.5" />
@@ -66,9 +66,9 @@ export function ComoFunciona({
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
-          <DialogDescription className="text-[12px]">{resumo}</DialogDescription>
+          <DialogDescription className="text-[13px]">{resumo}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 text-[12px] leading-relaxed">{children}</div>
+        <div className="space-y-5 text-[13px] leading-relaxed">{children}</div>
       </DialogContent>
     </Dialog>
   );
@@ -77,7 +77,7 @@ export function ComoFunciona({
 export function ComoFuncionaSecao({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <section className="space-y-1.5">
-      <h3 className="text-[13px] font-semibold">{titulo}</h3>
+      <h3 className="text-[14px] font-bold">{titulo}</h3>
       <div className="space-y-1.5 text-muted-foreground [&_strong]:font-medium [&_strong]:text-foreground">
         {children}
       </div>
@@ -87,7 +87,7 @@ export function ComoFuncionaSecao({ titulo, children }: { titulo: string; childr
 
 export function Formula({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-mono text-[11px] text-foreground">
+    <div className="rounded-lg border border-border bg-muted px-3 py-2 font-mono text-[12px] text-foreground">
       {children}
     </div>
   );

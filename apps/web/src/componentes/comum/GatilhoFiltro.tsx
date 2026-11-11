@@ -21,15 +21,15 @@ export const GatilhoFiltro = forwardRef<HTMLButtonElement, GatilhoFiltroProps>(
   ({ ativo, rotulo, aoLimpar, children, className, ...props }, ref) => (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border border-border/70 bg-card text-[12px]",
-        ativo && "border-[var(--brand)]",
+        "inline-flex h-9 items-center rounded-lg border border-border bg-card text-[13px] shadow-cartao",
+        ativo && "border-brand/60 bg-brand-suave",
       )}
     >
       <button
         ref={ref}
         type="button"
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-md px-3 py-1 hover:bg-muted",
+          "inline-flex h-full items-center gap-2 rounded-lg px-3 font-medium hover:bg-muted",
           className,
         )}
         {...props}
@@ -43,9 +43,9 @@ export const GatilhoFiltro = forwardRef<HTMLButtonElement, GatilhoFiltroProps>(
           aria-label={`Limpar ${rotulo.toLowerCase()}`}
           title={`Limpar ${rotulo.toLowerCase()}`}
           data-exportacao-ignorar
-          className="-ml-2 mr-1 rounded-sm p-0.5 hover:bg-muted-foreground/20"
+          className="-ml-1.5 mr-1.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <X className="h-3 w-3" aria-hidden />
+          <X className="h-3.5 w-3.5" aria-hidden />
         </button>
       )}
     </span>

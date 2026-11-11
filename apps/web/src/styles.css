@@ -4,6 +4,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Design do painel (docs/design/guia.md). Duas camadas de cor:
+ * 1. Cor da empresa: `--marca*` e `--lateral*`, derivadas em src/acesso/marca.ts a partir de
+ *    `empresas.cor_primaria` e gravadas no <html> (valores abaixo = cor padrão #212a63).
+ * 2. Tokens semânticos (este arquivo): o que as telas usam. Nunca hex solto nas telas.
+ */
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -14,6 +21,8 @@
   --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-superficie: var(--superficie);
+  --color-campo: var(--campo);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -37,6 +46,14 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-serie-1: var(--serie-1);
+  --color-serie-2: var(--serie-2);
+  --color-serie-3: var(--serie-3);
+  --color-serie-4: var(--serie-4);
+  --color-serie-5: var(--serie-5);
+  --color-serie-6: var(--serie-6);
+  --color-serie-7: var(--serie-7);
+  --color-serie-8: var(--serie-8);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -54,119 +71,194 @@
   --color-status-warn-bg: var(--status-warn-bg);
   --color-status-bad-fg: var(--status-bad-fg);
   --color-status-bad-bg: var(--status-bad-bg);
+  --color-status-info: var(--status-info);
+  --color-status-info-fg: var(--status-info-fg);
+  --color-status-info-bg: var(--status-info-bg);
   --color-kpi-volume: var(--kpi-volume);
   --color-kpi-alert: var(--kpi-alert);
   --color-kpi-positive: var(--kpi-positive);
   --color-brand: var(--brand);
+  --color-brand-suave: var(--brand-suave);
   --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --shadow-cartao: var(--sombra-cartao);
+  --shadow-flutuante: var(--sombra-flutuante);
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
-  --background: #f7f8f7;
-  --foreground: #1f2421;
-  --brand: #0f6e56;
-  --status-good: #1d9e75;
-  --status-good-fg: #0f6e56;
-  --status-good-bg: #e1f5ee;
-  --status-warn: #ef9f27;
-  --status-warn-fg: #ba7517;
-  --status-warn-bg: #faeeda;
-  --status-bad: #e24b4a;
-  --status-bad-fg: #a32d2d;
-  --status-bad-bg: #fcebeb;
-  --kpi-volume: #c0392b;
-  --kpi-alert: #d99a23;
-  --kpi-positive: #4f86b8;
+
+  /* Cor da empresa (sobrescrita por src/acesso/marca.ts). */
+  --marca: #212a63;
+  --marca-fg: #ffffff;
+  --marca-texto: #212a63;
+  --marca-clara: #7986d8;
+  --marca-clara-fg: #0b0f14;
+  --lateral: #121732;
+  --lateral-destaque: #8894dd;
+
+  /* Superfícies: fundo cinza-claro, "superfície" é a moldura dos cartões (mockup), card branco. */
+  --background: #f3f5f8;
+  --superficie: #f8f9fb;
   --card: #ffffff;
-  --card-foreground: #1f2421;
+  --card-foreground: #101828;
   --popover: #ffffff;
-  --popover-foreground: #1f2421;
-  --primary: #0f6e56;
-  --primary-foreground: #ffffff;
-  --secondary: #eff1ef;
-  --secondary-foreground: #1f2421;
-  --muted: #f1f3f2;
-  --muted-foreground: #6b736e;
-  --accent: #e1f5ee;
-  --accent-foreground: #0f6e56;
-  --destructive: #e24b4a;
+  --popover-foreground: #101828;
+  --foreground: #101828;
+  --muted: #f1f3f6;
+  --muted-foreground: #5d6b7e;
+  --campo: #f1f3f6;
+  --border: #e4e7ec;
+  --input: #dfe3e9;
+  --sombra-cartao: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.04);
+  --sombra-flutuante: 0 12px 32px -8px rgb(16 24 40 / 0.18), 0 2px 6px rgb(16 24 40 / 0.06);
+
+  /* Marca nos papéis do shadcn. `--brand` é a marca como TEXTO/ícone (contraste 4,5:1). */
+  --brand: var(--marca-texto);
+  --brand-suave: color-mix(in srgb, var(--marca) 9%, transparent);
+  --primary: var(--marca);
+  --primary-foreground: var(--marca-fg);
+  --secondary: #eef1f5;
+  --secondary-foreground: #101828;
+  --accent: color-mix(in srgb, var(--marca) 8%, white);
+  --accent-foreground: var(--marca-texto);
+  --ring: var(--marca);
+  --destructive: #d92d20;
   --destructive-foreground: #ffffff;
-  --border: #e5e7e6;
-  --input: #e5e7e6;
-  --ring: #0f6e56;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  /* Barra lateral em azul-marinho, a mesma cor da faixa superior
-     (#212a63, definida em src/routes/_autenticado.tsx). */
-  --sidebar: #212a63;
-  --sidebar-foreground: #eef0f9;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #212a63;
-  --sidebar-accent: #2f3a7d;
+
+  /* Situação (bom/alerta/ruim/informação): sempre com ícone ou texto, nunca só a cor. */
+  --status-good: #16a34a;
+  --status-good-fg: #11743a;
+  --status-good-bg: #e7f6ec;
+  --status-warn: #e8930c;
+  --status-warn-fg: #93500b;
+  --status-warn-bg: #fdf3dc;
+  --status-bad: #e0412f;
+  --status-bad-fg: #b42318;
+  --status-bad-bg: #fde9e7;
+  --status-info: #2a78d6;
+  --status-info-fg: #1c5cab;
+  --status-info-bg: #e7f0fc;
+  --kpi-volume: var(--brand);
+  --kpi-alert: var(--status-warn-fg);
+  --kpi-positive: var(--status-good-fg);
+
+  /* Séries de gráfico: ordem fixa validada para daltonismo (skill dataviz). A série única ou
+     "período atual" usa a marca (`--brand`); várias séries usam serie-1..8 nesta ordem. */
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --serie-3: #1baf7a;
+  --serie-4: #eda100;
+  --serie-5: #e87ba4;
+  --serie-6: #008300;
+  --serie-7: #6250d6;
+  --serie-8: #e34948;
+  --chart-1: var(--serie-1);
+  --chart-2: var(--serie-2);
+  --chart-3: var(--serie-3);
+  --chart-4: var(--serie-4);
+  --chart-5: var(--serie-5);
+  --grafico-grade: #e9ecf1;
+  --grafico-comparacao: color-mix(in srgb, var(--marca) 35%, #c3cad5);
+
+  /* Barra lateral: tom bem escuro da marca, texto claro, item ativo no tom vivo. */
+  --sidebar: var(--lateral);
+  --sidebar-foreground: rgb(255 255 255 / 0.74);
+  --sidebar-primary: var(--lateral-destaque);
+  --sidebar-primary-foreground: var(--lateral);
+  --sidebar-accent: rgb(255 255 255 / 0.08);
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255, 255, 255, 0.12);
-  --sidebar-ring: #8b98dd;
-}
+  --sidebar-border: rgb(255 255 255 / 0.1);
+  --sidebar-ring: var(--lateral-destaque);
 
-/* A barra lateral usa algumas utilidades globais (text-muted-foreground no
-   rotulo ADMIN e no setor do usuario, text-foreground no hover, border-border
-   no divisor). Sobre o azul-marinho elas resolveriam para tons escuros e
-   sumiriam. Redefinir os tokens so dentro da barra mantem cada uma no papel
-   que ja tinha, sem tocar em nenhuma classe do componente. */
-[data-sidebar="sidebar"] {
-  --foreground: #ffffff;
-  --muted-foreground: rgba(238, 240, 249, 0.62);
-  --border: rgba(255, 255, 255, 0.12);
-}
-
-/* Barra de rolagem da sidebar invisivel (o scroll continua funcionando). */
-[data-sidebar="content"] {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge legado */
-}
-[data-sidebar="content"]::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none; /* Chrome/Safari/Edge */
+  /* Ilustração do login (IlustracaoLogistica). */
+  --ilustra-topo: #ffffff;
+  --ilustra-esq: #e9ecf1;
+  --ilustra-dir: #d7dbe2;
+  --ilustra-linha: #c5cad3;
+  --ilustra-sombra: #94a3b8;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  color-scheme: dark;
+  --background: #0b0f14;
+  --superficie: #0f141b;
+  --card: #131a23;
+  --card-foreground: #e8ecf1;
+  --popover: #18202b;
+  --popover-foreground: #e8ecf1;
+  --foreground: #e8ecf1;
+  --muted: #1a222d;
+  --muted-foreground: #9aa5b4;
+  --campo: #1a222d;
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.12);
+  --sombra-cartao: 0 1px 2px rgb(0 0 0 / 0.3);
+  --sombra-flutuante: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.3);
+
+  --brand: var(--marca-clara);
+  --brand-suave: color-mix(in srgb, var(--marca-clara) 14%, transparent);
+  --primary: var(--marca-clara);
+  --primary-foreground: var(--marca-clara-fg);
+  --secondary: #1f2834;
+  --secondary-foreground: #e8ecf1;
+  --accent: color-mix(in srgb, var(--marca-clara) 14%, #131a23);
+  --accent-foreground: var(--marca-clara);
+  --ring: var(--marca-clara);
+  --destructive: #f04438;
+  --destructive-foreground: #ffffff;
+
+  --status-good: #22c55e;
+  --status-good-fg: #4ade80;
+  --status-good-bg: rgb(34 197 94 / 0.13);
+  --status-warn: #f5a524;
+  --status-warn-fg: #fbbf24;
+  --status-warn-bg: rgb(245 165 36 / 0.13);
+  --status-bad: #f04438;
+  --status-bad-fg: #f97066;
+  --status-bad-bg: rgb(240 68 56 / 0.14);
+  --status-info: #3987e5;
+  --status-info-fg: #7cb2f0;
+  --status-info-bg: rgb(57 135 229 / 0.14);
+
+  --serie-1: #3987e5;
+  --serie-2: #d95926;
+  --serie-3: #199e70;
+  --serie-4: #c98500;
+  --serie-5: #d55181;
+  --serie-6: #008300;
+  --serie-7: #9085e9;
+  --serie-8: #e66767;
+  --grafico-grade: rgb(255 255 255 / 0.07);
+  --grafico-comparacao: color-mix(in srgb, var(--marca-clara) 40%, #4b5563);
+
+  --sidebar: color-mix(in srgb, var(--lateral) 80%, #05070a);
+  --sidebar-border: rgb(255 255 255 / 0.08);
+
+  --ilustra-topo: #2a3340;
+  --ilustra-esq: #1f2732;
+  --ilustra-dir: #171e27;
+  --ilustra-linha: #3a4452;
+  --ilustra-sombra: #000000;
+}
+
+/* Dentro da barra lateral os tokens gerais viram os claros (texto, borda, campo). */
+[data-sidebar="sidebar"] {
+  --foreground: #ffffff;
+  --muted-foreground: rgb(255 255 255 / 0.56);
+  --border: rgb(255 255 255 / 0.1);
+  --campo: rgb(255 255 255 / 0.06);
+  --input: rgb(255 255 255 / 0.12);
+  --ring: var(--lateral-destaque);
+  color-scheme: dark;
+}
+
+/* Barra de rolagem da sidebar invisível (o scroll continua funcionando). */
+[data-sidebar="content"] {
+  scrollbar-width: none;
+}
+[data-sidebar="content"]::-webkit-scrollbar {
+  display: none;
 }
 
 @layer base {
@@ -174,10 +266,15 @@
     border-color: var(--color-border);
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: 14px;
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
   }
@@ -186,21 +283,40 @@
   table .font-mono {
     white-space: nowrap;
   }
+
+  /* Foco sempre visível para teclado (WCAG 2.4.7). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer utilities {
+  /* Número de destaque dos cartões (KPI). */
   .num-hero {
-    font-size: 30px;
+    font-size: 28px;
     line-height: 1.1;
-    letter-spacing: -0.03em;
-    font-weight: 500;
+    letter-spacing: -0.025em;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
+  /* Rótulo de cartão/seção em caixa alta ("NEW NET INCOME" no mockup). */
   .label-xs {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-muted-foreground);
   }
   .live-dot {
@@ -229,5 +345,10 @@
       transform: scale(1.8);
       opacity: 0;
     }
+  }
+  /* Rolagem fina e discreta (listas, tabelas largas). */
+  .rolagem-fina {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
 }

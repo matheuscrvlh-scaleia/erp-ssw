@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { decidirAcesso, destinoSeguro } from "./guarda";
-import { tituloComEmpresa, variaveisDaMarca } from "./marca";
+import { contraste, paletaDaMarca, tituloComEmpresa } from "./marca";
 import { montarMenu } from "./navegacao";
 
 const base = { ativo: true, telas: [], telasBloqueadas: [] };
@@ -80,13 +80,21 @@ describe("montarMenu", () => {
 });
 
 describe("marca da empresa", () => {
-  it("cor do tema não sobrescreve nada; outra cor pinta barra e topo", () => {
-    expect(variaveisDaMarca("#212A63")).toEqual({});
-    expect(variaveisDaMarca("vermelho")).toEqual({});
-    expect(variaveisDaMarca("#0f6e56")).toMatchObject({
-      "--sidebar": "#0f6e56",
-      "--marca-primaria": "#0f6e56",
-    });
+  it("cor inválida cai na padrão; a paleta deriva da cor da empresa", () => {
+    expect(paletaDaMarca("vermelho")).toEqual(paletaDaMarca("#212a63"));
+    expect(paletaDaMarca("#0f6e56")["--marca"]).toBe("#0f6e56");
+  });
+
+  it("toda cor de empresa sai com contraste AA (texto, botão, lateral)", () => {
+    for (const cor of ["#212a63", "#0f6e56", "#f5c518", "#ffffff", "#000000", "#c0392b"]) {
+      const p = paletaDaMarca(cor);
+      const v = (k: string) => p[k] ?? "";
+      expect(contraste(v("--marca-texto"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(v("--marca"), v("--marca-fg"))).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(v("--marca-clara"), v("--marca-clara-fg"))).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(v("--lateral"), "#ffffff")).toBeGreaterThanOrEqual(10);
+      expect(contraste(v("--lateral-destaque"), v("--lateral"))).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it("título da aba com o nome da empresa", () => {

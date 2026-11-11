@@ -6,12 +6,13 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { type CSSProperties } from "react";
+import { type CSSProperties, useCallback, useState } from "react";
 
 import { decidirAcesso } from "@/acesso/guarda";
 import { useMarcaDaEmpresa } from "@/acesso/marca";
 import { consultaAcesso, sair } from "@/acesso/sessao";
 import { BarraLateral } from "@/componentes/layout/BarraLateral";
+import { BuscaRapida, useAtalhoDaBusca } from "@/componentes/layout/BuscaRapida";
 import { ModuloDesligado } from "@/componentes/layout/ModuloDesligado";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/componentes/ui/sidebar";
 import { ehSessaoVencida } from "@/lib/api";
@@ -46,8 +47,8 @@ function Carregando() {
 }
 
 const LARGURAS: CSSProperties & Record<`--${string}`, string> = {
-  "--sidebar-width": "13rem",
-  "--sidebar-width-icon": "3rem",
+  "--sidebar-width": "17rem",
+  "--sidebar-width-icon": "3.5rem",
 };
 
 function LayoutAutenticado() {
@@ -56,6 +57,11 @@ function LayoutAutenticado() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   useMarcaDaEmpresa(acesso.empresa);
+  const [buscaAberta, setBuscaAberta] = useState(false);
+  const abrirBusca = useCallback(() => {
+    setBuscaAberta(true);
+  }, []);
+  useAtalhoDaBusca(abrirBusca);
 
   const aoSair = async () => {
     await sair().catch(() => undefined);
@@ -66,31 +72,34 @@ function LayoutAutenticado() {
   if (caminho === "/sem-acesso") {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <main className="mx-auto max-w-[1440px] px-4 py-8 md:px-6">
+        <div className="mx-auto max-w-[1600px] px-4 py-8 md:px-8">
           <Outlet />
-        </main>
+        </div>
       </div>
     );
   }
 
   const decisao = decidirAcesso(acesso, caminho);
   return (
-    <SidebarProvider style={LARGURAS}>
-      <BarraLateral acesso={acesso} aoSair={() => void aoSair()} />
+    <SidebarProvider style={LARGURAS} className="bg-background">
+      <BarraLateral acesso={acesso} aoSair={() => void aoSair()} aoBuscar={abrirBusca} />
       <SidebarInset className="min-w-0 bg-background text-foreground">
-        <header className="flex h-12 items-center gap-2 border-b border-border/70 bg-[var(--marca-primaria,#212a63)] px-3 text-white">
-          <SidebarTrigger className="text-white hover:bg-white/10" />
-          <span className="text-sm font-medium md:hidden">Painel BI</span>
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card px-3 md:hidden">
+          <SidebarTrigger />
+          <span className="truncate text-[15px] font-bold">
+            {acesso.empresa?.nome ?? "Painel BI"}
+          </span>
         </header>
-        <main className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6">
-          {acesso.empresa && <FaixaSaudeSsw empresaId={acesso.empresa.id} />}
-          {decisao.tipo === "modulo_desligado" ? (
+        {acesso.empresa && <FaixaSaudeSsw empresaId={acesso.empresa.id} />}
+        {decisao.tipo === "modulo_desligado" ? (
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
             <ModuloDesligado moduloNome={decisao.moduloNome} />
-          ) : (
-            <Outlet />
-          )}
-        </main>
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </SidebarInset>
+      <BuscaRapida acesso={acesso} aberta={buscaAberta} aoMudar={setBuscaAberta} />
     </SidebarProvider>
   );
 }

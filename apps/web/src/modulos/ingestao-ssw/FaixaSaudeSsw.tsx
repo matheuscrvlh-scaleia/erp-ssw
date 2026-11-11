@@ -1,7 +1,9 @@
 import { type MotivoDaSaude } from "@erp/shared/contratos/ingestao-ssw";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle } from "lucide-react";
+
+import { Aviso } from "@/componentes/comum/Aviso";
+import { Button } from "@/componentes/ui/button";
 
 import { consultaSaudeSsw } from "./api";
 
@@ -21,26 +23,19 @@ export function FaixaSaudeSsw({ empresaId }: { empresaId: string }) {
   if (!data || data.saudavel || data.motivo === "ok") return null;
 
   return (
-    <div
-      role="status"
-      className="mb-4 flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-900 dark:text-amber-100"
-    >
-      <AlertTriangle
-        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300"
-        aria-hidden
-      />
-      <div className="flex-1">
-        <p className="font-medium">Integração SSW indisponível — {DETALHE[data.motivo]}.</p>
-        <p className="text-amber-900/80 dark:text-amber-100/80">
-          Os dados exibidos podem estar desatualizados até que a conexão seja restabelecida.
-        </p>
-      </div>
-      <Link
-        to="/admin/ingestao"
-        className="shrink-0 rounded border border-amber-600/50 px-2 py-1 text-xs font-medium hover:bg-amber-500/20"
+    <div className="px-4 pt-4 md:px-8">
+      <Aviso
+        tom="alerta"
+        titulo={`Integração SSW indisponível — ${DETALHE[data.motivo]}.`}
+        className="mx-auto max-w-[1600px]"
+        acao={
+          <Button asChild size="sm" variant="outline">
+            <Link to="/admin/ingestao">Abrir configuração</Link>
+          </Button>
+        }
       >
-        Abrir configuração
-      </Link>
+        Os dados exibidos podem estar desatualizados até que a conexão seja restabelecida.
+      </Aviso>
     </div>
   );
 }

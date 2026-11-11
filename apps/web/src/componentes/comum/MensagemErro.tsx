@@ -23,14 +23,14 @@ export function MensagemErro({ erro, titulo, aoTentarDeNovo, className }: Mensag
     <div
       role="alert"
       className={cn(
-        "flex flex-col items-center justify-center gap-2 px-4 py-6 text-center text-[12px] text-[var(--status-bad)]",
+        "flex flex-col items-center justify-center gap-3 px-4 py-8 text-center text-[13px] text-status-bad-fg",
         className,
       )}
     >
       <p>{titulo ? `${titulo}: ${mensagem}` : mensagem}</p>
       {aoTentarDeNovo && (
-        <Button size="sm" variant="outline" className="h-7 text-[12px]" onClick={aoTentarDeNovo}>
-          <RefreshCw className="mr-1.5 h-3 w-3" aria-hidden />
+        <Button size="sm" variant="outline" onClick={aoTentarDeNovo}>
+          <RefreshCw aria-hidden />
           Tentar novamente
         </Button>
       )}

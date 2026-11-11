@@ -8,7 +8,11 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { CartaoDeEntrada, ErroDoCampo } from "@/acesso/componentes/CartaoDeEntrada";
+import {
+  CartaoDeEntrada,
+  CLASSE_CAMPO_DE_ENTRADA,
+  ErroDoCampo,
+} from "@/acesso/componentes/CartaoDeEntrada";
 import { destinoSeguro } from "@/acesso/guarda";
 import { entrar } from "@/acesso/sessao";
 import { Button } from "@/componentes/ui/button";
@@ -79,12 +83,12 @@ function PaginaLogin() {
         />
       )}
       {reason === "signed_out" && (
-        <div className="mb-4 rounded-md border border-border bg-muted/50 p-3 text-[12px] text-muted-foreground">
+        <div className="mb-4 rounded-lg border border-border bg-muted p-3 text-[13px] text-muted-foreground">
           Você saiu da conta. Entre novamente para continuar.
         </div>
       )}
       {erro && (
-        <div className="mb-4 rounded-md border border-[var(--status-bad)]/40 bg-[var(--status-bad-bg)] p-3 text-[12px] text-[var(--status-bad-fg)]">
+        <div className="mb-4 rounded-lg border border-status-bad/40 bg-status-bad-bg p-3 text-[13px] text-status-bad-fg">
           {ERROS_LOGIN_GOOGLE[erro]}
         </div>
       )}
@@ -111,6 +115,7 @@ function PaginaLogin() {
       titulo="Entre com sua conta"
       subtitulo="Performance logística em tempo real."
       aviso={aviso}
+      rodape="Sem conta? Peça um convite ao administrador da sua empresa."
     >
       <FormularioEntrar
         aoEntrar={irParaODestino}
@@ -120,11 +125,15 @@ function PaginaLogin() {
       />
       {provedores.data?.google && (
         <>
-          <div className="my-4 text-center text-xs text-muted-foreground">ou</div>
+          <div className="my-5 flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            ou
+            <span className="h-px flex-1 bg-border" />
+          </div>
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="h-12 w-full"
             onClick={() => {
               // O navegador sai daqui: a API leva ao Google e volta já com o cookie de sessão.
               window.location.assign(
@@ -136,9 +145,6 @@ function PaginaLogin() {
           </Button>
         </>
       )}
-      <p className="mt-4 text-center text-xs text-muted-foreground">
-        Sem conta? Peça um convite ao administrador da sua empresa.
-      </p>
     </CartaoDeEntrada>
   );
 }
@@ -165,19 +171,29 @@ function FormularioEntrar({
   });
 
   return (
-    <form onSubmit={enviar} className="space-y-3" noValidate>
+    <form onSubmit={enviar} className="space-y-5" noValidate>
       <div>
-        <Label htmlFor="email">E-mail</Label>
-        <Input id="email" type="email" autoComplete="email" {...formulario.register("email")} />
+        <Label htmlFor="email" className="mb-2 block text-[13px] text-muted-foreground">
+          E-mail
+        </Label>
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          className={CLASSE_CAMPO_DE_ENTRADA}
+          {...formulario.register("email")}
+        />
         <ErroDoCampo mensagem={errors.email?.message} />
       </div>
       <div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="senha">Senha</Label>
+        <div className="mb-2 flex items-center justify-between">
+          <Label htmlFor="senha" className="text-[13px] text-muted-foreground">
+            Senha
+          </Label>
           <button
             type="button"
             onClick={aoEsquecer}
-            className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+            className="text-[12.5px] font-medium text-brand hover:underline"
           >
             Esqueci a senha
           </button>
@@ -186,11 +202,12 @@ function FormularioEntrar({
           id="senha"
           type="password"
           autoComplete="current-password"
+          className={CLASSE_CAMPO_DE_ENTRADA}
           {...formulario.register("senha")}
         />
         <ErroDoCampo mensagem={errors.senha?.message} />
       </div>
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <Button type="submit" disabled={isSubmitting} className="h-12 w-full text-[14px]">
         {isSubmitting ? "Aguarde..." : "Entrar"}
       </Button>
     </form>
@@ -216,22 +233,30 @@ function FormularioEsqueci({ aoVoltar }: { aoVoltar: () => void }) {
   return (
     <div className="space-y-3">
       {enviado ? (
-        <p className="rounded-md border border-border bg-muted/50 p-3 text-[12px] text-muted-foreground">
+        <p className="rounded-lg border border-border bg-muted p-3 text-[13px] text-muted-foreground">
           {enviado}
         </p>
       ) : (
-        <form onSubmit={enviar} className="space-y-3" noValidate>
+        <form onSubmit={enviar} className="space-y-5" noValidate>
           <div>
-            <Label htmlFor="email">E-mail</Label>
-            <Input id="email" type="email" autoComplete="email" {...formulario.register("email")} />
+            <Label htmlFor="email" className="mb-2 block text-[13px] text-muted-foreground">
+              E-mail
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              className={CLASSE_CAMPO_DE_ENTRADA}
+              {...formulario.register("email")}
+            />
             <ErroDoCampo mensagem={errors.email?.message} />
           </div>
-          <Button type="submit" disabled={isSubmitting} className="w-full">
+          <Button type="submit" disabled={isSubmitting} className="h-12 w-full text-[14px]">
             {isSubmitting ? "Aguarde..." : "Enviar link"}
           </Button>
         </form>
       )}
-      <Button type="button" variant="ghost" className="w-full" onClick={aoVoltar}>
+      <Button type="button" variant="ghost" className="h-11 w-full" onClick={aoVoltar}>
         Voltar para o login
       </Button>
     </div>
@@ -248,12 +273,12 @@ function AvisoSessaoExpirada({
   aoFechar: () => void;
 }) {
   return (
-    <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
+    <div className="mb-4 rounded-lg border border-status-warn/40 bg-status-warn-bg p-3 text-[13px] text-status-warn-fg">
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
         <div className="flex-1">
           <div className="font-medium">Sua sessão expirou</div>
-          <p className="mt-0.5 text-[11px] opacity-90">
+          <p className="mt-0.5 text-[12px] opacity-90">
             Podemos tentar restaurar automaticamente antes de pedir suas credenciais.
           </p>
           <div className="mt-2 flex gap-2">
@@ -263,7 +288,7 @@ function AvisoSessaoExpirada({
               variant="outline"
               onClick={aoRestaurar}
               disabled={restaurando}
-              className="h-7 gap-1.5 text-[11px]"
+              className="h-8 gap-1.5 text-[12px]"
             >
               <RefreshCw className={`h-3 w-3 ${restaurando ? "animate-spin" : ""}`} />
               {restaurando ? "Restaurando…" : "Tentar restaurar sessão"}
@@ -273,7 +298,7 @@ function AvisoSessaoExpirada({
               size="sm"
               variant="ghost"
               onClick={aoFechar}
-              className="h-7 text-[11px]"
+              className="h-8 text-[12px]"
             >
               Fechar
             </Button>

@@ -119,7 +119,10 @@ export function FiltroMultiplo({
           {rotulo}
           {/* Espaço para o nome acessível ("Unidade todas"); no flex ele não aparece. */}{" "}
           {ativo ? (
-            <Badge variant="secondary" className="h-4 max-w-[140px] truncate px-1.5 text-[10px]">
+            <Badge
+              variant="secondary"
+              className="h-5 max-w-[160px] truncate border-transparent bg-brand-suave px-2 text-[11.5px] text-brand"
+            >
               {textoSelo}
             </Badge>
           ) : (
@@ -138,15 +141,15 @@ export function FiltroMultiplo({
               }}
               placeholder={`Buscar ${rotulo.toLowerCase()}…`}
               aria-label={`Buscar ${rotulo.toLowerCase()}`}
-              className="w-full rounded-md border border-border/70 bg-background px-2 py-1 text-[12px] outline-none focus:border-[var(--brand)]"
+              className="h-8 w-full rounded-lg border border-input bg-card px-2.5 text-[13px] outline-none focus:border-ring"
             />
           ) : (
-            <span className="px-1 text-[12px] font-medium">{rotulo}</span>
+            <span className="px-1 text-[13px] font-semibold">{rotulo}</span>
           )}
           {ativo && (
             <button
               type="button"
-              className="shrink-0 text-[11px] text-muted-foreground underline hover:text-foreground"
+              className="shrink-0 text-[12px] font-medium text-brand hover:underline"
               onClick={() => {
                 alterar([], true);
               }}
@@ -155,7 +158,7 @@ export function FiltroMultiplo({
             </button>
           )}
         </div>
-        <ul className="max-h-72 overflow-auto py-1" aria-label={rotulo}>
+        <ul className="rolagem-fina max-h-72 overflow-auto p-1" aria-label={rotulo}>
           {lista.map((o) => {
             const marcado = selecionados.includes(o.valor);
             return (
@@ -168,15 +171,15 @@ export function FiltroMultiplo({
                     alternar(o.valor);
                   }}
                   className={cn(
-                    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] hover:bg-muted",
-                    marcado && "bg-[var(--status-good-bg)]",
+                    "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] hover:bg-muted",
+                    marcado && "bg-accent text-accent-foreground",
                     o.apagada && !marcado && "opacity-50",
                   )}
                 >
                   <span
                     className={cn(
-                      "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border border-border",
-                      marcado && "border-[var(--brand)] bg-[var(--brand)] text-white",
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border border-input",
+                      marcado && "border-primary bg-primary text-primary-foreground",
                     )}
                     aria-hidden
                   >

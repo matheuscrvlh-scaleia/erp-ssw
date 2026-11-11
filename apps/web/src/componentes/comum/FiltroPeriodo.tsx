@@ -58,7 +58,7 @@ export function FiltroPeriodo({
       <div
         role="group"
         aria-label="Período"
-        className="flex rounded-md border border-border/70 p-0.5"
+        className="flex h-9 items-center rounded-lg border border-border bg-card p-0.5 shadow-cartao"
       >
         {atalhos.map((atalho) => (
           <button
@@ -69,9 +69,9 @@ export function FiltroPeriodo({
               aoMudar({ periodo: atalho, de: "", ate: "" });
             }}
             className={cn(
-              "rounded-[5px] px-3 py-1 text-[12px] transition-colors",
+              "h-full rounded-md px-3 text-[13px] font-medium transition-colors",
               periodo === atalho
-                ? "bg-[var(--brand)] text-white"
+                ? "bg-primary text-primary-foreground shadow-cartao"
                 : "text-muted-foreground hover:bg-muted",
             )}
           >
@@ -88,7 +88,7 @@ export function FiltroPeriodo({
               aoMudar({ periodo: padrao, de: "", ate: "" });
             }}
           >
-            <IconeCalendario className="h-3 w-3" aria-hidden />
+            <IconeCalendario className="h-4 w-4 text-muted-foreground" aria-hidden />
             {personalizado
               ? `${rotulo} · ${formatarData(de)} a ${formatarData(ate)}`
               : `${rotulo} · Personalizado`}
