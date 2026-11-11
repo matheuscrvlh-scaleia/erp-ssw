@@ -1,6 +1,6 @@
 import { type UsuarioDaEmpresa } from "@erp/shared/contratos/admin";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { chaveDoNome } from "./cadastros/PaginaDeCadastro";
 import { listaDasExcecoes, mapaDasExcecoes, trocasDeExcecao } from "./telas";
@@ -8,6 +8,11 @@ import { gerarSenha, ModalEditarUsuario } from "./usuarios/ModalEditarUsuario";
 import { ModalNovoUsuario } from "./usuarios/ModalNovoUsuario";
 
 afterEach(cleanup);
+
+// O Select do Radix rola até a opção marcada ao abrir; o jsdom não tem `scrollIntoView`.
+beforeAll(() => {
+  Element.prototype.scrollIntoView = () => undefined;
+});
 
 const CARGOS = [
   { chave: "operador", rotulo: "Operador" },
@@ -17,6 +22,12 @@ const DEPARTAMENTOS = [{ chave: "expedicao", rotulo: "Expedição" }];
 
 const digitar = (rotulo: string, valor: string) => {
   fireEvent.change(screen.getByLabelText(rotulo), { target: { value: valor } });
+};
+
+/** Abre o `ui/select` pelo rótulo e marca a opção. */
+const escolher = (rotulo: string, opcao: string) => {
+  fireEvent.click(screen.getByLabelText(rotulo));
+  fireEvent.click(screen.getByRole("option", { name: opcao }));
 };
 
 describe("exceções de tela", () => {
@@ -59,7 +70,7 @@ describe("ModalNovoUsuario", () => {
     expect(enviar.hasAttribute("disabled")).toBe(true);
     digitar("Nome", "Ana");
     digitar("E-mail", " Ana@FR.com.br ");
-    digitar("Departamento", "expedicao");
+    escolher("Departamento", "Expedição");
     fireEvent.click(enviar);
     await waitFor(() => {
       expect(aoGravar).toHaveBeenCalledWith({
@@ -121,8 +132,12 @@ describe("ModalEditarUsuario", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Editar usuário" }));
     expect(screen.getAllByRole("button", { name: "Fechar" }).length).toBeGreaterThan(1);
-    digitar("Nível", "admin");
-    digitar("Romaneio", "padrao");
+    escolher("Nível", "Admin");
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Romaneio" })).getByRole("button", {
+        name: "Padrão",
+      }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Revisar alterações" }));
     const dialogo = screen.getByRole("dialog");
     expect(within(dialogo).getByText("Operador")).toBeTruthy();

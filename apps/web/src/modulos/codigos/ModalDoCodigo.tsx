@@ -8,10 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { Abas } from "@/componentes/comum/Abas";
+import { Aviso } from "@/componentes/comum/Aviso";
+import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
+import { CAMPO, Campo, Escolha } from "@/modulos/admin/comum";
 
 import { consultaHistoricoDoCodigo } from "./api";
 import { ehLetra, rotulosDaLetra } from "./regras";
@@ -36,16 +39,18 @@ const ROTULO_DA_ACAO = {
 
 function HistoricoDoCodigo({ codigo, fuso }: { codigo: number; fuso: string }) {
   const consulta = useQuery(consultaHistoricoDoCodigo(codigo));
-  if (consulta.isLoading) return <p className="text-[12px] text-muted-foreground">Carregando…</p>;
-  if (consulta.error) return <MensagemErro erro={consulta.error} />;
-  const alteracoes = consulta.data?.alteracoes ?? [];
-  if (alteracoes.length === 0) {
-    return <p className="text-[12px] text-muted-foreground">Sem alterações registradas.</p>;
+  if (consulta.isLoading) {
+    return <p className="py-6 text-center text-[13px] text-muted-foreground">Carregando…</p>;
   }
+  if (consulta.error) {
+    return <MensagemErro erro={consulta.error} aoTentarDeNovo={() => void consulta.refetch()} />;
+  }
+  const alteracoes = consulta.data?.alteracoes ?? [];
+  if (alteracoes.length === 0) return <EstadoVazio mensagem="Sem alterações registradas." />;
   return (
-    <ol className="max-h-[320px] space-y-1.5 overflow-auto text-[12px]">
+    <ol className="rolagem-fina max-h-[320px] space-y-2 overflow-auto text-[13px]">
       {alteracoes.map((a) => (
-        <li key={a.id} className="border-l-2 border-border pl-2">
+        <li key={a.id} className="border-l-2 border-brand/40 pl-3">
           <span className="text-muted-foreground">
             {formatarDataHora(a.criadoEm, fuso)} · {a.autorNome ?? "sistema"} ·{" "}
           </span>
@@ -86,7 +91,7 @@ export function ModalDoCodigo({
   const [penaliza, setPenaliza] = useState(false);
   const [ativo, setAtivo] = useState(true);
   const [notas, setNotas] = useState("");
-  const [erro, setErro] = useState<string | null>(null);
+  const [erro, setErro] = useState<{ campo: "codigo" | "descricao"; texto: string } | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -104,11 +109,11 @@ export function ModalDoCodigo({
   const salvar = async () => {
     const numero = Number(codigo);
     if (!Number.isInteger(numero) || numero < 0 || numero > 99 || codigo.trim() === "") {
-      setErro("Código de 0 a 99.");
+      setErro({ campo: "codigo", texto: "Código de 0 a 99." });
       return;
     }
     if (descricao.trim().length < 3) {
-      setErro("Descrição (mín. 3 caracteres)");
+      setErro({ campo: "descricao", texto: "Descrição (mín. 3 caracteres)" });
       return;
     }
     setSalvando(true);
@@ -127,7 +132,7 @@ export function ModalDoCodigo({
   return (
     <Dialog open={aberto} onOpenChange={aoMudarAberto}>
       <DialogContent className="sm:max-w-lg">
-        <DialogTitle>
+        <DialogTitle className="text-[17px] font-bold">
           {editando ? `Código ${String(editando.codigo)}` : "Novo código de ocorrência"}
         </DialogTitle>
         <DialogDescription className="sr-only">
@@ -147,10 +152,9 @@ export function ModalDoCodigo({
         {aba === "historico" && editando ? (
           <HistoricoDoCodigo codigo={editando.codigo} fuso={fuso} />
         ) : (
-          <div className="space-y-3 text-[13px]">
-            <div className="flex gap-3">
-              <label className="w-24">
-                <span className="text-muted-foreground">Código</span>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-[120px_minmax(0,1fr)]">
+              <Campo rotulo="Código" erro={erro?.campo === "codigo" ? erro.texto : null}>
                 <input
                   type="number"
                   min={0}
@@ -160,38 +164,33 @@ export function ModalDoCodigo({
                   onChange={(e) => {
                     setCodigo(e.target.value);
                   }}
-                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1 tabular-nums"
+                  className={`${CAMPO} tabular-nums`}
                 />
-              </label>
-              <label className="flex-1">
-                <span className="text-muted-foreground">Responsável</span>
-                <select
-                  value={letra}
-                  onChange={(e) => {
-                    if (ehLetra(e.target.value)) setLetra(e.target.value);
+              </Campo>
+              <Campo rotulo="Responsável">
+                <Escolha
+                  opcoes={LETRAS_DE_RESPONSAVEL.map((l) => ({
+                    valor: l,
+                    rotulo: `${l} — ${rotulos[l]}`,
+                  }))}
+                  valor={letra}
+                  aoMudar={(v) => {
+                    if (ehLetra(v)) setLetra(v);
                   }}
-                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1"
-                >
-                  {LETRAS_DE_RESPONSAVEL.map((l) => (
-                    <option key={l} value={l}>
-                      {l} — {rotulos[l]}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                />
+              </Campo>
             </div>
-            <label className="block">
-              <span className="text-muted-foreground">Descrição</span>
+            <Campo rotulo="Descrição" erro={erro?.campo === "descricao" ? erro.texto : null}>
               <input
                 value={descricao}
                 maxLength={500}
                 onChange={(e) => {
                   setDescricao(e.target.value);
                 }}
-                className="mt-1 w-full rounded border border-border bg-background px-2 py-1"
+                className={CAMPO}
               />
-            </label>
-            <div className="flex flex-wrap gap-6">
+            </Campo>
+            <div className="flex flex-wrap gap-6 text-[13px] font-medium">
               <label className="flex items-center gap-2">
                 <Switch checked={penaliza} onCheckedChange={setPenaliza} aria-label="Penaliza" />
                 Penaliza
@@ -201,8 +200,7 @@ export function ModalDoCodigo({
                 Ativo
               </label>
             </div>
-            <label className="block">
-              <span className="text-muted-foreground">Notas</span>
+            <Campo rotulo="Notas">
               <textarea
                 value={notas}
                 maxLength={2000}
@@ -211,16 +209,15 @@ export function ModalDoCodigo({
                   setNotas(e.target.value);
                 }}
                 placeholder="Ex.: aparece muito em entregas para SP capital"
-                className="mt-1 w-full rounded border border-border bg-background px-2 py-1"
+                className={`${CAMPO} h-auto py-2`}
               />
-            </label>
+            </Campo>
             {editando && (
-              <p className="rounded border border-amber-500/40 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-900">
+              <Aviso tom="alerta">
                 A classificação nova vale para todas as ocorrências deste código, inclusive as
                 antigas.
-              </p>
+              </Aviso>
             )}
-            {erro && <p className="text-[12px] text-destructive">{erro}</p>}
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"

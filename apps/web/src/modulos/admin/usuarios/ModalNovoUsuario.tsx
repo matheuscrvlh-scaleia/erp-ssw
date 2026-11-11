@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/componentes/ui/dialog";
 
-import { CAMPO, Campo, CampoDeSenha } from "../comum";
+import { CAMPO, Campo, CampoDeSenha, Escolha } from "../comum";
 import { EditorDeExcecoes } from "../EditorDeTelas";
 import { listaDasExcecoes, type MapaDeExcecoes } from "../telas";
 
@@ -57,6 +57,12 @@ export function ModalNovoUsuario({
     ...(modo === "senha" ? { senha: campos.senha } : {}),
   });
 
+  /** Erro do campo já preenchido (o vazio só desabilita o botão, sem acusar). */
+  const erroDe = (campo: "email" | "senha", digitado: string) =>
+    lido.success || !digitado.trim()
+      ? null
+      : (lido.error.issues.find((i) => i.path[0] === campo)?.message ?? null);
+
   const abrirOuFechar = (abrir: boolean) => {
     setAberto(abrir);
     if (!abrir) {
@@ -80,8 +86,8 @@ export function ModalNovoUsuario({
   return (
     <Dialog open={aberto} onOpenChange={abrirOuFechar}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <UserPlus className="h-3.5 w-3.5" />
+        <Button size="sm">
+          <UserPlus aria-hidden />
           Novo usuário
         </Button>
       </DialogTrigger>
@@ -98,12 +104,12 @@ export function ModalNovoUsuario({
           valor={modo}
           aoMudar={setModo}
         />
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-[12.5px] text-muted-foreground">
           {modo === "convite"
             ? "Enviamos um link de convite. O usuário define a própria senha ao acessar."
             : "O usuário poderá entrar imediatamente com este e-mail e senha. Recomende que troque a senha no primeiro acesso."}
         </p>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Campo rotulo="Nome">
             <input
               className={CAMPO}
@@ -113,7 +119,7 @@ export function ModalNovoUsuario({
               }}
             />
           </Campo>
-          <Campo rotulo="E-mail">
+          <Campo rotulo="E-mail" erro={erroDe("email", campos.email)}>
             <input
               type="email"
               className={CAMPO}
@@ -126,6 +132,7 @@ export function ModalNovoUsuario({
           {modo === "senha" && (
             <CampoDeSenha
               rotulo="Senha"
+              erro={erroDe("senha", campos.senha)}
               valor={campos.senha}
               aoMudar={(senha) => {
                 mudar({ senha });
@@ -136,47 +143,33 @@ export function ModalNovoUsuario({
             rotulo="Departamento"
             ajuda="O departamento já libera um conjunto de módulos. Gerencie em Admin · Departamentos."
           >
-            <select
-              className={CAMPO}
-              value={campos.departamento}
-              onChange={(e) => {
-                mudar({ departamento: e.target.value });
+            <Escolha
+              vazio="Selecionar..."
+              opcoes={departamentos.map((d) => ({ valor: d.chave, rotulo: d.rotulo }))}
+              valor={campos.departamento}
+              aoMudar={(departamento) => {
+                mudar({ departamento });
               }}
-            >
-              <option value="">Selecionar...</option>
-              {departamentos.map((d) => (
-                <option key={d.chave} value={d.chave}>
-                  {d.rotulo}
-                </option>
-              ))}
-            </select>
+            />
           </Campo>
           <Campo rotulo="Nível de acesso">
-            <select
-              className={CAMPO}
-              value={campos.papel}
-              onChange={(e) => {
-                mudar({ papel: e.target.value });
+            <Escolha
+              opcoes={cargos.map((c) => ({ valor: c.chave, rotulo: c.rotulo }))}
+              valor={campos.papel}
+              aoMudar={(papel) => {
+                mudar({ papel });
               }}
-            >
-              {cargos.map((c) => (
-                <option key={c.chave} value={c.chave}>
-                  {c.rotulo}
-                </option>
-              ))}
-            </select>
+            />
           </Campo>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Acesso aos módulos
-              </span>
+          <div className="space-y-2 border-t border-border pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="label-xs">Acesso aos módulos</span>
               <div className="flex gap-1">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-[10px]"
+                  className="h-7 px-2 text-xs"
                   onClick={() => {
                     setExcecoes({});
                   }}
@@ -187,7 +180,7 @@ export function ModalNovoUsuario({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-[10px]"
+                  className="h-7 px-2 text-xs"
                   onClick={() => {
                     setExcecoes(Object.fromEntries(operacionais.map((t) => [t, true])));
                   }}
@@ -198,7 +191,7 @@ export function ModalNovoUsuario({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-[10px]"
+                  className="h-7 px-2 text-xs"
                   onClick={() => {
                     setExcecoes(Object.fromEntries(todasAsTelas.map((t) => [t, false])));
                   }}
@@ -207,7 +200,7 @@ export function ModalNovoUsuario({
                 </Button>
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Vazio = padrão do role/setor. Telas administrativas só liberam se o nível for admin.
             </p>
             <EditorDeExcecoes excecoes={excecoes} aoMudar={setExcecoes} />

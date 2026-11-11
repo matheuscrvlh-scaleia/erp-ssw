@@ -4,15 +4,18 @@ import {
   type UsuarioDaEmpresa,
 } from "@erp/shared/contratos/admin";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { Mail, RotateCcw } from "lucide-react";
 import { useState } from "react";
 
+import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
 
 import { CHAVES, consultaCargos, consultaDepartamentos, consultaUsuarios } from "../api";
-import { CabecalhoDaPagina, Selo, useGravacao } from "../comum";
+import { BuscaNaBarra, Escolha, useGravacao } from "../comum";
 import { type AlteracaoDeUsuario, ModalEditarUsuario } from "./ModalEditarUsuario";
 import { ModalNovoUsuario, type Opcao } from "./ModalNovoUsuario";
 
@@ -98,7 +101,9 @@ export function PaginaUsuarios() {
         <div className="flex items-center gap-1.5">
           {rotuloEm(opcoesDeCargo, u.papel) || "—"}
           {u.excecoes.length > 0 && (
-            <Selo title={`${String(u.excecoes.length)} exceção(ões) individual(is)`}>Override</Selo>
+            <span title={`${String(u.excecoes.length)} exceção(ões) individual(is)`}>
+              <SeloStatus tom="info">Override</SeloStatus>
+            </span>
           )}
         </div>
       ),
@@ -109,8 +114,10 @@ export function PaginaUsuarios() {
       valor: (u) => (u.ativo ? "Ativo" : "Inativo"),
       celula: (u) => (
         <div className="flex flex-wrap gap-1">
-          <Selo tom={u.ativo ? "bom" : "ruim"}>{u.ativo ? "Ativo" : "Inativo"}</Selo>
-          {!u.temSenha && <Selo tom="alerta">Convite pendente</Selo>}
+          <SeloStatus tom={u.ativo ? "sucesso" : "erro"}>
+            {u.ativo ? "Ativo" : "Inativo"}
+          </SeloStatus>
+          {!u.temSenha && <SeloStatus tom="alerta">Convite pendente</SeloStatus>}
         </div>
       ),
     },
@@ -133,7 +140,7 @@ export function PaginaUsuarios() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2"
+              className="h-8 w-8 p-0"
               title="Resetar overrides para o padrão do nível"
               aria-label="Resetar overrides"
               disabled={alterar.gravando}
@@ -141,20 +148,20 @@ export function PaginaUsuarios() {
                 zerarExcecoes(u);
               }}
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw aria-hidden />
             </Button>
           )}
           {!u.temSenha && (
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2"
+              className="h-8 w-8 p-0"
               title="Reenviar convite"
               aria-label="Reenviar convite"
               disabled={reenviar.gravando}
               onClick={() => void reenviar.gravar(u.id)}
             >
-              <Mail className="h-3.5 w-3.5" />
+              <Mail aria-hidden />
             </Button>
           )}
         </div>
@@ -163,48 +170,41 @@ export function PaginaUsuarios() {
   ];
 
   return (
-    <div className="space-y-6">
-      <CabecalhoDaPagina
-        titulo="Usuários"
-        descricao="Gerencie acesso, setor e nível de cada usuário."
-      >
+    <Pagina
+      titulo="Usuários"
+      descricao="Gerencie acesso, setor e nível de cada usuário."
+      acoes={
         <ModalNovoUsuario
           cargos={opcoesDeCargo}
           departamentos={departamentosAtivos}
           aoGravar={criar.gravar}
         />
-      </CabecalhoDaPagina>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          placeholder="Buscar nome ou e-mail…"
-          aria-label="Buscar"
-          value={busca}
-          onChange={(e) => {
-            setBusca(e.target.value);
+      }
+      filtros={
+        <FiltrosAvancados
+          ativos={busca !== "" || nivel !== ""}
+          aoLimpar={() => {
+            setBusca("");
+            setNivel("");
           }}
-          className="h-8 w-full max-w-xs rounded-md border border-input bg-background px-3 text-[12px] shadow-sm"
-        />
-        <div className="relative">
-          <SlidersHorizontal className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-          <select
-            aria-label="Nível"
-            value={nivel}
-            onChange={(e) => {
-              setNivel(e.target.value);
-            }}
-            className="h-8 w-[180px] rounded-md border border-input bg-background pl-6 pr-2 text-[12px] shadow-sm"
-          >
-            <option value="">Todos os níveis</option>
-            {opcoesDeCargo.map((o) => (
-              <option key={o.chave} value={o.chave}>
-                {o.rotulo}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
+        >
+          <BuscaNaBarra
+            rotulo="Buscar"
+            placeholder="Buscar nome ou e-mail…"
+            valor={busca}
+            aoMudar={setBusca}
+          />
+          <Escolha
+            filtro
+            rotulo="Nível"
+            vazio="Todos os níveis"
+            opcoes={opcoesDeCargo.map((o) => ({ valor: o.chave, rotulo: o.rotulo }))}
+            valor={nivel}
+            aoMudar={setNivel}
+          />
+        </FiltrosAvancados>
+      }
+    >
       <TabelaDados
         colunas={colunas}
         linhas={filtrados}
@@ -215,6 +215,6 @@ export function PaginaUsuarios() {
         mensagemVazia="Nenhum usuário encontrado."
         rotuloTotal={(n) => `${String(n)} de ${String(todos.length)}`}
       />
-    </div>
+    </Pagina>
   );
 }

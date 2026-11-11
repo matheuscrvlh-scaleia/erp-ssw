@@ -5,7 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
+import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -19,7 +21,7 @@ import { Switch } from "@/componentes/ui/switch";
 import { chamar } from "@/lib/api";
 
 import { CHAVES, consultaCargos, consultaDepartamentos } from "../api";
-import { CabecalhoDaPagina, CAMPO, Campo, Selo, useGravacao } from "../comum";
+import { CAMPO, Campo, useGravacao } from "../comum";
 import { EditorDeMarcacao } from "../EditorDeTelas";
 
 /** Cargo (Roles) e departamento: mesma tela, com descrição e ativo só no departamento. */
@@ -127,14 +129,17 @@ export function PaginaDeCadastro({ tipo }: { tipo: TipoDeCadastro }) {
       chave: "rotulo",
       titulo: "Nome",
       celula: (item) => (
-        <div className="flex items-center gap-1.5">
-          {item.protegido && <Lock className="h-3 w-3 text-muted-foreground" />}
-          {item.rotulo}
-          {item.protegido && <Selo>Protegido</Selo>}
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{item.rotulo}</span>
+          {item.protegido && (
+            <SeloStatus tom="neutro" icone={Lock}>
+              Protegido
+            </SeloStatus>
+          )}
         </div>
       ),
     },
-    { chave: "chave", titulo: "Chave", classe: "font-mono text-[12px] text-muted-foreground" },
+    { chave: "chave", titulo: "Chave", classe: "font-mono text-xs text-muted-foreground" },
     {
       chave: "modulos",
       titulo: "Módulos",
@@ -152,7 +157,9 @@ export function PaginaDeCadastro({ tipo }: { tipo: TipoDeCadastro }) {
             titulo: "Status",
             valor: (item: ItemDoCadastro) => (item.ativo ? "Ativo" : "Inativo"),
             celula: (item: ItemDoCadastro) => (
-              <Selo tom={item.ativo ? "bom" : "neutro"}>{item.ativo ? "Ativo" : "Inativo"}</Selo>
+              <SeloStatus tom={item.ativo ? "sucesso" : "neutro"}>
+                {item.ativo ? "Ativo" : "Inativo"}
+              </SeloStatus>
             ),
           },
         ]
@@ -170,7 +177,7 @@ export function PaginaDeCadastro({ tipo }: { tipo: TipoDeCadastro }) {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-destructive hover:text-destructive"
+              className="h-8 w-8 p-0 text-status-bad-fg hover:text-status-bad-fg"
               disabled={excluir.gravando || item.usuarios > 0}
               aria-label={`Apagar ${item.rotulo}`}
               title={
@@ -182,7 +189,7 @@ export function PaginaDeCadastro({ tipo }: { tipo: TipoDeCadastro }) {
                 apagar(item);
               }}
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 aria-hidden />
             </Button>
           )}
         </div>
@@ -191,10 +198,11 @@ export function PaginaDeCadastro({ tipo }: { tipo: TipoDeCadastro }) {
   ];
 
   return (
-    <div className="space-y-6">
-      <CabecalhoDaPagina titulo={textos.titulo} descricao={textos.descricao}>
-        <ModalDeCadastro tipo={tipo} item={null} aoGravar={criar.gravar} />
-      </CabecalhoDaPagina>
+    <Pagina
+      titulo={textos.titulo}
+      descricao={textos.descricao}
+      acoes={<ModalDeCadastro tipo={tipo} item={null} aoGravar={criar.gravar} />}
+    >
       <TabelaDados
         colunas={colunas}
         linhas={itens}
@@ -204,7 +212,7 @@ export function PaginaDeCadastro({ tipo }: { tipo: TipoDeCadastro }) {
         aoTentarDeNovo={() => void consulta.refetch()}
         mensagemVazia={textos.vazio}
       />
-    </div>
+    </Pagina>
   );
 }
 
@@ -247,14 +255,15 @@ function ModalDeCadastro({
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-2"
+            className="h-8 w-8 p-0"
             aria-label={`Editar ${item.rotulo}`}
+            title={`Editar ${item.rotulo}`}
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil aria-hidden />
           </Button>
         ) : (
-          <Button size="sm" className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" />
+          <Button size="sm">
+            <Plus aria-hidden />
             {TEXTOS[tipo].novo}
           </Button>
         )}
@@ -263,7 +272,7 @@ function ModalDeCadastro({
         <DialogHeader>
           <DialogTitle>{editando ? `Editar ${item.rotulo}` : TEXTOS[tipo].novo}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Campo rotulo="Nome">
             <input
               className={CAMPO}
@@ -274,9 +283,13 @@ function ModalDeCadastro({
               }}
             />
           </Campo>
-          <Campo rotulo="Chave" ajuda="Identificador interno. Apenas minúsculas, números e _.">
+          <Campo
+            rotulo="Chave"
+            ajuda="Identificador interno. Apenas minúsculas, números e _."
+            erro={dados.chave.length === 1 ? "A chave precisa ter pelo menos 2 caracteres." : null}
+          >
             <input
-              className={`${CAMPO} font-mono text-[12px]`}
+              className={`${CAMPO} font-mono`}
               value={dados.chave}
               disabled={editando}
               placeholder={TEXTOS[tipo].exemplo}
@@ -290,7 +303,7 @@ function ModalDeCadastro({
               <textarea
                 rows={2}
                 maxLength={300}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-[13px] shadow-sm"
+                className={`${CAMPO} h-auto py-2`}
                 value={dados.descricao ?? ""}
                 onChange={(e) => {
                   mudar({ descricao: e.target.value });
@@ -299,7 +312,7 @@ function ModalDeCadastro({
             </Campo>
           )}
           {tipo === "departamento" && editando && (
-            <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
               <span className="text-[13px] font-medium">Departamento ativo</span>
               <Switch
                 aria-label="Departamento ativo"
@@ -310,18 +323,16 @@ function ModalDeCadastro({
               />
             </div>
           )}
-          <div>
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              Módulos liberados
-            </span>
+          <div className="space-y-2 border-t border-border pt-4">
+            <span className="label-xs">Módulos liberados</span>
             {cargoProtegido ? (
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Super Admin tem acesso a todos os módulos e não pode ser restringido.
               </p>
             ) : (
               <>
                 {tipo === "departamento" && (
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Telas administrativas só funcionam se o usuário também tiver nível admin/super
                     admin.
                   </p>
@@ -353,7 +364,7 @@ function ModalDeCadastro({
           </Button>
         </DialogFooter>
         {tipo === "departamento" && item?.protegido && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Departamento protegido — exclusão bloqueada.
           </p>
         )}
