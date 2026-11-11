@@ -45,8 +45,8 @@ export function Painel({
 }: PainelProps) {
   const temCabecalho = Boolean(rotulo ?? titulo ?? descricao ?? Icone ?? acoes);
   const cabecalho = temCabecalho && (
-    <div className="flex items-start gap-3 px-5 py-4">
-      <div className="min-w-0 flex-1">
+    <div className="flex flex-wrap items-start gap-3 px-5 py-4">
+      <div className="min-w-0 flex-[1_1_14rem]">
         {rotulo && <div className="label-xs">{rotulo}</div>}
         {titulo && (
           <div

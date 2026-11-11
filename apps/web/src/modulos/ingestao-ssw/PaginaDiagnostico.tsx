@@ -32,7 +32,7 @@ import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { SeloDaSituacao, TABELA_NO_PAINEL } from "@/modulos/ingestao/pecas";
+import { SeloDaSituacao } from "@/modulos/ingestao/pecas";
 
 import { CHAVE_DA_INGESTAO, consultaDiagnostico } from "./api";
 import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";
@@ -189,7 +189,7 @@ function CartaoJobs({
         carregando={carregando}
         porPagina={0}
         configurarColunas
-        className={TABELA_NO_PAINEL}
+        embutida
       />
     </Painel>
   );

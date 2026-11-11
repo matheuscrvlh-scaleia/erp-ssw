@@ -195,6 +195,3 @@ export function ConfirmarAcao({
     </Dialog>
   );
 }
-
-/** `className` do `TabelaDados` dentro do corpo de um `Painel`: tira a moldura de fora (dupla). */
-export const TABELA_NO_PAINEL = "rounded-none border-0 bg-transparent p-0 shadow-none";

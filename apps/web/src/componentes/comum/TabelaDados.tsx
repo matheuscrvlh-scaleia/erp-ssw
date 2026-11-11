@@ -32,6 +32,8 @@ import {
 export type { ColunaTabela, Direcao, Ordenacao } from "./tabela-dados";
 
 const inteiro = new Intl.NumberFormat("pt-BR");
+/** Data e hora nunca quebram linha na célula. */
+const DATAS: ReadonlySet<string> = new Set(["data", "datahora"]);
 const ALINHAR = { esquerda: "text-left", direita: "text-right", centro: "text-center" } as const;
 
 type LinhaExportada = Record<string, unknown>;
@@ -80,6 +82,8 @@ interface TabelaDadosProps<T extends object> {
   /** Texto do total no rodapé. Padrão: "N registro(s)". */
   rotuloTotal?: ((total: number) => string) | undefined;
   className?: string | undefined;
+  /** Dentro de um `Painel`: sem a moldura própria (o Painel já é a moldura). */
+  embutida?: boolean | undefined;
 }
 
 function IconeOrdem({ direcao }: { direcao: Ordenacao["direcao"] | null }) {
@@ -159,6 +163,7 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
     exportacao,
     rotuloTotal = (n: number) => `${inteiro.format(n)} registro(s)`,
     className,
+    embutida,
   } = props;
 
   const [ordemLocal, setOrdemLocal] = useState<Ordenacao | null>(ordenacaoInicial);
@@ -239,11 +244,17 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col rounded-2xl border border-border bg-superficie p-1 shadow-cartao",
+        "flex min-w-0 flex-col",
+        !embutida && "rounded-2xl border border-border bg-superficie p-1 shadow-cartao",
         className,
       )}
     >
-      <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+      <div
+        className={cn(
+          "min-w-0 overflow-hidden bg-card",
+          !embutida && "rounded-xl border border-border",
+        )}
+      >
         {temFaixa && (
           <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
             {titulo && <h2 className="mr-2 text-[14px] font-bold text-foreground">{titulo}</h2>}
@@ -357,7 +368,12 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
                       {visiveis.map((c) => (
                         <td
                           key={c.chave}
-                          className={cn("px-4 py-2.5", ALINHAR[alinhamentoDa(c)], c.classe)}
+                          className={cn(
+                            "px-4 py-2.5",
+                            ALINHAR[alinhamentoDa(c)],
+                            DATAS.has(c.formato ?? "texto") && "whitespace-nowrap",
+                            c.classe,
+                          )}
                         >
                           {c.celula
                             ? c.celula(linha)
@@ -372,7 +388,12 @@ export function TabelaDados<T extends object>(props: TabelaDadosProps<T>) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[12.5px]">
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[12.5px]",
+          embutida && "border-t border-border px-4",
+        )}
+      >
         <span className="text-muted-foreground" aria-live="polite">
           {rotuloTotal(total)}
           {paginas > 1 && ` · Página ${String(pagina.pagina)} de ${String(paginas)}`}

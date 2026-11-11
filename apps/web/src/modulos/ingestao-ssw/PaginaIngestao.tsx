@@ -20,7 +20,7 @@ import { Label } from "@/componentes/ui/label";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { SeloDaSituacao, TABELA_NO_PAINEL } from "@/modulos/ingestao/pecas";
+import { SeloDaSituacao } from "@/modulos/ingestao/pecas";
 
 import { CHAVE_DA_INGESTAO, consultaBi2, consultaEventosWebhook } from "./api";
 import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";
@@ -168,7 +168,7 @@ function CartaoBi2() {
         carregando={consulta.isLoading}
         mensagemVazia="Nenhuma execução registrada ainda."
         porPagina={0}
-        className={TABELA_NO_PAINEL}
+        embutida
       />
     </Painel>
   );
