@@ -5,20 +5,36 @@ import {
   type StatusDoJob,
 } from "@erp/shared/contratos/ingestao-ssw";
 import { formatarDataHora, formatarInteiro } from "@erp/shared/formatacao";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, Inbox, ListChecks, RotateCw, Webhook } from "lucide-react";
+import { useIsFetching, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  CalendarClock,
+  CheckCheck,
+  FileClock,
+  Hand,
+  Inbox,
+  ListChecks,
+  PowerOff,
+  RefreshCw,
+  RotateCw,
+  ServerCrash,
+  ShieldX,
+  Unlink,
+} from "lucide-react";
 import { toast } from "sonner";
 
+import { Aviso } from "@/componentes/comum/Aviso";
 import { KpiCard } from "@/componentes/comum/KpiCard";
-import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { Painel } from "@/componentes/comum/Painel";
+import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
-import { Badge } from "@/componentes/ui/badge";
+import { Pagina, Secao } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { cn } from "@/lib/utils";
+import { SeloDaSituacao, TABELA_NO_PAINEL } from "@/modulos/ingestao/pecas";
 
 import { CHAVE_DA_INGESTAO, consultaDiagnostico } from "./api";
-import { Cartao } from "./Cartao";
 import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";
 
 /**
@@ -27,34 +43,53 @@ import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";
  * origem: routes/_authenticated/admin.ssw-diagnostico.tsx (sistema atual)
  */
 export function PaginaDiagnostico() {
+  const queryClient = useQueryClient();
   const consulta = useQuery(consultaDiagnostico);
+  const atualizando = useIsFetching({ queryKey: CHAVE_DA_INGESTAO }) > 0;
   const d = consulta.data;
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-[24px] font-medium tracking-tight">Diagnóstico SSW</h1>
-        <p className="text-[12px] text-muted-foreground">
-          Situação dos jobs de ingestão, do webhook e do token da SSW API na empresa ativa.
-        </p>
-      </div>
+    <Pagina
+      titulo="Diagnóstico SSW"
+      descricao="Situação dos jobs de ingestão, do webhook e do token da SSW API na empresa ativa."
+      acoes={
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DA_INGESTAO })}
+          disabled={atualizando}
+        >
+          <RefreshCw className={cn(atualizando && "motion-safe:animate-spin")} aria-hidden />
+          Atualizar
+        </Button>
+      }
+    >
       {consulta.error && (
-        <MensagemErro
-          erro={consulta.error}
+        <Aviso
+          tom="erro"
           titulo="Não foi possível carregar o diagnóstico"
-          aoTentarDeNovo={() => void consulta.refetch()}
-        />
+          acao={
+            <Button size="sm" variant="outline" onClick={() => void consulta.refetch()}>
+              <RefreshCw aria-hidden />
+              Tentar novamente
+            </Button>
+          }
+        >
+          {mensagemAmigavel(consulta.error)}
+        </Aviso>
       )}
+      {d && <CartaoWebhook webhook={d.webhook} />}
+      {d && <CartaoOrfaos orfaos={d.orfaos} />}
       <CartaoJobs
         jobs={d?.jobs ?? []}
         disponivel={d?.filasDisponiveis ?? true}
         carregando={consulta.isLoading}
       />
-      {d && <CartaoWebhook webhook={d.webhook} />}
-      {d && <CartaoOrfaos orfaos={d.orfaos} />}
       <CartaoSincronizacoes linhas={d?.sincronizacoes ?? []} carregando={consulta.isLoading} />
-      <CartaoCredenciaisSsw />
-      <CartaoReprocessarToken />
-    </div>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <CartaoCredenciaisSsw />
+        <CartaoReprocessarToken />
+      </div>
+    </Pagina>
   );
 }
 
@@ -80,18 +115,34 @@ function CartaoJobs({
       valor: (j) => (!j.integracaoLigada ? "desligada" : j.agendado ? "agendado" : "parado"),
       celula: (j) =>
         !j.integracaoLigada ? (
-          <Badge variant="outline">integração desligada</Badge>
+          <SeloStatus tom="neutro" icone={PowerOff}>
+            integração desligada
+          </SeloStatus>
         ) : j.cron === null ? (
-          <Badge variant="secondary">sob demanda</Badge>
+          <SeloStatus tom="info" icone={Hand}>
+            sob demanda
+          </SeloStatus>
         ) : j.agendado ? (
-          <Badge variant="default">agendado</Badge>
+          <SeloStatus tom="sucesso" icone={CalendarClock}>
+            agendado
+          </SeloStatus>
         ) : (
-          <Badge variant="secondary">fora do agendador</Badge>
+          <SeloStatus tom="alerta">fora do agendador</SeloStatus>
         ),
     },
     { chave: "cron", titulo: "Cron (UTC)", classe: "font-mono whitespace-nowrap" },
-    { chave: "proximaExecucao", titulo: "Próxima", formato: "datahora" },
-    { chave: "ultimaConclusao", titulo: "Última conclusão", formato: "datahora" },
+    {
+      chave: "proximaExecucao",
+      titulo: "Próxima",
+      formato: "datahora",
+      classe: "whitespace-nowrap",
+    },
+    {
+      chave: "ultimaConclusao",
+      titulo: "Última conclusão",
+      formato: "datahora",
+      classe: "whitespace-nowrap",
+    },
     { chave: "aguardando", titulo: "Na fila", formato: "inteiro" },
     { chave: "ativos", titulo: "Rodando", formato: "inteiro" },
     {
@@ -99,7 +150,7 @@ function CartaoJobs({
       titulo: "Falhas",
       formato: "inteiro",
       celula: (j) => (
-        <span className={j.falhos > 0 ? "font-medium text-destructive" : ""}>
+        <span className={cn(j.falhos > 0 && "font-semibold text-status-bad-fg")}>
           {formatarInteiro(j.falhos)}
         </span>
       ),
@@ -111,7 +162,7 @@ function CartaoJobs({
       celula: (j) => {
         const f = j.ultimasFalhas[0];
         return f ? (
-          <span title={f.erro} className="text-destructive">
+          <span title={f.erro} className="text-status-bad-fg">
             {quando(f.quando)} · {f.tentativas} tentativa(s) · {f.erro}
           </span>
         ) : null;
@@ -120,15 +171,16 @@ function CartaoJobs({
     },
   ];
   return (
-    <Cartao
+    <Painel
+      icone={ListChecks}
       titulo="Jobs de ingestão"
-      icone={<ListChecks className="h-4 w-4" aria-hidden />}
-      direita="contagens da fila inteira; falhas e conclusão da empresa ativa"
+      descricao="contagens da fila inteira; falhas e conclusão da empresa ativa"
+      classeDoCorpo="space-y-4 p-5"
     >
       {!disponivel && (
-        <p className="text-[12px] text-amber-700 dark:text-amber-400">
+        <Aviso tom="alerta">
           A fila de processamento não está disponível agora: a situação dos jobs não pôde ser lida.
-        </p>
+        </Aviso>
       )}
       <TabelaDados
         colunas={colunas}
@@ -137,46 +189,52 @@ function CartaoJobs({
         carregando={carregando}
         porPagina={0}
         configurarColunas
+        className={TABELA_NO_PAINEL}
       />
-    </Cartao>
+    </Painel>
   );
 }
 
 function KpisDoWebhook({ rotulo, c: n }: { rotulo: string; c: ContagemWebhook }) {
   return (
-    <div className="space-y-2">
-      <div className="text-[12px] font-medium text-muted-foreground">{rotulo}</div>
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+    <div className="space-y-2.5">
+      <h3 className="label-xs">{rotulo}</h3>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           rotulo="Recebidos"
           valor={formatarInteiro(n.total)}
           status="bom"
           detalhe=""
           neutro
+          icone={Inbox}
         />
         <KpiCard
           rotulo="Processados"
           valor={formatarInteiro(n.processados)}
           status="bom"
           detalhe=""
+          icone={CheckCheck}
         />
         <KpiCard
           rotulo="Sem vínculo"
           valor={formatarInteiro(n.semVinculo)}
           status={n.semVinculo > 0 ? "alerta" : "bom"}
           detalhe="CT-e não encontrado"
+          icone={Unlink}
         />
         <KpiCard
           rotulo="Rejeitados"
           valor={formatarInteiro(n.rejeitados)}
           status={n.rejeitados > 0 ? "alerta" : "bom"}
           detalhe="token, CNPJ ou formato"
+          icone={ShieldX}
         />
         <KpiCard
           rotulo="Erros"
           valor={formatarInteiro(n.erros)}
           status={n.erros > 0 ? "ruim" : "bom"}
           detalhe="falha ao gravar"
+          icone={ServerCrash}
         />
       </div>
     </div>
@@ -193,14 +251,14 @@ function CartaoWebhook({
   };
 }) {
   return (
-    <Cartao
+    <Secao
       titulo="Webhook SSW2181"
-      icone={<Webhook className="h-4 w-4" aria-hidden />}
-      direita={`última atividade: ${webhook.ultimaAtividade ? formatarDataHora(webhook.ultimaAtividade) : "nenhuma"}`}
+      descricao={`última atividade: ${webhook.ultimaAtividade ? formatarDataHora(webhook.ultimaAtividade) : "nenhuma"}`}
+      className="space-y-4"
     >
       <KpisDoWebhook rotulo="Últimas 24 horas" c={webhook.ultimas24h} />
       <KpisDoWebhook rotulo="Últimos 7 dias" c={webhook.ultimos7d} />
-    </Cartao>
+    </Secao>
   );
 }
 
@@ -214,42 +272,53 @@ function CartaoOrfaos({
   };
 }) {
   return (
-    <Cartao titulo="Órfãos" icone={<Inbox className="h-4 w-4" aria-hidden />}>
-      <div className="grid gap-2 md:grid-cols-2">
+    <Secao titulo="Órfãos">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <KpiCard
           rotulo="Webhook sem CT-e (7 dias)"
           valor={formatarInteiro(orfaos.webhookSemVinculo7d)}
           status={orfaos.webhookSemVinculo7d > 0 ? "alerta" : "bom"}
           detalhe="ocorrência recebida para número que não existe"
+          icone={Unlink}
         />
         <KpiCard
           rotulo="XML de CT-e aguardando"
           valor={formatarInteiro(orfaos.xmlPendentes)}
           status={orfaos.xmlPendentes > 0 ? "alerta" : "bom"}
           detalhe="XML do FTP sem o CT-e correspondente"
+          icone={FileClock}
         />
+        {orfaos.recentes.length > 0 && (
+          <Painel className="md:col-span-2 xl:col-span-1">
+            <ul className="rolagem-fina max-h-[168px] divide-y divide-border overflow-y-auto text-[13px]">
+              {orfaos.recentes.map((o) => (
+                <li key={o.id} className="flex items-center justify-between gap-3 px-4 py-2">
+                  <span className="text-muted-foreground tabular-nums">
+                    {formatarDataHora(o.recebidoEm)}
+                  </span>
+                  <span className="font-mono font-semibold">{o.numero ?? "—"}</span>
+                </li>
+              ))}
+            </ul>
+          </Painel>
+        )}
       </div>
-      {orfaos.recentes.length > 0 && (
-        <ul className="space-y-0.5 text-[12px]">
-          {orfaos.recentes.map((o) => (
-            <li key={o.id} className="flex gap-2">
-              <span className="text-muted-foreground">{formatarDataHora(o.recebidoEm)}</span>
-              <span className="font-mono">{o.numero ?? "—"}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Cartao>
+    </Secao>
   );
 }
 
 const COLUNAS_DAS_SINCRONIZACOES: ColunaTabela<SincronizacaoBi2>[] = [
   { chave: "relatorio", titulo: "Relatório", classe: "font-mono" },
-  { chave: "iniciadoEm", titulo: "Início", formato: "datahora" },
-  { chave: "finalizadoEm", titulo: "Fim", formato: "datahora" },
+  { chave: "iniciadoEm", titulo: "Início", formato: "datahora", classe: "whitespace-nowrap" },
+  { chave: "finalizadoEm", titulo: "Fim", formato: "datahora", classe: "whitespace-nowrap" },
   { chave: "dataAlvo", titulo: "Data", formato: "data" },
   { chave: "modo", titulo: "Modo" },
-  { chave: "status", titulo: "Status" },
+  {
+    chave: "status",
+    titulo: "Status",
+    celula: (s) => <SeloDaSituacao status={s.status} />,
+    valor: (s) => s.status,
+  },
   { chave: "totalLinhas", titulo: "Linhas", formato: "inteiro" },
   { chave: "atualizados", titulo: "Atualizados", formato: "inteiro" },
   { chave: "erro", titulo: "Erro", classe: "max-w-[320px] truncate" },
@@ -263,19 +332,15 @@ function CartaoSincronizacoes({
   carregando: boolean;
 }) {
   return (
-    <Cartao
+    <TabelaDados
       titulo="Últimas sincronizações do BI2"
-      icone={<Activity className="h-4 w-4" aria-hidden />}
-    >
-      <TabelaDados
-        colunas={COLUNAS_DAS_SINCRONIZACOES}
-        linhas={linhas}
-        chaveDaLinha={(s) => `${s.relatorio}-${s.iniciadoEm}-${s.dataAlvo}`}
-        carregando={carregando}
-        mensagemVazia="Nenhuma sincronização registrada ainda."
-        porPagina={0}
-      />
-    </Cartao>
+      colunas={COLUNAS_DAS_SINCRONIZACOES}
+      linhas={linhas}
+      chaveDaLinha={(s) => `${s.relatorio}-${s.iniciadoEm}-${s.dataAlvo}`}
+      carregando={carregando}
+      mensagemVazia="Nenhuma sincronização registrada ainda."
+      porPagina={0}
+    />
   );
 }
 
@@ -295,11 +360,12 @@ function CartaoReprocessarToken() {
       toast.error("Não foi possível reprocessar", { description: mensagemAmigavel(e) }),
   });
   return (
-    <Cartao
+    <Painel
+      icone={RotateCw}
       titulo="Reprocessar webhooks rejeitados por token"
-      icone={<RotateCw className="h-4 w-4" aria-hidden />}
+      classeDoCorpo="space-y-4 p-5"
     >
-      <p className="text-[12px] text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         Reenvia ao processamento os eventos recusados com &quot;token incorreto&quot; que guardaram
         o conteúdo recebido e cujo token é o segredo atual ou o anterior. Use depois de corrigir o
         segredo do webhook.
@@ -311,14 +377,15 @@ function CartaoReprocessarToken() {
         }}
         disabled={reprocessar.isPending}
       >
+        <RotateCw className={cn(reprocessar.isPending && "motion-safe:animate-spin")} aria-hidden />
         {reprocessar.isPending ? "Reenviando…" : "Reprocessar agora"}
       </Button>
       {reprocessar.data && (
-        <p className="text-[12px]">
+        <p className="text-[13px] tabular-nums">
           Total: {formatarInteiro(reprocessar.data.total)} · Reenviados:{" "}
           {formatarInteiro(reprocessar.data.enfileirados)}
         </p>
       )}
-    </Cartao>
+    </Painel>
   );
 }

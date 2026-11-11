@@ -7,7 +7,7 @@ import {
   type ResultadoDoBlocoDeAplicacao,
 } from "@erp/shared/contratos/ingestao";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -19,7 +19,7 @@ import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DA_INGESTAO, consultaAplicacoes } from "./api";
-import { SeloStatus } from "./pecas";
+import { SeloDaSituacao } from "./pecas";
 
 const LOTE = 4000;
 const MAX_LISTA = 500;
@@ -111,56 +111,58 @@ export function AplicarStaging() {
 
   return (
     <div className="space-y-4">
-      <p className="text-[12px] text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         Aplica as linhas da staging nos CT-e e nas ocorrências, em blocos de{" "}
         {LOTE.toLocaleString("pt-BR")} CT-e. A simulação mostra o que mudaria sem gravar nada.
       </p>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-stretch gap-3">
         <Button
           size="sm"
           variant="outline"
+          className="self-center"
           disabled={rodando !== null}
           onClick={() => void executar(true)}
         >
           Simular (não grava)
         </Button>
-        <label className="flex items-center gap-2 text-[12px]">
-          <Checkbox
-            checked={confirmado}
-            onCheckedChange={(v) => {
-              setConfirmado(v === true);
-            }}
-            disabled={rodando !== null}
-          />
-          Confirmo a aplicação à produção
-        </label>
-        <Button
-          size="sm"
-          disabled={!confirmado || rodando !== null}
-          onClick={() => void executar(false)}
-        >
-          Aplicar à produção
-        </Button>
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-status-bad/30 bg-status-bad-bg px-3 py-2">
+          <ShieldAlert className="h-4 w-4 shrink-0 text-status-bad-fg" aria-hidden />
+          <label className="flex items-center gap-2 text-[13px] font-medium text-status-bad-fg">
+            <Checkbox
+              checked={confirmado}
+              onCheckedChange={(v) => {
+                setConfirmado(v === true);
+              }}
+              disabled={rodando !== null}
+            />
+            Confirmo a aplicação à produção
+          </label>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={!confirmado || rodando !== null}
+            onClick={() => void executar(false)}
+          >
+            Aplicar à produção
+          </Button>
+        </div>
         {rodando && (
-          <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {rodando}
+          <span
+            role="status"
+            className="flex items-center gap-1.5 self-center text-[13px] text-muted-foreground"
+          >
+            <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden /> {rodando}
           </span>
         )}
       </div>
 
       {resultado && (
         <div className="space-y-3">
-          <p className="text-[12px] text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             {resultado.dryRun ? "Simulação" : "Aplicação"} em {resultado.blocos} bloco(s)
             {!resultado.dryRun && ` · ${resultado.pendentes} CT-e ainda na fila`}
           </p>
-          <Abas
-            abas={abas}
-            valor={aba}
-            aoMudar={setAba}
-            className="h-auto flex-wrap"
-            classeDaAba="text-[12px]"
-          />
+          <Abas abas={abas} valor={aba} aoMudar={setAba} className="h-auto flex-wrap" />
           {aba === "inserir" && (
             <TabelaDados
               colunas={[
@@ -191,7 +193,12 @@ export function AplicarStaging() {
               colunas={[
                 { chave: "chave", titulo: "CT-e", classe: "font-mono" },
                 { chave: "codigo", titulo: "Código", formato: "inteiro" },
-                { chave: "dataHora", titulo: "Data/hora", formato: "datahora" },
+                {
+                  chave: "dataHora",
+                  titulo: "Data/hora",
+                  formato: "datahora",
+                  classe: "whitespace-nowrap",
+                },
               ]}
               linhas={resultado.ocorrencias}
               chaveDaLinha={(l) => `${l.chave}-${l.codigo}-${l.dataHora}`}
@@ -212,7 +219,7 @@ export function AplicarStaging() {
             />
           )}
           {aba === "romaneio_036" && (
-            <p className="text-[12px]">
+            <p className="rounded-xl border border-border bg-card px-4 py-3 text-[13px]">
               {resultado.romaneio036 === null
                 ? "O romaneio pelo 036 roda no último bloco."
                 : `${resultado.romaneio036} CT-e com romaneio/ocorrência do 036 ${resultado.dryRun ? "a atualizar" : "atualizados"}.`}
@@ -224,7 +231,12 @@ export function AplicarStaging() {
       <TabelaDados
         titulo="Histórico das aplicações"
         colunas={[
-          { chave: "iniciadoEm", titulo: "Início", formato: "datahora" },
+          {
+            chave: "iniciadoEm",
+            titulo: "Início",
+            formato: "datahora",
+            classe: "whitespace-nowrap",
+          },
           {
             chave: "simulacao",
             titulo: "Tipo",
@@ -233,7 +245,7 @@ export function AplicarStaging() {
           {
             chave: "status",
             titulo: "Situação",
-            celula: (a) => <SeloStatus status={a.status} />,
+            celula: (a) => <SeloDaSituacao status={a.status} />,
             valor: (a) => a.status,
           },
           { chave: "totalInseridos", titulo: "Inseridos", formato: "inteiro" },
