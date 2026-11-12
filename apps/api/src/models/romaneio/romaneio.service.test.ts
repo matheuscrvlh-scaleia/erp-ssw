@@ -97,7 +97,7 @@ describe("obterLista", () => {
       AGORA,
     );
 
-    expect(r.linhas.map((l) => l.id)).toEqual([emRota.id]);
+    expect(r.linhas.map((l) => l.fato.id)).toEqual([emRota.id]);
     expect(r.total).toBe(t.totais.emRota);
   });
 
@@ -113,10 +113,10 @@ describe("obterLista", () => {
       lista({ ordem: "valor_frete", direcao: "desc" }),
       AGORA,
     );
-    expect(porFrete.linhas.map((l) => l.valorFrete)).toEqual([300, 120, 50]);
+    expect(porFrete.linhas.map((l) => l.fato.valorFrete)).toEqual([300, 120, 50]);
 
     const padrao = await obterLista(db, CTX, lista(), AGORA);
-    expect(padrao.linhas.map((l) => l.id)).toEqual([d.id, a.id, b.id]);
+    expect(padrao.linhas.map((l) => l.fato.id)).toEqual([d.id, a.id, b.id]);
   });
 
   it("pagina sem agrupamento; agrupada vem inteira com os grupos somados", async () => {
@@ -161,9 +161,9 @@ describe("exportarLista", () => {
       (await exportarLista(db, CTX, entrada({ modo: "somente", ids: [] }), AGORA)).linhas,
     ).toEqual([]);
     const todas = await exportarLista(db, CTX, entrada({ modo: "todas", ids: [a.id] }), AGORA);
-    expect(todas.linhas.map((l) => l.id)).toEqual([b.id]);
+    expect(todas.linhas.map((l) => l.fato.id)).toEqual([b.id]);
     const somente = await exportarLista(db, CTX, entrada({ modo: "somente", ids: [a.id] }), AGORA);
-    expect(somente.linhas.map((l) => l.id)).toEqual([a.id]);
+    expect(somente.linhas.map((l) => l.fato.id)).toEqual([a.id]);
   });
 });
 

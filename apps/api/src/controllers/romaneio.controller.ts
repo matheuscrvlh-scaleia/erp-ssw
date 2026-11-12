@@ -23,6 +23,12 @@ import {
   obterPrejuizo,
   obterTotais,
 } from "../models/romaneio/romaneio.service";
+import {
+  apresentarExportacao,
+  apresentarLinhaDoTempo,
+  apresentarLista,
+  apresentarOpcoes,
+} from "../views/romaneio.view";
 
 /** Só leitura: quem tem a tela, com o módulo liberado. Placa em Performance: `romaneio_placa`. */
 const ler = [exigirModulo("romaneio"), exigirPermissao("romaneio", "ver")];
@@ -55,12 +61,18 @@ export const controladorRomaneio: FastifyPluginCallbackZod<{ agora: () => Date }
   app.post(
     c.lista.caminho,
     { schema: { body: c.lista.entrada, response: { 200: c.lista.saida } }, preHandler: ler },
-    async (request) => obterLista(request.db, await contextoDe(request), request.body, agora()),
+    async (request) =>
+      apresentarLista(
+        await obterLista(request.db, await contextoDe(request), request.body, agora()),
+      ),
   );
   app.post(
     c.exportar.caminho,
     { schema: { body: c.exportar.entrada, response: { 200: c.exportar.saida } }, preHandler: ler },
-    async (request) => exportarLista(request.db, await contextoDe(request), request.body, agora()),
+    async (request) =>
+      apresentarExportacao(
+        await exportarLista(request.db, await contextoDe(request), request.body, agora()),
+      ),
   );
   app.post(
     c.distribuicao.caminho,
@@ -139,7 +151,7 @@ export const controladorRomaneio: FastifyPluginCallbackZod<{ agora: () => Date }
   app.post(
     c.opcoes.caminho,
     { schema: { body: c.opcoes.entrada, response: { 200: c.opcoes.saida } }, preHandler: ler },
-    (request) => obterOpcoes(request.db, request.body),
+    async (request) => apresentarOpcoes(await obterOpcoes(request.db, request.body)),
   );
   app.get(
     c.linhaDoTempo.caminho,
@@ -147,7 +159,10 @@ export const controladorRomaneio: FastifyPluginCallbackZod<{ agora: () => Date }
       schema: { params: c.linhaDoTempo.parametros, response: { 200: c.linhaDoTempo.saida } },
       preHandler: ler,
     },
-    (request) => obterLinhaDoTempo(request.db, request.params.sigla, request.params.numero),
+    async (request) =>
+      apresentarLinhaDoTempo(
+        await obterLinhaDoTempo(request.db, request.params.sigla, request.params.numero),
+      ),
   );
   pronto();
 };
