@@ -13,6 +13,10 @@ import {
   listarCodigos,
   salvarCodigo,
 } from "../models/codigos-ocorrencia/codigos-ocorrencia.service";
+import {
+  apresentarCatalogoDeCodigos,
+  apresentarHistoricoDoCodigo,
+} from "../views/codigos-ocorrencia.view";
 
 /**
  * Ler: quem tem a tela; escrever e ver o histórico: admin da empresa (hoje um não-admin recebe
@@ -34,7 +38,10 @@ export const controladorCodigosOcorrencia: FastifyPluginCallbackZod<
   app.get(
     c.listar.caminho,
     { schema: { response: { 200: c.listar.saida } }, preHandler: ler },
-    async (request) => listarCodigos(request.db, await contextoDe(request), agora()),
+    async (request) =>
+      apresentarCatalogoDeCodigos(
+        await listarCodigos(request.db, await contextoDe(request), agora()),
+      ),
   );
 
   app.get(
@@ -44,7 +51,13 @@ export const controladorCodigosOcorrencia: FastifyPluginCallbackZod<
       preHandler: escrever,
     },
     async (request) =>
-      historicoDoCodigoNaEmpresa(request.db, await contextoDe(request), request.params.codigo),
+      apresentarHistoricoDoCodigo(
+        await historicoDoCodigoNaEmpresa(
+          request.db,
+          await contextoDe(request),
+          request.params.codigo,
+        ),
+      ),
   );
 
   app.put(
