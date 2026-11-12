@@ -1,11 +1,7 @@
 import { mudancaParaAuditoria } from "@erp/dominio/auditoria";
 import { CHAVES_PUBLICAS, validarValorDeConfiguracao } from "@erp/dominio/configuracoes";
 import { ErroDeNegocio } from "@erp/dominio/erros";
-import {
-  type Configuracao,
-  type GrupoDeConfiguracao,
-  GRUPOS_DE_CONFIGURACAO,
-} from "@erp/shared/contratos/admin";
+import { type GrupoDeConfiguracao, GRUPOS_DE_CONFIGURACAO } from "@erp/shared/contratos/admin";
 
 import { type Ator } from "../auditoria/auditoria.service";
 import { type Executor } from "../repositorios";
@@ -33,19 +29,14 @@ export interface RepositorioConfiguracoes {
 }
 
 /**
- * Configurações que o Admin edita: só as da empresa, dos quatro grupos, em ordem de grupo e chave.
+ * Configurações que o Admin edita: só as da empresa, dos quatro grupos.
  * origem: listarConfiguracoes (configuracoes.functions.ts, sistema atual)
  */
 export async function listarConfiguracoes(
   db: Executor<"configuracoes">,
   empresaId: string,
-): Promise<Configuracao[]> {
-  const linhas = await db(({ configuracoes }) =>
-    configuracoes.daEmpresa(empresaId, GRUPOS_DE_CONFIGURACAO),
-  );
-  return linhas
-    .sort((a, b) => a.grupo.localeCompare(b.grupo) || a.chave.localeCompare(b.chave))
-    .map((c) => ({ ...c, atualizadoEm: c.atualizadoEm.toISOString() }));
+): Promise<ConfiguracaoGravada[]> {
+  return db(({ configuracoes }) => configuracoes.daEmpresa(empresaId, GRUPOS_DE_CONFIGURACAO));
 }
 
 /**
@@ -108,10 +99,7 @@ export async function salvarConfiguracoes(
 export async function configuracoesPublicas(
   db: Executor<"configuracoes">,
   empresaId: string | null,
-): Promise<Record<string, string>> {
-  if (!empresaId) return {};
-  const valores = await db(({ configuracoes }) =>
-    configuracoes.vigentes(empresaId, CHAVES_PUBLICAS),
-  );
-  return Object.fromEntries(valores);
+): Promise<Map<string, string>> {
+  if (!empresaId) return new Map();
+  return db(({ configuracoes }) => configuracoes.vigentes(empresaId, CHAVES_PUBLICAS));
 }

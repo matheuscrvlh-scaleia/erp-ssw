@@ -22,13 +22,16 @@ import {
   trocarEmpresa,
 } from "../models/auth/auth.service";
 import { sessaoExpirada } from "../models/erros";
+import {
+  apresentarAjudaDeAcesso,
+  apresentarPedidoDeRedefinicao,
+  apresentarToken,
+} from "../views/auth.view";
+import { confirmacao } from "../views/comum.view";
 
 const COOKIE_REFRESH = "erp_refresh";
 const COOKIE_GOOGLE = "erp_google";
 const CAMINHO_DO_COOKIE = "/api/v1/auth";
-
-const MENSAGEM_ESQUECI =
-  "Se o e-mail estiver cadastrado, você vai receber um link para criar uma nova senha.";
 
 const limite = (max: number, minutos: number) => ({
   rateLimit: { max, timeWindow: `${minutos} minutes` },
@@ -47,7 +50,6 @@ function gravarRefresh(reply: FastifyReply, sessao: SessaoEmitida) {
     path: CAMINHO_DO_COOKIE,
     expires: sessao.refresh.expiraEm,
   });
-  return { tokenAcesso: sessao.tokenAcesso, expiraEmSegundos: sessao.expiraEmSegundos };
 }
 
 function apagarRefresh(reply: FastifyReply) {
@@ -95,8 +97,11 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
       schema: { body: c.login.entrada, response: { 200: c.login.saida } },
       config: limite(10, 1),
     },
-    async (request, reply) =>
-      gravarRefresh(reply, await entrar(deps, request.body, origemDa(request))),
+    async (request, reply) => {
+      const sessao = await entrar(deps, request.body, origemDa(request));
+      gravarRefresh(reply, sessao);
+      return apresentarToken(sessao);
+    },
   );
 
   app.post(
@@ -106,7 +111,9 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
       const token = request.cookies[COOKIE_REFRESH];
       try {
         if (!token) throw sessaoExpirada();
-        return gravarRefresh(reply, await renovar(deps, token, origemDa(request)));
+        const sessao = await renovar(deps, token, origemDa(request));
+        gravarRefresh(reply, sessao);
+        return apresentarToken(sessao);
       } catch (erro) {
         // Refresh recusado: apaga o cookie para o navegador não insistir com ele.
         if (erro instanceof ErroDeNegocio) apagarRefresh(reply);
@@ -121,7 +128,7 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
     async (request, reply) => {
       await sair(deps, request.cookies[COOKIE_REFRESH]);
       apagarRefresh(reply);
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -144,7 +151,8 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
   app.get(
     c.ajudaAcesso.caminho,
     { schema: { response: { 200: c.ajudaAcesso.saida } }, preHandler: [exigirAutenticacao] },
-    (request) => ajudaDeAcesso(deps, sessaoObrigatoria(request)),
+    async (request) =>
+      apresentarAjudaDeAcesso(await ajudaDeAcesso(deps, sessaoObrigatoria(request))),
   );
 
   app.post(
@@ -158,7 +166,7 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
       void pedirRedefinicao(deps, request.body.email).catch((erro: unknown) => {
         request.log.error({ err: erro }, "falha ao enviar e-mail de redefinição");
       });
-      return { mensagem: MENSAGEM_ESQUECI };
+      return apresentarPedidoDeRedefinicao();
     },
   );
 
@@ -175,7 +183,7 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
         { tipo: "redefinicao", token, senha, nome: null },
         origemDa(request),
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -192,7 +200,7 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
         { tipo: "convite", token, senha, nome: nome ?? null },
         origemDa(request),
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 

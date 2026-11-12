@@ -284,6 +284,6 @@ describe("ajuda de acesso", () => {
 
     const ajuda = await ajudaDeAcesso(cenario.deps, verificado.sessao);
     expect(ajuda.admins).toEqual([{ nome: usuario.nome, email: usuario.email }]);
-    expect(ajuda.email).toBe("op@fr.com.br");
+    expect(ajuda.acesso.usuario.email).toBe("op@fr.com.br");
   });
 });

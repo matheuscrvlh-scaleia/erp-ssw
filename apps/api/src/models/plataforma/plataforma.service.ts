@@ -24,10 +24,7 @@ import { ErroDeNegocio } from "@erp/dominio/erros";
 import { MODULOS } from "@erp/shared/acesso/modulos";
 import { type Permissao } from "@erp/shared/acesso/permissoes";
 import {
-  type AdminDaPlataforma,
   type DadosDaEmpresa,
-  type EmpresaCompleta,
-  type EmpresaResumo,
   type IntegracaoDaEmpresa,
   type IntegracaoDaPlataforma,
   type ModuloDaEmpresa,
@@ -112,6 +109,39 @@ export interface IntegracaoDaPlataformaGravada {
 
 export type VinculoGravadoNaEmpresa = Omit<VinculoNaEmpresa, "criadoEm"> & { criadoEm: Date };
 
+/** A empresa com os números da lista: usuários ativos, módulos liberados e integrações ativas. */
+export interface EmpresaListada extends EmpresaGravada {
+  usuariosAtivos: number;
+  modulosLiberados: number;
+  integracoesAtivas: number;
+}
+
+/** Módulo do catálogo com a liberação da empresa. */
+export type ModuloLiberado = Omit<ModuloDaEmpresa, "atualizadoEm"> & { atualizadoEm: Date | null };
+
+/** Integração da empresa: o que está gravado, ou o padrão (desligada) se não há linha. */
+export type EstadoDaIntegracao = Omit<
+  IntegracaoDaEmpresa,
+  "segredoDefinidoEm" | "ultimoTesteEm" | "atualizadoEm"
+> & { segredoDefinidoEm: Date | null; ultimoTesteEm: Date | null; atualizadoEm: Date | null };
+
+export type EstadoDaIntegracaoDaPlataforma = Omit<
+  IntegracaoDaPlataforma,
+  "segredoDefinidoEm" | "atualizadoEm"
+> & { segredoDefinidoEm: Date | null; atualizadoEm: Date | null };
+
+export interface AdminGravado {
+  usuarioId: string;
+  nome: string | null;
+  email: string;
+  criadoEm: Date;
+}
+
+/** Pessoa com a conta, se é da equipe da Plataforma e o vínculo em cada empresa. */
+export type PessoaComVinculos = Omit<PessoaDaPlataforma, "empresas"> & {
+  empresas: VinculoDaPessoa[];
+};
+
 /** O que a empresa nova copia da empresa modelo. */
 export interface CopiaDoModelo {
   /** Linhas de `codigos_ocorrencia` sem empresa e sem autoria. */
@@ -190,7 +220,7 @@ export interface RepositorioPlataforma {
     segredo: { cifrado: string; versaoChave: number; definidoEm: Date } | null,
     atualizadoPor: string,
   ): Promise<void>;
-  admins(): Promise<{ usuarioId: string; nome: string | null; email: string; criadoEm: Date }[]>;
+  admins(): Promise<AdminGravado[]>;
   /** Todas as contas e os vínculos de todas as empresas (contexto de Plataforma). */
   contas(): Promise<{ id: string; nome: string | null; email: string; ativo: boolean }[]>;
   vinculosDeTodas(): Promise<VinculoDaPessoa[]>;
@@ -248,10 +278,6 @@ function registroDaEmpresa(e: DadosDaEmpresa): Registro {
   };
 }
 
-/**
- * Empresas por nome, com usuários ativos, módulos liberados hoje (sem os essenciais) e
- * integrações ativas.
- */
 /** Módulos vigentes hoje na empresa, sem contar os essenciais. */
 export function modulosLiberados(
   empresa: Pick<EmpresaGravada, "id" | "fuso">,
@@ -266,29 +292,22 @@ export function modulosLiberados(
   return vigentes.filter((m) => !MODULOS.find((c) => c.chave === m)?.essencial).length;
 }
 
+/** Empresas com usuários ativos, módulos liberados hoje (sem os essenciais) e integrações ativas. */
 export async function listarEmpresas(
   db: Executor<"plataforma">,
   agora: Date,
-): Promise<EmpresaResumo[]> {
+): Promise<EmpresaListada[]> {
   return db(async ({ plataforma }) => {
     const empresas = await plataforma.empresas();
     const usuarios = await plataforma.usuariosAtivosPorEmpresa();
     const integracoes = await plataforma.integracoesAtivasPorEmpresa();
     const liberacoes = await plataforma.liberacoes(null);
-    return empresas
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-      .map((e) => ({
-        id: e.id,
-        slug: e.slug,
-        nome: e.nome,
-        nomeCurto: e.nomeCurto,
-        cnpj: e.cnpj,
-        status: e.status,
-        criadoEm: e.criadoEm.toISOString(),
-        usuariosAtivos: usuarios.get(e.id) ?? 0,
-        modulosLiberados: modulosLiberados(e, liberacoes, agora),
-        integracoesAtivas: integracoes.get(e.id) ?? 0,
-      }));
+    return empresas.map((e) => ({
+      ...e,
+      usuariosAtivos: usuarios.get(e.id) ?? 0,
+      modulosLiberados: modulosLiberados(e, liberacoes, agora),
+      integracoesAtivas: integracoes.get(e.id) ?? 0,
+    }));
   });
 }
 
@@ -345,17 +364,9 @@ export async function criarEmpresa(
 
 export async function obterEmpresa(
   db: Executor<"plataforma">,
-  urlDoLogo: (caminho: string | null) => string | null,
   id: string,
-): Promise<EmpresaCompleta> {
-  const e = await db(({ plataforma }) => empresaExistente(plataforma, id));
-  const { logoCaminho, criadoEm, atualizadoEm, ...resto } = e;
-  return {
-    ...resto,
-    logoUrl: urlDoLogo(logoCaminho),
-    criadoEm: criadoEm.toISOString(),
-    atualizadoEm: atualizadoEm.toISOString(),
-  };
+): Promise<EmpresaGravada> {
+  return db(({ plataforma }) => empresaExistente(plataforma, id));
 }
 
 export async function salvarEmpresa(
@@ -380,7 +391,6 @@ export async function salvarEmpresa(
 
 export interface DependenciasDoLogo {
   armazenamento: Armazenamento | null;
-  urlDoLogo: (caminho: string | null) => string | null;
   agora: () => Date;
   log: FastifyBaseLogger;
 }
@@ -401,7 +411,7 @@ async function apagarLogoAntigo(deps: DependenciasDoLogo, caminho: string | null
 
 /**
  * Logo novo (PNG ou JPEG até 512 KB, conferido pelos bytes): sobe com nome novo, grava o caminho
- * e apaga o anterior.
+ * (devolvido) e apaga o anterior.
  * origem: enviarLogoEmpresa (sistema atual)
  */
 export async function enviarLogo(
@@ -410,7 +420,7 @@ export async function enviarLogo(
   ator: Ator,
   id: string,
   conteudoBase64: string,
-): Promise<{ logoUrl: string | null }> {
+): Promise<string> {
   const logo = validarLogo(conteudoBase64);
   const { armazenamento } = deps;
   if (!armazenamento) throw semArmazenamento();
@@ -432,7 +442,7 @@ export async function enviarLogo(
     });
   });
   await apagarLogoAntigo(deps, anterior.logoCaminho);
-  return { logoUrl: deps.urlDoLogo(caminho) };
+  return caminho;
 }
 
 export async function removerLogo(
@@ -457,32 +467,30 @@ export async function removerLogo(
   await apagarLogoAntigo(deps, anterior);
 }
 
-/** Catálogo inteiro (por ordem) com o estado da empresa; sem liberação = desligado. */
+/** Catálogo inteiro com o estado da empresa; sem liberação = desligado. */
 export async function listarModulos(
   db: Executor<"plataforma">,
   id: string,
-): Promise<ModuloDaEmpresa[]> {
+): Promise<ModuloLiberado[]> {
   return db(async ({ plataforma }) => {
     await empresaExistente(plataforma, id);
     const liberacoes = new Map((await plataforma.liberacoes(id)).map((l) => [l.modulo, l]));
-    return [...MODULOS]
-      .sort((a, b) => a.ordem - b.ordem)
-      .map((m) => {
-        const l = liberacoes.get(m.chave);
-        return {
-          chave: m.chave,
-          nome: m.nome,
-          descricao: m.descricao,
-          essencial: m.essencial,
-          ordem: m.ordem,
-          configurado: l !== undefined,
-          ativo: l?.ativo ?? false,
-          inicio: l?.inicio ?? null,
-          fim: l?.fim ?? null,
-          observacao: l?.observacao ?? null,
-          atualizadoEm: l ? l.atualizadoEm.toISOString() : null,
-        };
-      });
+    return MODULOS.map((m) => {
+      const l = liberacoes.get(m.chave);
+      return {
+        chave: m.chave,
+        nome: m.nome,
+        descricao: m.descricao,
+        essencial: m.essencial,
+        ordem: m.ordem,
+        configurado: l !== undefined,
+        ativo: l?.ativo ?? false,
+        inicio: l?.inicio ?? null,
+        fim: l?.fim ?? null,
+        observacao: l?.observacao ?? null,
+        atualizadoEm: l?.atualizadoEm ?? null,
+      };
+    });
   });
 }
 
@@ -518,12 +526,10 @@ export async function salvarModulo(
 export async function listarVinculos(
   db: Executor<"plataforma">,
   id: string,
-): Promise<VinculoNaEmpresa[]> {
+): Promise<VinculoGravadoNaEmpresa[]> {
   return db(async ({ plataforma }) => {
     await empresaExistente(plataforma, id);
-    return (await plataforma.vinculos(id))
-      .sort((a, b) => (a.nome ?? a.email).localeCompare(b.nome ?? b.email, "pt-BR"))
-      .map((v) => ({ ...v, criadoEm: v.criadoEm.toISOString() }));
+    return plataforma.vinculos(id);
   });
 }
 
@@ -563,17 +569,17 @@ function parametrosValidos(parametros: Record<string, unknown>): Record<string, 
 function paraIntegracao(
   tipo: TipoIntegracao,
   l: IntegracaoGravada | undefined,
-): IntegracaoDaEmpresa {
+): EstadoDaIntegracao {
   return {
     tipo,
     configurada: l !== undefined,
     ativo: l?.ativo ?? false,
     parametros: parametrosValidos(l?.parametros ?? {}),
-    segredoDefinidoEm: l?.segredoDefinidoEm?.toISOString() ?? null,
-    ultimoTesteEm: l?.ultimoTesteEm?.toISOString() ?? null,
+    segredoDefinidoEm: l?.segredoDefinidoEm ?? null,
+    ultimoTesteEm: l?.ultimoTesteEm ?? null,
     ultimoTesteOk: l?.ultimoTesteOk ?? null,
     ultimoTesteMsg: l?.ultimoTesteMsg ?? null,
-    atualizadoEm: l?.atualizadoEm.toISOString() ?? null,
+    atualizadoEm: l?.atualizadoEm ?? null,
   };
 }
 
@@ -581,7 +587,7 @@ function paraIntegracao(
 export async function listarIntegracoes(
   db: Executor<"plataforma">,
   id: string,
-): Promise<IntegracaoDaEmpresa[]> {
+): Promise<EstadoDaIntegracao[]> {
   return db(async ({ plataforma }) => {
     await empresaExistente(plataforma, id);
     const gravadas = new Map((await plataforma.integracoes(id)).map((l) => [l.tipo, l]));
@@ -621,6 +627,7 @@ const cofreDesligado = () =>
 /**
  * Grava (cifrado com AES-256-GCM) ou, com valor vazio, apaga a senha/token da integração. O valor
  * nunca vai para resposta, log ou auditoria: o registro diz só que foi definido ou removido.
+ * Devolve quando foi definido (nulo = removido).
  * origem: definirSegredoIntegracao + integracao_segredo_definir (sistema atual)
  */
 export async function definirSegredo(
@@ -631,7 +638,7 @@ export async function definirSegredo(
   tipo: TipoIntegracao,
   valor: string,
   agora: Date,
-): Promise<{ segredoDefinidoEm: string | null }> {
+): Promise<Date | null> {
   if (!INFO_DA_INTEGRACAO[tipo].segredo) {
     throw new ErroDeNegocio("ENTRADA_INVALIDA", "Esta integração não tem senha nem token.");
   }
@@ -654,7 +661,7 @@ export async function definirSegredo(
       depois: null,
     });
   });
-  return { segredoDefinidoEm: segredo?.definidoEm.toISOString() ?? null };
+  return segredo?.definidoEm ?? null;
 }
 
 // --- Integrações da própria Plataforma (domínio, e-mail, worker-ssw) ------------------------------
@@ -662,7 +669,7 @@ export async function definirSegredo(
 /** Uma linha por tipo, mesmo sem configuração. O segredo nunca sai: só quando foi definido. */
 export async function listarIntegracoesDaPlataforma(
   db: Executor<"plataforma">,
-): Promise<IntegracaoDaPlataforma[]> {
+): Promise<EstadoDaIntegracaoDaPlataforma[]> {
   const gravadas = new Map(
     (await db(({ plataforma }) => plataforma.integracoesDaPlataforma())).map((l) => [l.tipo, l]),
   );
@@ -671,8 +678,8 @@ export async function listarIntegracoesDaPlataforma(
     return {
       tipo,
       parametros: parametrosValidos(l?.parametros ?? {}),
-      segredoDefinidoEm: l?.segredoDefinidoEm?.toISOString() ?? null,
-      atualizadoEm: l?.atualizadoEm.toISOString() ?? null,
+      segredoDefinidoEm: l?.segredoDefinidoEm ?? null,
+      atualizadoEm: l?.atualizadoEm ?? null,
     };
   });
 }
@@ -710,7 +717,7 @@ export async function salvarIntegracaoDaPlataforma(
 
 /**
  * Grava (cifrado com o contexto `plataforma:<tipo>`) ou, com valor vazio, apaga a chave/token. O
- * valor nunca vai para resposta, log ou auditoria.
+ * valor nunca vai para resposta, log ou auditoria. Devolve quando foi definido (nulo = removido).
  */
 export async function definirSegredoDaPlataforma(
   chaves: ChavesDeSegredo | null,
@@ -720,7 +727,7 @@ export async function definirSegredoDaPlataforma(
   valor: string,
   agora: Date,
   aoGravar: () => void,
-): Promise<{ segredoDefinidoEm: string | null }> {
+): Promise<Date | null> {
   const rotulo = INFO_DA_INTEGRACAO_PLATAFORMA[tipo].segredo;
   if (!rotulo) {
     throw new ErroDeNegocio("ENTRADA_INVALIDA", "Esta integração não tem senha nem token.");
@@ -744,7 +751,7 @@ export async function definirSegredoDaPlataforma(
     });
   });
   aoGravar();
-  return { segredoDefinidoEm: segredo?.definidoEm.toISOString() ?? null };
+  return segredo?.definidoEm ?? null;
 }
 
 /** E-mail de teste com a configuração gravada (erro do Resend chega ao operador). */
@@ -763,33 +770,25 @@ export async function testarEmailDaPlataforma(correio: Correio, para: string): P
   }
 }
 
-export async function listarAdmins(db: Executor<"plataforma">): Promise<AdminDaPlataforma[]> {
-  const admins = await db(({ plataforma }) => plataforma.admins());
-  return admins
-    .sort((a, b) => a.email.localeCompare(b.email))
-    .map((a) => ({ ...a, criadoEm: a.criadoEm.toISOString() }));
+export async function listarAdmins(db: Executor<"plataforma">): Promise<AdminGravado[]> {
+  return db(({ plataforma }) => plataforma.admins());
 }
 
 /**
  * Plataforma › Usuários e cargos: todas as pessoas, com o cargo em cada empresa e se são da
  * equipe da Plataforma.
  */
-export async function listarPessoas(db: Executor<"plataforma">): Promise<PessoaDaPlataforma[]> {
+export async function listarPessoas(db: Executor<"plataforma">): Promise<PessoaComVinculos[]> {
   const { contas, vinculos, admins } = await db(async ({ plataforma }) => ({
     contas: await plataforma.contas(),
     vinculos: await plataforma.vinculosDeTodas(),
     admins: new Set((await plataforma.admins()).map((a) => a.usuarioId)),
   }));
-  return contas
-    .map((conta) => ({
-      ...conta,
-      adminPlataforma: admins.has(conta.id),
-      empresas: vinculos
-        .filter((v) => v.usuarioId === conta.id)
-        .sort((a, b) => a.empresaNome.localeCompare(b.empresaNome, "pt-BR"))
-        .map(({ usuarioId: _u, ...v }) => v),
-    }))
-    .sort((a, b) => (a.nome ?? a.email).localeCompare(b.nome ?? b.email, "pt-BR"));
+  return contas.map((conta) => ({
+    ...conta,
+    adminPlataforma: admins.has(conta.id),
+    empresas: vinculos.filter((v) => v.usuarioId === conta.id),
+  }));
 }
 
 /**

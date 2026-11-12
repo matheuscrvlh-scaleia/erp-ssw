@@ -14,6 +14,8 @@ import {
   excluirCargo,
   listarCargos,
 } from "../models/cadastros/cadastros.service";
+import { apresentarCargos } from "../views/cadastros.view";
+import { confirmacao } from "../views/comum.view";
 
 /*
  * Cargos da empresa ativa (Q30: cada empresa edita os seus). Gerir acesso é do admin da empresa:
@@ -22,7 +24,6 @@ import {
 const ler = [exigirAdminDaEmpresa, exigirUmaDasTelas("admin_roles", "admin_usuarios")];
 const editar = [exigirAdminDaEmpresa, exigirPermissao("admin_roles", "editar")];
 const excluir = [exigirAdminDaEmpresa, exigirPermissao("admin_roles", "excluir")];
-const ok = { ok: true as const };
 
 export const controladorCadastros: FastifyPluginCallbackZod = (app, _opcoes, pronto) => {
   app.get(
@@ -30,7 +31,7 @@ export const controladorCadastros: FastifyPluginCallbackZod = (app, _opcoes, pro
     { schema: { response: { 200: c.listarCargos.saida } }, onRequest: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return { cargos: await listarCargos(request.db, empresa.id) };
+      return apresentarCargos(await listarCargos(request.db, empresa.id));
     },
   );
 
@@ -43,7 +44,7 @@ export const controladorCadastros: FastifyPluginCallbackZod = (app, _opcoes, pro
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       await criarCargo(request.db, empresa.id, await atorDa(request), request.body);
-      return ok;
+      return confirmacao();
     },
   );
 
@@ -66,7 +67,7 @@ export const controladorCadastros: FastifyPluginCallbackZod = (app, _opcoes, pro
         request.params.chave,
         request.body,
       );
-      return ok;
+      return confirmacao();
     },
   );
 
@@ -79,7 +80,7 @@ export const controladorCadastros: FastifyPluginCallbackZod = (app, _opcoes, pro
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       await excluirCargo(request.db, empresa.id, await atorDa(request), request.params.chave);
-      return ok;
+      return confirmacao();
     },
   );
   pronto();

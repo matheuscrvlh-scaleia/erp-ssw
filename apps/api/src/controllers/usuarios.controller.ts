@@ -16,6 +16,8 @@ import {
   listarUsuarios,
   reenviarConvite,
 } from "../models/usuarios/usuarios.service";
+import { confirmacao } from "../views/comum.view";
+import { apresentarUsuarios } from "../views/usuarios.view";
 
 /**
  * Usuários e cargos › Usuários: gerir acesso é do admin da empresa ativa (ou Plataforma), com a
@@ -49,7 +51,7 @@ export const controladorUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> 
     { schema: { response: { 200: c.listarUsuarios.saida } }, onRequest: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return { usuarios: await listarUsuarios(request.db, empresa.id) };
+      return apresentarUsuarios(await listarUsuarios(request.db, empresa.id));
     },
   );
 
@@ -88,7 +90,7 @@ export const controladorUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> 
         request.params.id,
         request.body,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -110,7 +112,7 @@ export const controladorUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> 
         request.params.id,
         request.body.excecoes,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -128,7 +130,7 @@ export const controladorUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> 
         await atorDa(request),
         request.params.id,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -152,7 +154,7 @@ export const controladorUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> 
         request.params.id,
         request.body.senha,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
   pronto();

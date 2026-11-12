@@ -10,7 +10,6 @@ import {
   type EmpresaNoPainel,
   type NivelDeSaude,
   type NumerosDaEmpresa,
-  type PainelPlataforma,
   type SituacaoDoWorker,
 } from "@erp/shared/contratos/painel-plataforma";
 import { hojeNoFuso } from "@erp/shared/datas";
@@ -47,6 +46,31 @@ export interface DependenciasPainel {
 export type NaEmpresa = (
   empresaId: string | null,
 ) => Executor<"plataforma" | "performance" | "ingestaoSsw">;
+
+export type LinhaDoPainel = Omit<EmpresaNoPainel, "ultimoLoginEm" | "ultimoDadoEm"> & {
+  ultimoLoginEm: Date | null;
+  ultimoDadoEm: Date | null;
+};
+
+export interface TotaisDoPainel {
+  empresas: number;
+  porNivel: Record<NivelDeSaude, number>;
+  usuariosAtivos: number;
+  ctesNoMes: number;
+  entreguesNoMes: number;
+  emAtraso: number;
+  /** SLA Operacional de todas as empresas juntas. */
+  slaOperacional: number | null;
+}
+
+export interface PainelMontado {
+  geradoEm: Date;
+  /** Mês corrente até hoje (fuso do negócio). */
+  periodo: { inicio: string; fim: string };
+  totais: TotaisDoPainel;
+  /** Da saúde mais grave à mais leve; empate pelo nome. */
+  empresas: LinhaDoPainel[];
+}
 
 interface LeituraDoWorker {
   situacao: SituacaoDoWorker;
@@ -116,8 +140,6 @@ function contagemDaEmpresa(
   };
 }
 
-const iso = (d: Date | null) => (d === null ? null : d.toISOString());
-
 interface DadosDaPlataforma {
   usuarios: Map<string, number>;
   liberacoes: LiberacaoGravada[];
@@ -131,7 +153,7 @@ async function linhaDaEmpresa(
   plataforma: DadosDaPlataforma,
   periodo: { inicio: string; fim: string },
   agora: Date,
-): Promise<{ linha: EmpresaNoPainel; indicadores: IndicadoresDoPeriodo | null }> {
+): Promise<{ linha: LinhaDoPainel; indicadores: IndicadoresDoPeriodo | null }> {
   const db = naEmpresa(empresa.id);
   const contexto = { empresaId: empresa.id, fuso: empresa.fuso };
   const [indicadores, ingestao, worker] = await Promise.all([
@@ -169,11 +191,11 @@ async function linhaDaEmpresa(
       corPrimaria: empresa.corPrimaria,
       usuariosAtivos: plataforma.usuarios.get(empresa.id) ?? 0,
       modulosLiberados: modulosLiberados(empresa, plataforma.liberacoes, agora),
-      ultimoLoginEm: iso(ultimoLoginEm),
+      ultimoLoginEm,
       saude,
       ssw,
       workerSsw: { situacao: worker.situacao, jobsComFalha: worker.jobsComFalha },
-      ultimoDadoEm: iso(ingestao.ultimoDadoEm),
+      ultimoDadoEm: ingestao.ultimoDadoEm,
       xml: ingestao.xml,
       numeros: indicadores === null ? null : numerosDe(indicadores),
     },
@@ -186,7 +208,7 @@ const ORDEM_DO_NIVEL: Record<NivelDeSaude, number> = { critico: 0, atencao: 1, o
 export async function obterPainel(
   naEmpresa: NaEmpresa,
   deps: DependenciasPainel,
-): Promise<PainelPlataforma> {
+): Promise<PainelMontado> {
   const agora = deps.agora();
   const hoje = hojeNoFuso(FUSO_DO_NEGOCIO, agora);
   const periodo = { inicio: `${hoje.slice(0, 8)}01`, fim: hoje };
@@ -213,11 +235,11 @@ export async function obterPainel(
   );
   const somar = (campo: (n: NumerosDaEmpresa) => number) =>
     linhas.reduce((s, l) => s + (l.numeros ? campo(l.numeros) : 0), 0);
-  const porNivel = { ok: 0, atencao: 0, critico: 0, inativa: 0 };
+  const porNivel: Record<NivelDeSaude, number> = { ok: 0, atencao: 0, critico: 0, inativa: 0 };
   for (const l of linhas) porNivel[l.saude.nivel] += 1;
 
   return {
-    geradoEm: agora.toISOString(),
+    geradoEm: agora,
     periodo,
     totais: {
       empresas: linhas.length,
@@ -242,8 +264,8 @@ export const VALIDADE_DO_PAINEL_MS = 60_000;
  * esperam a mesma montagem; se ela falhar, o próximo pedido tenta de novo.
  */
 export function criarCacheDoPainel(agora: () => Date, validadeMs = VALIDADE_DO_PAINEL_MS) {
-  let guardado: { ate: number; painel: Promise<PainelPlataforma> } | null = null;
-  return (montar: () => Promise<PainelPlataforma>): Promise<PainelPlataforma> => {
+  let guardado: { ate: number; painel: Promise<PainelMontado> } | null = null;
+  return (montar: () => Promise<PainelMontado>): Promise<PainelMontado> => {
     const t = agora().getTime();
     if (guardado && guardado.ate > t) return guardado.painel;
     const painel = montar();

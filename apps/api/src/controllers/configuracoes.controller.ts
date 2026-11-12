@@ -10,6 +10,10 @@ import {
   listarConfiguracoes,
   salvarConfiguracoes,
 } from "../models/configuracoes/configuracoes.service";
+import {
+  apresentarConfiguracoes,
+  apresentarConfiguracoesPublicas,
+} from "../views/configuracoes.view";
 
 /** Admin › Configurações: admin com a tela, sem módulo (essencial). */
 const ler = exigirPermissao("admin_configuracoes", "ver");
@@ -25,7 +29,7 @@ export const controladorConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDe
     { schema: { response: { 200: c.listarConfiguracoes.saida } }, onRequest: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return { configuracoes: await listarConfiguracoes(request.db, empresa.id) };
+      return apresentarConfiguracoes(await listarConfiguracoes(request.db, empresa.id));
     },
   );
 
@@ -62,7 +66,7 @@ export const controladorConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDe
     async (request) => {
       const acesso = await request.acesso();
       const empresaId = acesso.ativo ? (acesso.empresa?.id ?? null) : null;
-      return { valores: await configuracoesPublicas(request.db, empresaId) };
+      return apresentarConfiguracoesPublicas(await configuracoesPublicas(request.db, empresaId));
     },
   );
   pronto();

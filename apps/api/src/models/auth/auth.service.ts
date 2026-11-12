@@ -10,7 +10,7 @@ import {
   sessaoOciosa,
 } from "@erp/dominio/autenticacao";
 import { ErroDeNegocio } from "@erp/dominio/erros";
-import { type TokenEmitido } from "@erp/shared/contratos/auth";
+import { type Acesso, type TokenEmitido } from "@erp/shared/contratos/auth";
 
 import { gerarTokenOpaco, hashDoToken } from "../../infra/aleatorio";
 import { type Correio } from "../../infra/correio";
@@ -465,8 +465,17 @@ export async function definirSenhaPorToken(
   );
 }
 
+export interface AjudaDeAcesso {
+  acesso: Acesso;
+  /** Quem na empresa ativa pode liberar o acesso. */
+  admins: { nome: string | null; email: string }[];
+}
+
 /** Tela "Sem acesso": quem é o usuário, o nível e quem na empresa pode liberar. */
-export async function ajudaDeAcesso(deps: DependenciasAuth, sessao: SessaoDoToken) {
+export async function ajudaDeAcesso(
+  deps: DependenciasAuth,
+  sessao: SessaoDoToken,
+): Promise<AjudaDeAcesso> {
   const acesso = await carregarAcesso(depsDoAcesso(deps), sessao);
   const empresaId = acesso.empresa?.id ?? null;
   const admins = empresaId
@@ -475,11 +484,5 @@ export async function ajudaDeAcesso(deps: DependenciasAuth, sessao: SessaoDoToke
         ({ auth }) => auth.adminsDaEmpresa(empresaId),
       )
     : [];
-  return {
-    ativo: acesso.ativo,
-    nome: acesso.usuario.nome,
-    email: acesso.usuario.email,
-    papelRotulo: acesso.papelRotulo,
-    admins,
-  };
+  return { acesso, admins };
 }
