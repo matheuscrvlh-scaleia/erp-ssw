@@ -245,7 +245,7 @@ describe("telas de ingestão (só Plataforma)", () => {
     expect(r.json()).toMatchObject({
       erro: {
         mensagem:
-          "Integração com o worker do SSW não configurada. Configure em Plataforma › Integrações.",
+          "Integração com o worker do SSW não configurada. Configure em Plataforma › Configurações › Integrações.",
       },
     });
     expect(cenario.banco.auditoria).toEqual([]);

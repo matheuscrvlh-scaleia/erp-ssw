@@ -434,7 +434,7 @@ export class BancoEmMemoria {
     };
   }
 
-  private feriadosVisiveis(empresaId: string): FeriadoGravado[] {
+  private feriadosVisiveis(empresaId: string | null): FeriadoGravado[] {
     return this.feriados.filter((f) => f.empresaId === null || f.empresaId === empresaId);
   }
 }

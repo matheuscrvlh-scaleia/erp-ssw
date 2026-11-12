@@ -183,6 +183,7 @@ function SinoDeAvisos({ avisos, grande }: { avisos: Aviso[]; grande?: boolean })
                   {a.link && (
                     <Link
                       to={a.link.para}
+                      search={{ aba: a.link.aba }}
                       className="mt-1.5 inline-block font-semibold text-brand hover:underline"
                     >
                       {a.link.rotulo} →

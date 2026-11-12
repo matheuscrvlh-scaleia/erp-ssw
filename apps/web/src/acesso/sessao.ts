@@ -1,5 +1,5 @@
 import { contratosAuth } from "@erp/shared/contratos/auth";
-import { queryOptions } from "@tanstack/react-query";
+import { type QueryClient, queryOptions } from "@tanstack/react-query";
 
 import { chamar, definirTokenAcesso } from "@/lib/api";
 
@@ -23,7 +23,14 @@ export async function sair(): Promise<void> {
   }
 }
 
-export async function trocarEmpresa(empresaId: string): Promise<void> {
+/**
+ * Troca a empresa ativa da sessão. Depois da troca o cache inteiro é jogado fora (senão a tela
+ * mostraria dados da empresa anterior por até 15 min) e a página recarrega no mesmo endereço, sem
+ * sobrar estado de tela da empresa anterior (docs/regras/05 §1.4).
+ */
+export async function trocarEmpresa(empresaId: string, queryClient: QueryClient): Promise<void> {
   const { tokenAcesso } = await chamar(contratosAuth.trocarEmpresa, { entrada: { empresaId } });
   definirTokenAcesso(tokenAcesso);
+  queryClient.clear();
+  window.location.reload();
 }

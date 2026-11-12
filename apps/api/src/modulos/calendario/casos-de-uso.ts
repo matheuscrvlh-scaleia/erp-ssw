@@ -38,14 +38,22 @@ export interface NovoFeriado {
   geradoAutomaticamente: boolean;
 }
 
+/**
+ * Os repositórios recebem a empresa (vê os gerais + os dela) ou `null` (só os gerais, de empresa
+ * nula, que valem para todas as empresas).
+ */
 export interface RepositorioCalendario {
-  /** Feriados nacionais (empresa nula) e os da empresa, em ordem de data. */
-  feriados(empresaId: string, de: string, ate: string): Promise<FeriadoGravado[]>;
+  /** Feriados gerais (empresa nula) e os da empresa, em ordem de data. */
+  feriados(empresaId: string | null, de: string, ate: string): Promise<FeriadoGravado[]>;
   proximo(empresaId: string, aPartirDe: string): Promise<FeriadoGravado | null>;
   unidadesAtivas(empresaId: string): Promise<UnidadeDoCalendario[]>;
-  feriado(empresaId: string, id: string): Promise<FeriadoGravado | null>;
+  feriado(empresaId: string | null, id: string): Promise<FeriadoGravado | null>;
   /** Chaves (`chaveDoFeriado`) que já existem para as datas e o tipo, entre os visíveis. */
-  chavesExistentes(empresaId: string, datas: string[], tipo: TipoFeriado): Promise<Set<string>>;
+  chavesExistentes(
+    empresaId: string | null,
+    datas: string[],
+    tipo: TipoFeriado,
+  ): Promise<Set<string>>;
   /** Insere ignorando os que já existem; devolve quantos entraram. */
   inserir(feriados: NovoFeriado[]): Promise<number>;
   alterar(id: string, dados: Omit<NovoFeriado, "empresaId">): Promise<void>;
@@ -58,6 +66,18 @@ export interface ContextoCalendario {
   fuso: string;
   plataforma: boolean;
 }
+
+/**
+ * Onde a escrita acontece: na empresa (que também enxerga os gerais) ou, com `empresaId` nulo,
+ * nos feriados gerais (Plataforma › Configurações).
+ */
+export interface EscopoDoFeriado {
+  empresaId: string | null;
+  plataforma: boolean;
+}
+
+/** Feriados gerais: só a equipe da Plataforma chega aqui (a rota exige o admin da Plataforma). */
+export const ESCOPO_GERAL: EscopoDoFeriado = { empresaId: null, plataforma: true };
 
 type Db = Executor<"calendario" | "auditoria">;
 
@@ -88,14 +108,26 @@ export async function obterCalendario(
   });
 }
 
+/** Feriados gerais do ano (empresa nula), em ordem de data. */
+export async function listarFeriadosGerais(
+  db: Executor<"calendario">,
+  ano: number,
+): Promise<SaidaDe<typeof contratosCalendario.listarFeriadosGerais>> {
+  return db(async ({ calendario }) => ({
+    feriados: (await calendario.feriados(null, `${ano}-01-01`, `${ano}-12-31`)).map(
+      semEmpresaNaSaida,
+    ),
+  }));
+}
+
 /**
- * Feriado novo da empresa; recorrente repete o mesmo dia nos anos seguintes. Datas que já têm
- * o mesmo feriado são puladas.
+ * Feriado novo da empresa (ou geral, no escopo da Plataforma); recorrente repete o mesmo dia nos
+ * anos seguintes. Datas que já têm o mesmo feriado são puladas.
  * origem: upsertFeriadoCal (src/features/calendario, sistema atual)
  */
 export async function criarFeriado(
   db: Db,
-  ctx: ContextoCalendario,
+  ctx: EscopoDoFeriado,
   ator: Ator,
   entrada: DadosDoFeriado & { recorrente: boolean; anosAFrente: number },
 ): Promise<{ inseridos: number; atualizados: number }> {
@@ -130,7 +162,7 @@ export async function criarFeriado(
 /** Feriado nacional (empresa nula) vale para todas as empresas: só a Plataforma mexe. */
 async function feriadoEditavel(
   calendario: RepositorioCalendario,
-  ctx: ContextoCalendario,
+  ctx: EscopoDoFeriado,
   id: string,
 ): Promise<FeriadoGravado> {
   const feriado = await calendario.feriado(ctx.empresaId, id);
@@ -142,7 +174,7 @@ async function feriadoEditavel(
 /** Mudar data/tipo/local para os de outro feriado do mesmo escopo daria duplicata. */
 async function garantirQueNaoRepete(
   calendario: RepositorioCalendario,
-  ctx: ContextoCalendario,
+  ctx: EscopoDoFeriado,
   antes: FeriadoGravado,
   depois: { data: string; tipo: TipoFeriado } & LocalDoFeriado,
 ): Promise<void> {
@@ -154,7 +186,7 @@ async function garantirQueNaoRepete(
 
 export async function alterarFeriado(
   db: Db,
-  ctx: ContextoCalendario,
+  ctx: EscopoDoFeriado,
   ator: Ator,
   id: string,
   dados: DadosDoFeriado,
@@ -190,7 +222,7 @@ export async function alterarFeriado(
 
 export async function excluirFeriado(
   db: Db,
-  ctx: ContextoCalendario,
+  ctx: EscopoDoFeriado,
   ator: Ator,
   id: string,
 ): Promise<void> {

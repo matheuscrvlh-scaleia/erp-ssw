@@ -88,7 +88,7 @@ const SO_LEITURA_OU_RAPIDA: ReadonlySet<OperacaoManual> = new Set([
 ]);
 
 export const MENSAGEM_WORKER_SSW_NAO_CONFIGURADO =
-  "Integração com o worker do SSW não configurada. Configure em Plataforma › Integrações.";
+  "Integração com o worker do SSW não configurada. Configure em Plataforma › Configurações › Integrações.";
 const MENSAGEM_WORKER_SSW_FORA =
   "O worker do SSW não respondeu. Tente de novo em instantes; se continuar, fale com o suporte.";
 

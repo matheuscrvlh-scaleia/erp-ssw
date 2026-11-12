@@ -19,7 +19,7 @@ export interface Correio {
 const SMTP_RESEND = { host: "smtp.resend.com", port: 465, secure: true } as const;
 
 export const MENSAGEM_EMAIL_NAO_CONFIGURADO =
-  "O envio de e-mail não está configurado. Configure em Plataforma › Integrações.";
+  "O envio de e-mail não está configurado. Configure em Plataforma › Configurações › Integrações.";
 
 /**
  * E-mail pelo Resend com a configuração da tela Plataforma › Integrações (lida a cada envio, com

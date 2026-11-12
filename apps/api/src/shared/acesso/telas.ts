@@ -134,7 +134,7 @@ export const ROTULO_DA_TELA: Record<Tela, string> = {
   ranking: "Ranking",
   ranking_novo: "Ranking",
   admin_usuarios: "Admin · Usuários",
-  admin_codigos: "Admin · Códigos",
+  admin_codigos: "Admin · Códigos de ocorrências",
   admin_roles: "Admin · Roles",
   admin_departamentos: "Admin · Departamentos",
   admin_ingestao: "Admin · Ingestão SSW",

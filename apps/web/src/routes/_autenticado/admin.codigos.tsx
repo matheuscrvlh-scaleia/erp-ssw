@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { PaginaCodigos } from "@/modulos/codigos/PaginaCodigos";
-
+/** Endereço antigo: a tela virou a aba "codigos" de Administração › Configurações. */
 export const Route = createFileRoute("/_autenticado/admin/codigos")({
-  component: PaginaCodigos,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/configuracoes", search: { aba: "codigos" } });
+  },
 });

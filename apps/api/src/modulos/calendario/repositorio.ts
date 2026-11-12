@@ -19,9 +19,14 @@ const colunas = {
   geradoAutomaticamente: feriados.geradoAutomaticamente,
 };
 
-/** Nacionais (empresa nula) + os da empresa. O RLS repete esta regra como segunda barreira. */
-const visiveisPara = (empresaId: string) =>
-  or(isNull(feriados.empresaId), eq(feriados.empresaId, empresaId));
+/**
+ * Gerais (empresa nula) + os da empresa; sem empresa, só os gerais. O RLS repete esta regra como
+ * segunda barreira.
+ */
+const visiveisPara = (empresaId: string | null) =>
+  empresaId === null
+    ? isNull(feriados.empresaId)
+    : or(isNull(feriados.empresaId), eq(feriados.empresaId, empresaId));
 
 export function criarRepositorioCalendario(tx: Transacao): RepositorioCalendario {
   return {

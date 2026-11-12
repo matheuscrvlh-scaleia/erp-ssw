@@ -1,26 +1,27 @@
-import { CAMINHO_DA_TELA, ROTULO_DA_TELA, type Tela, TELAS_ADMIN } from "@erp/shared/acesso/telas";
+import { CAMINHO_DA_TELA, ROTULO_DA_TELA, type Tela } from "@erp/shared/acesso/telas";
+import { type Acesso } from "@erp/shared/contratos/auth";
 import {
   AlertTriangle,
   BarChart3,
   Bookmark,
+  Boxes,
   Building,
   Building2,
   Calendar,
   CalendarDays,
   Clock,
-  Coins,
   Database,
-  Eye,
   FileArchive,
   FileCheck2,
   FileSpreadsheet,
   FileUp,
   HandCoins,
   History,
+  ListChecks,
   type LucideIcon,
-  Medal,
   PackageOpen,
   Plug,
+  Rocket,
   Scale,
   ScrollText,
   Settings,
@@ -33,76 +34,152 @@ import {
   UsersRound,
 } from "lucide-react";
 
-const ICONE_DA_TELA: Record<Tela, LucideIcon> = {
-  performance: BarChart3,
-  romaneio: FileSpreadsheet,
-  ocorrencias: AlertTriangle,
-  comprovantes: FileCheck2,
-  coletas: PackageOpen,
-  prazo_parceiro: Scale,
-  historico: Bookmark,
-  calendario: Calendar,
-  ranking: Trophy,
-  ranking_novo: Medal,
-  admin_usuarios: Users,
-  admin_roles: ShieldCheck,
-  admin_departamentos: Building2,
-  admin_codigos: Settings,
-  admin_ingestao: Database,
-  admin_importacao_ssw: FileUp,
-  admin_historico: CalendarDays,
-  admin_equipes: UsersRound,
-  admin_bonificacao: Coins,
-  admin_configuracoes: SlidersHorizontal,
-  admin_xml_cte: FileArchive,
-  admin_ahgora: Clock,
-  admin_bonificacao_entrega: HandCoins,
-  romaneio_placa: Eye,
-  admin_logs: History,
-  admin_ssw_diagnostico: Stethoscope,
-  plataforma_empresas: Building,
-  plataforma_logs: ScrollText,
-  plataforma_admins: UserCog,
-  plataforma_integracoes: Plug,
+/** Quem vê: quem tem a tela; `plataforma` = só o admin da Plataforma (não há tela própria). */
+export type Requisito = Tela | "plataforma";
+
+export type AcessoDoMenu = Pick<Acesso, "telas" | "adminPlataforma">;
+
+export function atende(acesso: AcessoDoMenu, requisito: Requisito): boolean {
+  return requisito === "plataforma" ? acesso.adminPlataforma : acesso.telas.includes(requisito);
+}
+
+/**
+ * Aba de uma tela com abas (hub). `valor` vai na URL (`?aba=`); abas com o mesmo `grupo` ficam
+ * sob uma aba só (ex.: Importações), escolhidas por um alternador.
+ */
+export interface AbaDoHub {
+  valor: string;
+  rotulo: string;
+  requisito: Requisito;
+  icone: LucideIcon;
+  grupo?: string;
+}
+
+/** Tela com abas: o item do menu aparece se o usuário vê pelo menos uma aba. */
+export interface Hub {
+  caminho: string;
+  abas: readonly AbaDoHub[];
+}
+
+/** Administração › Configurações (da empresa ativa). */
+export const HUB_CONFIGURACOES: Hub = {
+  caminho: "/admin/configuracoes",
+  abas: [
+    {
+      valor: "geral",
+      rotulo: "Geral",
+      requisito: "admin_configuracoes",
+      icone: SlidersHorizontal,
+    },
+    {
+      valor: "codigos",
+      rotulo: "Códigos de ocorrências",
+      requisito: "admin_codigos",
+      icone: ListChecks,
+    },
+    {
+      valor: "ingestao",
+      rotulo: "Ingestão SSW",
+      grupo: "Importações",
+      requisito: "admin_ingestao",
+      icone: Database,
+    },
+    {
+      valor: "importacao-ssw",
+      rotulo: "Importação SSW",
+      grupo: "Importações",
+      requisito: "admin_importacao_ssw",
+      icone: FileUp,
+    },
+    {
+      valor: "xml-cte",
+      rotulo: "Importar XML CT-e",
+      grupo: "Importações",
+      requisito: "admin_xml_cte",
+      icone: FileArchive,
+    },
+    { valor: "feriados", rotulo: "Feriados", requisito: "admin_historico", icone: CalendarDays },
+    { valor: "equipes", rotulo: "Equipes", requisito: "admin_equipes", icone: UsersRound },
+  ],
 };
 
-/** Ordem do menu principal. `ranking` e `ranking_novo` levam a /ranking: viram um item só. */
-const ORDEM_PRINCIPAL: readonly Tela[] = [
-  "performance",
-  "ranking",
-  "ranking_novo",
-  "romaneio",
-  "ocorrencias",
-  "comprovantes",
-  "coletas",
-  "prazo_parceiro",
-  "historico",
-  "calendario",
+/** Plataforma › Configurações (vale para todas as empresas). */
+export const HUB_CONFIGURACOES_DA_PLATAFORMA: Hub = {
+  caminho: "/plataforma/configuracoes",
+  abas: [
+    {
+      valor: "integracoes",
+      rotulo: "Integrações",
+      requisito: "plataforma_integracoes",
+      icone: Plug,
+    },
+    {
+      valor: "feriados-gerais",
+      rotulo: "Feriados gerais",
+      requisito: "plataforma",
+      icone: Calendar,
+    },
+  ],
+};
+
+/**
+ * Plataforma › Empresas › {empresa}. As abas de `ABAS_NA_EMPRESA_ATIVA` reaproveitam as telas que
+ * operam na empresa ativa da sessão (a página pede a troca antes de mostrá-las).
+ */
+export const ABAS_DA_EMPRESA: readonly AbaDoHub[] = [
+  { valor: "dados", rotulo: "Dados", requisito: "plataforma_empresas", icone: Building },
+  { valor: "modulos", rotulo: "Módulos", requisito: "plataforma_empresas", icone: Boxes },
+  { valor: "usuarios", rotulo: "Usuários", requisito: "plataforma_empresas", icone: Users },
+  { valor: "integracoes", rotulo: "Integrações", requisito: "plataforma_empresas", icone: Plug },
+  {
+    valor: "ingestao",
+    rotulo: "Ingestão SSW",
+    grupo: "Ingestão e importação",
+    requisito: "admin_ingestao",
+    icone: Database,
+  },
+  {
+    valor: "importacao-ssw",
+    rotulo: "Importação SSW",
+    grupo: "Ingestão e importação",
+    requisito: "admin_importacao_ssw",
+    icone: FileUp,
+  },
+  {
+    valor: "xml-cte",
+    rotulo: "Importar XML CT-e",
+    grupo: "Ingestão e importação",
+    requisito: "admin_xml_cte",
+    icone: FileArchive,
+  },
+  { valor: "ahgora", rotulo: "Ahgora", requisito: "admin_ahgora", icone: Clock },
+  {
+    valor: "diagnostico",
+    rotulo: "Diagnóstico SSW",
+    requisito: "admin_ssw_diagnostico",
+    icone: Stethoscope,
+  },
+  { valor: "logs", rotulo: "Logs", requisito: "plataforma_empresas", icone: ScrollText },
+  { valor: "implantacao", rotulo: "Implantação", requisito: "plataforma_empresas", icone: Rocket },
 ];
 
-const ORDEM_ADMIN: readonly Tela[] = [
-  "admin_usuarios",
-  "admin_roles",
-  "admin_departamentos",
-  "admin_codigos",
-  "admin_configuracoes",
-  "admin_historico",
-  "admin_equipes",
-  "admin_bonificacao_entrega",
-  "admin_logs",
+export const ABAS_NA_EMPRESA_ATIVA: readonly string[] = [
+  "ingestao",
+  "importacao-ssw",
+  "xml-cte",
+  "ahgora",
+  "diagnostico",
 ];
 
-const ORDEM_PLATAFORMA: readonly Tela[] = [
-  "plataforma_empresas",
-  "plataforma_logs",
-  "plataforma_admins",
-  "plataforma_integracoes",
-  "admin_ingestao",
-  "admin_importacao_ssw",
-  "admin_xml_cte",
-  "admin_ssw_diagnostico",
-  "admin_ahgora",
-];
+const HUBS: readonly Hub[] = [HUB_CONFIGURACOES, HUB_CONFIGURACOES_DA_PLATAFORMA];
+
+export function hubDoCaminho(caminho: string): Hub | undefined {
+  return HUBS.find((h) => caminho === h.caminho || caminho.startsWith(`${h.caminho}/`));
+}
+
+export function abasVisiveis(hub: Pick<Hub, "abas">, acesso: AcessoDoMenu): AbaDoHub[] {
+  return hub.abas.filter((a) => atende(acesso, a.requisito));
+}
 
 export interface ItemDoMenu {
   caminho: string;
@@ -110,26 +187,122 @@ export interface ItemDoMenu {
   icone: LucideIcon;
 }
 
-function itens(ordem: readonly Tela[], telas: readonly Tela[]): ItemDoMenu[] {
-  const vistos = new Set<string>();
-  return ordem
-    .filter((t) => telas.includes(t))
-    .flatMap((t) => {
-      const caminho = CAMINHO_DA_TELA[t];
-      if (vistos.has(caminho)) return [];
-      vistos.add(caminho);
-      const rotulo = TELAS_ADMIN.includes(t)
-        ? ROTULO_DA_TELA[t].replace(/^(Admin|Plataforma) · /, "")
-        : ROTULO_DA_TELA[t];
-      return [{ caminho, rotulo, icone: ICONE_DA_TELA[t] }];
-    });
+interface ItemDoCatalogo extends ItemDoMenu {
+  requisitos: readonly Requisito[];
 }
 
-/** Menu lateral em três seções, só com as telas liberadas e sem caminho repetido. */
-export function montarMenu(telas: readonly Tela[]) {
+const tela = (t: Tela, rotulo: string, icone: LucideIcon): ItemDoCatalogo => ({
+  caminho: CAMINHO_DA_TELA[t],
+  rotulo,
+  icone,
+  requisitos: [t],
+});
+
+const hub = (h: Hub, rotulo: string, icone: LucideIcon): ItemDoCatalogo => ({
+  caminho: h.caminho,
+  rotulo,
+  icone,
+  requisitos: h.abas.map((a) => a.requisito),
+});
+
+const PRINCIPAL: readonly ItemDoCatalogo[] = [
+  tela("performance", "Performance", BarChart3),
+  // `ranking` e `ranking_novo` levam a /ranking: um item só.
+  { ...tela("ranking", "Ranking", Trophy), requisitos: ["ranking", "ranking_novo"] },
+  tela("romaneio", "Romaneio", FileSpreadsheet),
+  tela("ocorrencias", "Ocorrências", AlertTriangle),
+  tela("comprovantes", "Comprovantes", FileCheck2),
+  tela("coletas", "Coletas", PackageOpen),
+  tela("prazo_parceiro", "Prazo do parceiro", Scale),
+  tela("historico", "Histórico", Bookmark),
+  tela("calendario", "Calendário", Calendar),
+  tela("admin_bonificacao_entrega", "Bonificação de entrega", HandCoins),
+];
+
+const ADMINISTRACAO: readonly ItemDoCatalogo[] = [
+  tela("admin_usuarios", "Usuários e cargos", Users),
+  hub(HUB_CONFIGURACOES, "Configurações", Settings),
+  tela("admin_logs", "Logs", History),
+];
+
+/** O Dashboard da Plataforma entra no topo desta lista. */
+const PLATAFORMA: readonly ItemDoCatalogo[] = [
+  tela("plataforma_empresas", "Empresas", Building),
+  tela("plataforma_admins", "Usuários e cargos", UserCog),
+  hub(HUB_CONFIGURACOES_DA_PLATAFORMA, "Configurações", Settings),
+  tela("plataforma_logs", "Logs", ScrollText),
+];
+
+function itens(catalogo: readonly ItemDoCatalogo[], acesso: AcessoDoMenu): ItemDoMenu[] {
+  return catalogo
+    .filter((i) => i.requisitos.some((r) => atende(acesso, r)))
+    .map(({ caminho, rotulo, icone }) => ({ caminho, rotulo, icone }));
+}
+
+/** Menu lateral em três seções, só com o que o usuário pode abrir. */
+export function montarMenu(acesso: AcessoDoMenu) {
   return {
-    principal: itens(ORDEM_PRINCIPAL, telas),
-    admin: itens(ORDEM_ADMIN, telas),
-    plataforma: itens(ORDEM_PLATAFORMA, telas),
+    principal: itens(PRINCIPAL, acesso),
+    administracao: itens(ADMINISTRACAO, acesso),
+    plataforma: itens(PLATAFORMA, acesso),
   };
+}
+
+/** Destino da busca rápida: caminho e, numa tela com abas, a aba. */
+export interface DestinoDaBusca extends ItemDoMenu {
+  grupo: string;
+  aba?: string;
+}
+
+/** Abas da empresa que só existem lá (as de ingestão também estão em Administração). */
+const ABAS_DA_EMPRESA_NA_BUSCA = ABAS_DA_EMPRESA.filter(
+  (a) => a.valor === "ahgora" || a.valor === "diagnostico",
+);
+
+/** Telas fora do menu que continuam com página própria (Usuários e cargos as reúne). */
+const FORA_DO_MENU: readonly ItemDoCatalogo[] = [
+  tela("admin_roles", ROTULO_DA_TELA.admin_roles.replace(/^Admin · /, ""), ShieldCheck),
+  tela(
+    "admin_departamentos",
+    ROTULO_DA_TELA.admin_departamentos.replace(/^Admin · /, ""),
+    Building2,
+  ),
+];
+
+/**
+ * Tudo o que a busca rápida acha: os itens do menu, cada aba das telas com abas (com o caminho
+ * novo) e as telas que saíram do menu.
+ */
+export function montarBusca(
+  acesso: AcessoDoMenu & { empresa: { id: string; nome: string } | null },
+): DestinoDaBusca[] {
+  const menu = montarMenu(acesso);
+  const comGrupo = (grupo: string, lista: ItemDoMenu[]) => lista.map((i) => ({ ...i, grupo }));
+  const abas = (grupo: string, h: Hub) =>
+    abasVisiveis(h, acesso).map((a) => ({
+      caminho: h.caminho,
+      aba: a.valor,
+      rotulo: a.rotulo,
+      icone: a.icone,
+      grupo,
+    }));
+  const empresa = acesso.empresa;
+  const daEmpresa = empresa
+    ? abasVisiveis({ abas: ABAS_DA_EMPRESA_NA_BUSCA }, acesso).map((a) => ({
+        caminho: `/plataforma/empresas/${empresa.id}`,
+        aba: a.valor,
+        rotulo: a.rotulo,
+        icone: a.icone,
+        grupo: `Plataforma › ${empresa.nome}`,
+      }))
+    : [];
+  return [
+    ...comGrupo("Telas", menu.principal),
+    ...comGrupo("Administração", menu.administracao),
+    ...abas("Administração › Configurações", HUB_CONFIGURACOES),
+    ...comGrupo("Administração", itens(FORA_DO_MENU, acesso)),
+    ...comGrupo("Plataforma", menu.plataforma),
+    ...abas("Plataforma › Configurações", HUB_CONFIGURACOES_DA_PLATAFORMA),
+    ...daEmpresa,
+  ];
 }

@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { PaginaXmlCte } from "@/modulos/ingestao/PaginaXmlCte";
-
+/** Endereço antigo: a tela virou a aba "xml-cte" de Administração › Configurações. */
 export const Route = createFileRoute("/_autenticado/admin/xml-cte")({
-  component: PaginaXmlCte,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/configuracoes", search: { aba: "xml-cte" } });
+  },
 });

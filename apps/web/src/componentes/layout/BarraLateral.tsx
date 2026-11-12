@@ -47,7 +47,7 @@ export function BarraLateral({
   const caminhoAtual = useRouterState({ select: (s) => s.location.pathname });
   const { state, setOpenMobile, isMobile, toggleSidebar } = useSidebar();
   const recolhida = state === "collapsed" && !isMobile;
-  const menu = montarMenu(acesso.telas);
+  const menu = montarMenu(acesso);
 
   const ativo = (caminho: string) =>
     caminho !== "/" && (caminhoAtual === caminho || caminhoAtual.startsWith(`${caminho}/`));
@@ -145,11 +145,11 @@ export function BarraLateral({
           <SidebarMenu className="gap-1">{menu.principal.map(desenharItem)}</SidebarMenu>
         </Secao>
         <SecaoRecolhivel
-          titulo="Admin"
+          titulo="Administração"
           chave="admin"
-          itens={menu.admin}
+          itens={menu.administracao}
           recolhida={recolhida}
-          algumAtivo={menu.admin.some((i) => ativo(i.caminho))}
+          algumAtivo={menu.administracao.some((i) => ativo(i.caminho))}
           desenharItem={desenharItem}
         />
         <SecaoRecolhivel
@@ -242,7 +242,7 @@ function lerAberta(chave: string): boolean {
   }
 }
 
-/** Seção recolhível do menu (Admin, Plataforma). Lembra aberta/fechada por navegador. */
+/** Seção recolhível do menu (Administração, Plataforma). Lembra aberta/fechada por navegador. */
 function SecaoRecolhivel({
   titulo,
   chave,
@@ -301,11 +301,7 @@ function SecaoRecolhivel({
   );
 }
 
-/**
- * Seletor de empresa: só para a Plataforma ou para quem tem mais de uma empresa. Depois da troca o
- * cache inteiro é jogado fora (senão a tela mostraria dados da empresa anterior por até 15 min) e
- * a página recarrega, sem sobrar estado de tela da empresa anterior (docs/regras/05 §1.4).
- */
+/** Seletor de empresa: só para a Plataforma ou para quem tem mais de uma empresa. */
 function SeletorDeEmpresa({ acesso }: { acesso: Acesso }) {
   const queryClient = useQueryClient();
   const [trocando, setTrocando] = useState(false);
@@ -316,9 +312,7 @@ function SeletorDeEmpresa({ acesso }: { acesso: Acesso }) {
     if (empresaId === acesso.empresa?.id) return;
     setTrocando(true);
     try {
-      await trocarEmpresa(empresaId);
-      queryClient.clear();
-      window.location.reload();
+      await trocarEmpresa(empresaId, queryClient);
     } catch (e) {
       toast.error(mensagemAmigavel(e, "Não foi possível trocar de empresa."));
       setTrocando(false);

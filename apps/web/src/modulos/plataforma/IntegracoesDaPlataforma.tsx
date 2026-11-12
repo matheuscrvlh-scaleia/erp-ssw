@@ -24,7 +24,10 @@ const ICONE_DA_INTEGRACAO: Record<IntegracaoDaPlataforma["tipo"], LucideIcon> = 
   worker_ssw: Server,
 };
 
-/** Plataforma › Integrações: domínio, e-mail (Resend) e worker-ssw, iguais para todas as empresas. */
+/**
+ * Plataforma › Configurações › Integrações: domínio, e-mail (Resend) e worker-ssw, iguais para
+ * todas as empresas.
+ */
 export function PaginaIntegracoesDaPlataforma() {
   const consulta = useQuery(consultaIntegracoesDaPlataforma);
   return (
