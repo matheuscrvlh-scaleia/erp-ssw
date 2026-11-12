@@ -34,7 +34,7 @@ export function CartaoDeEntrada({
         <div aria-hidden className="hidden items-center justify-center p-10 lg:flex">
           <IlustracaoLogistica className="h-auto w-full max-w-[1000px]" />
         </div>
-        <div className="flex justify-center bg-card/65 px-6 py-10 backdrop-blur-[1.5px] sm:px-12 lg:border-l lg:border-card/80 [&_button]:rounded-none [&_input]:rounded-none">
+        <div className="flex justify-center bg-card/80 px-6 py-10 backdrop-blur-[3px] sm:px-12 lg:border-l lg:border-card/80 [&_button]:rounded-none [&_input]:rounded-none">
           <div className="flex w-full max-w-[420px] flex-col">
             <span className="text-[16px] font-semibold tracking-tight text-foreground">
               Copiloto SSW

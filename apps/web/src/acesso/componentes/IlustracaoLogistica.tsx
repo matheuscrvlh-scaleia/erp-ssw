@@ -743,65 +743,124 @@ export function IlustracaoLogistica({ className }: { className?: string | undefi
   );
 }
 
-/** Lado da placa e vão entre placas, em unidades do mundo (o mesmo desenho da ilustração). */
-const PLACA = 104;
-const VAO = 8;
-const PASSO = PLACA + VAO;
+/** Área do piso na tela (o SVG cobre a tela com `slice`, cortando o que sobra). */
+const PISO_LARGURA = 1600;
+const PISO_ALTURA = 1000;
+/** Módulo do piso, em unidades do mundo: as placas medem de 1 a 5 módulos de cada lado. */
+const MODULO = 58;
+/** Vão entre placas: fino, para a divisão quase sumir como no mockup. */
+const VAO = 2;
 
-/** Uma placa do piso com o topo e as duas bordas visíveis, com o canto de cima em (cx, cy). */
-function PlacaDoPiso({ cx, cy }: { cx: number; cy: number }) {
-  const meia = PLACA / 2;
-  const espessura = 6;
+type PlacaDoPiso = Medidas & { tom: number };
+
+/** Gerador pseudoaleatório com semente fixa: o piso é irregular, mas sempre o mesmo desenho. */
+function sorteador(semente: number): () => number {
+  let s = semente;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Placas de tamanhos variados encaixadas numa grade de módulos: percorre a grade e, em cada
+ * módulo livre, sorteia uma placa (comprimento e fundo diferentes) que caiba no espaço livre.
+ * Altura e tom também variam um pouco, para o piso não ficar uniforme.
+ */
+function montarPiso(): PlacaDoPiso[] {
+  const sortear = sorteador(20261112);
+  // Tela → mundo (origem no canto de cima): x = Y + X/2 e y = Y − X/2.
+  const iMin = -3;
+  const iMax = Math.ceil((PISO_ALTURA + PISO_LARGURA / 2) / MODULO) + 2;
+  const jMin = Math.floor(-PISO_LARGURA / 2 / MODULO) - 3;
+  const jMax = Math.ceil(PISO_ALTURA / MODULO) + 2;
+  const ocupado = new Set<string>();
+  const livre = (i: number, j: number) => i <= iMax && j <= jMax && !ocupado.has(`${i}:${j}`);
+  const placas: PlacaDoPiso[] = [];
+  for (let i = iMin; i <= iMax; i++) {
+    for (let j = jMin; j <= jMax; j++) {
+      if (!livre(i, j)) continue;
+      const alvoW = 1 + Math.floor(sortear() * 5);
+      const alvoD = 1 + Math.floor(sortear() * 3);
+      let w = 1;
+      while (w < alvoW && livre(i + w, j)) w++;
+      let d = 1;
+      while (d < alvoD && Array.from({ length: w }, (_, k) => livre(i + k, j + d)).every(Boolean))
+        d++;
+      for (let a = 0; a < w; a++) for (let b = 0; b < d; b++) ocupado.add(`${i + a}:${j + b}`);
+      const placa = {
+        x: i * MODULO + VAO / 2,
+        y: j * MODULO + VAO / 2,
+        w: w * MODULO - VAO,
+        d: d * MODULO - VAO,
+        h: 2 + Math.floor(sortear() * 4),
+        tom: [0, 0, 0, 0.12, 0.22][Math.floor(sortear() * 5)] ?? 0,
+      };
+      const xMin = placa.x - placa.y - placa.d;
+      const xMax = placa.x + placa.w - placa.y;
+      const yMin = (placa.x + placa.y) / 2 - placa.h;
+      const yMax = (placa.x + placa.w + placa.y + placa.d) / 2;
+      if (xMax < 0 || xMin > PISO_LARGURA || yMax < 0 || yMin > PISO_ALTURA) continue;
+      placas.push(placa);
+    }
+  }
+  // De trás para a frente: a borda de uma placa mais à frente cobre a de trás.
+  return placas.sort((a, b) => a.x + a.y - (b.x + b.y));
+}
+
+const PLACAS_DO_PISO = montarPiso();
+
+/** Ponto do piso na tela (sem a origem da ilustração). */
+function noPiso(x: number, y: number, z: number): string {
+  return `${x - y},${(x + y) / 2 - z}`;
+}
+
+function Placa({ x, y, w, d, h, tom }: PlacaDoPiso) {
+  const topo = [noPiso(x, y, h), noPiso(x + w, y, h), noPiso(x + w, y + d, h), noPiso(x, y + d, h)];
   return (
     <g>
       <polygon
-        points={`${cx - PLACA},${cy + meia} ${cx},${cy + PLACA} ${cx},${cy + PLACA + espessura} ${cx - PLACA},${cy + meia + espessura}`}
+        points={`${noPiso(x, y + d, 0)} ${noPiso(x + w, y + d, 0)} ${noPiso(x + w, y + d, h)} ${noPiso(x, y + d, h)}`}
         fill={COR.esq}
       />
       <polygon
-        points={`${cx},${cy + PLACA} ${cx + PLACA},${cy + meia} ${cx + PLACA},${cy + meia + espessura} ${cx},${cy + PLACA + espessura}`}
+        points={`${noPiso(x + w, y, 0)} ${noPiso(x + w, y + d, 0)} ${noPiso(x + w, y + d, h)} ${noPiso(x + w, y, h)}`}
         fill={COR.dir}
+        fillOpacity={0.8}
       />
-      <polygon
-        points={`${cx},${cy} ${cx + PLACA},${cy + meia} ${cx},${cy + PLACA} ${cx - PLACA},${cy + meia}`}
-        fill={COR.topo}
-      />
+      <polygon points={topo.join(" ")} fill={COR.topo} />
+      {tom > 0 && <polygon points={topo.join(" ")} fill={COR.esq} fillOpacity={tom} />}
     </g>
   );
 }
 
 /**
- * Piso de placas isométricas que se repete pela tela inteira (fundo do login). O padrão tem duas
- * placas por célula (2·PASSO × PASSO) e repete as vizinhas para as bordas não cortarem.
+ * Piso de placas isométricas que cobre a tela inteira (fundo do login), como no mockup: placas
+ * grandes e de tamanhos variados, divisões finas e claras, e uma luz que clareia o alto e a
+ * direita (onde fica o formulário) para o piso marcar pouco ali.
  */
 export function PisoIsometrico({ className }: { className?: string | undefined }) {
-  const largura = 2 * PASSO;
-  const altura = PASSO;
-  const cantos: { cx: number; cy: number }[] = [];
-  for (let i = -1; i <= 2; i++) {
-    for (let j = -2; j <= 1; j++) {
-      cantos.push({ cx: i * largura, cy: j * altura });
-      cantos.push({ cx: i * largura + PASSO, cy: j * altura + altura / 2 });
-    }
-  }
-  cantos.sort((a, b) => a.cy - b.cy);
   return (
-    <svg aria-hidden className={className}>
+    <svg
+      aria-hidden
+      viewBox={`0 0 ${PISO_LARGURA} ${PISO_ALTURA}`}
+      preserveAspectRatio="xMidYMid slice"
+      className={className}
+    >
       <defs>
-        <pattern
-          id="piso-isometrico"
-          width={largura}
-          height={altura}
-          patternUnits="userSpaceOnUse"
-          patternTransform="scale(1.7)"
-        >
-          <rect width={largura} height={altura} fill={COR.linha} fillOpacity={0.3} />
-          {cantos.map((c) => (
-            <PlacaDoPiso key={`${c.cx}:${c.cy}`} {...c} />
-          ))}
-        </pattern>
+        <linearGradient id="piso-luz" x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity={0.75} />
+          <stop offset="0.55" stopColor="#ffffff" stopOpacity={0.35} />
+          <stop offset="1" stopColor="#ffffff" stopOpacity={0.15} />
+        </linearGradient>
       </defs>
-      <rect width="100%" height="100%" fill="url(#piso-isometrico)" />
+      <rect width={PISO_LARGURA} height={PISO_ALTURA} fill={COR.esq} />
+      {PLACAS_DO_PISO.map((p) => (
+        <Placa key={`${p.x}:${p.y}`} {...p} />
+      ))}
+      <rect width={PISO_LARGURA} height={PISO_ALTURA} fill="url(#piso-luz)" />
     </svg>
   );
 }
