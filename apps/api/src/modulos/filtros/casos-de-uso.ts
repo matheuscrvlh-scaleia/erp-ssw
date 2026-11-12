@@ -8,7 +8,7 @@ import {
 import { formatarCnpj } from "@erp/shared/formatacao";
 import { type z } from "@erp/shared/zod";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

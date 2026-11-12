@@ -1,8 +1,8 @@
 import { type Acesso, type EmpresaAtiva } from "@erp/shared/contratos/auth";
 import { type FastifyRequest } from "fastify";
 
+import { type Executor, type ExecutorComContexto } from "../infra/repositorios";
 import { sessaoObrigatoria } from "../plugins/sessao";
-import { type Executor, type ExecutorComContexto } from "../repositorios";
 import { semEmpresa } from "./erros";
 
 /** Acesso com a empresa ativa garantida (para rotas que já passaram por um guard de empresa). */

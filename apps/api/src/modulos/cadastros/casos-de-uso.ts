@@ -5,7 +5,7 @@ import { type Permissao } from "@erp/shared/acesso/permissoes";
 import { type Cargo } from "@erp/shared/contratos/admin";
 
 import { conflito, naoEncontrado } from "../../http/erros";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
 
 /*

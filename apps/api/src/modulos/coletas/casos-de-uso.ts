@@ -23,7 +23,7 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
 
 import { consultaAmplaDemais, naoEncontrado } from "../../http/erros";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 export const LIMITE_DE_COLETAS = 100_000;
 

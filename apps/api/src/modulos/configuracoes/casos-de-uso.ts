@@ -7,7 +7,7 @@ import {
   GRUPOS_DE_CONFIGURACAO,
 } from "@erp/shared/contratos/admin";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type Ator } from "../auditoria/auditoria";
 import { type CacheDeConfiguracoes } from "./cache";
 

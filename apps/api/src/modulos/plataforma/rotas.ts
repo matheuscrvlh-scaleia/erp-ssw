@@ -8,8 +8,8 @@ import { exigirAdminPlataforma } from "../../http/guardas";
 import type { Armazenamento } from "../../infra/armazenamento";
 import { type FonteDaConfiguracao } from "../../infra/configuracao-da-plataforma";
 import { type Correio } from "../../infra/correio";
+import { type ExecutorComContexto } from "../../infra/repositorios";
 import { atorDa } from "../../plugins/sessao";
-import { type ExecutorComContexto } from "../../repositorios";
 import { listarCargos } from "../cadastros/casos-de-uso";
 import { convidarParaEmpresa, type DependenciasUsuarios } from "../usuarios/casos-de-uso";
 import {

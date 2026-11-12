@@ -19,8 +19,8 @@ import {
 import { conflito, naoEncontrado } from "../../http/erros";
 import { gerarTokenOpaco, hashDoToken } from "../../infra/aleatorio";
 import { type Correio } from "../../infra/correio";
+import { type Executor } from "../../infra/repositorios";
 import { type ServicoDeSenhas } from "../../infra/senhas";
-import { type Executor } from "../../repositorios";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
 import { type RepositorioAuth } from "../auth/casos-de-uso";
 import { emailDeConvite } from "../auth/emails";

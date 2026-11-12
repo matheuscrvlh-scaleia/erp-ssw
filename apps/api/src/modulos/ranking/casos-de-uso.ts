@@ -31,7 +31,7 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
 
 import { naoEncontrado } from "../../http/erros";
-import { type Executor, type ExecutorComContexto } from "../../repositorios";
+import { type Executor, type ExecutorComContexto } from "../../infra/repositorios";
 import { type Ator } from "../auditoria/auditoria";
 import { type ContextoDaConsulta } from "../performance/consultas";
 

@@ -4,8 +4,8 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao, executorDePlataforma } from "../../http/contexto";
 import { exigirAdminDaEmpresa, exigirPermissao } from "../../http/guardas";
+import { type ExecutorComContexto } from "../../infra/repositorios";
 import { atorDa } from "../../plugins/sessao";
-import { type ExecutorComContexto } from "../../repositorios";
 import {
   alterarUsuario,
   type ContextoUsuarios,

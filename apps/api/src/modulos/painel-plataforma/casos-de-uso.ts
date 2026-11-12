@@ -15,8 +15,8 @@ import {
 } from "@erp/shared/contratos/painel-plataforma";
 import { hojeNoFuso } from "@erp/shared/datas";
 
+import { type Executor } from "../../infra/repositorios";
 import { type ClienteWorkerSsw, MENSAGEM_WORKER_SSW_NAO_CONFIGURADO } from "../../infra/worker-ssw";
-import { type Executor } from "../../repositorios";
 import { saudeDaIntegracao } from "../ingestao-ssw/casos-de-uso";
 import { type IndicadoresDoPeriodo, obterIndicadoresDoPeriodo } from "../performance/casos-de-uso";
 import {

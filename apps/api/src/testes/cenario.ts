@@ -4,8 +4,8 @@ import { type ChavesDeSegredo, lerChavesDeSegredo } from "@erp/db/segredos";
 import { type JobEnfileiravel } from "@erp/shared/jobs";
 import { type FastifyInstance } from "fastify";
 
-import { construirApp, type Dependencias } from "../app";
 import { type Ambiente, carregarAmbiente } from "../config/env";
+import { construirApp, type Dependencias } from "../http/app";
 import type { Armazenamento } from "../infra/armazenamento";
 import { type Correio, type Mensagem } from "../infra/correio";
 import type { DadosDoJob, FilaDeJobs } from "../infra/fila";

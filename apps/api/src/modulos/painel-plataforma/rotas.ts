@@ -3,8 +3,8 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { executorDePlataforma } from "../../http/contexto";
 import { exigirAdminPlataforma } from "../../http/guardas";
+import { type ExecutorComContexto } from "../../infra/repositorios";
 import { type ClienteWorkerSsw } from "../../infra/worker-ssw";
-import { type ExecutorComContexto } from "../../repositorios";
 import { criarCacheDoPainel, obterPainel } from "./casos-de-uso";
 
 export interface OpcoesRotasPainelPlataforma {

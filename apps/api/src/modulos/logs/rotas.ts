@@ -3,7 +3,7 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao, executorDePlataforma } from "../../http/contexto";
 import { exigirAdminPlataforma, exigirPermissao } from "../../http/guardas";
-import { type ExecutorComContexto } from "../../repositorios";
+import { type ExecutorComContexto } from "../../infra/repositorios";
 import { type EscopoDosLogs, listarAlteracoes, listarIntegracoes } from "./casos-de-uso";
 
 /** Admin › Logs: admin (ou Plataforma) na empresa ativa; só os registros dela (Q31). */

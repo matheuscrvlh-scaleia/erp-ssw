@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { construirAppDeTeste, criarCenario } from "./testes/cenario";
+import { construirAppDeTeste, criarCenario } from "../testes/cenario";
 
 describe("app", () => {
   it("healthz sempre 200; readyz 503 quando o banco não responde", async () => {

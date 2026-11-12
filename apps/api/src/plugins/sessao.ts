@@ -3,10 +3,10 @@ import { type FastifyInstance, type FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 
 import { naoAutenticado, sessaoExpirada } from "../http/erros";
+import { type Executor, type ExecutorComContexto } from "../infra/repositorios";
 import { type EmissorDeTokens, type SessaoDoToken } from "../infra/tokens";
 import { carregarAcesso, type DependenciasAcesso } from "../modulos/acesso/casos-de-uso";
 import { type Ator } from "../modulos/auditoria/auditoria";
-import { type Executor, type ExecutorComContexto } from "../repositorios";
 
 declare module "fastify" {
   interface FastifyRequest {

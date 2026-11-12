@@ -80,7 +80,7 @@ import {
 import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 type C = typeof contratosRomaneio;
 /** Entrada já validada (com os padrões do contrato aplicados). */

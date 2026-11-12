@@ -23,8 +23,8 @@ import {
 import { type IntegracaoDaIngestao, JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
 
 import { conflito, naoEncontrado } from "../../http/erros";
+import { type Executor } from "../../infra/repositorios";
 import { type ClienteWorkerSsw, exigirWorkerSsw } from "../../infra/worker-ssw";
-import { type Executor } from "../../repositorios";
 import { type Ator } from "../auditoria/auditoria";
 
 // --- Portas -----------------------------------------------------------------------------------

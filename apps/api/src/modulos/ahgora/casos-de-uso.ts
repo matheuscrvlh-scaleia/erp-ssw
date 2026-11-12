@@ -29,7 +29,7 @@ import {
   criarClienteAhgora,
   emParalelo,
 } from "../../infra/ahgora";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 type C = typeof contratosAhgora;
 

@@ -29,7 +29,7 @@ import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
 
 import { consultaAmplaDemais } from "../../http/erros";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 /** Teto de linhas trazidas para a memória numa consulta (CT-e ou ocorrências). */
 export const LIMITE_DE_LINHAS = 200_000;

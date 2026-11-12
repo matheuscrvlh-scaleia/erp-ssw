@@ -19,7 +19,7 @@ import {
 import { hojeNoFuso } from "@erp/shared/datas";
 
 import { conflito, naoEncontrado, semPermissao } from "../../http/erros";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type Ator } from "../auditoria/auditoria";
 
 const FERIADO_REPETIDO = "Já existe um feriado igual nesta data.";

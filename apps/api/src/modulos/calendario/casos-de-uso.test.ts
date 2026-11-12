@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { BancoEmMemoria } from "../../testes/banco-em-memoria";
 import { type Ator } from "../auditoria/auditoria";
 import {

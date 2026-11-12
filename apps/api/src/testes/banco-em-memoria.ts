@@ -6,12 +6,12 @@ import { ACOES_DA_TELA, permissao } from "@erp/shared/acesso/permissoes";
 import { ehTela } from "@erp/shared/acesso/telas";
 import { type UnidadeDoCalendario } from "@erp/shared/contratos/calendario";
 
+import { type ExecutorComContexto, type Repositorios } from "../infra/repositorios";
 import { type AlgoritmoSenha } from "../infra/senhas";
 import { type EmpresaGravada } from "../modulos/acesso/casos-de-uso";
 import { type Ator, type EventoDeAuditoria } from "../modulos/auditoria/auditoria";
 import { type NovaSessao, type TipoTokenSenha } from "../modulos/auth/casos-de-uso";
 import { type FeriadoGravado } from "../modulos/calendario/casos-de-uso";
-import { type ExecutorComContexto, type Repositorios } from "../repositorios";
 import {
   criarRepositoriosDeAdministracao,
   EstadoDeAdministracao,

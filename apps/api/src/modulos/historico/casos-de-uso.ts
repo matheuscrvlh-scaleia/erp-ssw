@@ -15,7 +15,7 @@ import {
 } from "@erp/shared/contratos/historico";
 
 import { naoEncontrado } from "../../http/erros";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type Ator } from "../auditoria/auditoria";
 import { type FeriadoGravado } from "../calendario/casos-de-uso";
 
