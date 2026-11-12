@@ -22,7 +22,6 @@ const CHAMAM_FORA_DO_API = [
   "src/routes/login.tsx", // atalho: sai na migração das telas de acesso
   "src/routes/redefinir-senha.tsx", // atalho: sai na migração das telas de acesso
   "src/routes/_autenticado/sem-acesso.tsx", // atalho: sai na migração das telas de acesso
-  "src/modulos/admin/**", // atalho: sai na migração do módulo admin
   "src/modulos/bonificacao-entrega/**", // atalho: sai na migração do módulo bonificacao-entrega
   "src/modulos/calendario/**", // atalho: sai na migração do módulo calendario
   "src/modulos/codigos/**", // atalho: sai na migração do módulo codigos
@@ -40,10 +39,10 @@ const INTERNOS_AINDA_IMPORTADOS = [
   "filtros/componentes", // atalho: sai na migração do módulo filtros
   "filtros/regras", // atalho: sai na migração do módulo filtros
   "listagem/busca", // atalho: sai na migração do módulo ranking
-  "admin/logs/Logs", // atalho: sai na migração do módulo plataforma
-  "admin/usuarios/AbaCargos", // atalho: sai na migração do módulo plataforma
-  "admin/usuarios/AbaMatriz", // atalho: sai na migração do módulo plataforma
-  "admin/usuarios/ModalNovoUsuario", // atalho: sai na migração do módulo plataforma
+  "admin/use-alteracoes", // atalho: sai na migração do módulo plataforma
+  "admin/use-integracoes", // atalho: sai na migração do módulo plataforma
+  "admin/use-aba-cargos", // atalho: sai na migração do módulo plataforma
+  "admin/componentes/MatrizDeCargos", // atalho: sai na migração do módulo plataforma
   "ahgora/PaginaAhgora", // atalho: sai na migração do módulo plataforma
   "ingestao/PaginaImportacaoSsw", // atalho: sai na migração do módulo plataforma
   "ingestao/PaginaXmlCte", // atalho: sai na migração do módulo plataforma

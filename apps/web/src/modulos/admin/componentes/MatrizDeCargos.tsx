@@ -22,8 +22,8 @@ import {
   linhasDaTela,
   type Matriz,
   temAcao,
-} from "../permissoes";
-import { type CatalogoDeCargos } from "./AbaCargos";
+} from "../regras";
+import { type CatalogoDeCargos } from "../use-aba-cargos";
 
 const TEXTOS: Record<Matriz, { titulo: string; coluna: string; descricao: string }> = {
   acessos: {

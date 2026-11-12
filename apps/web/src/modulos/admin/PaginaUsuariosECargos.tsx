@@ -1,16 +1,18 @@
 import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
 import { CATEGORIAS_DE_TELA } from "@erp/shared/acesso/permissoes";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Abas } from "@/componentes/comum/Abas";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { useGravacao } from "@/hooks/use-gravacao";
 
-import { consultaCargos } from "../api";
-import { AVISO_TEM_TUDO_DA_EMPRESA, useAbaCargos, useGravacoesDeCargo } from "./AbaCargos";
-import { MatrizDeCargos } from "./AbaMatriz";
-import { useAbaUsuarios } from "./AbaUsuarios";
+import { consultaCargos, mutacaoAlterarCargo, mutacaoCriarCargo, mutacaoExcluirCargo } from "./api";
+import { MatrizDeCargos } from "./componentes/MatrizDeCargos";
+import { AVISO_TEM_TUDO_DA_EMPRESA } from "./textos";
+import { type GravacoesDeCargo, useAbaCargos } from "./use-aba-cargos";
+import { useAbaUsuarios } from "./use-aba-usuarios";
 
 export const ABAS_DE_USUARIOS = ["usuarios", "cargos", "acessos", "permissoes"] as const;
 export type AbaDeUsuarios = (typeof ABAS_DE_USUARIOS)[number];
@@ -96,4 +98,15 @@ export function PaginaUsuariosECargos({
       )}
     </Pagina>
   );
+}
+
+function useGravacoesDeCargo(): GravacoesDeCargo {
+  const cliente = useQueryClient();
+  const criar = useGravacao({ mutacao: mutacaoCriarCargo(cliente), sucesso: "Cargo criado" });
+  const alterar = useGravacao({
+    mutacao: mutacaoAlterarCargo(cliente),
+    sucesso: "Cargo atualizado",
+  });
+  const excluir = useGravacao({ mutacao: mutacaoExcluirCargo(cliente), sucesso: "Cargo removido" });
+  return { criar, alterar, excluir };
 }

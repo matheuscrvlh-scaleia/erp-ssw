@@ -24,8 +24,8 @@ import {
   permissoesEfetivas,
   resumoDoAcesso,
   temAcao,
-} from "../permissoes";
-import { TabelaDePermissoes } from "./EditorDePermissoes";
+} from "../regras";
+import { TabelaDePermissoes } from "./TabelaDePermissoes";
 
 type Escolha = "sim" | "padrao" | "nao";
 
@@ -49,7 +49,7 @@ const escolhaDo = (efeito: Efeito | undefined): Escolha =>
  * efetivo ao lado de cada uma (a mesma regra da API). Só o admin ajusta, e nunca as próprias.
  * origem: MemberPermissionsDialog (construgarden)
  */
-export function DialogoPermissoes({
+export function ModalDePermissoes({
   usuario,
   cargo,
   ehVoce,

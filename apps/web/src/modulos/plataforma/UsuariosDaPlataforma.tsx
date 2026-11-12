@@ -16,14 +16,13 @@ import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
-import { CHAVES } from "@/modulos/admin/api";
+import { MatrizDeCargos } from "@/modulos/admin/componentes/MatrizDeCargos";
 import {
   type CatalogoDeCargos,
   type DadosDoCargo,
   type GravacoesDeCargo,
   useAbaCargos,
-} from "@/modulos/admin/usuarios/AbaCargos";
-import { MatrizDeCargos } from "@/modulos/admin/usuarios/AbaMatriz";
+} from "@/modulos/admin/use-aba-cargos";
 
 import { CHAVES_DA_PLATAFORMA, consultaAdmins, consultaCargosDaPlataforma } from "./api";
 
@@ -38,7 +37,11 @@ const ABAS: readonly { valor: AbaDaPlataforma; rotulo: string }[] = [
 ];
 
 /** Mudar o cargo muda o acesso de quem está nele (inclusive o de quem edita). */
-const INVALIDAR = [CHAVES_DA_PLATAFORMA.cargos, CHAVES_DA_PLATAFORMA.admins, CHAVES.acesso];
+const INVALIDAR = [
+  CHAVES_DA_PLATAFORMA.cargos,
+  CHAVES_DA_PLATAFORMA.admins,
+  consultaAcesso.queryKey,
+];
 
 function useGravacoesDosCargosDaPlataforma(): GravacoesDeCargo {
   const criar = useGravacao({

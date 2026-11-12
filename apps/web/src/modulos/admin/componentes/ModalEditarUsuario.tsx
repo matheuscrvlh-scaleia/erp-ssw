@@ -21,9 +21,10 @@ import {
 } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
 
+import { gerarSenha } from "../regras";
 import { type Opcao } from "./ModalNovoUsuario";
 
-export type AlteracaoDeUsuario = EntradaDe<typeof contratosAdmin.alterarUsuario>;
+type AlteracaoDeUsuario = EntradaDe<typeof contratosAdmin.alterarUsuario>;
 
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,13 +32,6 @@ interface Troca {
   rotulo: string;
   antes: string;
   depois: string;
-}
-
-/** Senha forte gerada no navegador (16 caracteres, sem os ambíguos 0/O/1/l/I). */
-export function gerarSenha(): string {
-  const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
-  const sorteio = crypto.getRandomValues(new Uint32Array(16));
-  return Array.from(sorteio, (n) => caracteres[n % caracteres.length]).join("");
 }
 
 function estadoInicial(u: UsuarioDaEmpresa) {

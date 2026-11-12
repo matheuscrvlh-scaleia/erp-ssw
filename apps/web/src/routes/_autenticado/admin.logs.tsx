@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Pagina } from "@/componentes/layout/Pagina";
-import { useLogsComAbas } from "@/modulos/admin/logs/Logs";
+import { useLogsComAbas } from "@/modulos/admin/use-logs-com-abas";
 
 export const Route = createFileRoute("/_autenticado/admin/logs")({
   component: PaginaLogs,

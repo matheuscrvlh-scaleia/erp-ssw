@@ -11,6 +11,7 @@ import {
 } from "@erp/shared/acesso/permissoes";
 import { PERMISSOES_DE_RECURSO, ROTULO_DA_TELA, type Tela } from "@erp/shared/acesso/telas";
 import { type ExcecaoDePermissaoGravada } from "@erp/shared/contratos/admin";
+import { hojeNoFuso, somarDias } from "@erp/shared/datas";
 
 /*
  * Peças das telas de Usuários e cargos: um item do editor é uma tela (o Ranking leva junto a chave
@@ -129,3 +130,27 @@ export function resumoDoAcesso(mapa: MapaDeExcecoes, efetivas: ReadonlySet<Permi
   const n = excecoes.length;
   return `${String(n)} ${n === 1 ? "exceção" : "exceções"} · ${String(ativas)} ${ativas === 1 ? "permissão ativa" : "permissões ativas"}`;
 }
+
+/** Chave sugerida pelo nome: minúsculas, sem acento, `_` no lugar do resto. */
+export function chaveDoNome(nome: string): string {
+  return nome
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 40);
+}
+
+/** Senha forte gerada no navegador (16 caracteres, sem os ambíguos 0/O/1/l/I). */
+export function gerarSenha(): string {
+  const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
+  const sorteio = crypto.getRandomValues(new Uint32Array(16));
+  return Array.from(sorteio, (n) => caracteres[n % caracteres.length]).join("");
+}
+
+/** Período padrão dos logs: os últimos `dias` até hoje, no fuso da empresa. */
+export const ultimosDias = (dias: number, fuso: string) => {
+  const hoje = hojeNoFuso(fuso);
+  return { de: somarDias(hoje, -dias), ate: hoje };
+};

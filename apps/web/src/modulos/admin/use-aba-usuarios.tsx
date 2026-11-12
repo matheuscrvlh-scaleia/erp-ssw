@@ -1,11 +1,5 @@
-import {
-  type Cargo,
-  contratosAdmin as c,
-  type ExcecaoDePermissaoGravada,
-  type NovoUsuario,
-  type UsuarioDaEmpresa,
-} from "@erp/shared/contratos/admin";
-import { useQuery } from "@tanstack/react-query";
+import { type Cargo, type UsuarioDaEmpresa } from "@erp/shared/contratos/admin";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
@@ -15,12 +9,18 @@ import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { useGravacao } from "@/hooks/use-gravacao";
-import { chamar } from "@/lib/api";
 
-import { CHAVES, consultaUsuarios } from "../api";
-import { DialogoPermissoes } from "./DialogoPermissoes";
-import { type AlteracaoDeUsuario, ModalEditarUsuario } from "./ModalEditarUsuario";
-import { ModalNovoUsuario, type Opcao } from "./ModalNovoUsuario";
+import {
+  consultaUsuarios,
+  mutacaoAlterarUsuario,
+  mutacaoCriarUsuario,
+  mutacaoDefinirExcecoes,
+  mutacaoDefinirSenha,
+  mutacaoReenviarConvite,
+} from "./api";
+import { ModalDePermissoes } from "./componentes/ModalDePermissoes";
+import { ModalEditarUsuario } from "./componentes/ModalEditarUsuario";
+import { ModalNovoUsuario, type Opcao } from "./componentes/ModalNovoUsuario";
 
 const rotuloEm = (lista: readonly Opcao[], chave: string | null) =>
   lista.find((o) => o.chave === chave)?.rotulo ?? chave ?? "";
@@ -47,35 +47,24 @@ export function useAbaUsuarios({
   const [busca, setBusca] = useState("");
   const [cargo, setCargo] = useState("");
 
-  const invalidar = [CHAVES.usuarios, CHAVES.cargos];
+  const cliente = useQueryClient();
   const criar = useGravacao({
-    executar: (novo: NovoUsuario) => chamar(c.criarUsuario, { entrada: novo }),
+    mutacao: mutacaoCriarUsuario(cliente),
     sucesso: (novo) => (novo.modo === "convite" ? "Convite enviado" : "Usuário criado"),
-    invalidar,
   });
   const alterar = useGravacao({
-    executar: ({ id, dados }: { id: string; dados: AlteracaoDeUsuario }) =>
-      chamar(c.alterarUsuario, { parametros: { id }, entrada: dados }),
+    mutacao: mutacaoAlterarUsuario(cliente),
     sucesso: "Usuário atualizado",
-    invalidar,
   });
   const definirExcecoes = useGravacao({
-    executar: ({ id, excecoes }: { id: string; excecoes: ExcecaoDePermissaoGravada[] }) =>
-      chamar(c.definirExcecoes, { parametros: { id }, entrada: { excecoes } }),
+    mutacao: mutacaoDefinirExcecoes(cliente),
     sucesso: "Permissões atualizadas",
-    invalidar: [CHAVES.usuarios],
   });
   const definirSenha = useGravacao({
-    executar: ({ id, senha }: { id: string; senha: string }) =>
-      chamar(c.definirSenha, { parametros: { id }, entrada: { senha } }),
+    mutacao: mutacaoDefinirSenha(cliente),
     sucesso: "Senha redefinida",
-    invalidar: [CHAVES.usuarios],
   });
-  const reenviar = useGravacao({
-    executar: (id: string) => chamar(c.reenviarConvite, { parametros: { id } }),
-    sucesso: "Convite reenviado",
-    invalidar: [],
-  });
+  const reenviar = useGravacao({ mutacao: mutacaoReenviarConvite(), sucesso: "Convite reenviado" });
 
   const opcoesDeCargo: Opcao[] = cargos.map((x) => ({ chave: x.chave, rotulo: x.rotulo }));
   const todos = usuarios.data?.usuarios ?? [];
@@ -135,7 +124,7 @@ export function useAbaUsuarios({
               aoDefinirSenha={(senha) => definirSenha.gravar({ id: u.id, senha })}
             />
           )}
-          <DialogoPermissoes
+          <ModalDePermissoes
             usuario={u}
             cargo={cargos.find((x) => x.chave === u.papel)}
             ehVoce={u.id === eu}

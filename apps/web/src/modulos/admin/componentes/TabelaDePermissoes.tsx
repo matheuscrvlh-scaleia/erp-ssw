@@ -4,7 +4,6 @@ import {
   ACOES_DA_TELA,
   type CategoriaDeTela,
   CATEGORIAS_DE_TELA,
-  type Permissao,
   ROTULO_DA_ACAO,
 } from "@erp/shared/acesso/permissoes";
 import { ROTULO_DA_TELA, type Tela } from "@erp/shared/acesso/telas";
@@ -17,9 +16,6 @@ import {
   CLASSE_TD,
   CLASSE_TH,
 } from "@/componentes/comum/classes-de-tabela";
-import { Checkbox } from "@/componentes/ui/checkbox";
-
-import { alternarAcao, temAcao } from "../permissoes";
 
 /**
  * Tabela de permissões por categoria: linhas = telas, colunas = Ver / Criar-Editar / Excluir. A
@@ -77,34 +73,5 @@ export function TabelaDePermissoes({
         </div>
       ))}
     </div>
-  );
-}
-
-/** Editor do cargo: marca as ações de cada tela (Admin e Super Admin: tudo, sem editar). */
-export function EditorDePermissoes({
-  permissoes,
-  aoMudar,
-  categorias,
-  somenteLeitura = false,
-}: {
-  permissoes: ReadonlySet<Permissao>;
-  aoMudar: (permissoes: Set<Permissao>) => void;
-  categorias: readonly CategoriaDeTela[];
-  somenteLeitura?: boolean;
-}) {
-  return (
-    <TabelaDePermissoes
-      categorias={categorias}
-      celula={(tela, acao) => (
-        <Checkbox
-          aria-label={`${ROTULO_DA_TELA[tela]}: ${ROTULO_DA_ACAO[acao]}`}
-          checked={temAcao(permissoes, tela, acao)}
-          disabled={somenteLeitura}
-          onCheckedChange={(v) => {
-            aoMudar(alternarAcao(permissoes, tela, acao, v === true));
-          }}
-        />
-      )}
-    />
   );
 }

@@ -3,7 +3,7 @@ import { type ComponentType } from "react";
 
 import { HUB_CONFIGURACOES } from "@/acesso/navegacao";
 import { buscaDoHub, HubDeAbas, useAbasDoHub } from "@/componentes/layout/HubDeAbas";
-import { PaginaConfiguracoes } from "@/modulos/admin/configuracoes/PaginaConfiguracoes";
+import { PaginaConfiguracoes } from "@/modulos/admin/PaginaConfiguracoes";
 import { PaginaCodigos } from "@/modulos/codigos/PaginaCodigos";
 import { PaginaFeriados } from "@/modulos/historico/PaginaFeriados";
 import { PaginaImportacaoSsw } from "@/modulos/ingestao/PaginaImportacaoSsw";

@@ -1,10 +1,7 @@
 import { z } from "@erp/shared/zod";
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-  ABAS_DE_USUARIOS,
-  PaginaUsuariosECargos,
-} from "@/modulos/admin/usuarios/PaginaUsuariosECargos";
+import { ABAS_DE_USUARIOS, PaginaUsuariosECargos } from "@/modulos/admin/PaginaUsuariosECargos";
 
 const busca = z.object({ aba: z.enum(ABAS_DE_USUARIOS).optional().catch(undefined) });
 
