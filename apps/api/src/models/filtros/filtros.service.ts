@@ -1,13 +1,10 @@
 import { padraoContem, padroesDeTexto } from "@erp/dominio/listagem/texto";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type CampoDataTipoDocumento,
-  type contratosFiltros,
   type TipoDocumentoOpcao,
 } from "@erp/shared/contratos/filtros";
-import { formatarCnpj } from "@erp/shared/formatacao";
-import { type z } from "@erp/shared/zod";
 
+import { type CodigoCadastrado } from "../ctrc/ctrc.service";
 import { type Executor } from "../repositorios";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -66,6 +63,36 @@ export interface RepositorioFiltros {
   ): Promise<TipoDocumentoOpcao[]>;
 }
 
+/** Filtros já escolhidos na tela (entrada validada de opções e sugestões). */
+export interface FiltrosDaTela {
+  inicio?: string | undefined;
+  fim?: string | undefined;
+  parceiros?: string[] | undefined;
+  remetente?: string | undefined;
+  destino?: string | undefined;
+  filiais?: string[] | undefined;
+  codigos?: number[] | undefined;
+}
+
+export interface PedidoDeSugestoes extends FiltrosDaTela {
+  campo: "remetente" | "cidade_destino";
+  q: string;
+}
+
+export interface PedidoDePagadores {
+  inicio?: string | undefined;
+  fim?: string | undefined;
+  /** Sigla ou id de `unidades`. */
+  unidades?: string[] | undefined;
+  filiais?: string[] | undefined;
+  campoData: CampoDataPagador;
+}
+
+export interface OpcoesDosFiltros {
+  filiais: string[];
+  codigos: CodigoCadastrado[];
+}
+
 export interface ContextoFiltros {
   empresaId: string;
   /** Fuso da empresa: dia da entrega nos tipos do período (Q11). */
@@ -73,9 +100,6 @@ export interface ContextoFiltros {
 }
 
 type Db = Executor<"ctrc" | "filtros">;
-type Contrato<K extends keyof typeof contratosFiltros> = (typeof contratosFiltros)[K];
-type EntradaDe<K extends keyof typeof contratosFiltros> =
-  Contrato<K> extends { entrada: z.ZodType } ? z.output<Contrato<K>["entrada"]> : never;
 
 const SUGESTOES = 20;
 const PAGADORES = 500;
@@ -97,15 +121,11 @@ export async function listarFiliaisProprias(db: Db, ctx: ContextoFiltros): Promi
   return db(({ ctrc }) => ctrc.filiaisProprias(ctx.empresaId));
 }
 
-export async function listarCodigos(
-  db: Db,
-  ctx: ContextoFiltros,
-): Promise<SaidaDe<Contrato<"codigos">>> {
-  const catalogo = await db(({ ctrc }) => ctrc.catalogo(ctx.empresaId));
-  return catalogo.map(({ codigo, descricao, penaliza }) => ({ codigo, descricao, penaliza }));
+export async function listarCodigos(db: Db, ctx: ContextoFiltros): Promise<CodigoCadastrado[]> {
+  return db(({ ctrc }) => ctrc.catalogo(ctx.empresaId));
 }
 
-function contextoDeOpcoes(entrada: EntradaDe<"opcoes">): ContextoDeOpcoes | null {
+function contextoDeOpcoes(entrada: FiltrosDaTela): ContextoDeOpcoes | null {
   if (!entrada.inicio || !entrada.fim) return null;
   return {
     inicio: entrada.inicio,
@@ -126,8 +146,8 @@ function contextoDeOpcoes(entrada: EntradaDe<"opcoes">): ContextoDeOpcoes | null
 export async function obterOpcoes(
   db: Db,
   ctx: ContextoFiltros,
-  entrada: EntradaDe<"opcoes">,
-): Promise<SaidaDe<Contrato<"opcoes">>> {
+  entrada: FiltrosDaTela,
+): Promise<OpcoesDosFiltros> {
   const { proprias, codigos } = await db(async ({ ctrc }) => ({
     proprias: new Set(await ctrc.filiaisProprias(ctx.empresaId)),
     codigos: await ctrc.catalogo(ctx.empresaId),
@@ -144,10 +164,7 @@ export async function obterOpcoes(
   const filiais = [...new Set([...siglas.map(maiusculas), ...escolhidas])]
     .filter((s) => s !== "" && proprias.has(s))
     .sort((a, b) => a.localeCompare(b));
-  return {
-    filiais,
-    codigos: codigos.map(({ codigo, descricao, penaliza }) => ({ codigo, descricao, penaliza })),
-  };
+  return { filiais, codigos };
 }
 
 /**
@@ -158,7 +175,7 @@ export async function obterOpcoes(
 export async function listarSugestoes(
   db: Db,
   ctx: ContextoFiltros,
-  entrada: EntradaDe<"sugestoes">,
+  entrada: PedidoDeSugestoes,
 ): Promise<string[]> {
   const f = contextoDeOpcoes(entrada);
   const semOProprio =
@@ -186,8 +203,8 @@ export async function listarSugestoes(
 export async function listarPagadores(
   db: Db,
   ctx: ContextoFiltros,
-  entrada: EntradaDe<"pagadores">,
-): Promise<SaidaDe<Contrato<"pagadores">>> {
+  entrada: PedidoDePagadores,
+): Promise<PagadorAgrupado[]> {
   return db(async ({ ctrc, filtros }) => {
     let siglas = await ctrc.filiaisProprias(ctx.empresaId);
     const unidades = naoVazia(entrada.unidades);
@@ -207,7 +224,7 @@ export async function listarPagadores(
     if (filiais) siglas = siglas.filter((s) => filiais.includes(s));
     if (siglas.length === 0) return [];
 
-    const pagadores = await filtros.pagadores(ctx.empresaId, {
+    return filtros.pagadores(ctx.empresaId, {
       periodo: {
         campo: entrada.campoData,
         inicio: entrada.inicio ?? null,
@@ -215,10 +232,6 @@ export async function listarPagadores(
       },
       siglas,
       limite: PAGADORES,
-    });
-    return pagadores.map((p) => {
-      const cnpjFormatado = p.cnpjGravado ?? formatarCnpj(p.cnpj);
-      return { id: p.cnpj, nome: p.nome ?? cnpjFormatado, cnpjFormatado };
     });
   });
 }
@@ -241,7 +254,7 @@ export async function listarTiposDocumento(
 export async function listarTiposDocumentoNoPeriodo(
   db: Db,
   ctx: ContextoFiltros,
-  entrada: EntradaDe<"tiposDocumentoNoPeriodo">,
+  entrada: { inicio: string; fim: string; campoData: CampoDataTipoDocumento },
 ): Promise<TipoDocumentoOpcao[] | null> {
   return db(({ filtros }) =>
     filtros.tiposDocumentoNoPeriodo(
