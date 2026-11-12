@@ -6,12 +6,13 @@ import { UnrecoverableError } from "bullmq";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
 
+import { TAMANHO_DO_LOTE } from "../models/recalculo/recalculo.service";
+import { BancoFalso } from "../testes/banco-falso-dos-jobs";
 import { agendamentosDesejados, type FilaAgendavel, sincronizarAgendamentos } from "./agendamentos";
-import { limparSessoes } from "./manutencao/limpar-sessoes";
+import { limparSessoes } from "./limpar-sessoes.job";
 import { criarProcessador } from "./processador";
-import { propagarClassificacao, TAMANHO_DO_LOTE } from "./recalculo/job";
+import { propagarClassificacao } from "./recalculo.job";
 import { definirJob, type ExecutorDosJobs, type RepositoriosDosJobs } from "./registro";
-import { BancoFalso } from "./testes/banco-falso";
 
 const log = pino({ level: "silent" });
 const EMPRESA = randomUUID();

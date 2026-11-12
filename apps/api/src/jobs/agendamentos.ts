@@ -2,17 +2,8 @@
  * Agendamentos dos jobs do ERP pelos job schedulers do BullMQ: um por id no Redis, então duas
  * réplicas da API sincronizando ao mesmo tempo continuam com um só (a rotina não roda duas vezes).
  */
+import { type EmpresaAgendavel } from "../models/agendamentos/agendamentos.repository";
 import { type DefinicaoDeJob } from "./registro";
-
-export interface EmpresaAgendavel {
-  id: string;
-  fuso: string;
-}
-
-export interface RepositorioAgendamentos {
-  /** Empresas que recebem agendamento por empresa (ativas ou em implantação). */
-  empresasAtivas(): Promise<EmpresaAgendavel[]>;
-}
 
 /** O pedaço da fila do BullMQ que os agendamentos usam (os testes passam um falso). */
 export interface FilaAgendavel {

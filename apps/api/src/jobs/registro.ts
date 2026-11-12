@@ -7,11 +7,11 @@ import { type CteGravado, type RepositorioCteNucleo } from "@erp/dominio/nucleo"
 import { type z } from "@erp/shared/zod";
 import { type FastifyBaseLogger } from "fastify";
 
-import { type RepositorioAgendamentos } from "./agendamentos";
-import { type RepositorioManutencao } from "./manutencao/limpar-sessoes";
-import { type RepositorioSegredos } from "./manutencao/recifrar";
-import { type RepositorioPrazosDoJob } from "./prazos/job";
-import { type RepositorioRecalculo } from "./recalculo/job";
+import { type RepositorioAgendamentos } from "../models/agendamentos/agendamentos.repository";
+import { type RepositorioManutencao } from "../models/manutencao/manutencao.service";
+import { type RepositorioPrazosDoJob } from "../models/prazos/recalculo-de-prazos.service";
+import { type RepositorioRecalculo } from "../models/recalculo/recalculo.service";
+import { type RepositorioSegredos } from "../models/segredos/segredos.service";
 
 /** Repositórios dos jobs presos a uma transação com contexto (mesmo padrão da API). */
 export interface RepositoriosDosJobs {

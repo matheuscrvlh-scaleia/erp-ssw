@@ -2,7 +2,7 @@ import { type Transacao } from "@erp/db";
 import { sessoes, tokensSenha } from "@erp/db/schema";
 import { lt, or } from "drizzle-orm";
 
-import { type RepositorioManutencao } from "./limpar-sessoes";
+import { type RepositorioManutencao } from "./manutencao.service";
 
 export function criarRepositorioManutencao(tx: Transacao): RepositorioManutencao {
   return {

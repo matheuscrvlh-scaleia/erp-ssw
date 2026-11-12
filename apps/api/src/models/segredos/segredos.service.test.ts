@@ -10,7 +10,11 @@ import {
 } from "@erp/db/segredos";
 import { describe, expect, it } from "vitest";
 
-import { type IntegracaoCifrada, recifrarSegredos, type RepositorioSegredos } from "./recifrar";
+import {
+  type IntegracaoCifrada,
+  recifrarSegredos,
+  type RepositorioSegredos,
+} from "./segredos.service";
 
 const chave = () => randomBytes(32).toString("base64");
 const k1 = chave();

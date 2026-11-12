@@ -9,10 +9,6 @@ import {
   type TrocaDePrevisao,
   trocaDePrevisao,
 } from "@erp/dominio/nucleo";
-import { JOB_RECALCULAR_PRAZOS } from "@erp/shared/jobs";
-import { z } from "@erp/shared/zod";
-
-import { definirJob } from "../registro";
 
 export type CteDoRecalculo = CteParaPrazo & { id: string };
 
@@ -70,52 +66,47 @@ export function novasPrevisoes(
   });
 }
 
+type ExecutorDoRecalculoDePrazos = <T>(
+  fn: (repositorios: { prazos: RepositorioPrazosDoJob }) => Promise<T>,
+) => Promise<T>;
+
 /**
  * Recalcula a previsão dos CT-e da empresa pelas regras de prazo configurado ativas (pedido pelo
  * Admin ao gravar, ligar, desligar ou apagar uma regra). CT-e e chegadas novos já saem com a regra
  * pela gravação do núcleo (Q19). Lotes de 1000, cada um numa transação.
  * origem: recalcular_todos_prazos_configurados + limpar_prazos_regras_orfas (sistema atual)
  */
-export const recalcularPrazos = definirJob({
-  nome: JOB_RECALCULAR_PRAZOS.nome,
-  fila: JOB_RECALCULAR_PRAZOS.fila,
-  escopo: "empresa",
-  dados: z.object({ empresaId: z.uuid() }),
-  agendamento: null,
-  async processar({ executar, log }, { empresaId }) {
-    const regras = await executar(({ prazos }) => prazos.regras(empresaId));
-    const ativas = regras.filter((r) => r.ativo);
-    const filtro = {
-      parceiros: ativas.flatMap((r) =>
-        r.tipo === "parceiro" && r.parceiroCnpj ? [r.parceiroCnpj] : [],
-      ),
-      filiais: ativas.flatMap((r) =>
-        r.tipo !== "parceiro" && r.unidadeCodigo ? [r.unidadeCodigo] : [],
-      ),
-    };
-    let aposId: string | null = null;
-    let alterados = 0;
-    for (;;) {
-      const lote: { ultimo: string | null; alterados: number } = await executar(
-        async ({ prazos }) => {
-          const ctes = await prazos.candidatos(empresaId, filtro, aposId, LOTE_DO_RECALCULO);
-          if (ctes.length === 0) return { ultimo: null, alterados: 0 };
-          const chegadas = await prazos.chegadas(
-            empresaId,
-            ctes.map((c) => c.id),
-          );
-          const novas = novasPrevisoes(ctes, regras, chegadas);
-          await prazos.gravar(empresaId, novas);
-          return { ultimo: ctes.at(-1)?.id ?? null, alterados: novas.length };
-        },
+export async function recalcularPrevisoesPelosPrazos(
+  db: ExecutorDoRecalculoDePrazos,
+  empresaId: string,
+): Promise<{ alterados: number; regras: number }> {
+  const regras = await db(({ prazos }) => prazos.regras(empresaId));
+  const ativas = regras.filter((r) => r.ativo);
+  const filtro = {
+    parceiros: ativas.flatMap((r) =>
+      r.tipo === "parceiro" && r.parceiroCnpj ? [r.parceiroCnpj] : [],
+    ),
+    filiais: ativas.flatMap((r) =>
+      r.tipo !== "parceiro" && r.unidadeCodigo ? [r.unidadeCodigo] : [],
+    ),
+  };
+  let aposId: string | null = null;
+  let alterados = 0;
+  for (;;) {
+    const lote: { ultimo: string | null; alterados: number } = await db(async ({ prazos }) => {
+      const ctes = await prazos.candidatos(empresaId, filtro, aposId, LOTE_DO_RECALCULO);
+      if (ctes.length === 0) return { ultimo: null, alterados: 0 };
+      const chegadas = await prazos.chegadas(
+        empresaId,
+        ctes.map((c) => c.id),
       );
-      alterados += lote.alterados;
-      if (!lote.ultimo) break;
-      aposId = lote.ultimo;
-    }
-    log.info(
-      { alterados, regras: ativas.length },
-      "previsões recalculadas pelos prazos configurados",
-    );
-  },
-});
+      const novas = novasPrevisoes(ctes, regras, chegadas);
+      await prazos.gravar(empresaId, novas);
+      return { ultimo: ctes.at(-1)?.id ?? null, alterados: novas.length };
+    });
+    alterados += lote.alterados;
+    if (!lote.ultimo) break;
+    aposId = lote.ultimo;
+  }
+  return { alterados, regras: ativas.length };
+}
