@@ -14,6 +14,7 @@ import {
   listarTiposDocumentoNoPeriodo,
   obterOpcoes,
 } from "../models/filtros/filtros.service";
+import { apresentarCodigos, apresentarOpcoes, apresentarPagadores } from "../views/filtros.view";
 
 /**
  * Filtros compartilhados pelas telas de CT-e (Performance, Lista, Romaneio, Ocorrências,
@@ -39,13 +40,15 @@ export const controladorFiltros: FastifyPluginCallbackZod = (app, _opcoes, pront
       schema: { querystring: c.opcoes.entrada, response: { 200: c.opcoes.saida } },
       preHandler: ler,
     },
-    async (request) => obterOpcoes(request.db, await contextoDe(request), request.query),
+    async (request) =>
+      apresentarOpcoes(await obterOpcoes(request.db, await contextoDe(request), request.query)),
   );
 
   app.get(
     c.codigos.caminho,
     { schema: { response: { 200: c.codigos.saida } }, preHandler: ler },
-    async (request) => listarCodigos(request.db, await contextoDe(request)),
+    async (request) =>
+      apresentarCodigos(await listarCodigos(request.db, await contextoDe(request))),
   );
 
   app.get(
@@ -63,7 +66,10 @@ export const controladorFiltros: FastifyPluginCallbackZod = (app, _opcoes, pront
       schema: { querystring: c.pagadores.entrada, response: { 200: c.pagadores.saida } },
       preHandler: ler,
     },
-    async (request) => listarPagadores(request.db, await contextoDe(request), request.query),
+    async (request) =>
+      apresentarPagadores(
+        await listarPagadores(request.db, await contextoDe(request), request.query),
+      ),
   );
 
   app.get(

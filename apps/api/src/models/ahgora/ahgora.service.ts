@@ -18,20 +18,16 @@ import {
   MAXIMO_FUNCIONARIOS_POR_APURACAO,
   selecionarFuncionarios,
 } from "@erp/dominio/ponto";
-import { type EntradaDe, type SaidaDe } from "@erp/shared/contrato";
-import { type contratosAhgora } from "@erp/shared/contratos/ahgora";
-import { type z } from "@erp/shared/zod";
 
 import {
   type ClienteAhgora,
   type CredencialAhgora,
   criarClienteAhgora,
   emParalelo,
+  type FuncionarioAhgora,
 } from "../../infra/ahgora";
 import { conflito, naoEncontrado, semPermissao } from "../erros";
 import { type Executor } from "../repositorios";
-
-type C = typeof contratosAhgora;
 
 /** Medido em produção: 10 chamadas simultâneas levam ~79 ms por funcionário. */
 const CONCORRENCIA = 10;
@@ -55,6 +51,30 @@ export interface DependenciasAhgora {
   /** Transição da FR: credencial no ambiente, só com `parametros.usar_env`. */
   ambiente: { usuario?: string | undefined; senha?: string | undefined };
   http: typeof fetch;
+}
+
+/** Funcionário por id, matrícula ou PIS, no período (validado: até 30 dias). */
+export interface PedidoDeBatidas {
+  funcionarioId?: string | undefined;
+  matricula?: string | undefined;
+  pis?: string | undefined;
+  inicio: string;
+  fim: string;
+}
+
+export type BatidasDoPeriodo = Awaited<ReturnType<ClienteAhgora["batidas"]>>;
+
+export interface PedidoDeApuracao {
+  inicio: string;
+  fim: string;
+  departamento?: string | undefined;
+  incluirDemitidos: boolean;
+}
+
+export interface ApuracaoDoPeriodo {
+  inicio: string;
+  fim: string;
+  funcionarios: FuncionarioApurado[];
 }
 
 function usaAmbiente(parametros: Record<string, unknown>): boolean {
@@ -106,9 +126,7 @@ export async function clienteDaEmpresa(
   return criarClienteAhgora(credencialDaIntegracao(empresaId, integracao, deps), deps.http);
 }
 
-export async function listarFuncionarios(
-  cliente: ClienteAhgora,
-): Promise<SaidaDe<C["funcionarios"]>> {
+export async function listarFuncionarios(cliente: ClienteAhgora): Promise<FuncionarioAhgora[]> {
   return cliente.todosOsFuncionarios();
 }
 
@@ -118,8 +136,8 @@ export async function listarDepartamentos(cliente: ClienteAhgora): Promise<strin
 
 export async function listarBatidas(
   cliente: ClienteAhgora,
-  entrada: EntradaDe<C["batidas"]>,
-): Promise<SaidaDe<C["batidas"]>> {
+  entrada: PedidoDeBatidas,
+): Promise<BatidasDoPeriodo> {
   // Os nomes em inglês são os do filtro da API do Ahgora (/punches/between).
   return cliente.batidas({
     employeeId: entrada.funcionarioId,
@@ -136,8 +154,8 @@ export async function listarBatidas(
  */
 export async function apurarPeriodo(
   cliente: ClienteAhgora,
-  entrada: z.output<C["apuracao"]["entrada"]>,
-): Promise<SaidaDe<C["apuracao"]>> {
+  entrada: PedidoDeApuracao,
+): Promise<ApuracaoDoPeriodo> {
   const selecionados = selecionarFuncionarios(await cliente.todosOsFuncionarios(), entrada);
   if (selecionados.length > MAXIMO_FUNCIONARIOS_POR_APURACAO) {
     throw new ErroDeNegocio(
@@ -157,7 +175,6 @@ export async function apurarPeriodo(
       return apurarFuncionario(f, data);
     },
   );
-  funcionarios.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   return { inicio: entrada.inicio, fim: entrada.fim, funcionarios };
 }
 

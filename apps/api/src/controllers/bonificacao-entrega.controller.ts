@@ -15,6 +15,7 @@ import {
   listarUnidades,
   registrarFalta,
 } from "../models/bonificacao-entrega/bonificacao-entrega.service";
+import { confirmacao } from "../views/comum.view";
 
 const modulo = exigirModulo("ponto_bonificacao");
 const ler = [modulo, exigirPermissao("admin_bonificacao_entrega", "ver")];
@@ -88,7 +89,7 @@ export const controladorBonificacaoEntrega: FastifyPluginCallbackZod<{
         await atorDa(request),
         request.params.id,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 

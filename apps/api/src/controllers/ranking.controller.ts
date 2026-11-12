@@ -25,6 +25,13 @@ import {
   simularRegra,
 } from "../models/ranking/ranking.service";
 import { type ExecutorComContexto } from "../models/repositorios";
+import { confirmacao } from "../views/comum.view";
+import {
+  apresentarCtesParaAtribuir,
+  apresentarEquipes,
+  apresentarRankingPublico,
+  apresentarSimulacao,
+} from "../views/ranking.view";
 
 /**
  * Ranking operacional: tela Ranking. Equipes e atribuição: tela Admin › Equipes. Regras, simulador
@@ -48,8 +55,6 @@ async function contextoDe(request: FastifyRequest): Promise<ContextoRanking> {
   return { empresaId: empresa.id, fuso: empresa.fuso };
 }
 
-const ok = { ok: true as const };
-
 export const controladorRanking: FastifyPluginCallbackZod<{
   agora: () => Date;
   executar: ExecutorComContexto;
@@ -71,7 +76,8 @@ export const controladorRanking: FastifyPluginCallbackZod<{
   app.get(
     c.equipes.caminho,
     { schema: { response: { 200: c.equipes.saida } }, preHandler: lerEquipes },
-    async (request) => listarEquipes(request.db, await contextoDe(request)),
+    async (request) =>
+      apresentarEquipes(await listarEquipes(request.db, await contextoDe(request))),
   );
 
   app.post(
@@ -102,7 +108,7 @@ export const controladorRanking: FastifyPluginCallbackZod<{
         request.params.id,
         request.body,
       );
-      return ok;
+      return confirmacao();
     },
   );
 
@@ -120,7 +126,7 @@ export const controladorRanking: FastifyPluginCallbackZod<{
         request.params.id,
         agora(),
       );
-      return ok;
+      return confirmacao();
     },
   );
 
@@ -147,7 +153,7 @@ export const controladorRanking: FastifyPluginCallbackZod<{
         await atorDa(request),
         request.params.id,
       );
-      return ok;
+      return confirmacao();
     },
   );
 
@@ -160,7 +166,10 @@ export const controladorRanking: FastifyPluginCallbackZod<{
       },
       preHandler: lerEquipes,
     },
-    async (request) => ctesParaAtribuir(request.db, await contextoDe(request), request.query),
+    async (request) =>
+      apresentarCtesParaAtribuir(
+        await ctesParaAtribuir(request.db, await contextoDe(request), request.query),
+      ),
   );
 
   app.post(
@@ -202,7 +211,7 @@ export const controladorRanking: FastifyPluginCallbackZod<{
         await atorDa(request),
         request.params.id,
       );
-      return ok;
+      return confirmacao();
     },
   );
 
@@ -217,7 +226,9 @@ export const controladorRanking: FastifyPluginCallbackZod<{
       preHandler: lerRanking,
     },
     async (request) =>
-      simularRegra(request.db, await contextoDe(request), request.params.id, request.query),
+      apresentarSimulacao(
+        await simularRegra(request.db, await contextoDe(request), request.params.id, request.query),
+      ),
   );
 
   app.get(
@@ -244,7 +255,10 @@ export const controladorRanking: FastifyPluginCallbackZod<{
         response: { 200: c.publico.saida },
       },
     },
-    async (request) => rankingPublico({ executar, agora }, request.params.token, request.query),
+    async (request) =>
+      apresentarRankingPublico(
+        await rankingPublico({ executar, agora }, request.params.token, request.query),
+      ),
   );
 
   pronto();

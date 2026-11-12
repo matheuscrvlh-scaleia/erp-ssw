@@ -6,21 +6,16 @@ import {
   type HoraExtraDoDia,
   parametrosVigentes,
 } from "@erp/dominio/bonificacao-entrega";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
-  type contratosBonificacaoEntrega,
   type Falta,
   type ParametrosDeBonificacao,
 } from "@erp/shared/contratos/bonificacao-entrega";
-import { type z } from "@erp/shared/zod";
 
 import { type ClienteAhgora } from "../../infra/ahgora";
 import { calcularHorasExtras } from "../ahgora/ahgora.service";
 import { type Ator } from "../auditoria/auditoria.service";
 import { naoEncontrado } from "../erros";
 import { type Executor } from "../repositorios";
-
-type C = typeof contratosBonificacaoEntrega;
 
 export interface PeriodoDaApuracao {
   inicio: string;
@@ -30,8 +25,26 @@ export interface PeriodoDaApuracao {
   fuso: string;
 }
 
+/** Unidade com romaneio 036, quantos e o último dia (seletor da apuração). */
+export interface UnidadeDoRomaneio {
+  unidade: string;
+  romaneios: number;
+  ultimoDia: string;
+}
+
+export interface PedidoDeApuracao {
+  inicio: string;
+  fim: string;
+  unidades?: string[] | undefined;
+  usarPonto: boolean;
+}
+
+export type NovaFalta = Pick<Falta, "colaboradorNome" | "dataFalta" | "tipo"> & {
+  observacao?: string | null | undefined;
+};
+
 export interface RepositorioBonificacaoEntrega {
-  unidades(empresaId: string): Promise<SaidaDe<C["unidades"]>>;
+  unidades(empresaId: string): Promise<UnidadeDoRomaneio[]>;
   parametros(empresaId: string): Promise<ParametrosDeBonificacao[]>;
   /** Nomes distintos (sem espaços nas pontas) de motorista e ajudantes do 036 no período. */
   colaboradores(empresaId: string, periodo: PeriodoDaApuracao): Promise<string[]>;
@@ -54,7 +67,7 @@ export interface ContextoBonificacao {
 export async function listarUnidades(
   db: Executor<"bonificacaoEntrega">,
   ctx: ContextoBonificacao,
-): Promise<SaidaDe<C["unidades"]>> {
+): Promise<UnidadeDoRomaneio[]> {
   return db(({ bonificacaoEntrega }) => bonificacaoEntrega.unidades(ctx.empresaId));
 }
 
@@ -73,9 +86,9 @@ export async function listarParametros(
 export async function apurar(
   db: Executor<"bonificacaoEntrega">,
   ctx: ContextoBonificacao,
-  entrada: z.output<C["apurar"]["entrada"]>,
+  entrada: PedidoDeApuracao,
   ahgora: () => Promise<ClienteAhgora>,
-): Promise<SaidaDe<C["apurar"]>> {
+): Promise<ReturnType<typeof apurarBonificacao>> {
   const periodo: PeriodoDaApuracao = {
     inicio: entrada.inicio,
     fim: entrada.fim,
@@ -125,7 +138,7 @@ export async function registrarFalta(
   db: Executor<"bonificacaoEntrega" | "auditoria">,
   ctx: ContextoBonificacao,
   ator: Ator,
-  entrada: z.output<C["registrarFalta"]["entrada"]>,
+  entrada: NovaFalta,
 ): Promise<{ id: string }> {
   const dados = {
     colaboradorNome: entrada.colaboradorNome.toUpperCase(),

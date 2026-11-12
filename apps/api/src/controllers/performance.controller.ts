@@ -26,6 +26,7 @@ import {
   obterTdeAguardando,
   obterTiposDocumento,
 } from "../models/performance/performance.service";
+import { apresentarExportacao } from "../views/performance.view";
 
 /** Alguma das telas (a série do gráfico serve à Performance e ao Ranking). */
 function exigirAlgumaTela(...telas: Tela[]): Guarda {
@@ -125,7 +126,10 @@ export const controladorPerformance: FastifyPluginCallbackZod<{ agora: () => Dat
       schema: { body: c.exportacao.entrada, response: { 200: c.exportacao.saida } },
       preHandler: ler,
     },
-    async (request) => exportarTela(request.db, await contextoDe(request), request.body, agora()),
+    async (request) =>
+      apresentarExportacao(
+        await exportarTela(request.db, await contextoDe(request), request.body, agora()),
+      ),
   );
 
   app.post(

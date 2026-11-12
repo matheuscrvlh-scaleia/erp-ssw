@@ -37,17 +37,14 @@ import {
 } from "@erp/dominio/performance/resumo";
 import { completarSerie } from "@erp/dominio/performance/serie";
 import { configuracaoDaTela, ordenarCodigosDisponiveis } from "@erp/dominio/performance/tela";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type CodigoDisponivel,
   type ConfiguracaoPerformance,
   type ContagemTipo,
-  type contratosPerformance,
   type FiltroPerformanceValidado,
   type FotoDoPeriodo,
   type Granularidade,
   type LimitesDosAlertas,
-  type LinhaExportacao,
   type PontoSerie,
   type Pontualidade,
   type TotaisResumo,
@@ -188,7 +185,48 @@ export interface ContextoPerformance {
 
 type Db = Executor<"performance">;
 type Repo = RepositorioPerformance;
-type Saida<K extends keyof typeof contratosPerformance> = SaidaDe<(typeof contratosPerformance)[K]>;
+
+/** Cards do topo, tabela por unidade e linha de Produção do período. */
+export interface ResumoDoPeriodo {
+  periodo: { inicio: string; fim: string; dias: number };
+  totais: TotaisResumo;
+  metaTaxaRetorno: ReturnType<typeof metaPonderada>;
+  porUnidade: ReturnType<typeof unidadesDoResumo>;
+  producao: ReturnType<typeof agregadosDeProducao>;
+  unidades: { id: string; nome: string }[];
+  cobertura: { min: string | null; max: string | null };
+}
+
+export interface TdeAguardando {
+  aguardando: number;
+  /** Em reais, arredondado ao centavo. */
+  valor: number;
+  total: number;
+}
+
+export interface OtifDoPeriodo {
+  total: number;
+  problemas: number;
+  /** Fração de problemas (4 casas); nulo sem CT-e. */
+  pct: number | null;
+}
+
+export interface RelatorioDoPeriodo extends FotoDoPeriodo {
+  comparativo: FotoDoPeriodo | null;
+  limites: Pick<ConfiguracaoPerformance, "slaMetaPct" | "taxaRetornoMetaPct">;
+}
+
+/** CT-e da exportação com as ocorrências dele (pode não ter nenhuma). */
+export interface CteComOcorrencias {
+  cte: CteExportado;
+  ocorrencias: OcorrenciaExportada[];
+}
+
+export interface ExportacaoDaTela {
+  ctes: CteComOcorrencias[];
+  /** Havia mais CT-e que o limite da exportação. */
+  truncado: boolean;
+}
 
 /** Abre o contexto da consulta: filiais próprias, hoje no fuso e o filtro normalizado. */
 async function preparar(
@@ -231,7 +269,7 @@ export async function obterResumo(
   ctx: ContextoPerformance,
   entrada: FiltroPerformanceValidado,
   agora: Date,
-): Promise<Saida<"resumo">> {
+): Promise<ResumoDoPeriodo> {
   return db(async ({ performance }) => {
     const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
     const catalogo = await performance.catalogo(ctx.empresaId);
@@ -264,7 +302,7 @@ export async function obterPontualidade(
   ctx: ContextoPerformance,
   entrada: FiltroPerformanceValidado,
   agora: Date,
-): Promise<Saida<"pontualidade">> {
+): Promise<ReturnType<typeof montarPontualidade>> {
   return db(async ({ performance }) => {
     const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
     return montarPontualidade(await performance.pontualidade(consulta, filtro));
@@ -320,7 +358,7 @@ export async function obterTdeAguardando(
   ctx: ContextoPerformance,
   entrada: FiltroPerformanceValidado,
   agora: Date,
-): Promise<Saida<"tdeAguardando">> {
+): Promise<TdeAguardando> {
   return db(async ({ performance }) => {
     const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
     const conjuntos = conjuntosDoCatalogo(await performance.catalogo(ctx.empresaId));
@@ -335,7 +373,7 @@ export async function obterOtif(
   ctx: ContextoPerformance,
   entrada: FiltroPerformanceValidado,
   agora: Date,
-): Promise<Saida<"otif">> {
+): Promise<OtifDoPeriodo | null> {
   return db(async ({ performance }) => {
     const config = await performance.configuracoes(ctx.empresaId, ["otif_visivel"]);
     if (!configuracaoDaTela(config).otifVisivel) return null;
@@ -355,7 +393,7 @@ export async function obterPrevistos(
   ctx: ContextoPerformance,
   entrada: FiltroPerformanceValidado & { ignorarPeriodo: boolean },
   agora: Date,
-): Promise<Saida<"previstos">> {
+): Promise<ReturnType<typeof montarPrevistos>> {
   return db(async ({ performance }) => {
     const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
     const catalogo = await performance.catalogo(ctx.empresaId);
@@ -379,7 +417,7 @@ export async function obterAlertas(
   ctx: ContextoPerformance,
   entrada: FiltroPerformanceValidado,
   agora: Date,
-): Promise<Saida<"alertas">> {
+): Promise<ReturnType<typeof montarAlertas>> {
   return db(async ({ performance }) => {
     const config = await performance.configuracoes(ctx.empresaId, CHAVES_DE_CONFIGURACAO);
     const limites = limitesDosAlertas(config);
@@ -527,7 +565,7 @@ export async function obterRelatorio(
     comparativoFim?: string | null | undefined;
   },
   agora: Date,
-): Promise<Saida<"relatorio">> {
+): Promise<RelatorioDoPeriodo> {
   return db(async ({ performance }) => {
     const config = configuracaoDaTela(
       await performance.configuracoes(ctx.empresaId, CHAVES_DE_CONFIGURACAO),
@@ -553,12 +591,10 @@ export async function obterRelatorio(
   });
 }
 
-const numeroOuNulo = (v: string | null) => (v === null ? null : Number(v));
-
 /**
- * Exportação da tela: uma linha por ocorrência de cada CT-e (CT-e sem ocorrência sai numa linha
- * só). Decisões Q13 e Q18: segue o filtro dos cards (universo da tela, filial efetiva, código da
- * ocorrência efetiva), então cancelados e cópias não saem mais.
+ * Exportação da tela: os CT-e com as ocorrências de cada um. Decisões Q13 e Q18: segue o filtro
+ * dos cards (universo da tela, filial efetiva, código da ocorrência efetiva), então cancelados e
+ * cópias não saem mais.
  * origem: getExportacaoCtrcs, caminho da tela Performance (sistema atual)
  */
 export async function exportarTela(
@@ -566,7 +602,7 @@ export async function exportarTela(
   ctx: ContextoPerformance,
   entrada: FiltroPerformanceValidado,
   agora: Date,
-): Promise<Saida<"exportacao">> {
+): Promise<ExportacaoDaTela> {
   return db(async ({ performance }) => {
     const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
     const ctes = await performance.ctesParaExportar(
@@ -574,42 +610,13 @@ export async function exportarTela(
       porEmissao(filtro),
       LIMITE_DA_EXPORTACAO + 1,
     );
-    const truncado = ctes.length > LIMITE_DA_EXPORTACAO;
     const lote = ctes.slice(0, LIMITE_DA_EXPORTACAO);
     const ocorrencias = await performance.ocorrenciasDosCtes(lote.map((c) => c.id));
     const porCte = new Map<string, OcorrenciaExportada[]>();
     for (const o of ocorrencias) porCte.set(o.cteId, [...(porCte.get(o.cteId) ?? []), o]);
-    const linhas = lote.flatMap((c): LinhaExportacao[] => {
-      const base = {
-        numeroNf: c.numeroNf,
-        numero: c.numero,
-        sigla: c.sigla,
-        dataEmissao: c.dataEmissao,
-        unidade: c.filial,
-        remetente: c.remetente,
-        destinatario: c.destinatario,
-        cidadeDestino:
-          c.cidadeDestino && c.ufDestino ? `${c.cidadeDestino}/${c.ufDestino}` : c.cidadeDestino,
-        peso: numeroOuNulo(c.peso),
-        volumes: c.volumes,
-        valorFrete: numeroOuNulo(c.valorFrete),
-        placaRomaneio: null,
-        motorista: null,
-        placaColeta: c.placaColeta,
-        placaEntrega: c.placaEntrega,
-        cteVinculo: c.numeroCte === null ? null : `${c.siglaCte ?? ""}${c.numeroCte}`,
-        romaneio: null,
-        status: c.statusAtual,
-      };
-      const ocs = porCte.get(c.id) ?? [];
-      if (ocs.length === 0) return [{ ...base, codigo: null, descricao: null, dataHora: null }];
-      return ocs.map((o) => ({
-        ...base,
-        codigo: o.codigo,
-        descricao: o.descricao,
-        dataHora: o.dataHora,
-      }));
-    });
-    return { linhas, truncado };
+    return {
+      ctes: lote.map((cte) => ({ cte, ocorrencias: porCte.get(cte.id) ?? [] })),
+      truncado: ctes.length > LIMITE_DA_EXPORTACAO,
+    };
   });
 }

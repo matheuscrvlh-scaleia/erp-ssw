@@ -10,7 +10,6 @@ import {
 } from "@erp/dominio/ranking";
 import {
   calcularBonificacaoDaEquipe,
-  compararMembros,
   type CriterioDaRegra,
   posicaoDoNovoMembro,
   ranquearEquipes,
@@ -18,24 +17,21 @@ import {
   type TotaisDaEquipe,
 } from "@erp/dominio/ranking-equipes";
 import { MODULOS } from "@erp/shared/acesso/modulos";
-import { type EntradaDe, type SaidaDe } from "@erp/shared/contrato";
+import { type FiltroPerformanceValidado } from "@erp/shared/contratos/performance";
 import {
+  type BASES_DO_RANKING,
   type CalculoDaEquipe,
-  type contratosRanking,
   type Equipe,
   type LinhaDoRanking,
   type Membro,
   type Regra,
 } from "@erp/shared/contratos/ranking";
 import { hojeNoFuso } from "@erp/shared/datas";
-import { type z } from "@erp/shared/zod";
 
 import { type Ator } from "../auditoria/auditoria.service";
 import { naoEncontrado } from "../erros";
 import { type ContextoDaConsulta } from "../performance/consultas";
 import { type Executor, type ExecutorComContexto } from "../repositorios";
-
-type C = typeof contratosRanking;
 
 export interface EquipeGravada {
   id: string;
@@ -48,6 +44,26 @@ export interface EquipeGravada {
 
 export interface MembroGravado extends Membro {
   dataSaida: string | null;
+}
+
+/** A equipe com a situação do link público (o hash do token não sai do servidor). */
+export interface EquipeComLink extends EquipeGravada {
+  linkAtivo: boolean;
+}
+
+export interface UnidadeDaEmpresa {
+  id: string;
+  nome: string;
+}
+
+export interface CteParaAtribuir {
+  id: string;
+  sigla: string;
+  numero: string;
+  dataEmissao: string;
+  cidadeDestino: string | null;
+  ufDestino: string | null;
+  motoristaNome: string | null;
 }
 
 export interface FiltroDeAtribuicao {
@@ -82,16 +98,13 @@ export interface RepositorioRanking {
   equipe(empresaId: string, id: string): Promise<EquipeGravada | null>;
   membrosAtivos(empresaId: string): Promise<MembroGravado[]>;
   membro(empresaId: string, id: string): Promise<MembroGravado | null>;
-  unidades(empresaId: string): Promise<{ id: string; nome: string }[]>;
+  unidades(empresaId: string): Promise<UnidadeDaEmpresa[]>;
   inserirEquipe(empresaId: string, dados: Omit<Equipe, "id" | "linkAtivo">): Promise<string>;
   alterarEquipe(id: string, dados: Omit<Equipe, "id" | "linkAtivo">): Promise<void>;
   inserirMembro(empresaId: string, dados: Omit<Membro, "id">): Promise<void>;
   encerrarMembro(id: string, dataSaida: string): Promise<void>;
   gravarLink(equipeId: string, link: { hash: string | null; revogado: boolean }): Promise<void>;
-  ctesParaAtribuir(
-    empresaId: string,
-    filtro: FiltroDeAtribuicao,
-  ): Promise<SaidaDe<C["ctesParaAtribuir"]>["ctes"]>;
+  ctesParaAtribuir(empresaId: string, filtro: FiltroDeAtribuicao): Promise<CteParaAtribuir[]>;
   atribuirEquipe(empresaId: string, cteIds: string[], equipeId: string | null): Promise<number>;
 
   regras(empresaId: string): Promise<Regra[]>;
@@ -123,6 +136,62 @@ export interface ContextoRanking {
 
 type Db = Executor<"ranking" | "auditoria">;
 
+/* ============== Entradas (já validadas pelo contrato) ============== */
+
+/** Filtro da Performance com o pagador no lugar do parceiro e o agrupamento do ranking. */
+export interface FiltroDoRankingOperacional extends Pick<
+  FiltroPerformanceValidado,
+  "inicio" | "fim" | "filiais" | "remetente" | "destino" | "tipos"
+> {
+  grupo: GrupoRanking;
+  baseData: (typeof BASES_DO_RANKING)[number];
+  pagadores?: string[] | null | undefined;
+}
+
+export interface DadosDaEquipe {
+  id?: string | undefined;
+  nome: string;
+  unidadeId?: string | null | undefined;
+  ativo: boolean;
+}
+
+export interface NovoMembro {
+  nome: string;
+  papel: Membro["papel"];
+  cpf?: string | null | undefined;
+  posicao?: number | null | undefined;
+}
+
+export interface PedidoDeAtribuicao {
+  inicio: string;
+  fim: string;
+  somenteSemEquipe: boolean;
+  unidadeId?: string | undefined;
+}
+
+export interface Atribuicao {
+  cteIds: string[];
+  /** Nulo tira a equipe dos CT-e. */
+  equipeId: string | null;
+}
+
+export interface RegraComCriterios {
+  id?: string | undefined;
+  nome: string;
+  descricao?: string | null | undefined;
+  vigenciaInicio: string;
+  vigenciaFim?: string | null | undefined;
+  ativo: boolean;
+  /** Na ordem da lista (= posição do critério). */
+  criterios: CriterioDaRegra[];
+}
+
+export interface PeriodoComRegra {
+  inicio: string;
+  fim: string;
+  regra: string;
+}
+
 /* ============== Ranking operacional ============== */
 
 const ESPERA_ANTES_DE_REPETIR_MS = 1_200;
@@ -141,7 +210,7 @@ export interface DependenciasOperacional {
 export async function rankingOperacional(
   db: Executor<"ranking">,
   ctx: ContextoRanking,
-  entrada: z.output<C["operacional"]["entrada"]>,
+  entrada: FiltroDoRankingOperacional,
   deps: DependenciasOperacional,
 ): Promise<LinhaDoRanking[]> {
   const consultar = () =>
@@ -194,36 +263,33 @@ export async function rankingOperacional(
 
 const EQUIPE_NAO_ENCONTRADA = "Equipe não encontrada.";
 
-function paraEquipe(e: EquipeGravada): Equipe {
-  return {
-    id: e.id,
-    nome: e.nome,
-    unidadeId: e.unidadeId,
-    ativo: e.ativo,
-    linkAtivo: e.tokenPublicoHash !== null && !e.tokenPublicoRevogado,
-  };
+/** O link abre se houver token gravado e ele não tiver sido revogado. */
+function comSituacaoDoLink(e: EquipeGravada): EquipeComLink {
+  return { ...e, linkAtivo: e.tokenPublicoHash !== null && !e.tokenPublicoRevogado };
+}
+
+export interface EquipesDaEmpresa {
+  equipes: EquipeComLink[];
+  membros: MembroGravado[];
+  unidades: UnidadeDaEmpresa[];
 }
 
 /**
- * Equipes, membros ativos (motorista primeiro, ajudantes pela posição) e unidades ativas. Escopo
- * por unidade/equipe desligado (Q26): quem tem a tela vê as equipes da empresa.
+ * Equipes, membros ativos e unidades ativas. Escopo por unidade/equipe desligado (Q26): quem tem
+ * a tela vê as equipes da empresa.
  * origem: listEquipes (ranking.functions.ts)
  */
 export async function listarEquipes(
   db: Executor<"ranking">,
   ctx: ContextoRanking,
-): Promise<SaidaDe<C["equipes"]>> {
+): Promise<EquipesDaEmpresa> {
   return db(async ({ ranking }) => {
     const [equipes, membros, unidades] = await Promise.all([
       ranking.equipes(ctx.empresaId),
       ranking.membrosAtivos(ctx.empresaId),
       ranking.unidades(ctx.empresaId),
     ]);
-    return {
-      equipes: equipes.map(paraEquipe),
-      membros: [...membros].sort(compararMembros).map(({ dataSaida: _dataSaida, ...m }) => m),
-      unidades,
-    };
+    return { equipes: equipes.map(comSituacaoDoLink), membros, unidades };
   });
 }
 
@@ -247,7 +313,7 @@ export async function salvarEquipe(
   db: Db,
   ctx: ContextoRanking,
   ator: Ator,
-  entrada: z.output<C["salvarEquipe"]["entrada"]>,
+  entrada: DadosDaEquipe,
 ): Promise<{ id: string }> {
   const dados = { nome: entrada.nome, unidadeId: entrada.unidadeId ?? null, ativo: entrada.ativo };
   return db(async ({ ranking, auditoria }) => {
@@ -279,7 +345,7 @@ export async function incluirMembro(
   ctx: ContextoRanking,
   ator: Ator,
   equipeId: string,
-  entrada: z.output<C["incluirMembro"]["entrada"]>,
+  entrada: NovoMembro,
 ): Promise<void> {
   await db(async ({ ranking, auditoria }) => {
     await equipeDaEmpresa(ranking, ctx, equipeId);
@@ -390,16 +456,16 @@ export async function revogarLink(
 export async function ctesParaAtribuir(
   db: Executor<"ranking">,
   ctx: ContextoRanking,
-  entrada: z.output<C["ctesParaAtribuir"]["entrada"]>,
-): Promise<SaidaDe<C["ctesParaAtribuir"]>> {
-  return db(async ({ ranking }) => ({
-    ctes: await ranking.ctesParaAtribuir(ctx.empresaId, {
+  entrada: PedidoDeAtribuicao,
+): Promise<CteParaAtribuir[]> {
+  return db(({ ranking }) =>
+    ranking.ctesParaAtribuir(ctx.empresaId, {
       inicio: entrada.inicio,
       fim: entrada.fim,
       somenteSemEquipe: entrada.somenteSemEquipe,
       unidadeId: entrada.unidadeId ?? null,
     }),
-  }));
+  );
 }
 
 /**
@@ -410,7 +476,7 @@ export async function atribuirEquipe(
   db: Db,
   ctx: ContextoRanking,
   ator: Ator,
-  entrada: EntradaDe<C["atribuir"]>,
+  entrada: Atribuicao,
 ): Promise<{ quantidade: number }> {
   return db(async ({ ranking, auditoria }) => {
     const equipe = entrada.equipeId ? await equipeDaEmpresa(ranking, ctx, entrada.equipeId) : null;
@@ -450,7 +516,7 @@ export async function salvarRegra(
   db: Db,
   ctx: ContextoRanking,
   ator: Ator,
-  entrada: z.output<C["salvarRegra"]["entrada"]>,
+  entrada: RegraComCriterios,
 ): Promise<{ id: string }> {
   const dados: DadosDaRegra = {
     nome: entrada.nome,
@@ -534,6 +600,21 @@ async function regraDaEmpresa(ranking: RepositorioRanking, ctx: ContextoRanking,
   return regra;
 }
 
+/** O cálculo de uma equipe no lote, com o nome, a unidade e os membros ativos dela. */
+export interface CalculoNoLote extends CalculoDaEquipe {
+  nome: string;
+  unidadeId: string | null;
+  unidadeNome: string | null;
+  membros: MembroGravado[];
+}
+
+export interface LoteDaRegra {
+  periodoInicio: string;
+  periodoFim: string;
+  regraId: string;
+  equipes: CalculoNoLote[];
+}
+
 /**
  * Cálculo da regra para cada equipe ativa (simulador e ranking do link público).
  * origem: calcular_bonificacao_lote (sistema atual)
@@ -543,7 +624,7 @@ async function loteDaRegra(
   ctx: ContextoRanking,
   regra: Regra,
   periodo: { inicio: string; fim: string },
-): Promise<SaidaDe<C["simularRegra"]>> {
+): Promise<LoteDaRegra> {
   const [equipes, membros, unidades] = await Promise.all([
     ranking.equipes(ctx.empresaId),
     ranking.membrosAtivos(ctx.empresaId),
@@ -564,10 +645,7 @@ async function loteDaRegra(
       nome: e.nome,
       unidadeId: e.unidadeId,
       unidadeNome: unidades.find((u) => u.id === e.unidadeId)?.nome ?? null,
-      membros: membros
-        .filter((m) => m.equipeId === e.id)
-        .sort(compararMembros)
-        .map((m) => ({ nome: m.nome, papel: m.papel })),
+      membros: membros.filter((m) => m.equipeId === e.id),
     })),
   };
 }
@@ -577,10 +655,16 @@ export async function simularRegra(
   ctx: ContextoRanking,
   regraId: string,
   periodo: { inicio: string; fim: string },
-): Promise<SaidaDe<C["simularRegra"]>> {
+): Promise<LoteDaRegra> {
   return db(async ({ ranking }) =>
     loteDaRegra(ranking, ctx, await regraDaEmpresa(ranking, ctx, regraId), periodo),
   );
+}
+
+export interface CalculoNoPeriodo {
+  equipeNome: string;
+  totalEquipes: number;
+  calculo: CalculoDaEquipe;
 }
 
 /** origem: calcEquipe + calcular_bonificacao (sistema atual) */
@@ -588,8 +672,8 @@ export async function calcularEquipe(
   db: Executor<"ranking">,
   ctx: ContextoRanking,
   equipeId: string,
-  entrada: z.output<C["calculoDaEquipe"]["entrada"]>,
-): Promise<SaidaDe<C["calculoDaEquipe"]>> {
+  entrada: PeriodoComRegra,
+): Promise<CalculoNoPeriodo> {
   return db(async ({ ranking }) => {
     const equipe = await equipeDaEmpresa(ranking, ctx, equipeId);
     const regra = await regraDaEmpresa(ranking, ctx, entrada.regra);
@@ -610,6 +694,16 @@ export async function calcularEquipe(
 
 const LINK_INVALIDO = "Link inválido ou expirado.";
 
+/** A posição da equipe do link entre as equipes ativas, e o pódio. */
+export interface RankingDaEquipe {
+  equipe: EquipeGravada;
+  periodo: { inicio: string; fim: string };
+  calculo: CalculoNoLote;
+  posicao: number;
+  totalEquipes: number;
+  top3: { posicao: number; nome: string }[];
+}
+
 export interface DependenciasPublico {
   executar: ExecutorComContexto<"ranking" | "acesso">;
   agora: () => Date;
@@ -624,7 +718,7 @@ export async function rankingPublico(
   deps: DependenciasPublico,
   token: string,
   periodo: { inicio: string; fim: string },
-): Promise<SaidaDe<C["publico"]>> {
+): Promise<RankingDaEquipe> {
   const hash = hashDoToken(token);
   const achada = await deps.executar(
     { empresaId: null, usuarioId: null, plataforma: false, tokenPublicoHash: hash },
@@ -649,17 +743,10 @@ export async function rankingPublico(
       const indice = ranqueadas.findIndex((e) => e.equipeId === equipe.id);
       const daEquipe = ranqueadas[indice];
       if (!daEquipe) throw naoEncontrado(LINK_INVALIDO);
-      const {
-        nome: _nome,
-        unidadeId: _u,
-        unidadeNome: _un,
-        membros: _m,
-        ...calculoDaEquipe
-      } = daEquipe;
       return {
-        equipe: { id: equipe.id, nome: equipe.nome },
+        equipe,
         periodo,
-        calculo: calculoDaEquipe,
+        calculo: daEquipe,
         posicao: indice + 1,
         totalEquipes: ranqueadas.length,
         top3: ranqueadas.slice(0, 3).map((e, i) => ({ posicao: i + 1, nome: e.nome })),

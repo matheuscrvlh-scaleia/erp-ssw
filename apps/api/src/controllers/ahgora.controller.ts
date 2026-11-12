@@ -12,6 +12,7 @@ import {
   listarDepartamentos,
   listarFuncionarios,
 } from "../models/ahgora/ahgora.service";
+import { apresentarApuracao } from "../views/ahgora.view";
 
 /** Ponto (Ahgora): só a equipe da Plataforma, com os dados da empresa ativa (decisão de 09/11). */
 const soPlataforma = [exigirEmpresa, exigirAdminPlataforma];
@@ -53,7 +54,8 @@ export const controladorAhgora: FastifyPluginCallbackZod<{ ahgora: DependenciasA
       schema: { querystring: c.apuracao.entrada, response: { 200: c.apuracao.saida } },
       preHandler: soPlataforma,
     },
-    async (request) => apurarPeriodo(await cliente(request), request.query),
+    async (request) =>
+      apresentarApuracao(await apurarPeriodo(await cliente(request), request.query)),
   );
 
   pronto();
