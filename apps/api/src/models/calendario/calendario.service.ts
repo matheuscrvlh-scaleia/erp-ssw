@@ -69,7 +69,7 @@ export interface ContextoCalendario {
  * Onde a escrita acontece: na empresa (que também enxerga os gerais) ou, com `empresaId` nulo,
  * nos feriados gerais (Plataforma › Configurações).
  */
-export interface EscopoDoFeriado {
+interface EscopoDoFeriado {
   empresaId: string | null;
   plataforma: boolean;
 }

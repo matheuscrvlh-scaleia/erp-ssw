@@ -30,7 +30,7 @@ export const LIMITE_EXPORTACAO_PRAZO = 20_000;
 export const LIMITE_NASCIDOS_DETALHE = 500;
 
 /** Detalhe por cadastro (uuid) ou pelo CNPJ de parceiro sem cadastro (`cnpj:<dígitos>`, Q08). */
-export const idDoParceiro = z.union([z.uuid(), z.string().regex(/^cnpj:\d{8,14}$/)]);
+const idDoParceiro = z.union([z.uuid(), z.string().regex(/^cnpj:\d{8,14}$/)]);
 
 const sla = z.object({ meta: z.number(), alerta: z.number() });
 

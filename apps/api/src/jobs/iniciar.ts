@@ -24,14 +24,14 @@ import {
   PREFIXO_DAS_FILAS,
 } from "./registro";
 
-export interface FilasDosJobs {
+interface FilasDosJobs {
   fila: FilaDeJobs;
   /** As filas por nome (os agendamentos são gravados nelas). */
   filas: ReadonlyMap<string, Queue>;
   fechar(): Promise<void>;
 }
 
-export interface ConfigDosWorkers {
+interface ConfigDosWorkers {
   /** Conexão dos workers: o BullMQ exige `maxRetriesPerRequest: null`. */
   conexao: Redis;
   executar: ExecutorDosJobs;
@@ -40,7 +40,7 @@ export interface ConfigDosWorkers {
   agendamentosLigados: boolean;
 }
 
-export interface WorkersDosJobs {
+interface WorkersDosJobs {
   /** Falha se algum worker do BullMQ parou (vai para o `/readyz`). */
   verificar(): Promise<void>;
   /** Para de pegar job e espera os em andamento. */

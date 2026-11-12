@@ -4,7 +4,7 @@
  * origem: apuracao-ponto.server.ts, hora-extra.server.ts (sistema atual)
  */
 
-export interface Batida {
+interface Batida {
   /** Com o fuso já aplicado pela API ("2026-09-01T08:06:00.000-03:00"). */
   punchTime: string;
   type: string;
@@ -130,7 +130,7 @@ export function departamentosDistintos(funcionarios: readonly Funcionario[]): st
 }
 
 /** Nome para casar 036 × Ahgora: maiúsculas, sem acento, só letras e um espaço entre palavras. */
-export function normalizarNome(nome: string): string {
+function normalizarNome(nome: string): string {
   return nome
     .toUpperCase()
     .normalize("NFD")
@@ -167,7 +167,7 @@ export function casarFuncionarios<F extends Funcionario>(
 }
 
 /** Jornada prevista do turno: soma dos pares de `officeHours`; inválida ou sem jornada = nulo. */
-export function jornadaPrevistaMinutos(turno: Turno | undefined): number | null {
+function jornadaPrevistaMinutos(turno: Turno | undefined): number | null {
   if (!turno || turno.hasNoOfficeHours) return null;
   const horas = (turno.officeHours ?? []).filter((h) => /^\d{2}:\d{2}$/.test(h));
   if (horas.length === 0 || horas.length % 2 !== 0) return null;

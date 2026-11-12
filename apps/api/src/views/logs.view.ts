@@ -21,7 +21,7 @@ const n = (valor: unknown) => (typeof valor === "number" ? valor : 0);
 const t = (valor: unknown) => (typeof valor === "string" && valor ? valor : null);
 
 /** Uma linha de texto por execução, como a tela de hoje mostra. */
-export function resumoDaExecucao(origem: OrigemIntegracao, d: Execucao["dados"]): string {
+function resumoDaExecucao(origem: OrigemIntegracao, d: Execucao["dados"]): string {
   switch (origem) {
     case "sftp_xml": {
       const erros = n(d["arquivosComErro"]);

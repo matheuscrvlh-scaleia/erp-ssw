@@ -13,7 +13,7 @@ import {
 import { PARAMETROS_DA_INTEGRACAO_PLATAFORMA } from "@erp/shared/contratos/plataforma";
 import { type TipoIntegracaoPlataforma } from "@erp/shared/plataforma";
 
-export interface LinhaDaPlataforma {
+interface LinhaDaPlataforma {
   tipo: TipoIntegracaoPlataforma;
   parametros: Record<string, unknown>;
   segredo: SegredoCifrado | null;
@@ -35,7 +35,7 @@ export interface FonteDaConfiguracao {
 const VALIDADE_MS = 30_000;
 
 /** Monta a configuração a partir das linhas gravadas; o que estiver incompleto fica nulo. */
-export function montarConfiguracao(
+function montarConfiguracao(
   linhas: readonly LinhaDaPlataforma[],
   chaves: ChavesDeSegredo | null,
   aoFalhar: (erro: unknown, tipo: TipoIntegracaoPlataforma) => void,

@@ -57,7 +57,7 @@ import { executorDePlataforma } from "./middleware/contexto";
 import { exigirPermissaoDaPlataforma } from "./middleware/guardas";
 import { atorDa } from "./middleware/sessao";
 
-export interface OpcoesRotasPlataforma {
+interface OpcoesRotasPlataforma {
   executar: ExecutorComContexto;
   usuarios: DependenciasUsuarios;
   armazenamento: Armazenamento | null;

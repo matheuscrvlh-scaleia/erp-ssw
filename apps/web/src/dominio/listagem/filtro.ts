@@ -26,13 +26,13 @@ const LIMITE_SEM_MOVIMENTO_PADRAO = 3;
 const TIPOS_PENDENCIA = ["PENDENCIA_CLIENTE", "PENDENCIA_TRANSPORTADORA"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export interface CodigoDoCatalogo {
+interface CodigoDoCatalogo {
   codigo: number;
   tipoSsw: string | null;
   pendenciaAcompanhada: boolean;
 }
 
-export interface ContextoDoFiltro {
+interface ContextoDoFiltro {
   filiaisProprias: readonly string[];
   catalogo: readonly CodigoDoCatalogo[];
   /** Configuração `ocorrencias_codigos_fora_da_tela` (FR: 3, 40, 55, 96, 98). */
@@ -110,7 +110,7 @@ function cruzar(base: readonly string[], pedidas: readonly string[] | null): str
   return base.filter((s) => aceitas.has(s));
 }
 
-export function codigosDoCatalogo(
+function codigosDoCatalogo(
   catalogo: readonly CodigoDoCatalogo[],
   codigosForaDaTela: readonly number[],
 ): CodigosDoFiltro {

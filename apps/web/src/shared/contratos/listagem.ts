@@ -170,13 +170,13 @@ export const linhaLista = z.object({
 
 export type LinhaLista = z.infer<typeof linhaLista>;
 
-export const agregadoPorCodigo = z.object({
+const agregadoPorCodigo = z.object({
   codigo: z.number().int(),
   descricao: z.string().nullable(),
   qtd: z.number().int(),
 });
 
-export const agregadoPorFaixa = z.object({
+const agregadoPorFaixa = z.object({
   faixa: z.string(),
   ordem: z.number().int(),
   min: z.number().int(),

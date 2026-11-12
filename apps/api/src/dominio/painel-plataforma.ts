@@ -11,11 +11,11 @@ const HORA_MS = 3_600_000;
 const DIA_MS = 24 * HORA_MS;
 
 /** O ciclo dos arquivos do SSW roda de 30 em 30 min: 2 h sem aplicar já é atraso (o sino usa o mesmo). */
-export const ATRASO_DOS_DADOS_MS = 2 * HORA_MS;
+const ATRASO_DOS_DADOS_MS = 2 * HORA_MS;
 /** Um dia inteiro sem dado novo numa empresa ativa: as telas estão mostrando dado velho. */
-export const DADOS_PARADOS_MS = DIA_MS;
+const DADOS_PARADOS_MS = DIA_MS;
 /** Uma semana sem ninguém entrar numa empresa ativa: vale uma conversa com o cliente. */
-export const SEM_ACESSO_MS = 7 * DIA_MS;
+const SEM_ACESSO_MS = 7 * DIA_MS;
 
 const PROBLEMA_DA_SSW_API: Record<Exclude<MotivoDaSaude, "ok">, string> = {
   sem_credenciais: "SSW API sem credenciais",
@@ -28,7 +28,7 @@ const PROBLEMA_DO_WORKER: Record<Exclude<SituacaoDoWorker, "ok" | "com_falha">, 
   nao_configurado: "worker-ssw não configurado",
 };
 
-export interface EntradaDaSaude {
+interface EntradaDaSaude {
   status: StatusEmpresa;
   motivoDaSswApi: MotivoDaSaude;
   workerSsw: SituacaoDoWorker;
@@ -41,7 +41,7 @@ export interface EntradaDaSaude {
   agora: Date;
 }
 
-export interface SaudeDaEmpresa {
+interface SaudeDaEmpresa {
   nivel: NivelDeSaude;
   motivos: string[];
 }

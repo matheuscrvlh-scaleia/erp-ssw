@@ -52,7 +52,7 @@ export type FiltroDoRanking = z.input<typeof filtroDoRanking>;
 
 /* ============== Equipes (/admin/equipes) ============== */
 
-export const PAPEIS_DE_MEMBRO = ["motorista", "ajudante"] as const;
+const PAPEIS_DE_MEMBRO = ["motorista", "ajudante"] as const;
 
 export const equipe = z.object({
   id: z.uuid(),
@@ -77,7 +77,7 @@ export type Membro = z.infer<typeof membro>;
 
 const unidade = z.object({ id: z.uuid(), nome: z.string() });
 
-export const cteParaAtribuir = z.object({
+const cteParaAtribuir = z.object({
   id: z.uuid(),
   sigla: z.string(),
   numero: z.string(),

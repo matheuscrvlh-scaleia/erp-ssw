@@ -6,7 +6,7 @@ export interface Armazenamento {
   apagar(caminho: string): Promise<void>;
 }
 
-export interface ConfigS3 {
+interface ConfigS3 {
   endpoint: string | undefined;
   regiao: string;
   bucket: string;

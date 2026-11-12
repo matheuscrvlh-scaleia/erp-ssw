@@ -139,7 +139,7 @@ type Db = Executor<"ranking" | "auditoria">;
 /* ============== Entradas (já validadas pelo contrato) ============== */
 
 /** Filtro da Performance com o pagador no lugar do parceiro e o agrupamento do ranking. */
-export interface FiltroDoRankingOperacional extends Pick<
+interface FiltroDoRankingOperacional extends Pick<
   FiltroPerformanceValidado,
   "inicio" | "fim" | "filiais" | "remetente" | "destino" | "tipos"
 > {
@@ -148,34 +148,34 @@ export interface FiltroDoRankingOperacional extends Pick<
   pagadores?: string[] | null | undefined;
 }
 
-export interface DadosDaEquipe {
+interface DadosDaEquipe {
   id?: string | undefined;
   nome: string;
   unidadeId?: string | null | undefined;
   ativo: boolean;
 }
 
-export interface NovoMembro {
+interface NovoMembro {
   nome: string;
   papel: Membro["papel"];
   cpf?: string | null | undefined;
   posicao?: number | null | undefined;
 }
 
-export interface PedidoDeAtribuicao {
+interface PedidoDeAtribuicao {
   inicio: string;
   fim: string;
   somenteSemEquipe: boolean;
   unidadeId?: string | undefined;
 }
 
-export interface Atribuicao {
+interface Atribuicao {
   cteIds: string[];
   /** Nulo tira a equipe dos CT-e. */
   equipeId: string | null;
 }
 
-export interface RegraComCriterios {
+interface RegraComCriterios {
   id?: string | undefined;
   nome: string;
   descricao?: string | null | undefined;
@@ -186,7 +186,7 @@ export interface RegraComCriterios {
   criterios: CriterioDaRegra[];
 }
 
-export interface PeriodoComRegra {
+interface PeriodoComRegra {
   inicio: string;
   fim: string;
   regra: string;
@@ -196,7 +196,7 @@ export interface PeriodoComRegra {
 
 const ESPERA_ANTES_DE_REPETIR_MS = 1_200;
 
-export interface DependenciasOperacional {
+interface DependenciasOperacional {
   agora: Date;
   esperar: (ms: number) => Promise<void>;
   ehTempoEsgotado: (erro: unknown) => boolean;
@@ -399,7 +399,7 @@ export async function removerMembro(
 }
 
 /** SHA-256 do token do link: o banco nunca guarda o token. */
-export function hashDoToken(token: string): string {
+function hashDoToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
@@ -661,7 +661,7 @@ export async function simularRegra(
   );
 }
 
-export interface CalculoNoPeriodo {
+interface CalculoNoPeriodo {
   equipeNome: string;
   totalEquipes: number;
   calculo: CalculoDaEquipe;
@@ -704,7 +704,7 @@ export interface RankingDaEquipe {
   top3: { posicao: number; nome: string }[];
 }
 
-export interface DependenciasPublico {
+interface DependenciasPublico {
   executar: ExecutorComContexto<"ranking" | "acesso">;
   agora: () => Date;
 }

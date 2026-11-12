@@ -9,7 +9,7 @@ const DATA_FINAL_ANTES = "Data final deve ser maior ou igual à data inicial";
 
 export const NIVEIS_DE_BONIFICACAO = ["turbo", "acelerado", "em_rota", "sem_bonus"] as const;
 
-export const linhaDeBonificacao = z.object({
+const linhaDeBonificacao = z.object({
   dataRomaneio: z.string(),
   unidade: z.string(),
   romaneio: z.string(),

@@ -33,7 +33,7 @@ export const STATUS_DA_LISTA = [
 ] as const;
 export type StatusDaLista = (typeof STATUS_DA_LISTA)[number];
 
-export const TIPOS_DE_COLETA = ["NORMAL", "REVERSA"] as const;
+const TIPOS_DE_COLETA = ["NORMAL", "REVERSA"] as const;
 
 export const filtrosDeColetas = z.object({
   inicio: dataIso,

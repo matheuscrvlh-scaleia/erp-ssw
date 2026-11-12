@@ -62,7 +62,7 @@ export interface CteNucleo extends FontesDaEfetiva, OcorrenciaEfetiva, CteParaPr
 }
 
 /** Tudo o que o caso de uso carrega da empresa do CT-e antes de derivar. */
-export interface ContextoDoCte {
+interface ContextoDoCte {
   /** Todas as ocorrências do CT-e já gravadas (inclusive a que acabou de entrar). */
   ocorrencias: readonly OcorrenciaDoCte[];
   catalogo: CatalogoDeCodigos;
@@ -79,7 +79,7 @@ export interface ContextoDoCte {
 }
 
 /** Colunas que o núcleo escreve. */
-export type DerivadosDoCte = Pick<
+type DerivadosDoCte = Pick<
   CteNucleo,
   | "dataEmissao"
   | "unidadeCidade"
@@ -104,7 +104,7 @@ export type DerivadosDoCte = Pick<
  * ocorrência efetiva → data de conclusão → previsão (regra configurada ou SSW) → prazo padrão →
  * embarque → status atual → fora do universo.
  */
-export function recalcularDerivadosDoCte(cte: CteNucleo, contexto: ContextoDoCte): DerivadosDoCte {
+function recalcularDerivadosDoCte(cte: CteNucleo, contexto: ContextoDoCte): DerivadosDoCte {
   const { ocorrencias, catalogo, config } = contexto;
   const dataEmissao = emissaoAncoradaNo80(cte, ocorrencias);
   const cancelado = canceladoMesmoDia(dataEmissao, ocorrencias);

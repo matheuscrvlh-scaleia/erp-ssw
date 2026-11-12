@@ -33,7 +33,7 @@ export interface RepositorioSegredos {
   ): Promise<void>;
 }
 
-export interface ResultadoDaRecifragem {
+interface ResultadoDaRecifragem {
   recifrados: number;
   /** Linhas que não decifram com as chaves configuradas (ficam como estão). */
   falhas: { empresaId: string | null; tipo: string }[];

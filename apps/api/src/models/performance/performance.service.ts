@@ -46,7 +46,6 @@ import {
   type Granularidade,
   type LimitesDosAlertas,
   type PontoSerie,
-  type Pontualidade,
   type TotaisResumo,
 } from "@erp/shared/contratos/performance";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
@@ -55,7 +54,7 @@ import { type Executor } from "../repositorios";
 import { type ContextoDaConsulta } from "./consultas";
 
 /** Chaves de `configuracoes` que a Performance lê. */
-export const CHAVES_DE_CONFIGURACAO = [
+const CHAVES_DE_CONFIGURACAO = [
   "sla_meta_pct",
   "sla_alerta_amarelo_pct",
   "taxa_retorno_meta_pct",
@@ -72,7 +71,7 @@ export const CHAVES_DE_CONFIGURACAO = [
 ] as const;
 
 /** Limite de linhas da exportação da tela (igual a hoje). */
-export const LIMITE_DA_EXPORTACAO = 10_000;
+const LIMITE_DA_EXPORTACAO = 10_000;
 
 export interface CteExportado {
   id: string;
@@ -187,7 +186,7 @@ type Db = Executor<"performance">;
 type Repo = RepositorioPerformance;
 
 /** Cards do topo, tabela por unidade e linha de Produção do período. */
-export interface ResumoDoPeriodo {
+interface ResumoDoPeriodo {
   periodo: { inicio: string; fim: string; dias: number };
   totais: TotaisResumo;
   metaTaxaRetorno: ReturnType<typeof metaPonderada>;
@@ -197,21 +196,21 @@ export interface ResumoDoPeriodo {
   cobertura: { min: string | null; max: string | null };
 }
 
-export interface TdeAguardando {
+interface TdeAguardando {
   aguardando: number;
   /** Em reais, arredondado ao centavo. */
   valor: number;
   total: number;
 }
 
-export interface OtifDoPeriodo {
+interface OtifDoPeriodo {
   total: number;
   problemas: number;
   /** Fração de problemas (4 casas); nulo sem CT-e. */
   pct: number | null;
 }
 
-export interface RelatorioDoPeriodo extends FotoDoPeriodo {
+interface RelatorioDoPeriodo extends FotoDoPeriodo {
   comparativo: FotoDoPeriodo | null;
   limites: Pick<ConfiguracaoPerformance, "slaMetaPct" | "taxaRetornoMetaPct">;
 }
@@ -306,45 +305,6 @@ export async function obterPontualidade(
   return db(async ({ performance }) => {
     const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
     return montarPontualidade(await performance.pontualidade(consulta, filtro));
-  });
-}
-
-/** Os números da Performance de uma empresa no período, por emissão e sem os filtros da tela. */
-export interface IndicadoresDoPeriodo {
-  totais: TotaisResumo;
-  entregues: number;
-  pontualidade: Pontualidade["totais"];
-  configuracao: ConfiguracaoPerformance;
-}
-
-/**
- * Cards do topo da Performance (CT-e, em atraso, SLA Operacional e metas) numa transação só: é o
- * que o Dashboard da Plataforma mostra de cada empresa.
- */
-export async function obterIndicadoresDoPeriodo(
-  db: Db,
-  ctx: ContextoPerformance,
-  periodo: { inicio: string; fim: string },
-  agora: Date,
-): Promise<IndicadoresDoPeriodo> {
-  return db(async ({ performance }) => {
-    const entrada = { ...periodo, baseData: "emissao" as const };
-    const { consulta, filtro } = await preparar(performance, ctx, entrada, agora);
-    const catalogo = await performance.catalogo(ctx.empresaId);
-    const config = await performance.configuracoes(ctx.empresaId, CHAVES_DE_CONFIGURACAO);
-    const grupos = await performance.contagensPorGrupo(
-      consulta,
-      filtro,
-      conjuntosDoCatalogo(catalogo),
-      codigosDePrejuizo(catalogo, filtro.codigos),
-    );
-    const pontualidade = await performance.pontualidade(consulta, filtro);
-    return {
-      totais: totaisDoResumo(grupos),
-      entregues: agregadosDeProducao(grupos).entregues,
-      pontualidade: montarPontualidade(pontualidade).totais,
-      configuracao: configuracaoDaTela(config),
-    };
   });
 }
 

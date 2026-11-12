@@ -35,8 +35,3 @@ export function somarReais(valores: Iterable<number>): number {
   for (const v of valores) total += centavos(v);
   return reais(total);
 }
-
-/** Razão ou nulo quando o denominador é zero. */
-export function razao(num: number, den: number): number | null {
-  return den > 0 ? num / den : null;
-}

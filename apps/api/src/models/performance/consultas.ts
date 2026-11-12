@@ -55,7 +55,7 @@ export const atraso = (ctx: ContextoDaConsulta, baixas: readonly number[]): Sql 
   atrasoDoCte(C, { baixas, hoje: ctx.hoje, fuso: ctx.fuso });
 
 /** Partes do filtro que cada chamada pode deixar de fora. */
-export interface Opcoes {
+interface Opcoes {
   semPeriodo?: boolean;
   semCodigos?: boolean;
   semTipos?: boolean;

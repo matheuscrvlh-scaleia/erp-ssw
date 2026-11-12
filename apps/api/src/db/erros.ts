@@ -6,7 +6,7 @@
 const CAMPOS_DO_PG = ["code", "severity", "constraint", "table", "column", "routine"] as const;
 const PROFUNDIDADE_MAXIMA = 3;
 
-export interface ErroDoLog {
+interface ErroDoLog {
   type: string;
   message: string;
   stack: string;

@@ -6,7 +6,7 @@ import { type EmpresaAgendavel } from "../models/agendamentos/agendamentos.repos
 import { type DefinicaoDeJob } from "./registro";
 
 /** O pedaço da fila do BullMQ que os agendamentos usam (os testes passam um falso). */
-export interface FilaAgendavel {
+interface FilaAgendavel {
   getJobSchedulers(): Promise<{ key: string }[]>;
   upsertJobScheduler(
     id: string,
@@ -16,7 +16,7 @@ export interface FilaAgendavel {
   removeJobScheduler(id: string): Promise<boolean>;
 }
 
-export interface Agendamento {
+interface Agendamento {
   id: string;
   job: string;
   padrao: string;

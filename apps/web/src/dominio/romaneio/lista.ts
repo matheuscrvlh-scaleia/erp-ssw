@@ -29,7 +29,7 @@ export interface ItemDaLista<F extends FatoCte = FatoDaLista> {
   analise: AnaliseCte;
 }
 
-export interface FiltrosProprios {
+interface FiltrosProprios {
   emRotaAgora: EmRotaAgora;
   status: "todos" | "andamento";
   semMovimento: boolean;
@@ -116,7 +116,7 @@ interface Soma {
   frete: number;
 }
 
-export interface ResumoDaLista {
+interface ResumoDaLista {
   totais: Soma & { entregues: number };
   /** Subtotais por grupo (vazio sem agrupamento), do maior para o menor. */
   grupos: (Soma & { chave: string; rotulo: string })[];

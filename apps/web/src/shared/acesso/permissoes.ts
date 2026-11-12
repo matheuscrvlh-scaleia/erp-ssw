@@ -89,7 +89,7 @@ export function telasComVer(permissoes: Iterable<string>): Tela[] {
 }
 
 /** Telas que cargo e exceção podem dar: as da Plataforma e as dadas por regra (Logs) não. */
-export const TELAS_GRAVAVEIS: readonly Tela[] = TELAS.filter(
+const TELAS_GRAVAVEIS: readonly Tela[] = TELAS.filter(
   (t) => !TELAS_SO_PLATAFORMA.includes(t) && !TELAS_POR_REGRA.includes(t),
 );
 
@@ -99,9 +99,6 @@ export const PERMISSOES_GRAVAVEIS: readonly Permissao[] = permissoesDas(TELAS_GR
 export function ehPermissaoGravavel(valor: string): valor is Permissao {
   return (PERMISSOES_GRAVAVEIS as readonly string[]).includes(valor);
 }
-
-/** Itens dos editores (cargo, matriz, exceção): `ranking_novo` anda junto com `ranking`. */
-export const TELAS_EDITAVEIS: readonly Tela[] = TELAS_GRAVAVEIS.filter((t) => t !== "ranking_novo");
 
 /** O item "Ranking" marca e desmarca as duas chaves. */
 export function chavesDoItem(tela: Tela): Tela[] {

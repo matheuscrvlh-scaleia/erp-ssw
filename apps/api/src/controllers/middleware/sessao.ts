@@ -21,7 +21,7 @@ declare module "fastify" {
   }
 }
 
-export interface OpcoesSessao extends DependenciasAcesso {
+interface OpcoesSessao extends DependenciasAcesso {
   tokens: EmissorDeTokens;
   executar: ExecutorComContexto;
 }

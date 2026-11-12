@@ -46,7 +46,7 @@ export function listaComTeto<T extends z.ZodType>(item: T, maximo: number) {
 }
 
 /** Maior página aceita (teto contra deslocamento absurdo no banco). */
-export const MAIOR_PAGINA = 100_000;
+const MAIOR_PAGINA = 100_000;
 
 /**
  * Página pedida de toda lista paginada: `pagina` a partir de 1 e `tamanho` em linhas, até

@@ -6,9 +6,7 @@ import {
   CODIGO_ANCORA_EMISSAO,
   type CodigoCadastrado,
   CODIGOS_EMBARQUE,
-  type ProcessoSsw,
   type Responsavel,
-  type TipoSsw,
 } from "./codigos";
 import { foraDeQuarentena, type OcorrenciaDoCte, ORIGEM_TRACKINGDANFE } from "./ocorrencia";
 import { type DataIso, diaSp, menosDias } from "./tempo";
@@ -17,27 +15,6 @@ import { type DataIso, diaSp, menosDias } from "./tempo";
 const DIAS_LIMITE_TRACKINGDANFE = 400;
 
 // --- Catálogo de códigos ---------------------------------------------------------------------
-
-/**
- * Responsável, letra e penaliza derivados do tipo SSW ao **cadastrar** um código (na edição o
- * admin ajusta à mão). Sem tipo, `null` = manter o recebido.
- * origem: codigos_derivar_responsavel (sistema atual)
- */
-export function derivarResponsavelPeloTipo(
-  tipoSsw: TipoSsw | null,
-  processoSsw: ProcessoSsw | null,
-): { responsavel: Responsavel; letraResponsavel: string; penaliza: boolean } | null {
-  if (tipoSsw === null) return null;
-  if (tipoSsw === "PENDENCIA_TRANSPORTADORA") {
-    return { responsavel: "FR", letraResponsavel: "F", penaliza: true };
-  }
-  if (tipoSsw === "PENDENCIA_CLIENTE") {
-    return processoSsw === "ENTREGA" || processoSsw === "REENTREGA"
-      ? { responsavel: "destinatario", letraResponsavel: "D", penaliza: false }
-      : { responsavel: "cliente", letraResponsavel: "C", penaliza: false };
-  }
-  return { responsavel: "sistema", letraResponsavel: "S", penaliza: false };
-}
 
 /**
  * O que a alteração de um código exige: regravar responsável/penaliza em todas as ocorrências da

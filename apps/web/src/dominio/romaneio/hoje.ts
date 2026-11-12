@@ -64,14 +64,14 @@ export interface CteDoDia {
 
 export const SEM_TIPO = "__SEM_TIPO__";
 
-export interface FiltrosDoDia {
+interface FiltrosDoDia {
   dia: string;
   filiais: readonly string[] | null;
   tipos: readonly string[] | null;
 }
 
 /** As linhas do 036 que valem para o dia: com CT-e e romaneio, não canceladas. */
-export function linhasDoDia(linhas: readonly Linha036[], dia: string): Linha036[] {
+function linhasDoDia(linhas: readonly Linha036[], dia: string): Linha036[] {
   return linhas.filter(
     (l) =>
       l.dataEmissao === dia &&
@@ -225,7 +225,7 @@ function juntarPorFrequencia(valores: readonly (string | null)[]): string | null
     .join(", ");
 }
 
-export interface LinhaRomaneioDoDia {
+interface LinhaRomaneioDoDia {
   romaneio: string;
   dataRomaneio: string;
   situacao: string | null;
@@ -245,14 +245,14 @@ export interface LinhaRomaneioDoDia {
   prejudicadas: number;
 }
 
-export interface FaixasDePrazo {
+interface FaixasDePrazo {
   vencida: number;
   hoje: number;
   futuro: number;
   semPrev: number;
 }
 
-export interface ResumoDoDia {
+interface ResumoDoDia {
   romaneios: number;
   ctes: number;
   entregues: number;
@@ -263,7 +263,7 @@ export interface ResumoDoDia {
   prazoNaoEntregue: FaixasDePrazo;
 }
 
-export type FaixaDoDia = "vencida" | "hoje" | "futuro" | "sem_prev";
+type FaixaDoDia = "vencida" | "hoje" | "futuro" | "sem_prev";
 
 function faixaDaPrevisao(prev: string | null, dia: string): FaixaDoDia {
   if (prev === null) return "sem_prev";
@@ -355,9 +355,9 @@ export function romaneioDoDia(
   };
 }
 
-export type StatusDoDia = "Entregue" | "Finalizado sem entrega" | "Em rota" | "Sem conclusão";
+type StatusDoDia = "Entregue" | "Finalizado sem entrega" | "Em rota" | "Sem conclusão";
 
-export interface CteDaFaixa {
+interface CteDaFaixa {
   id: string | null;
   sigla: string | null;
   numero: string;
@@ -374,7 +374,7 @@ export interface CteDaFaixa {
 }
 
 /** Teto da gaveta: com mais CT-e que isso, mostra os primeiros pela ordem da tela. */
-export const LIMITE_DA_GAVETA = 2000;
+const LIMITE_DA_GAVETA = 2000;
 
 /**
  * CT-e do dia numa faixa de prazo. `apenasNaoEntregues` = aberta por "Em rota agora".

@@ -6,7 +6,7 @@
  * passa por aqui: lê do banco a cada execução.
  * origem: config.server.ts (sistema atual)
  */
-export const VALIDADE_DO_CACHE_MS = 5 * 60_000;
+const VALIDADE_DO_CACHE_MS = 5 * 60_000;
 
 export interface CacheDeConfiguracoes {
   valores(

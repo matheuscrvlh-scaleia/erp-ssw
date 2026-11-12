@@ -7,7 +7,7 @@ import { type DefinicaoDeJob, type ExecutorDosJobs } from "./registro";
 
 const dadosDeEmpresa = z.object({ empresaId: z.uuid() });
 
-export interface DependenciasDoProcessador {
+interface DependenciasDoProcessador {
   jobs: readonly DefinicaoDeJob[];
   executar: ExecutorDosJobs;
   log: FastifyBaseLogger;

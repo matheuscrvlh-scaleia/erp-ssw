@@ -75,7 +75,7 @@ function lerDesafio(request: FastifyRequest): z.infer<typeof desafioGuardado> | 
   }
 }
 
-export interface OpcoesRotasAuth {
+interface OpcoesRotasAuth {
   deps: DependenciasAuth;
   google: ProvedorGoogle | null;
   /** URL registrada no Google para a volta (a requisição chega com o caminho dela). */

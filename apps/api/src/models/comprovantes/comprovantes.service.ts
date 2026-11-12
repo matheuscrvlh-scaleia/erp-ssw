@@ -21,7 +21,7 @@ import { type z } from "@erp/shared/zod";
 import { consultaAmplaDemais } from "../erros";
 import { type Executor } from "../repositorios";
 
-export const LIMITE_DE_LINHAS = 200_000;
+const LIMITE_DE_LINHAS = 200_000;
 
 export interface FiltroDeEntregues {
   empresaId: string;

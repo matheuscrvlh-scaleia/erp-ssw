@@ -66,7 +66,7 @@ export interface ClienteWorkerSsw {
   ): Promise<z.output<T>>;
 }
 
-export interface ConfigWorkerSsw {
+interface ConfigWorkerSsw {
   url: string;
   token: string;
   buscar: typeof fetch;
@@ -75,7 +75,7 @@ export interface ConfigWorkerSsw {
 }
 
 /** Tempo de resposta do worker-ssw, além da espera pedida na consulta. */
-export const TIMEOUT_DO_WORKER_SSW_MS = 5_000;
+const TIMEOUT_DO_WORKER_SSW_MS = 5_000;
 /**
  * Operação manual que grava (importar até 64 MB, aplicar um bloco, descartar): abaixo dos 60 s
  * que a borda espera pela resposta da API.
@@ -115,7 +115,7 @@ async function erroDeNegocioDa(resposta: Response): Promise<ErroDeNegocio | null
   return repassado ? new ErroDeNegocio(repassado, mensagem) : null;
 }
 
-export function criarClienteWorkerSsw(config: ConfigWorkerSsw): ClienteWorkerSsw {
+function criarClienteWorkerSsw(config: ConfigWorkerSsw): ClienteWorkerSsw {
   const base = `${config.url.replace(/\/+$/, "")}${PREFIXO_INTERNO}`;
 
   async function chamar<T extends z.ZodType>(

@@ -26,7 +26,7 @@ import { atorDa } from "./middleware/sessao";
 const ler = [exigirAdminDaEmpresa, exigirPermissao("admin_usuarios", "ver")];
 const editar = [exigirAdminDaEmpresa, exigirPermissao("admin_usuarios", "editar")];
 
-export async function contextoDeUsuarios(request: FastifyRequest): Promise<ContextoUsuarios> {
+async function contextoDeUsuarios(request: FastifyRequest): Promise<ContextoUsuarios> {
   const { acesso, empresa } = await empresaDaRequisicao(request);
   return {
     empresaId: empresa.id,
@@ -36,7 +36,7 @@ export async function contextoDeUsuarios(request: FastifyRequest): Promise<Conte
   };
 }
 
-export interface OpcoesRotasUsuarios {
+interface OpcoesRotasUsuarios {
   deps: DependenciasUsuarios;
   executar: ExecutorComContexto;
 }

@@ -83,7 +83,7 @@ export interface AlvoDoLogin {
  * Nome, e-mail e senha são da pessoa, não da empresa: o admin da empresa só mexe quando a pessoa
  * está só na empresa dele. Com mais de uma empresa, só a Plataforma.
  */
-export function podeAlterarLogin(alvo: AlvoDoLogin): boolean {
+function podeAlterarLogin(alvo: AlvoDoLogin): boolean {
   if (alvo.plataforma) return true;
   return alvo.empresasDoAlvo.length === 1 && alvo.empresasDoAlvo[0] === alvo.empresaAtiva;
 }

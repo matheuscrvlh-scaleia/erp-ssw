@@ -64,7 +64,7 @@ function camposQueMudaram<C extends CteGravado>(antigo: C, novo: C): CamposDoCte
   return saida as CamposDoCte<C>;
 }
 
-export type ResultadoDaGravacao<C extends CteGravado> =
+type ResultadoDaGravacao<C extends CteGravado> =
   { tipo: "descartado"; motivo: MotivoDoDescarte } | { tipo: "igual" | "gravado"; cte: C };
 
 /**
@@ -99,26 +99,4 @@ export async function regravarCte<C extends CteGravado>(
   await repo.atualizarCte(antigo.id, { ...mudou, atualizadoEm: agora });
   if (g.trocaDePrevisao) await repo.registrarTrocaDePrevisao(antigo.id, g.trocaDePrevisao);
   return { tipo: "gravado", cte: { ...final, atualizadoEm: agora } };
-}
-
-/**
- * Cria um CT-e pelo núcleo (data mínima de emissão e "o BI2 não cria" valem aqui). CT-e que já
- * existe com a mesma sigla e número (corrida entre duas gravações) é erro.
- */
-export async function criarCte<C extends CteGravado>(
-  repo: RepositorioCteNucleo<C>,
-  cad: CadastrosDoNucleo,
-  novo: C,
-  fonte: FonteDaEscrita,
-): Promise<ResultadoDaGravacao<C>> {
-  const g = prepararGravacaoDoCte({
-    antigo: null,
-    novo,
-    fonte,
-    contexto: { ...cad, ocorrencias: [], ocorrenciasMudaram: false },
-  });
-  if (g.tipo === "descartar") return { tipo: "descartado", motivo: g.motivo };
-  const [inserido] = await repo.inserirCtes([g.cte]);
-  if (!inserido) throw new Error(`CT-e ${novo.sigla} ${novo.numero} já existe.`);
-  return { tipo: "gravado", cte: inserido };
 }

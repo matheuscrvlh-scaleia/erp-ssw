@@ -12,7 +12,7 @@ const diasNoMes = (ano: number, mes: number) => new Date(Date.UTC(ano, mes, 0)).
  * (31/03 → 28/02). Igual a `(d - interval '1 month')::date` do Postgres.
  * origem: v_ini_ant/v_fim_ant de ocorrencias_painel_v5 (sistema atual)
  */
-export function mesAnterior(data: string): string {
+function mesAnterior(data: string): string {
   const [ano, mes, dia] = data.split("-").map(Number) as [number, number, number];
   const [anoAnterior, mesAnteriorNum] = mes === 1 ? [ano - 1, 12] : [ano, mes - 1];
   return montarDataIso(

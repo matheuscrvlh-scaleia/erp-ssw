@@ -44,7 +44,7 @@ export interface CteComViagens extends CteAnalisado {
  * viagem vale desde sempre. Duas viagens no mesmo dia: a primeira fica com intervalo vazio.
  * origem: _romaneio_ocorrencia_na_viagem
  */
-export function ocorrenciaNaViagem(
+function ocorrenciaNaViagem(
   c: FatoCte,
   v: Viagem,
   codigos: readonly number[],
@@ -110,7 +110,7 @@ function juntarOrdenado(valores: Iterable<string | null>): string | null {
 // ---------------------------------------------------------------------------------------------
 // Por romaneio (viagem real)
 
-export interface LinhaPorViagem {
+interface LinhaPorViagem {
   romaneio: string;
   dataRomaneio: string;
   situacao: string | null;
@@ -129,7 +129,7 @@ export interface LinhaPorViagem {
 }
 
 /** Busca do romaneio: contém o texto, ou os dígitos contêm os dígitos digitados. */
-export function casaBuscaRomaneio(romaneio: string, busca: string | null): boolean {
+function casaBuscaRomaneio(romaneio: string, busca: string | null): boolean {
   const q = (busca ?? "").trim();
   if (q === "") return true;
   if (romaneio.toLowerCase().includes(q.toLowerCase())) return true;
@@ -194,7 +194,7 @@ export function porViagem(
 // ---------------------------------------------------------------------------------------------
 // Performance Motorista / Ajudante / Carro
 
-export interface LinhaPerformancePessoa {
+interface LinhaPerformancePessoa {
   nome: string;
   /** Placas usadas (nulo sem a permissão `romaneio_placa`). */
   placas: string | null;
@@ -356,7 +356,7 @@ export function performanceAjudante(
     .sort(porRomaneados);
 }
 
-export interface LinhaPerformanceCarro {
+interface LinhaPerformanceCarro {
   motorista: string;
   placa: string | null;
   romaneados: number;
@@ -406,7 +406,7 @@ export function performanceCarro(
 // ---------------------------------------------------------------------------------------------
 // CTRC por carro
 
-export interface LinhaCtesPorCarro {
+interface LinhaCtesPorCarro {
   placa: string | null;
   motorista: string | null;
   ctes: number;

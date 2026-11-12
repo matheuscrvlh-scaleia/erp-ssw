@@ -116,7 +116,7 @@ export interface RepositorioCtrc {
   ultimoBi2(empresaId: string, numero: string): Promise<UltimoBi2 | null>;
 }
 
-export interface ContextoCtrc {
+interface ContextoCtrc {
   empresaId: string;
 }
 

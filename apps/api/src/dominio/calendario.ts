@@ -7,7 +7,7 @@ import { ErroDeNegocio } from "./erros";
  * Domingo de Páscoa (algoritmo anônimo gregoriano, o mesmo da função SQL de hoje).
  * origem: gerar_feriados_nacionais (função SQL, sistema atual)
  */
-export function domingoDePascoa(ano: number): string {
+function domingoDePascoa(ano: number): string {
   const a = ano % 19;
   const b = Math.floor(ano / 100);
   const c = ano % 100;

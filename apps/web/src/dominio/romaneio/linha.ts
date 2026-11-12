@@ -23,7 +23,7 @@ export interface LinhaSituacao {
   tde: number | null;
 }
 
-export type StatusLinha = "Entregue" | "Baixado" | "Em rota" | "Pendente";
+type StatusLinha = "Entregue" | "Baixado" | "Em rota" | "Pendente";
 
 export function entregueDaLinha(l: LinhaSituacao): boolean {
   return (
@@ -39,7 +39,7 @@ export function statusDaLinha(l: LinhaSituacao): StatusLinha {
   return "Pendente";
 }
 
-export interface Atraso {
+interface Atraso {
   dias: number;
   fonte: "baixa formal" | "resp. cliente" | "performance" | "prazo" | "BI2";
 }
@@ -92,7 +92,7 @@ export function atrasoParaExportar(l: LinhaSituacao, atraso: Atraso): string {
   return "";
 }
 
-export type Agrupamento = "parceiro" | "unidade" | "cidade" | "setor";
+type Agrupamento = "parceiro" | "unidade" | "cidade" | "setor";
 
 export interface CamposDoGrupo {
   parceiroId: string | null;

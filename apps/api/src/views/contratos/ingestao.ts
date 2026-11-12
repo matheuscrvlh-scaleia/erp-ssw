@@ -5,7 +5,7 @@
 import { contrato } from "@erp/shared/contrato";
 import { z } from "@erp/shared/zod";
 
-export const RELATORIOS_MANUAIS = ["036", "038", "306", "455csv", "930"] as const;
+const RELATORIOS_MANUAIS = ["036", "038", "306", "455csv", "930"] as const;
 
 const instante = z.string();
 const ok = z.object({ ok: z.literal(true) });

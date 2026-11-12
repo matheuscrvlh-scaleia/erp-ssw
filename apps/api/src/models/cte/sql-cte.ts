@@ -17,7 +17,7 @@ export const inteiros = (valores: readonly number[]): Sql => sql`${lista(valores
 export const uuids = (valores: readonly string[]): Sql => sql`${lista(valores)}::uuid[]`;
 
 /** Colunas do CT-e que as regras daqui leem, pelo apelido da tabela na consulta. */
-export interface ColunasDoCte {
+interface ColunasDoCte {
   dataEntregaRealizada: Expressao;
   /** Código da ocorrência efetiva já normalizado (`ocorr_efetiva_codigo_num`). */
   codigoEfetivo: Expressao;
@@ -83,7 +83,7 @@ export const aberto = (c: ColunasDoCte, baixas: readonly number[]): Sql =>
   sql`(${c.dataEntregaRealizada} is null and not ${codigoDeEntrega(c)} and not ${codigoDeBaixa(c, baixas)})`;
 
 /** O que o atraso precisa saber de fora: baixas do cadastro (Q22), hoje e o fuso da empresa. */
-export interface RegraDoAtraso {
+interface RegraDoAtraso {
   baixas: readonly number[];
   /** Hoje (`AAAA-MM-DD`) no fuso da empresa. */
   hoje: string;

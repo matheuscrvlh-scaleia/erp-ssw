@@ -29,7 +29,7 @@ const reivindicacoes = z.object({
   sid: z.uuid(),
 });
 
-export interface ConfigTokens {
+interface ConfigTokens {
   chavePrivadaPem: string;
   /** PEM públicos de rotações anteriores, aceitos até os tokens delas expirarem. */
   chavesAnteriores: readonly string[];
@@ -44,10 +44,6 @@ export interface ConfigTokens {
 function kidDa(publica: KeyObject): string {
   const { crv, kty, x } = publica.export({ format: "jwk" });
   return createHash("sha256").update(JSON.stringify({ crv, kty, x })).digest("base64url");
-}
-
-export function kidDaChave(chavePrivadaPem: string): string {
-  return kidDa(createPublicKey(createPrivateKey(chavePrivadaPem)));
 }
 
 /** JWT EdDSA (Ed25519) de 15 min, com `kid` para trocar a chave sem derrubar ninguém. */

@@ -130,7 +130,7 @@ function casaStatus(status: StatusDaLista, prazo: Sql): Sql | undefined {
   }
 }
 
-/** Mesma regra de `casaBusca` (dominio/coletas), com os termos de `termosDaBusca`. */
+/** Busca da lista de coletas (spec 04, `casaBusca`), com os termos de `termosDaBusca`. */
 function casaBusca(t: { numero: string; cte: string; texto: string }): Sql {
   const contem = (coluna: Sql) => sql`coalesce(strpos(lower(${coluna}), ${t.texto}) > 0, false)`;
   return sql`(coletas.numero::text = ${t.numero}

@@ -35,7 +35,7 @@ export interface EventoDaLinhaDoTempo {
   fonte: "sistema" | "ssw";
 }
 
-export const LIMITE_DA_LINHA_DO_TEMPO = 200;
+const LIMITE_DA_LINHA_DO_TEMPO = 200;
 
 const textoOuNulo = (t: string | null) => t?.trim() || null;
 

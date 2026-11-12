@@ -38,10 +38,6 @@ export const TELAS = [
 
 export type Tela = (typeof TELAS)[number];
 
-export function ehTela(valor: string): valor is Tela {
-  return (TELAS as readonly string[]).includes(valor);
-}
-
 /** Telas só da equipe da Plataforma: nunca vêm de cargo ou exceção. */
 export const TELAS_SO_PLATAFORMA: readonly Tela[] = [
   "plataforma_painel",

@@ -8,8 +8,7 @@ import { foraDeQuarentena, maisRecentePrimeiro, type OcorrenciaDoCte } from "./o
 import { type DataIso, diaSp } from "./tempo";
 import { nuloSeVazio } from "./texto";
 
-export const FONTES_DA_EFETIVA = ["ssw_036", "bi2_0174", "bi2_0013", "webhook"] as const;
-type FonteDaEfetiva = (typeof FONTES_DA_EFETIVA)[number];
+type FonteDaEfetiva = "ssw_036" | "bi2_0174" | "bi2_0013" | "webhook";
 
 /** Prioridade no empate: 036 › 0174 › 0013 › ocorrências gravadas ("webhook"). */
 const PRIORIDADE: Record<FonteDaEfetiva, number> = {

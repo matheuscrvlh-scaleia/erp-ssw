@@ -20,7 +20,7 @@ export interface Banco {
   transacao<T>(fn: (tx: Transacao) => Promise<T>): Promise<T>;
 }
 
-export interface ConfigBanco {
+interface ConfigBanco {
   url: string;
   maxConexoes: number;
   /** Teto de cada consulta; estourou, o Postgres cancela e a API pede para filtrar mais. */
@@ -28,7 +28,7 @@ export interface ConfigBanco {
   nomeAplicacao: string;
 }
 
-export interface ConexaoBanco {
+interface ConexaoBanco {
   banco: Banco;
   verificar: () => Promise<void>;
   encerrar: () => Promise<void>;
@@ -149,7 +149,7 @@ export const CONTEXTO_VAZIO: ContextoBanco = {
 };
 
 /** `set_config(..., true)` = `SET LOCAL`, mas com os valores como parâmetros (nada concatenado). */
-export function sqlDoContexto(contexto: ContextoBanco): Sql {
+function sqlDoContexto(contexto: ContextoBanco): Sql {
   const token =
     contexto.tokenPublicoHash === undefined
       ? sql.vazio()

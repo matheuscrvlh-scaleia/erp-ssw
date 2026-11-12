@@ -4,7 +4,6 @@ import {
   type PainelDeOcorrencias,
   type Recortes,
   type Responsabilidade,
-  type ResponsavelDoEvento,
 } from "@erp/shared/contratos/ocorrencias";
 
 import { agrupar, type Grupo } from "../colecoes";
@@ -30,7 +29,7 @@ export interface CteDoPainel {
 }
 
 /** Ocorrência de um código da tela, de um CT-e do universo. */
-export interface OcorrenciaDoPainel {
+interface OcorrenciaDoPainel {
   cteId: string;
   codigo: number;
   descricao: string | null;
@@ -42,7 +41,7 @@ type RecortesDeCte = Pick<Recortes, "pagador" | "unidadeResp" | "prazo" | "faixa
  * Recortes que olham só o CT-e (cards de prazo e faixa, blocos de pagador e unidade).
  * origem: filtros p_pagador_nome/p_unidade_resp/p_prazo/p_faixa_atraso de ocorrencias_painel_v5
  */
-export function casaRecortesDeCte(cte: CteDoPainel, r: RecortesDeCte): boolean {
+function casaRecortesDeCte(cte: CteDoPainel, r: RecortesDeCte): boolean {
   if (r.pagador !== null && cte.pagador !== r.pagador) return false;
   if (r.unidadeResp !== null && (cte.unidadeResp ?? "—") !== r.unidadeResp) return false;
   if (r.prazo === "no_prazo" && cte.noPrazo !== true) return false;
@@ -69,7 +68,7 @@ export function ctesPenalizantes(
 }
 
 /** Aba de responsabilidade: "pendentes" é por evento; "penalizantes"/"externas", por CT-e. */
-export function casaResponsabilidade(
+function casaResponsabilidade(
   aba: Responsabilidade,
   pendente: boolean,
   penalizante: boolean,
@@ -84,17 +83,6 @@ export function casaResponsabilidade(
     case "externas":
       return !penalizante;
   }
-}
-
-export function casaCodigoEResponsavel(
-  codigo: number,
-  responsavel: ResponsavelDoEvento,
-  r: Pick<Recortes, "codigos" | "responsaveis">,
-): boolean {
-  return (
-    (r.codigos.length === 0 || r.codigos.includes(codigo)) &&
-    (r.responsaveis.length === 0 || (r.responsaveis as readonly string[]).includes(responsavel))
-  );
 }
 
 interface EntradaDoPainel {

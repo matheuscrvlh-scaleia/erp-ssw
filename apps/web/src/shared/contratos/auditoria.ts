@@ -8,7 +8,7 @@ import { z } from "@erp/shared/zod";
  * origem: src/features/auditoria (sistema atual)
  */
 
-export const TIPOS_DE_ATOR = ["usuario", "plataforma", "sistema", "integracao"] as const;
+const TIPOS_DE_ATOR = ["usuario", "plataforma", "sistema", "integracao"] as const;
 
 /** A tela avisa quando a lista bate no limite. */
 export const LIMITE_AUDITORIA = 1000;
@@ -65,7 +65,7 @@ const filtrosIntegracao = z.object({
 export type FiltrosIntegracao = z.infer<typeof filtrosIntegracao>;
 
 /** Empresa nos logs da Plataforma: uma empresa ou "plataforma" (ações sem empresa). */
-export const filtroDeEmpresa = z.union([z.uuid(), z.literal("plataforma")]).optional();
+const filtroDeEmpresa = z.union([z.uuid(), z.literal("plataforma")]).optional();
 
 const saidaAuditoria = z.object({ linhas: z.array(linhaAuditoria), limite: z.number().int() });
 const saidaIntegracao = z.object({ linhas: z.array(linhaIntegracao) });

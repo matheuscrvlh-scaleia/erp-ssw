@@ -77,7 +77,7 @@ export interface LinhaBonificacao {
 }
 
 /** Unidade do romaneio: as 3 primeiras letras, em maiúsculas. */
-export function unidadeDoRomaneio(romaneio: string): string {
+function unidadeDoRomaneio(romaneio: string): string {
   return romaneio.slice(0, 3).toUpperCase();
 }
 
@@ -164,7 +164,7 @@ function montarViagens(
 }
 
 /** Êxito truncado em 2 casas (0,949 → 0,94), como a planilha. */
-export function exitoDaViagem(entregues: number, base: number): number {
+function exitoDaViagem(entregues: number, base: number): number {
   return base === 0 ? 0 : Math.trunc((entregues * 100) / base) / 100;
 }
 

@@ -44,7 +44,7 @@ function semDuplicados(lista: string[]): string[] {
 const texto = (valor: string | null | undefined): string[] | null => padroesDeTexto(valor);
 
 /** Itens sem dígito não casam nada (como o `NULL` do SQL de hoje). */
-export function codigosDoFiltro(codigos: readonly string[] | null | undefined): number[] | null {
+function codigosDoFiltro(codigos: readonly string[] | null | undefined): number[] | null {
   if (!preenchida(codigos)) return null;
   return [
     ...new Set(

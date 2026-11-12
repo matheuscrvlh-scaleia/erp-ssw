@@ -261,7 +261,7 @@ export interface RepositorioPlataforma {
 }
 
 /** Executor no contexto de uma empresa (ou de nenhuma), com a Plataforma ligada. */
-export type NaEmpresa = (
+type NaEmpresa = (
   empresaId: string | null,
 ) => Executor<"plataforma" | "cadastros" | "usuarios" | "acesso" | "auditoria">;
 
@@ -419,7 +419,7 @@ export async function salvarEmpresa(
   });
 }
 
-export interface DependenciasDoLogo {
+interface DependenciasDoLogo {
   armazenamento: Armazenamento | null;
   agora: () => Date;
   log: FastifyBaseLogger;

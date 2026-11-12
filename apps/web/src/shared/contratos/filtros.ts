@@ -6,13 +6,7 @@ import { z } from "@erp/shared/zod";
 export const SEM_TIPO_DOCUMENTO = "__SEM_TIPO__";
 
 /** Base de data do seletor de pagadores (o Romaneio usa "saida"). */
-export const CAMPOS_DATA_PAGADOR = [
-  "emissao",
-  "embarque",
-  "prevista",
-  "saida",
-  "conclusao",
-] as const;
+const CAMPOS_DATA_PAGADOR = ["emissao", "embarque", "prevista", "saida", "conclusao"] as const;
 
 /** Base de data das telas para o seletor de tipo de documento. */
 export const CAMPOS_DATA_TIPO_DOCUMENTO = [
@@ -26,7 +20,7 @@ export const CAMPOS_DATA_TIPO_DOCUMENTO = [
 ] as const;
 export type CampoDataTipoDocumento = (typeof CAMPOS_DATA_TIPO_DOCUMENTO)[number];
 
-export const CAMPOS_SUGESTAO = ["remetente", "cidade_destino"] as const;
+const CAMPOS_SUGESTAO = ["remetente", "cidade_destino"] as const;
 
 /** Filtros já escolhidos na tela, que estreitam as opções dos outros seletores. */
 const contextoDosFiltros = z.object({
@@ -39,7 +33,7 @@ const contextoDosFiltros = z.object({
   codigos: lista(inteiro).optional(),
 });
 
-export const codigoDoCatalogo = z.object({
+const codigoDoCatalogo = z.object({
   codigo: z.number().int(),
   descricao: z.string(),
   penaliza: z.boolean(),

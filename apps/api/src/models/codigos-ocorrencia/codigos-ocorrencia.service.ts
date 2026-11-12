@@ -64,7 +64,7 @@ export interface ContextoCodigos {
 }
 
 /** Até aqui a cópia para as ocorrências vai na mesma transação; acima, vai para o worker. */
-export const LIMITE_DE_PROPAGACAO_IMEDIATA = 20_000;
+const LIMITE_DE_PROPAGACAO_IMEDIATA = 20_000;
 
 type Db = Executor<"codigosOcorrencia" | "auditoria">;
 

@@ -10,7 +10,7 @@ export type LeitorDeConfiguracoes = (
 ) => Promise<Map<string, string>>;
 
 /** Linhas da empresa e da Plataforma; sem empresa, só as da Plataforma. */
-export type CarregarConfiguracoes = (empresaId: string | null) => Promise<ConfiguracaoLida[]>;
+type CarregarConfiguracoes = (empresaId: string | null) => Promise<ConfiguracaoLida[]>;
 
 export function carregarConfiguracoesDoBanco(tx: Transacao): CarregarConfiguracoes {
   return (empresaId) =>

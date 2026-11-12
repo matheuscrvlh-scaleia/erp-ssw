@@ -9,7 +9,7 @@ import { hojeNoFuso } from "@erp/shared/datas";
 
 import { agrupar } from "../colecoes";
 import { btrim } from "../nucleo";
-import { compararComNulosNoFim, compararNumero, compararTexto } from "../ordem";
+import { compararTexto } from "../ordem";
 
 /**
  * Etapa pela situação do SSW (o leitor grava a situação em maiúsculas).
@@ -23,7 +23,7 @@ export function etapaDaSituacao(situacao: string | null): EtapaDeColeta {
   return "cadastrada";
 }
 
-export interface DadosDoPrazo {
+interface DadosDoPrazo {
   situacao: string | null;
   limiteEm: Date | null;
   coletadaEm: Date | null;
@@ -165,23 +165,6 @@ export function calcularPainelDeColetas(
 }
 
 /**
- * Busca da lista: número da coleta, CT-e gerado, placa (igual, sem caixa) ou trecho de
- * remetente, destinatário, notas ou observação. `%` e `_` são texto (Q10 do dono).
- * origem: coletas_lista (sistema atual)
- */
-export function casaBusca(c: ColetaDaTela, busca: string): boolean {
-  const t = termosDaBusca(busca);
-  if (t === null) return true;
-  const contem = (valor: string | null) => valor?.toLowerCase().includes(t.texto) ?? false;
-  return (
-    String(c.numero) === t.numero ||
-    c.cteNumero === t.cte ||
-    c.placa?.toLowerCase() === t.texto ||
-    [c.remetenteNome, c.destinatarioNome, c.notasFiscais, c.observacao].some(contem)
-  );
-}
-
-/**
  * Termos da busca: número da coleta sem zeros à esquerda, CT-e só com dígitos e sem zeros, e o
  * texto em minúsculas (placa igual; remetente, destinatário, notas e observação contêm). Vazia =
  * sem busca. A lista da API usa os mesmos termos no SQL.
@@ -196,41 +179,4 @@ export function termosDaBusca(
     cte: b.replace(/\D/g, "").replace(/^0+/, ""),
     texto: b.toLowerCase(),
   };
-}
-
-const tempo = (d: Date | null) => d?.getTime() ?? null;
-
-/**
- * Abertas primeiro, pela que vence antes; depois as mais recentes; empate por unidade e número
- * (a chave da coleta). A lista da API ordena igual no SQL.
- */
-function compararColetas(a: ColetaDaTela, b: ColetaDaTela): number {
-  return (
-    Number(aberta(b)) - Number(aberta(a)) ||
-    compararComNulosNoFim(
-      aberta(a) ? tempo(a.limiteEm) : null,
-      aberta(b) ? tempo(b.limiteEm) : null,
-      compararNumero,
-      "asc",
-    ) ||
-    compararComNulosNoFim(tempo(a.cadastradaEm), tempo(b.cadastradaEm), compararNumero, "desc") ||
-    compararTexto(a.unidade, b.unidade) ||
-    a.numero - b.numero
-  );
-}
-
-/**
- * Lista do card: status, busca, ordem e paginação. A API pagina esta mesma regra no banco
- * (coletas/repositorio.ts); aqui fica a forma em TypeScript, que os testes usam como referência.
- * origem: coletas_lista (sistema atual)
- */
-export function listarColetas<C extends ColetaDaTela>(
-  coletas: readonly C[],
-  pedido: { status: StatusDaLista; busca: string; pagina: number; tamanho: number },
-): { linhas: C[]; total: number } {
-  const filtradas = coletas
-    .filter((c) => CASA_STATUS[pedido.status](c) && casaBusca(c, pedido.busca))
-    .sort(compararColetas);
-  const inicio = (pedido.pagina - 1) * pedido.tamanho;
-  return { linhas: filtradas.slice(inicio, inicio + pedido.tamanho), total: filtradas.length };
 }

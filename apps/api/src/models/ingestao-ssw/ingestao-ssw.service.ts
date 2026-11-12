@@ -64,7 +64,7 @@ export interface SincronizacaoLida extends Omit<SincronizacaoBi2, "iniciadoEm" |
 }
 
 /** Saúde da SSW API com o instante do token em ISO (a faixa e o Painel da Plataforma). */
-export type SaudeSsw = Omit<SaudeDaIntegracaoSsw, "tokenAtualizadoEm"> & {
+type SaudeSsw = Omit<SaudeDaIntegracaoSsw, "tokenAtualizadoEm"> & {
   tokenAtualizadoEm: string | null;
 };
 
@@ -169,7 +169,7 @@ const DIA_MS = 24 * 3_600_000;
 const iso = (d: Date | null) => (d === null ? null : d.toISOString());
 
 /** SHA-256 em hex: o que o worker-ssw guarda da credencial recebida e o que o reprocesso compara. */
-export function resumoDoSegredo(texto: string): string {
+function resumoDoSegredo(texto: string): string {
   return createHash("sha256").update(texto, "utf8").digest("hex");
 }
 

@@ -36,7 +36,7 @@ export interface RotuloRanking {
   sub: string | null;
 }
 
-export interface LinhaRanking {
+interface LinhaRanking {
   chave: string;
   rotulo: string | null;
   sub: string | null;
@@ -54,11 +54,6 @@ export interface LinhaRanking {
   peso: number;
   volumes: number;
   frete: number;
-}
-
-/** Chave do grupo: CNPJ só com dígitos, ou cidade em maiúsculas sem espaços nas pontas. */
-export function chaveDoGrupo(grupo: GrupoRanking, valor: string | null): string {
-  return grupo === "cidade" ? (valor ?? "").trim().toUpperCase() : (valor ?? "").replace(/\D/g, "");
 }
 
 function entregue(b: BaldeRanking): boolean {

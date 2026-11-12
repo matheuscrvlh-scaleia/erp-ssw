@@ -32,7 +32,7 @@ export type ExecutorDosJobs = <T>(
 
 export type NomeDaFila = "manutencao" | "prazos" | "recalculo";
 
-export interface DefinicaoDeFila {
+interface DefinicaoDeFila {
   nome: NomeDaFila;
   /** Jobs ao mesmo tempo neste processo. */
   concorrencia: number;

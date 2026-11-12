@@ -40,7 +40,7 @@ export const estatisticasDoCatalogo = z.object({
 });
 export type EstatisticasDoCatalogo = z.infer<typeof estatisticasDoCatalogo>;
 
-export const ACOES_DO_HISTORICO = [
+const ACOES_DO_HISTORICO = [
   "criou",
   "excluiu",
   "editou",

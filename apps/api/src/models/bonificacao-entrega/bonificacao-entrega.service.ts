@@ -32,14 +32,14 @@ export interface UnidadeDoRomaneio {
   ultimoDia: string;
 }
 
-export interface PedidoDeApuracao {
+interface PedidoDeApuracao {
   inicio: string;
   fim: string;
   unidades?: string[] | undefined;
   usarPonto: boolean;
 }
 
-export type NovaFalta = Pick<Falta, "colaboradorNome" | "dataFalta" | "tipo"> & {
+type NovaFalta = Pick<Falta, "colaboradorNome" | "dataFalta" | "tipo"> & {
   observacao?: string | null | undefined;
 };
 

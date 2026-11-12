@@ -8,7 +8,7 @@ export function btrim(texto: string): string {
 }
 
 /** `NULLIF(btrim(x), '')`. */
-export function vazioAposTrim(texto: string | null): string | null {
+function vazioAposTrim(texto: string | null): string | null {
   const t = btrim(texto ?? "");
   return t === "" ? null : t;
 }

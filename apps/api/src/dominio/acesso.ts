@@ -41,7 +41,7 @@ function emOrdemDoCatalogo(permissoes: ReadonlySet<string>): Permissao[] {
  * nas telas liberáveis a ele. Sem esta regra um operador ganharia o Admin por exceção.
  * origem: computeScreens (src/lib/permissions.ts, sistema atual)
  */
-export function concessaoPodeValer(tela: Tela, papel: string | null): boolean {
+function concessaoPodeValer(tela: Tela, papel: string | null): boolean {
   if (!TELAS_ADMIN.includes(tela)) return true;
   return (
     ehAdminDaEmpresa(papel) || (papel === PAPEL_GESTOR && TELAS_ADMIN_PARA_GESTOR.includes(tela))
@@ -111,7 +111,7 @@ export function permissoesDoCargoDaPlataforma(
  * ou de exceção); Logs da empresa para o admin da empresa e para a equipe da Plataforma.
  * origem: aplicarTelasMultiempresa (src/lib/permissions.ts, sistema atual)
  */
-export function aplicarPermissoesDaPlataforma(
+function aplicarPermissoesDaPlataforma(
   permissoes: readonly Permissao[],
   opcoes: {
     adminPlataforma: boolean;
@@ -144,7 +144,7 @@ interface TelaBloqueada {
  * redirecionar.
  * origem: aplicarModulos (src/lib/modulos.ts, sistema atual)
  */
-export function aplicarModulos(
+function aplicarModulos(
   permissoes: readonly Permissao[],
   catalogo: readonly ModuloCatalogo[],
   liberados: readonly string[],
@@ -213,7 +213,7 @@ export interface VinculoComEmpresa {
   ativo: boolean;
 }
 
-export interface EntradaDoAcesso {
+interface EntradaDoAcesso {
   usuarioAtivo: boolean;
   empresaId: string | null;
   adminPlataforma: boolean;

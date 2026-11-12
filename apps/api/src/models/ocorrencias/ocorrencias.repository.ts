@@ -57,7 +57,7 @@ function ordemDaLista(ordem: OrdemDaLista, direcao: "asc" | "desc"): Sql {
 }
 
 /**
- * Lista detalhada em SQL, com a regra de `montarLista` (dominio/ocorrencias/lista.ts):
+ * Lista detalhada em SQL, com a regra da spec 04 (lista de ocorrências):
  * classificação pelo catálogo da consulta (sem cadastro = pendente, não penaliza), CT-e
  * penalizante (alguma ocorrência da tela pesa contra a operação e ele está em atraso, antes dos
  * filtros de código e responsável), recortes, código, responsável e aba.

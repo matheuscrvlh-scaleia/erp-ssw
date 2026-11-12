@@ -13,19 +13,17 @@ export const TIPOS_SSW = [
 ] as const;
 export type TipoSsw = (typeof TIPOS_SSW)[number];
 
-export const PROCESSOS_SSW = [
-  "ENTREGA",
-  "DEVOLUCAO",
-  "REENTREGA",
-  "AGENDAMENTO",
-  "COLETA",
-  "BALSA",
-  "OPERACIONAL",
-  "GERAL",
-  "FINALIZADORA",
-  "INDENIZACAO",
-] as const;
-export type ProcessoSsw = (typeof PROCESSOS_SSW)[number];
+export type ProcessoSsw =
+  | "ENTREGA"
+  | "DEVOLUCAO"
+  | "REENTREGA"
+  | "AGENDAMENTO"
+  | "COLETA"
+  | "BALSA"
+  | "OPERACIONAL"
+  | "GERAL"
+  | "FINALIZADORA"
+  | "INDENIZACAO";
 
 export const RESPONSAVEIS = [
   "FR",
@@ -39,10 +37,6 @@ export type Responsavel = (typeof RESPONSAVEIS)[number];
 
 /** Entrega (padrão SSW, fixo). origem: _is_entregue; decisão codigos-finalizadores-2026-10-08 */
 export const CODIGOS_ENTREGA: ReadonlySet<number> = new Set([1, 18, 67]);
-/** origem: _saiu_entrega_status (sistema atual) */
-export const CODIGOS_SAIU_ENTREGA: ReadonlySet<number> = new Set([
-  85, 7, 9, 10, 13, 14, 17, 30, 31, 32, 33, 34, 38, 48, 63, 67, 70, 87, 88, 96,
-]);
 /** Saída para entrega: em rota e único código que destrava pendência. */
 export const CODIGO_SAIDA_PARA_ENTREGA = 85;
 /** Embarque: menor dia das 82/85. origem: sync_data_embarque_from_ocorrencia */
@@ -101,14 +95,4 @@ export function codigosDeBaixa(catalogo: CatalogoDeCodigos): ReadonlySet<number>
 export function normCodigoOcorr(texto: string | null): number | null {
   const digitos = (texto ?? "").replace(/\D/g, "");
   return digitos === "" ? null : Number.parseInt(digitos, 10);
-}
-
-/**
- * Código que precisa ser número puro (zeros à esquerda e espaços aceitos). Texto com letra vira
- * "sem código" em vez de derrubar a consulta como hoje (Q54 do dono).
- * origem: _normaliza_codigo_ocorr (sistema atual)
- */
-export function codigoNumericoOuNulo(texto: string | null): number | null {
-  const limpo = (texto ?? "").trim();
-  return /^\d+$/.test(limpo) ? Number.parseInt(limpo, 10) : null;
 }

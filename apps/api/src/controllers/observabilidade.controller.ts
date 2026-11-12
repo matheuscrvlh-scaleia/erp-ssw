@@ -7,7 +7,7 @@ import { type FastifyInstance } from "fastify";
 import { jsonSchemaTransform } from "fastify-type-provider-zod";
 import { collectDefaultMetrics, Histogram, Registry } from "prom-client";
 
-export interface Prontidao {
+interface Prontidao {
   /** Cada verificação lança se a dependência não responde. */
   verificacoes: Record<string, () => Promise<void>>;
 }

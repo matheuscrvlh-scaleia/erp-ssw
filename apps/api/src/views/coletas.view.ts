@@ -26,7 +26,7 @@ export function apresentarPainelDeColetas({
   };
 }
 
-export function apresentarColeta(c: ColetaDaLista): LinhaDeColeta {
+function apresentarColeta(c: ColetaDaLista): LinhaDeColeta {
   return {
     unidade: c.unidade,
     numero: c.numero,

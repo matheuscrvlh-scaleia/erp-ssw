@@ -54,7 +54,7 @@ export interface DependenciasAhgora {
 }
 
 /** Funcionário por id, matrícula ou PIS, no período (validado: até 30 dias). */
-export interface PedidoDeBatidas {
+interface PedidoDeBatidas {
   funcionarioId?: string | undefined;
   matricula?: string | undefined;
   pis?: string | undefined;
@@ -62,9 +62,9 @@ export interface PedidoDeBatidas {
   fim: string;
 }
 
-export type BatidasDoPeriodo = Awaited<ReturnType<ClienteAhgora["batidas"]>>;
+type BatidasDoPeriodo = Awaited<ReturnType<ClienteAhgora["batidas"]>>;
 
-export interface PedidoDeApuracao {
+interface PedidoDeApuracao {
   inicio: string;
   fim: string;
   departamento?: string | undefined;
@@ -86,7 +86,7 @@ function usaAmbiente(parametros: Record<string, unknown>): boolean {
  * inexistente, fora de operação ou com a integração desligada não consulta.
  * origem: authHeader (ahgora-client.server.ts) + resolverEmpresaIngestao (sistema atual)
  */
-export function credencialDaIntegracao(
+function credencialDaIntegracao(
   empresaId: string,
   integracao: IntegracaoAhgora | null,
   deps: Pick<DependenciasAhgora, "segredos" | "ambiente">,

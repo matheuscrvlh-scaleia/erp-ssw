@@ -11,7 +11,7 @@ export class Sql {
   ) {}
 }
 
-export interface SqlCompilado {
+interface SqlCompilado {
   text: string;
   values: unknown[];
 }

@@ -53,7 +53,7 @@ function somar(grupos: readonly ContagemDoGrupo[], campo: Somavel): number {
 }
 
 /** `concl > 0 ? 1 − penalizados/concl : 1`. origem: calcular_performance (sistema atual) */
-export function performanceDe(concluidos: number, penalizadosConcluidos: number): number {
+function performanceDe(concluidos: number, penalizadosConcluidos: number): number {
   return concluidos > 0 ? 1 - penalizadosConcluidos / concluidos : 1;
 }
 

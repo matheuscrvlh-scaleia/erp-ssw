@@ -20,8 +20,6 @@ export const funcionarioAhgora = z.object({
   terminationDate: z.string().optional(),
 });
 
-export type FuncionarioAhgora = z.infer<typeof funcionarioAhgora>;
-
 export const batidaAhgora = z.object({
   punchTime: z.string(),
   type: z.string(),
@@ -33,7 +31,7 @@ export const batidaAhgora = z.object({
 
 export const MOTIVOS_DE_REVISAO = ["impar", "excluida"] as const;
 
-export const diaApurado = z.object({
+const diaApurado = z.object({
   data: z.string(),
   batidas: z.array(z.object({ hora: z.string(), tipo: z.string() })),
   minutosTrabalhados: z.number().int().nullable(),

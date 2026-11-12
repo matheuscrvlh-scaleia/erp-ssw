@@ -10,7 +10,7 @@ import {
   type CodigoComFrequencia,
 } from "../models/codigos-ocorrencia/codigos-ocorrencia.service";
 
-export function apresentarCodigo(codigo: CodigoComFrequencia): CodigoDoAdmin {
+function apresentarCodigo(codigo: CodigoComFrequencia): CodigoDoAdmin {
   return { ...codigo, atualizadoEm: codigo.atualizadoEm.toISOString() };
 }
 

@@ -20,7 +20,7 @@ export interface ColetaParaGravar extends Coleta050 {
   arquivoOrigem: string;
 }
 
-export const chaveDaColeta = (c: { unidade: string; numero: number }) => `${c.unidade}|${c.numero}`;
+const chaveDaColeta = (c: { unidade: string; numero: number }) => `${c.unidade}|${c.numero}`;
 
 /**
  * Decide o que gravar de um 050:
@@ -30,7 +30,7 @@ export const chaveDaColeta = (c: { unidade: string; numero: number }) => `${c.un
  * - o histórico é substituído; nada é apagado (coleta que some do relatório fica como estava).
  * origem: importar_coletas_050 (sistema atual)
  */
-export function planejarGravacao050(
+function planejarGravacao050(
   relatorio: Relatorio050,
   arquivoOrigem: string,
   jaGravadas: ReadonlyMap<string, ColetaJaGravada>,

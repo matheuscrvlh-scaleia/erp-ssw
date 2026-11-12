@@ -31,7 +31,7 @@ interface ItemDoCalculo {
   subtotal: number;
 }
 
-export interface CalculoDaEquipe extends TotaisDaEquipe {
+interface CalculoDaEquipe extends TotaisDaEquipe {
   performance: number;
   pontos: number;
   valorCalculado: number;

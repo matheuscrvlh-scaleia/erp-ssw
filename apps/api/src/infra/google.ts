@@ -18,7 +18,7 @@ export interface ProvedorGoogle {
   concluir(urlDeRetorno: URL, desafio: DesafioGoogle): Promise<IdentidadeGoogle>;
 }
 
-export interface ConfigGoogle {
+interface ConfigGoogle {
   clientId: string;
   clientSecret: string;
   redirectUri: string;

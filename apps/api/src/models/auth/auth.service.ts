@@ -135,7 +135,7 @@ export interface SessaoEmitida extends TokenEmitido {
 }
 
 /** Duas abas renovando juntas mandam o mesmo refresh: dentro desta janela não é ataque. */
-export const JANELA_DE_RENOVACAO_CONCORRENTE_MS = 10_000;
+const JANELA_DE_RENOVACAO_CONCORRENTE_MS = 10_000;
 const VALIDADE_REDEFINICAO_MS = 60 * 60_000;
 
 const credenciaisInvalidas = () =>

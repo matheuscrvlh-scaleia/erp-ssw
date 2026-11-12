@@ -3,9 +3,6 @@
  */
 import { somenteDigitos } from "./texto";
 
-/** Mesma ordem do `ORDER BY` do banco (collation en_US). */
-const ORDEM_DO_BANCO = new Intl.Collator("en-US", { sensitivity: "variant" });
-
 /** Linha de `filiais` da empresa (o que o núcleo lê). */
 export interface FilialCadastrada {
   sigla: string;
@@ -29,18 +26,6 @@ export function cidadeDaFilial(
     sigla === "" ? undefined : filiais.find((f) => f.cidade !== null && chave(f.sigla) === sigla);
   if (filial === undefined) return { unidadeCidade: cte.unidadeCidade, unidadeUf: cte.unidadeUf };
   return { unidadeCidade: filial.cidade, unidadeUf: filial.uf };
-}
-
-/**
- * Siglas das filiais próprias da empresa, ordenadas (vazio = []). Nas consultas vai como
- * parâmetro `$filiaisProprias::text[]` com `= ANY(...)`.
- * origem: filiais_proprias (sistema atual)
- */
-export function filiaisProprias(filiais: readonly FilialCadastrada[]): string[] {
-  return filiais
-    .filter((f) => f.propria)
-    .map((f) => f.sigla)
-    .sort(ORDEM_DO_BANCO.compare);
 }
 
 /**

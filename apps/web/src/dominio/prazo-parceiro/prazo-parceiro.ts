@@ -134,7 +134,7 @@ export interface ParceiroCadastrado {
   criadoEm: Date;
 }
 
-export interface LinhaRanking {
+interface LinhaRanking {
   /** uuid do cadastro, ou `cnpj:<dígitos>` para parceiro sem cadastro (Q08). */
   id: string;
   nome: string;

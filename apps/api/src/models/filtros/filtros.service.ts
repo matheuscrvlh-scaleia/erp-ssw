@@ -64,7 +64,7 @@ export interface RepositorioFiltros {
 }
 
 /** Filtros já escolhidos na tela (entrada validada de opções e sugestões). */
-export interface FiltrosDaTela {
+interface FiltrosDaTela {
   inicio?: string | undefined;
   fim?: string | undefined;
   parceiros?: string[] | undefined;
@@ -74,12 +74,12 @@ export interface FiltrosDaTela {
   codigos?: number[] | undefined;
 }
 
-export interface PedidoDeSugestoes extends FiltrosDaTela {
+interface PedidoDeSugestoes extends FiltrosDaTela {
   campo: "remetente" | "cidade_destino";
   q: string;
 }
 
-export interface PedidoDePagadores {
+interface PedidoDePagadores {
   inicio?: string | undefined;
   fim?: string | undefined;
   /** Sigla ou id de `unidades`. */
@@ -109,7 +109,7 @@ const naoVazia = <T>(lista: readonly T[] | undefined): T[] | null =>
   lista && lista.length > 0 ? [...lista] : null;
 
 /** "São José" → "SAO JOSE" (como `filial_alias` guarda a cidade). */
-export function cidadeNormalizada(cidade: string): string {
+function cidadeNormalizada(cidade: string): string {
   return cidade
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")

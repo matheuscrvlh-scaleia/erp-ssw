@@ -16,7 +16,7 @@ export interface ConfiguracaoDoNucleo extends ConfiguracaoDoPrazoPadrao {
 }
 
 /** Padrões (os da FR) quando a chave não existe ou está vazia. */
-export const CONFIGURACAO_PADRAO: ConfiguracaoDoNucleo = {
+const CONFIGURACAO_PADRAO: ConfiguracaoDoNucleo = {
   limiteSemMovimento: 3,
   dataMinimaEmissao: null,
   prazoPadraoDias: 2,

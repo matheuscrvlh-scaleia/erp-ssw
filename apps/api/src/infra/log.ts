@@ -4,7 +4,7 @@ import { type FastifyRequest, type FastifyServerOptions } from "fastify";
 import { type Ambiente } from "../config";
 
 /** Nada de segredo em log: token, cookie, senha, refresh e segredos de integração nunca são gravados. */
-export const CAMINHOS_SENSIVEIS = [
+const CAMINHOS_SENSIVEIS = [
   "req.headers.authorization",
   "req.headers.cookie",
   'req.headers["x-ftp-ingest-secret"]',
@@ -39,7 +39,7 @@ const CAMINHOS_COM_SEGREDO = /^(\/(?:api\/public\/ranking|ranking\/publico)\/)[^
  * Devolve a URL com o valor dos parâmetros sensíveis e o segmento de segredo do caminho trocados
  * por `[oculto]`.
  */
-export function mascararUrl(url: string): string {
+function mascararUrl(url: string): string {
   const mascarada = url.replace(CAMINHOS_COM_SEGREDO, "$1[oculto]");
   const inicioQuery = mascarada.indexOf("?");
   if (inicioQuery === -1) return mascarada;

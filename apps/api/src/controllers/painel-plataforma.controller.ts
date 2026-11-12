@@ -11,7 +11,7 @@ import { apresentarPainel } from "../views/painel-plataforma.view";
 import { executorDePlataforma } from "./middleware/contexto";
 import { exigirPermissaoDaPlataforma } from "./middleware/guardas";
 
-export interface OpcoesRotasPainelPlataforma {
+interface OpcoesRotasPainelPlataforma {
   executar: ExecutorComContexto;
   workerSsw: ClienteWorkerSsw | null;
   agora: () => Date;

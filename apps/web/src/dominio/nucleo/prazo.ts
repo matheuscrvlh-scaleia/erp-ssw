@@ -80,7 +80,7 @@ export interface RegraDePrazo {
 }
 
 /** Colunas de previsão do CT-e. */
-export interface Previsao {
+interface Previsao {
   dataPrevistaEntrega: DataIso | null;
   prazoFonte: FontePrazo | null;
   dataBasePrazo: Date | null;

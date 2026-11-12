@@ -14,8 +14,8 @@ import { SENHA_MINIMO } from "./auth";
 const ok = z.object({ ok: z.literal(true) });
 
 /** Senha definida por admin: 8–72 (o bcrypt de hoje lê no máximo 72 bytes). */
-export const SENHA_MAXIMO_ADMIN = 72;
-export const senhaDefinidaPorAdmin = z
+const SENHA_MAXIMO_ADMIN = 72;
+const senhaDefinidaPorAdmin = z
   .string()
   .min(SENHA_MINIMO, `A senha precisa ter pelo menos ${SENHA_MINIMO} caracteres.`)
   .max(SENHA_MAXIMO_ADMIN, `A senha pode ter no máximo ${SENHA_MAXIMO_ADMIN} caracteres.`);
@@ -43,8 +43,6 @@ export const listaDePermissoes = z.array(permissao).max(PERMISSOES.length);
 /** Exceção por usuário: "Sim" (concede) ou "Não" (nega); sem linha = "Padrão" (herda o cargo). */
 export const excecaoDePermissao = z.object({ permissao, efeito: z.enum(EFEITOS) });
 export type ExcecaoDePermissaoGravada = z.infer<typeof excecaoDePermissao>;
-
-export const MODOS_DE_CRIACAO = ["convite", "senha"] as const;
 
 /** Convite (e-mail com link para criar a senha) ou conta criada já com senha. */
 export const novoUsuario = z.discriminatedUnion("modo", [

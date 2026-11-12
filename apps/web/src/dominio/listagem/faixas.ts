@@ -24,7 +24,7 @@ const FAIXAS_DE_ATRASO: readonly FaixaDeAtraso[] = [
 ];
 
 /** Só atraso positivo entra no gráfico; 0, negativo e vazio ficam fora. */
-export function faixaDeAtraso(dias: number | null): FaixaDeAtraso | null {
+function faixaDeAtraso(dias: number | null): FaixaDeAtraso | null {
   if (dias === null || dias <= 0) return null;
   return FAIXAS_DE_ATRASO.find((f) => f.max === null || dias <= f.max) ?? null;
 }

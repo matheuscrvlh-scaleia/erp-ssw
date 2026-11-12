@@ -6,10 +6,10 @@
 import { type Linha } from "./cliente";
 import { type Sql, sql } from "./sql";
 
-export const colunaDoCampo = (campo: string): string =>
+const colunaDoCampo = (campo: string): string =>
   campo.replace(/(?<=[a-z])(?=[A-Z0-9])|(?<=[0-9])(?=[A-Za-z])/g, "_").toLowerCase();
 
-export const campoDaColuna = (coluna: string): string =>
+const campoDaColuna = (coluna: string): string =>
   coluna.replace(/_([a-z0-9])/g, (_, letra: string) => letra.toUpperCase());
 
 /** Chaves da linha em `camelCase`; os valores ficam como o `pg` entregou. */

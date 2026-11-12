@@ -36,7 +36,7 @@ export interface RepositorioPrazosDoJob {
   gravar(empresaId: string, novas: NovaPrevisao[]): Promise<void>;
 }
 
-export const LOTE_DO_RECALCULO = 1000;
+const LOTE_DO_RECALCULO = 1000;
 export const FONTES_DE_REGRA = FONTES_DE_PRAZO.filter(ehFonteDeRegra);
 
 const mesmoInstante = (a: Date | null, b: Date | null) =>
@@ -54,7 +54,7 @@ function igual(a: PrevisaoComMemoria, b: PrevisaoComMemoria): boolean {
 }
 
 /** O que muda num lote: só CT-e cuja previsão (ou memória do SSW) sai diferente. */
-export function novasPrevisoes(
+function novasPrevisoes(
   ctes: readonly CteDoRecalculo[],
   regras: readonly RegraDePrazo[],
   chegadas: ReadonlyMap<string, readonly OcorrenciaDoCte[]>,

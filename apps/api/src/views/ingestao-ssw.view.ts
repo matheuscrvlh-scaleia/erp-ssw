@@ -24,7 +24,7 @@ export function apresentarAtualizacaoDosDados(
   return { ...atualizacao, atualizadoEm: iso(atualizacao.atualizadoEm) };
 }
 
-export function apresentarSincronizacaoBi2(s: SincronizacaoLida): SincronizacaoBi2 {
+function apresentarSincronizacaoBi2(s: SincronizacaoLida): SincronizacaoBi2 {
   return { ...s, iniciadoEm: s.iniciadoEm.toISOString(), finalizadoEm: iso(s.finalizadoEm) };
 }
 
@@ -62,10 +62,7 @@ export function apresentarCredenciaisSsw(
 }
 
 /** O resumo do token da chamada fica no servidor. */
-export function apresentarEventoWebhook({
-  tokenSha256: _resumos,
-  ...e
-}: EventoLido): EventoWebhook {
+function apresentarEventoWebhook({ tokenSha256: _resumos, ...e }: EventoLido): EventoWebhook {
   return { ...e, recebidoEm: e.recebidoEm.toISOString() };
 }
 

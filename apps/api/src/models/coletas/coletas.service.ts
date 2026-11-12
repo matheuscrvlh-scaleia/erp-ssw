@@ -23,7 +23,7 @@ import { type z } from "@erp/shared/zod";
 import { consultaAmplaDemais, naoEncontrado } from "../erros";
 import { type Executor } from "../repositorios";
 
-export const LIMITE_DE_COLETAS = 100_000;
+const LIMITE_DE_COLETAS = 100_000;
 
 /** Coleta gravada, com o CT-e gerado (se existir na base). */
 export interface ColetaLida {

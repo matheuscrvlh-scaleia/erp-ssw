@@ -1,10 +1,7 @@
 export {
-  type Banco,
   comContexto,
   comInstantes,
   conectarBanco,
-  type ConexaoBanco,
-  type ConfigBanco,
   CONTEXTO_VAZIO,
   type ContextoBanco,
   ehTempoEsgotado,
@@ -15,4 +12,4 @@ export {
 } from "./cliente";
 export { erroParaLog } from "./erros";
 export { atribuicoes, camposDaLinha, valoresDeInsercao } from "./linhas";
-export { compilar, Sql, sql } from "./sql";
+export { Sql, sql } from "./sql";

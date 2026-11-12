@@ -1,22 +1,11 @@
 /**
- * Atraso e recortes de situação do CT-e: sem movimento, faixa e status do previsto, saiu para
- * entrega e em rota.
+ * Atraso e recortes de situação do CT-e: faixa e status do previsto.
  */
-import {
-  CODIGO_SAIDA_PARA_ENTREGA,
-  codigoNumericoOuNulo,
-  CODIGOS_ENTREGA,
-  CODIGOS_SAIU_ENTREGA,
-  normCodigoOcorr,
-  TIPOS_PENDENCIA,
-  type TipoSsw,
-} from "./codigos";
-import { estaEntregue, estaFinalizadoSemEntrega } from "./finalizacao";
-import { foraDeQuarentena, type OcorrenciaDoCte } from "./ocorrencia";
-import { type DataIso, diaSp, difDias, hojeSp, inicioDoDiaSp, somarDiasCorridos } from "./tempo";
+import { CODIGOS_ENTREGA, normCodigoOcorr, TIPOS_PENDENCIA, type TipoSsw } from "./codigos";
+import { type DataIso, diaSp, difDias, hojeSp, somarDiasCorridos } from "./tempo";
 
 /** Colunas do CT-e que as regras de situação leem. */
-export interface CteParaSituacao {
+interface CteParaSituacao {
   dataEmissao: DataIso;
   criadoEm: Date;
   dataPrevistaEntrega: DataIso | null;
@@ -52,29 +41,6 @@ export function atrasoDias(
   return difDias(hojeSp(agora), prevista);
 }
 
-/**
- * Em aberto, sem responsabilidade do cliente, atraso acima do limite e mais de `limite` dias
- * desde o último movimento (dia da efetiva; sem ela, a emissão).
- * origem: regra inline de _lista_ctrcs_detalhado_filtro e performance_alertas (sistema atual)
- */
-export function estaSemMovimento(
-  cte: CteParaSituacao,
-  limite: number,
-  codigosBaixa: ReadonlySet<number>,
-  agora: Date,
-): boolean {
-  if (estaEntregue(cte.dataEntregaRealizada, cte.ocorrEfetivaCodigo)) return false;
-  if (estaFinalizadoSemEntrega(cte.dataEntregaRealizada, cte.ocorrEfetivaCodigo, codigosBaixa)) {
-    return false;
-  }
-  if (cte.responsabilidadeCliente === true) return false;
-  const atraso = atrasoDias(cte, codigosBaixa, agora);
-  if (atraso === null || atraso <= limite) return false;
-  const ultimoMovimento =
-    cte.ocorrEfetivaData === null ? cte.dataEmissao : diaSp(cte.ocorrEfetivaData);
-  return difDias(hojeSp(agora), ultimoMovimento) > limite;
-}
-
 type FaixaPrevisao = "sem_prev" | "vencido" | "hoje" | "d1" | "d2" | "d3_mais";
 
 /**
@@ -92,7 +58,7 @@ export function faixaPrevisao(previsao: DataIso | null, agora: Date): FaixaPrevi
   return "d3_mais";
 }
 
-export type StatusPrevisto = "agendamento" | "rota" | "pendencia" | "programacao" | "outros";
+type StatusPrevisto = "agendamento" | "rota" | "pendencia" | "programacao" | "outros";
 
 /**
  * Status do previsto pela efetiva (a ordem importa: 35 com tipo pendência é agendamento).
@@ -104,48 +70,4 @@ export function statusPrevisto(codigo: number | null, tipoSsw: TipoSsw | null): 
   if (tipoSsw !== null && TIPOS_PENDENCIA.has(tipoSsw)) return "pendencia";
   if (codigo === null || [80, 82, 83, 84].includes(codigo)) return "programacao";
   return "outros";
-}
-
-type SaiuParaEntrega = "sim" | "quarentena" | "nao_rastreado";
-
-/**
- * Saiu para entrega: entregue, ou efetiva/0013/0174 de saída, ou ocorrência de saída fora de
- * quarentena. Só em quarentena = "quarentena". Código com letra conta como sem código (Q54).
- * origem: _saiu_entrega_status (sistema atual)
- */
-export function saiuParaEntrega(
-  cte: CteParaSituacao,
-  ocorrencias: readonly OcorrenciaDoCte[],
-): SaiuParaEntrega {
-  if (estaEntregue(cte.dataEntregaRealizada, cte.ocorrEfetivaCodigo)) return "sim";
-  for (const coluna of [
-    cte.ocorrEfetivaCodigo,
-    cte.ultimaOcorrCodigo0013,
-    cte.ultOcorrCodigo0174,
-  ]) {
-    const codigo = codigoNumericoOuNulo(coluna);
-    if (codigo !== null && CODIGOS_SAIU_ENTREGA.has(codigo)) return "sim";
-  }
-  const saidas = ocorrencias.filter((o) => CODIGOS_SAIU_ENTREGA.has(o.codigo));
-  if (saidas.length === 0) return "nao_rastreado";
-  return saidas.some((o) => !o.quarentena) ? "sim" : "quarentena";
-}
-
-/**
- * Em rota: efetiva 85 e (85 só de foto, ou alguma 85 gravada a partir da meia-noite de Brasília
- * da emissão e lançada depois de o CT-e existir). Quarentena não conta (Q21); o corte é o dia de
- * Brasília (Q11; hoje é a meia-noite UTC).
- * origem: _romaneio_em_rota (sistema atual)
- */
-export function emRota(
-  cte: Pick<CteParaSituacao, "ocorrEfetivaCodigo" | "dataEmissao" | "criadoEm">,
-  ocorrencias: readonly OcorrenciaDoCte[],
-): boolean {
-  if (normCodigoOcorr(cte.ocorrEfetivaCodigo) !== CODIGO_SAIDA_PARA_ENTREGA) return false;
-  const saidas = foraDeQuarentena(ocorrencias).filter(
-    (o) => o.codigo === CODIGO_SAIDA_PARA_ENTREGA,
-  );
-  if (saidas.length === 0) return true;
-  const corte = inicioDoDiaSp(cte.dataEmissao);
-  return saidas.some((o) => o.dataHora >= corte && o.criadoEm >= cte.criadoEm);
 }

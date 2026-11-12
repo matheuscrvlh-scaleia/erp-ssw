@@ -78,7 +78,7 @@ export interface FatoCte {
 }
 
 /** Regras do período: catálogo, códigos de prejuízo e janela. */
-export interface ContextoDaRegra {
+interface ContextoDaRegra {
   cadastro: Cadastro;
   codigosPrejuizo: readonly number[];
   periodo: Periodo;
@@ -145,7 +145,7 @@ export function ocorrenciasPenalizantes(
 /**
  * "Saiu para entrega" pelos códigos de rua. origem: _saiu_entrega_status
  */
-export function saiuParaEntrega(c: FatoCte): SaiuStatus {
+function saiuParaEntrega(c: FatoCte): SaiuStatus {
   if (estaEntregue(c.dataEntregaRealizada, c.ocorrEfetivaCodigo)) return "sim";
   for (const col of [c.ocorrEfetivaCodigo, c.codigo0013, c.codigo0174]) {
     const n = normCodigoOcorr(col);
@@ -287,7 +287,7 @@ export function casaRecorte(c: FatoCte, a: AnaliseCte, recorte: Recorte, hoje: s
 // ---------------------------------------------------------------------------------------------
 // Cards do topo
 
-export interface TotaisDoTopo {
+interface TotaisDoTopo {
   ctes: number;
   peso: number;
   volumes: number;
@@ -426,7 +426,7 @@ export function totaisDoTopo(
 // ---------------------------------------------------------------------------------------------
 // KPIs, distribuição dos não finalizados e motivos de não entrega
 
-export interface KpisRomaneio {
+interface KpisRomaneio {
   total: number;
   romaneado: number;
   entregue: number;
@@ -463,7 +463,7 @@ export function kpisDoRomaneio(ctes: readonly CteAnalisado[]): KpisRomaneio {
   return { ...k, freteRomaneado: reais(romaneadoCentavos), fretePerdido: reais(perdidoCentavos) };
 }
 
-export interface LinhaDistribuicao {
+interface LinhaDistribuicao {
   codigo: number | null;
   descricao: string | null;
   pendencia: boolean;
@@ -503,7 +503,7 @@ export function distribuicaoDosNaoFinalizados(
     );
 }
 
-export interface MotivoNaoEntrega {
+interface MotivoNaoEntrega {
   codigo: string;
   descricao: string;
   qtd: number;

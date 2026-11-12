@@ -7,7 +7,6 @@ export * from "./cadastros";
 export * from "./codigos";
 export * from "./configuracao";
 export * from "./derivar-cte";
-export * from "./escopo";
 export * from "./finalizacao";
 export * from "./gravacao-ocorrencia";
 export * from "./gravar-cte";

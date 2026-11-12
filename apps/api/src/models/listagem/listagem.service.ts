@@ -32,7 +32,7 @@ export interface Agregados {
 }
 
 /** Página da lista com o total e os gráficos, todos com o mesmo filtro. */
-export interface PaginaDaLista {
+interface PaginaDaLista {
   linhas: LinhaLista[];
   total: number;
   porCodigo: ContagemPorCodigo[];
@@ -41,7 +41,7 @@ export interface PaginaDaLista {
   porFaixa: ReturnType<typeof agruparPorFaixaDeAtraso>;
 }
 
-export interface PaginaDaExportacao {
+interface PaginaDaExportacao {
   linhas: LinhaLista[];
   temMais: boolean;
 }

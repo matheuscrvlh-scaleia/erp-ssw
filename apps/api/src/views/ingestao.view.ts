@@ -17,7 +17,7 @@ import {
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
-export function apresentarCiclo(x: CicloLido): CicloDaIngestao {
+function apresentarCiclo(x: CicloLido): CicloDaIngestao {
   return {
     ...x,
     primeiroArquivoEm: x.primeiroArquivoEm.toISOString(),
@@ -27,7 +27,7 @@ export function apresentarCiclo(x: CicloLido): CicloDaIngestao {
   };
 }
 
-export function apresentarArquivo(a: ArquivoLido): ArquivoDaIngestao {
+function apresentarArquivo(a: ArquivoLido): ArquivoDaIngestao {
   return { ...a, vistoEm: a.vistoEm.toISOString(), importadoEm: iso(a.importadoEm) };
 }
 
@@ -43,7 +43,7 @@ export function apresentarPipeline(
   };
 }
 
-export function apresentarAplicacao(a: AplicacaoLida): AplicacaoDaIngestao {
+function apresentarAplicacao(a: AplicacaoLida): AplicacaoDaIngestao {
   return { ...a, iniciadoEm: a.iniciadoEm.toISOString(), finalizadoEm: iso(a.finalizadoEm) };
 }
 

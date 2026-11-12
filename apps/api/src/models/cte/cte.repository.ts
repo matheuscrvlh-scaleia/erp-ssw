@@ -1,5 +1,5 @@
 /**
- * Gravação de CT-e pelo núcleo no banco do ERP (a regra é `regravarCte`/`criarCte` de
+ * Gravação de CT-e pelo núcleo no banco do ERP (a regra é `regravarCte` de
  * `@erp/dominio/nucleo`). Usada pelos jobs de recálculo; o worker-ssw tem a cópia dele (ADR 0012).
  * Preso a uma transação no contexto da empresa (RLS); toda gravação leva a empresa explícita.
  */

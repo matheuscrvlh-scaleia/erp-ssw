@@ -55,47 +55,27 @@ guarda essa previsão em `previsaoSsw*` e volta a ela quando a regra configurada
 
 Em `campos_ssw` vão os nomes de **coluna** (snake_case) do `ctes`; `campoDaColuna` converte.
 
-### 2. Gravar uma ocorrência — `prepararOcorrencia`
+### 2. Alterar código de ocorrência no Admin — `efeitoDaAlteracaoDeCodigo`
 
-```ts
-prepararOcorrencia({ ocorrencia, cte, catalogo, empresa, trackingdanfe }): OcorrenciaPreparada
-// → { tipo: "gravar", quarentena, responsavel, penaliza } | { tipo: "descartar", motivo }
-```
-
-Antes: se o código não está no catálogo, insira `codigoRecebidoSemCadastro(codigo, descricao)`
-(fora de 0–99 devolve `null` = não grava). Depois de gravar: `prepararGravacaoDoCte` do CT-e.
-
-Catálogo: ao **cadastrar** código no Admin aplique `derivarResponsavelPeloTipo`; ao **alterar**,
 `efeitoDaAlteracaoDeCodigo(antes, depois)` diz se regrava `responsavel/penaliza` em todas as
-ocorrências do código e se recalcula os CT-e que têm o código.
-
-Webhook: `cidadeDoComplemento(complemento)` dá o nome a buscar em `filiais_apelidos`.
+ocorrências do código e se recalcula os CT-e que têm o código. A gravação de ocorrência vinda do
+SSW, do webhook e do trackingdanfe é do worker-ssw (ADR 0012).
 
 ### 3. Regras de leitura (telas, consultas, exportação)
 
-| Função                                                                                                   | Para quê                                                                    |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `estaEntregue`, `estaFinalizadoSemEntrega`, `estaEmAberto`                                               | situação pela efetiva gravada                                               |
-| `codigoSituacao`                                                                                         | código do seletor/gráfico "Ocorrência" (entrega sem efetiva de entrega = 1) |
-| `atrasoDias`                                                                                             | atraso pela previsão atual (aberto = hoje − previsão)                       |
-| `estaSemMovimento`                                                                                       | alerta "sem movimento" (`config.limiteSemMovimento` ou o da tela)           |
-| `faixaPrevisao`, `statusPrevisto`                                                                        | bloco "Previstos"                                                           |
-| `saiuParaEntrega`, `emRota`, `travadoEmOcorrencia`                                                       | Romaneio / Listagem                                                         |
-| `efetivaParaLeitura`                                                                                     | efetiva gravada + responsável do cadastro (leitura em lote)                 |
-| `diasUteisEntre` + `feriadosQueContamNosDiasUteis`                                                       | SLA em dias úteis (só nacionais — Q23)                                      |
-| `nascidoEmAtraso`                                                                                        | indicador de prazo mínimo                                                   |
-| `podeVerTudo`, `podeVerCte`                                                                              | escopo por unidade/equipe (Q26; sem escopo, vê tudo)                        |
-| `padroesTextoFiltro` / `casaFiltroTexto`                                                                 | filtro "a\|b" (`col ILIKE ANY($padroes)`)                                   |
-| `formatarCnpjCpf`, `normalizarNome`, `tipoDocumentoEfetivo`, `filiaisProprias`, `cnpjsPropriosDaEmpresa` | utilidades da ingestão e das telas                                          |
+| Função                                                                                | Para quê                                              |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `estaEntregue`, `estaFinalizadoSemEntrega`                                            | situação pela efetiva gravada                         |
+| `atrasoDias`                                                                          | atraso pela previsão atual (aberto = hoje − previsão) |
+| `faixaPrevisao`, `statusPrevisto`                                                     | bloco "Previstos"                                     |
+| `padroesTextoFiltro`                                                                  | filtro "a\|b" (`col ILIKE ANY($padroes)`)             |
+| `formatarCnpjCpf`, `normalizarNome`, `tipoDocumentoEfetivo`, `cnpjsPropriosDaEmpresa` | utilidades da ingestão e das telas                    |
 
 Agregações grandes rodam em SQL montado pelo repositório com a **mesma** regra: os parâmetros saem
-daqui (`hojeSp(agora)`, `[...codigosDeBaixa(catalogo)]`, `padroesTextoFiltro(f)`,
-`filiaisProprias(...)`). Os fragmentos equivalentes estão na spec (§2–§5); confira as duas formas
-com os mesmos casos.
+daqui (`hojeSp(agora)`, `[...codigosDeBaixa(catalogo)]`, `padroesTextoFiltro(f)`). Os fragmentos
+equivalentes estão na spec (§2–§5); confira as duas formas com os mesmos casos.
 
-### 4. Configuração — `lerConfiguracaoDoNucleo` / `validarConfiguracaoDoNucleo`
+### 4. Configuração — `lerConfiguracaoDoNucleo`
 
 Chaves de `configuracoes`: `alerta_dias_sem_movimento` (3), `ctrc_data_minima_emissao` (sem
-trava), `prazo_padrao_dias` (2) e `raiz_cnpj_troca` (`00193687`) — padrões da FR (Q48). O caso de
-uso que grava configuração chama `validarConfiguracaoDoNucleo` (valor inválido vira 422 para o
-operador).
+trava), `prazo_padrao_dias` (2) e `raiz_cnpj_troca` (`00193687`) — padrões da FR (Q48).

@@ -2,7 +2,7 @@
  * Finalização do CT-e: entregue, baixado (finalizado sem entrega) ou em aberto. Todas as telas
  * decidem pela ocorrência efetiva gravada.
  */
-import { CODIGOS_ENTREGA, normCodigoOcorr, type TipoSsw } from "./codigos";
+import { CODIGOS_ENTREGA, normCodigoOcorr } from "./codigos";
 import { type DataIso, diaSp } from "./tempo";
 
 /** origem: _is_entregue (sistema atual) */
@@ -25,22 +25,6 @@ export function estaFinalizadoSemEntrega(
   if (dataEntrega !== null) return false;
   const codigo = normCodigoOcorr(codigoEfetivo);
   return codigo !== null && codigo !== 1 && codigosBaixa.has(codigo);
-}
-
-/**
- * Código do seletor "Ocorrência" / gráfico por código: com data de entrega e efetiva que não é
- * ENTREGA/BAIXA (entrega que veio só pelo BI2) conta como 1.
- * origem: codigo_situacao_ctrc (sistema atual)
- */
-export function codigoSituacao(
-  dataEntrega: Date | null,
-  codigoEfetivo: string | null,
-  tipoSswDaEfetiva: TipoSsw | null,
-): number | null {
-  if (dataEntrega !== null && tipoSswDaEfetiva !== "ENTREGA" && tipoSswDaEfetiva !== "BAIXA") {
-    return 1;
-  }
-  return normCodigoOcorr(codigoEfetivo);
 }
 
 /**

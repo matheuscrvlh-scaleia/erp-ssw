@@ -26,7 +26,7 @@ import { type Executor } from "../repositorios";
  * integrações, logins) sai numa transação só, agrupado por empresa.
  */
 
-export interface DependenciasPainel {
+interface DependenciasPainel {
   /** Nulo = worker-ssw não configurado (a saúde diz isso; o resto segue). */
   workerSsw: ClienteWorkerSsw | null;
   agora: () => Date;
@@ -35,7 +35,7 @@ export interface DependenciasPainel {
 }
 
 /** Executor com a Plataforma ligada, no contexto de uma empresa (RLS) ou de nenhuma. */
-export type NaEmpresa = (empresaId: string | null) => Executor<"plataforma" | "ingestaoSsw">;
+type NaEmpresa = (empresaId: string | null) => Executor<"plataforma" | "ingestaoSsw">;
 
 export type LinhaDoPainel = Omit<EmpresaNoPainel, "criadaEm" | "ultimoLoginEm" | "ultimoDadoEm"> & {
   criadaEm: Date;
@@ -232,7 +232,7 @@ export async function obterPainel(
 }
 
 /** Quanto o painel montado vale: a tela pode atualizar à vontade sem refazer as consultas. */
-export const VALIDADE_DO_PAINEL_MS = 60_000;
+const VALIDADE_DO_PAINEL_MS = 60_000;
 
 /**
  * Cache curto do painel (é o mesmo para toda a equipe da Plataforma). Pedidos ao mesmo tempo

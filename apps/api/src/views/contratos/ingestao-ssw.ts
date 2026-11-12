@@ -21,7 +21,7 @@ export const saudeSsw = z.object({
 });
 
 /** Selo "Dados atualizados em…": última aplicação do ciclo de arquivos e XML aguardando. */
-export const atualizacaoDosDados = z.object({
+const atualizacaoDosDados = z.object({
   atualizadoEm: instante.nullable(),
   /** Só para a Plataforma (a fila de XML é dela); nulo para os demais. */
   xmlAguardando: z.object({ pendentes: z.number().int(), expirados: z.number().int() }).nullable(),
@@ -43,7 +43,7 @@ export const sincronizacaoBi2 = z.object({
 
 export type SincronizacaoBi2 = z.infer<typeof sincronizacaoBi2>;
 
-export const credenciaisSsw = z.object({
+const credenciaisSsw = z.object({
   /** Integração `ssw_api` ligada na empresa. */
   ativo: z.boolean(),
   dominio: z.string(),
@@ -64,11 +64,7 @@ export const credenciaisSsw = z.object({
     .nullable(),
 });
 
-export const TIPOS_DE_FALHA_SSW = [
-  "upstream_unavailable",
-  "permission_denied",
-  "auth_failed",
-] as const;
+const TIPOS_DE_FALHA_SSW = ["upstream_unavailable", "permission_denied", "auth_failed"] as const;
 
 export const resultadoDoTesteSsw = z.object({
   ok: z.boolean(),
@@ -135,7 +131,7 @@ export const statusDoJob = z.object({
 
 export type StatusDoJob = z.infer<typeof statusDoJob>;
 
-export const diagnosticoSsw = z.object({
+const diagnosticoSsw = z.object({
   /** `false` = API sem Redis: o status dos jobs não está disponível. */
   filasDisponiveis: z.boolean(),
   jobs: z.array(statusDoJob),

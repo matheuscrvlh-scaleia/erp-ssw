@@ -31,7 +31,7 @@ const dataEntrega = sql`coalesce(ctes.data_entrega_realizada, ctes.ocorr_efetiva
 const digitalizado = sql`(ctes.comprovante_escaneado is true or ${tem88})`;
 
 /**
- * Mesma regra de `classificarComprovantes` e `listarComprovantes` (dominio/comprovantes), em SQL
+ * Mesma regra de `classificarComprovantes` (dominio/comprovantes), em SQL
  * para a lista paginar no banco: digitalizado = 88 ou "escaneado" no 455; pendente = não
  * digitalizado num dia coberto (930 importado) ou com a coluna do 455.
  */

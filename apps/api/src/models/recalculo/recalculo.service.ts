@@ -31,7 +31,7 @@ type ExecutorDoRecalculo = <T>(
 ) => Promise<T>;
 
 /** Lote por transação: curto o bastante para não segurar trava nem estourar o timeout. */
-export const TAMANHO_DO_LOTE = 10_000;
+const TAMANHO_DO_LOTE = 10_000;
 
 /**
  * Propaga a classificação do código do catálogo para as ocorrências, em lotes de transações
@@ -55,7 +55,7 @@ export async function propagarClassificacaoDoCodigo(
 }
 
 /** CT-e por transação no recálculo: cada um lê as ocorrências e pode gravar. */
-export const LOTE_DE_CTES = 500;
+const LOTE_DE_CTES = 500;
 
 /** Cadastros que o núcleo usa no recálculo (catálogo, filiais, regras...), lidos uma vez. */
 export function cadastrosDoRecalculo(db: ExecutorDoRecalculo): Promise<CadastrosDoNucleo> {

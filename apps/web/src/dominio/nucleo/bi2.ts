@@ -54,7 +54,7 @@ export function mesclarEscritaBi2<T extends CteParaBi2>(
 }
 
 /** `data_prevista_entrega` → `dataPrevistaEntrega`; `ult_ocorr_codigo_0174` → `ultOcorrCodigo0174`. */
-export function campoDaColuna(coluna: string): string {
+function campoDaColuna(coluna: string): string {
   return coluna.replace(/_([a-z0-9])/g, (_, letra: string) => letra.toUpperCase());
 }
 

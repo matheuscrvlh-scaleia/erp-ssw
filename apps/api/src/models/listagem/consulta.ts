@@ -167,7 +167,7 @@ const COLUNA_DA_BASE = {
   concluido: sql`ctes.data_conclusao_efetiva`,
 } as const;
 
-export interface OpcoesDoWhere {
+interface OpcoesDoWhere {
   /** Os códigos do recorte ignoram o próprio filtro de códigos. */
   semCodigos?: boolean;
 }

@@ -1,8 +1,4 @@
-import {
-  type PainelDeComprovantes,
-  type StatusDeComprovante,
-  TIPO_NAO_INFORMADO,
-} from "@erp/shared/contratos/comprovantes";
+import { type PainelDeComprovantes, TIPO_NAO_INFORMADO } from "@erp/shared/contratos/comprovantes";
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
 
 import { agrupar } from "../colecoes";
@@ -26,7 +22,7 @@ export interface CteEntregue {
   tem88: boolean;
 }
 
-export interface Comprovante extends CteEntregue {
+interface Comprovante extends CteEntregue {
   tipoEfetivo: string;
   digitalizado: boolean;
   /** Dia com o 930 importado ou CT-e com a coluna do 455: só esses entram em pendentes e no %. */
@@ -101,33 +97,4 @@ export function calcularPainelDeComprovantes(
       .map(([tipo, itens]) => ({ tipo, qtd: itens.length }))
       .sort((a, b) => b.qtd - a.qtd || compararTexto(a.tipo, b.tipo)),
   };
-}
-
-/**
- * Lista do card: todos, só digitalizados ou só pendentes (sem comprovante num dia coberto), da
- * entrega mais recente para a mais antiga; empate pelo CT-e gravado por último (Q07 do dono).
- * A API pagina esta mesma regra no banco (comprovantes/repositorio.ts); aqui fica a forma em
- * TypeScript, que os testes usam como referência.
- * origem: comprovantes_lista_v2 (sistema atual)
- */
-export function listarComprovantes(
-  todos: readonly Comprovante[],
-  tipos: readonly string[],
-  status: StatusDeComprovante,
-): Comprovante[] {
-  return todos
-    .filter((c) => casaTipos(c, tipos))
-    .filter((c) =>
-      status === "digitalizados"
-        ? c.digitalizado
-        : status === "pendentes"
-          ? !c.digitalizado && c.coberto
-          : true,
-    )
-    .sort(
-      (a, b) =>
-        b.dataEntrega.getTime() - a.dataEntrega.getTime() ||
-        b.criadoEm.getTime() - a.criadoEm.getTime() ||
-        (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
-    );
 }

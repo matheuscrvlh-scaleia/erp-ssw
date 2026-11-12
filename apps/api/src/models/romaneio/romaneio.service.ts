@@ -85,12 +85,12 @@ import { type Executor } from "../repositorios";
 
 // Entradas já validadas (com os padrões do contrato aplicados).
 
-export interface FiltrosDoDia {
+interface FiltrosDoDia {
   filiais?: string[] | undefined;
   tipos?: string[] | undefined;
 }
 
-export interface EntradaDaFaixa extends FiltrosDoDia {
+interface EntradaDaFaixa extends FiltrosDoDia {
   faixa: FaixaDoDia;
   apenasNaoEntregues: boolean;
 }
@@ -101,33 +101,33 @@ interface DocumentoDigitado {
   nf?: string | undefined;
 }
 
-export interface EntradaDosTotais extends DocumentoDigitado {
+interface EntradaDosTotais extends DocumentoDigitado {
   filtros: FiltrosRomaneio;
   universo: "todos" | "romaneados";
   semMovimento: boolean;
 }
 
-export type EntradaDaLista = z.output<typeof entradaLista>;
+type EntradaDaLista = z.output<typeof entradaLista>;
 
 type FiltrosDaLista = Pick<
   EntradaDaLista,
   "filtros" | "ctrc" | "nf" | "busca" | "recorte" | "emRotaAgora" | "status" | "semMovimento"
 >;
 
-export interface EntradaDaExportacao extends FiltrosDaLista {
+interface EntradaDaExportacao extends FiltrosDaLista {
   /** "somente": só os ids dados; "todas": todas menos os ids dados. */
   selecao: { modo: "todas" | "somente"; ids: string[] };
 }
 
-export interface EntradaDaAba {
+interface EntradaDaAba {
   filtros: FiltrosRomaneio;
 }
 
-export interface EntradaDosMotivos extends EntradaDaAba {
+interface EntradaDosMotivos extends EntradaDaAba {
   limite: number;
 }
 
-export interface EntradaDasOpcoes {
+interface EntradaDasOpcoes {
   campo: CampoData;
   inicio: string;
   fim: string;
@@ -308,7 +308,7 @@ const padroesDe = (texto: string | undefined) =>
   texto && texto.trim() !== "" ? padroesTextoFiltro(texto) : null;
 
 /** Normaliza os filtros da tela; nulo = o resultado é vazio sem precisar consultar. */
-export function normalizarFiltros(
+function normalizarFiltros(
   f: FiltrosRomaneio,
   filiaisProprias: readonly string[],
 ): FiltrosNormalizados | null {

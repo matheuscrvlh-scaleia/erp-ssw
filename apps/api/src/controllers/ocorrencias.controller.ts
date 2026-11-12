@@ -22,7 +22,7 @@ import { exigirModulo, exigirPermissao } from "./middleware/guardas";
 
 const ler = [exigirModulo("ocorrencias"), exigirPermissao("ocorrencias", "ver")];
 
-export async function contextoDaEmpresa(request: FastifyRequest): Promise<ContextoOcorrencias> {
+async function contextoDaEmpresa(request: FastifyRequest): Promise<ContextoOcorrencias> {
   const { empresa } = await empresaDaRequisicao(request);
   return { empresaId: empresa.id, fuso: empresa.fuso };
 }

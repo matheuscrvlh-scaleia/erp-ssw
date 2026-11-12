@@ -33,7 +33,7 @@ import { consultaAmplaDemais } from "../erros";
 import { type Executor } from "../repositorios";
 
 /** Teto de linhas trazidas para a memória numa consulta (CT-e ou ocorrências). */
-export const LIMITE_DE_LINHAS = 200_000;
+const LIMITE_DE_LINHAS = 200_000;
 
 /** Filtros de CT-e já normalizados para a consulta. */
 export interface FiltroDeCtes {
@@ -132,7 +132,7 @@ export interface RepositorioOcorrencias {
   ocorrencias(filtro: FiltroDeCtes, codigos: number[], limite: number): Promise<OcorrenciaLida[]>;
   /**
    * Lista detalhada filtrada, classificada, ordenada e paginada no banco, com o total da lista
-   * inteira (mesma regra de `montarLista`, dominio/ocorrencias/lista.ts).
+   * inteira (regra da spec 04, lista de ocorrências).
    */
   lista(
     filtro: FiltroDeCtes,
@@ -203,7 +203,7 @@ async function catalogoDaTela(
 }
 
 /** CT-e lidos → o que as regras do painel usam; filtro de tipo de documento aplicado aqui. */
-export function paraOPainel(
+function paraOPainel(
   ctes: readonly CteLido[],
   f: Pick<FiltrosDeCte, "campoData" | "tipos">,
   baixas: ReadonlySet<number>,

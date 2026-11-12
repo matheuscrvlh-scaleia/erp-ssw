@@ -12,7 +12,7 @@ import {
 } from "../models/comprovantes/comprovantes.service";
 
 /** A linha como a tela mostra: CT-e sem tipo aparece como "NAO INFORMADO". */
-export function apresentarComprovante(c: ComprovanteDaLista): LinhaDeComprovante {
+function apresentarComprovante(c: ComprovanteDaLista): LinhaDeComprovante {
   return {
     id: c.id,
     numeroCtrc: c.numero,

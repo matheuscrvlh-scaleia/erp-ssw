@@ -11,7 +11,7 @@ import { type Redis } from "ioredis";
 import { type Ambiente, origensPermitidas } from "../../config";
 import { muitasTentativas } from "../../models/erros";
 
-export interface OpcoesSeguranca {
+interface OpcoesSeguranca {
   ambiente: Ambiente;
   redis: Redis | null;
   /** Documentação interativa (swagger-ui) precisa de CSP mais solta. */

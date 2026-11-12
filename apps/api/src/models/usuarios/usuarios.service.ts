@@ -91,7 +91,7 @@ export interface RepositorioUsuarios {
 }
 
 /** Validade do link de convite. */
-export const VALIDADE_CONVITE_HORAS = 72;
+const VALIDADE_CONVITE_HORAS = 72;
 
 export interface DependenciasUsuarios {
   correio: Correio;

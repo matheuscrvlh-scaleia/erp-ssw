@@ -30,10 +30,10 @@ const IGNORADAS: ReadonlySet<string> = new Set([
 /** Nome de coluna (ou chave de configuração) com cara de segredo: o valor vira `***`. */
 const PARECE_SEGREDO = /(senha|token|secret|segredo|apikey|password)/i;
 
-export const MASCARA = "***";
+const MASCARA = "***";
 
 /** Configurações que só guardam estado de job: mudam o tempo todo e não são decisão de ninguém. */
-export function ehConfiguracaoDeEstado(chave: string): boolean {
+function ehConfiguracaoDeEstado(chave: string): boolean {
   return (
     /^(bi2_|enriq_periodo_|backfill_(?!cron_token))/.test(chave) ||
     chave === "ftp_sync_rodando" ||

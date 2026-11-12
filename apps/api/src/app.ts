@@ -67,7 +67,7 @@ import { type ExecutorComContexto } from "./models/repositorios";
 import { type DependenciasUsuarios } from "./models/usuarios/usuarios.service";
 
 /** Tudo o que a API usa de fora. Produção monta em `server.ts`; os testes passam falsos. */
-export interface Dependencias {
+interface Dependencias {
   ambiente: Ambiente;
   executar: ExecutorComContexto;
   verificarBanco: () => Promise<void>;
