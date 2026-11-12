@@ -1,6 +1,6 @@
 # ADR 0016 — Arquitetura do web
 
-- Situação: proposta (12/11/2026), aguardando o dono
+- Situação: aceita (12/11/2026, decisão do dono)
 - Complementa: ADR 0013 (web como projeto próprio) e ADR 0014 (a api em MVC); `docs/molde.md` §6
 
 ## Contexto
