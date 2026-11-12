@@ -6,8 +6,8 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
 import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { type ExecutorComContexto } from "../../infra/repositorios";
 import { atorDa } from "../../plugins/sessao";
-import { type ExecutorComContexto } from "../../repositorios";
 import {
   atribuirEquipe,
   calcularEquipe,

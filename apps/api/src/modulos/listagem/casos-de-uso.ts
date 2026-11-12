@@ -14,7 +14,7 @@ import {
   type OrdemLista,
 } from "@erp/shared/contratos/listagem";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type CodigoCadastrado, type RepositorioCtrc } from "../ctrc/casos-de-uso";
 
 export interface ContagemPorCodigo {

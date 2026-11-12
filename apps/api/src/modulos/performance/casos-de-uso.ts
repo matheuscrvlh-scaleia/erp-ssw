@@ -52,7 +52,7 @@ import {
 } from "@erp/shared/contratos/performance";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type ContextoDaConsulta } from "./consultas";
 
 /** Chaves de `configuracoes` que a Performance lê. */

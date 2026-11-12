@@ -9,64 +9,64 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
 
-import { type Ambiente } from "./config/env";
-import { registrarTratadorDeErros } from "./http/tratador-erros";
-import type { Armazenamento } from "./infra/armazenamento";
+import { type Ambiente } from "../config/env";
+import type { Armazenamento } from "../infra/armazenamento";
 import {
   criarFonteDaConfiguracao,
   type FonteDaConfiguracao,
-} from "./infra/configuracao-da-plataforma";
+} from "../infra/configuracao-da-plataforma";
 import {
   type Correio,
   criarCorreioDaPlataforma,
   criarCorreioDeDesenvolvimento,
-} from "./infra/correio";
-import type { FilaDeJobs } from "./infra/fila";
-import { type ProvedorGoogle } from "./infra/google";
-import { type LimitadorDeFalhas } from "./infra/limitador";
-import { opcoesDeLog } from "./infra/log";
-import { type ServicoDeSenhas } from "./infra/senhas";
-import { type EmissorDeTokens } from "./infra/tokens";
-import { type ClienteWorkerSsw, criarClienteWorkerSswDaPlataforma } from "./infra/worker-ssw";
-import { type DependenciasAhgora } from "./modulos/ahgora/casos-de-uso";
-import { rotasAhgora } from "./modulos/ahgora/rotas";
-import { type DependenciasAuth } from "./modulos/auth/casos-de-uso";
-import { rotasAuth } from "./modulos/auth/rotas";
-import { rotasBonificacaoEntrega } from "./modulos/bonificacao-entrega/rotas";
-import { rotasCadastros } from "./modulos/cadastros/rotas";
-import { rotasCalendario } from "./modulos/calendario/rotas";
-import { rotasCodigosOcorrencia } from "./modulos/codigos-ocorrencia/rotas";
-import { rotasColetas } from "./modulos/coletas/rotas";
-import { rotasComprovantes } from "./modulos/comprovantes/rotas";
+} from "../infra/correio";
+import type { FilaDeJobs } from "../infra/fila";
+import { type ProvedorGoogle } from "../infra/google";
+import { type LimitadorDeFalhas } from "../infra/limitador";
+import { opcoesDeLog } from "../infra/log";
+import { type ExecutorComContexto } from "../infra/repositorios";
+import { type ServicoDeSenhas } from "../infra/senhas";
+import { type EmissorDeTokens } from "../infra/tokens";
+import { type ClienteWorkerSsw, criarClienteWorkerSswDaPlataforma } from "../infra/worker-ssw";
+import { type DependenciasAhgora } from "../modulos/ahgora/casos-de-uso";
+import { rotasAhgora } from "../modulos/ahgora/rotas";
+import { type DependenciasAuth } from "../modulos/auth/casos-de-uso";
+import { rotasAuth } from "../modulos/auth/rotas";
+import { rotasBonificacaoEntrega } from "../modulos/bonificacao-entrega/rotas";
+import { rotasCadastros } from "../modulos/cadastros/rotas";
+import { rotasCalendario } from "../modulos/calendario/rotas";
+import { rotasCodigosOcorrencia } from "../modulos/codigos-ocorrencia/rotas";
+import { rotasColetas } from "../modulos/coletas/rotas";
+import { rotasComprovantes } from "../modulos/comprovantes/rotas";
 import {
   type CacheDeConfiguracoes,
   criarCacheDeConfiguracoes,
-} from "./modulos/configuracoes/cache";
-import { rotasConfiguracoes } from "./modulos/configuracoes/rotas";
-import { rotasCtrc } from "./modulos/ctrc/rotas";
-import { rotasFiltros } from "./modulos/filtros/rotas";
-import { rotasHistorico } from "./modulos/historico/rotas";
-import { rotasIngestao } from "./modulos/ingestao/rotas-admin";
-import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
-import { rotasListagem } from "./modulos/listagem/rotas";
-import { rotasLogs } from "./modulos/logs/rotas";
-import { rotasOcorrencias } from "./modulos/ocorrencias/rotas";
-import { rotasPerformance } from "./modulos/performance/rotas";
-import { rotasPlataforma } from "./modulos/plataforma/rotas";
-import { rotasPrazoParceiro } from "./modulos/prazo-parceiro/rotas";
-import { rotasPrazos } from "./modulos/prazos/rotas";
-import { rotasRanking } from "./modulos/ranking/rotas";
-import { rotasRomaneio } from "./modulos/romaneio/rotas";
-import { type DependenciasUsuarios } from "./modulos/usuarios/casos-de-uso";
-import { rotasUsuarios } from "./modulos/usuarios/rotas";
+} from "../modulos/configuracoes/cache";
+import { rotasConfiguracoes } from "../modulos/configuracoes/rotas";
+import { rotasCtrc } from "../modulos/ctrc/rotas";
+import { rotasFiltros } from "../modulos/filtros/rotas";
+import { rotasHistorico } from "../modulos/historico/rotas";
+import { rotasIngestao } from "../modulos/ingestao/rotas-admin";
+import { rotasIngestaoSsw } from "../modulos/ingestao-ssw/rotas";
+import { rotasListagem } from "../modulos/listagem/rotas";
+import { rotasLogs } from "../modulos/logs/rotas";
+import { rotasOcorrencias } from "../modulos/ocorrencias/rotas";
+import { rotasPerformance } from "../modulos/performance/rotas";
+import { rotasPlataforma } from "../modulos/plataforma/rotas";
+import { rotasPrazoParceiro } from "../modulos/prazo-parceiro/rotas";
+import { rotasPrazos } from "../modulos/prazos/rotas";
+import { rotasRanking } from "../modulos/ranking/rotas";
+import { rotasRomaneio } from "../modulos/romaneio/rotas";
+import { type DependenciasUsuarios } from "../modulos/usuarios/casos-de-uso";
+import { rotasUsuarios } from "../modulos/usuarios/rotas";
 import {
   registrarDocumentacao,
   registrarMetricas,
   registrarSaude,
-} from "./plugins/observabilidade";
-import { registrarSeguranca } from "./plugins/seguranca";
-import { pluginSessao } from "./plugins/sessao";
-import { type ExecutorComContexto } from "./repositorios";
+} from "../plugins/observabilidade";
+import { registrarSeguranca } from "../plugins/seguranca";
+import { pluginSessao } from "../plugins/sessao";
+import { registrarTratadorDeErros } from "./tratador-erros";
 
 /** Tudo o que a API usa de fora. Produção monta em `server.ts`; os testes passam falsos. */
 export interface Dependencias {

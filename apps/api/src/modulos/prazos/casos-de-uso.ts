@@ -10,7 +10,7 @@ import { JOB_RECALCULAR_PRAZOS } from "@erp/shared/jobs";
 
 import { conflito, naoEncontrado } from "../../http/erros";
 import type { FilaDeJobs } from "../../infra/fila";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
 
 /*

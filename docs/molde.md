@@ -62,7 +62,7 @@ lado a lado com este guia.
 **`repositorio.ts`** — Drizzle, consultas set-based, nenhuma regra escondida.
 
 - `criarRepositorio<Dominio>(tx: Transacao): Repositorio<Dominio>`.
-- Registre em `apps/api/src/repositorios.ts` (`Repositorios` + `criarRepositorios`).
+- Registre em `apps/api/src/infra/repositorios.ts` (`Repositorios` + `criarRepositorios`).
 - Consulta ampla tem teto (`.limit(...)`) e o timeout do banco vira "reduza o período" sozinho
   (tratador central).
 
@@ -80,7 +80,7 @@ app.get(
 
 - Guardas (`../../http/guardas`): `exigirAutenticacao` (já implícita nas outras),
   `exigirEmpresa`, `exigirTela`, `exigirModulo`, `exigirPapel`, `exigirAdminPlataforma`.
-- Registre o plugin em `apps/api/src/app.ts`.
+- Registre o plugin em `apps/api/src/http/app.ts`.
 
 **Testes**
 

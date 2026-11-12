@@ -13,7 +13,7 @@ import {
   type OpcaoDeCtrc,
 } from "@erp/shared/contratos/ctrc";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 /** Código do catálogo da empresa, com o que as telas de CT-e usam. */
 export interface CodigoCadastrado {

@@ -22,7 +22,7 @@ import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
 import { type z } from "@erp/shared/zod";
 
 import { consultaAmplaDemais } from "../../http/erros";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 export const LIMITE_DE_LINHAS = 200_000;
 

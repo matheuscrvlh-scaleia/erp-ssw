@@ -52,7 +52,7 @@ import { type FastifyBaseLogger } from "fastify";
 import { conflito, naoEncontrado } from "../../http/erros";
 import type { Armazenamento } from "../../infra/armazenamento";
 import { type Correio } from "../../infra/correio";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
 import { registrarVinculo } from "../usuarios/casos-de-uso";
 

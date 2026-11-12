@@ -4,7 +4,7 @@ import { type ContagemDoGrupo } from "@erp/dominio/performance/resumo";
 import { filtroPerformance } from "@erp/shared/contratos/performance";
 import { describe, expect, it } from "vitest";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { criarPerformanceFalsa } from "../../testes/leituras-falsas";
 import {
   exportarTela,

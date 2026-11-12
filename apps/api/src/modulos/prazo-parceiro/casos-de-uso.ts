@@ -29,7 +29,7 @@ import {
   type LinhaPrazo,
 } from "@erp/shared/contratos/prazo-parceiro";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 type Saida<K extends keyof typeof contratosPrazoParceiro> = SaidaDe<
   (typeof contratosPrazoParceiro)[K]

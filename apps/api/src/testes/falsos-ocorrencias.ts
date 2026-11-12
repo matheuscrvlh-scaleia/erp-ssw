@@ -10,6 +10,7 @@ import { tipoDocumentoEfetivo } from "@erp/dominio/nucleo";
 import { montarLista } from "@erp/dominio/ocorrencias/lista";
 import { type LinhaDeOcorrencia } from "@erp/shared/contratos/ocorrencias";
 
+import { type Repositorios } from "../infra/repositorios";
 import { type CodigoGravado } from "../modulos/codigos-ocorrencia/casos-de-uso";
 import { type ColetaLida } from "../modulos/coletas/casos-de-uso";
 import {
@@ -23,7 +24,6 @@ import {
   paraOPainel,
   type RepositorioOcorrencias,
 } from "../modulos/ocorrencias/casos-de-uso";
-import { type Repositorios } from "../repositorios";
 import { type BancoEmMemoria } from "./banco-em-memoria";
 
 /*

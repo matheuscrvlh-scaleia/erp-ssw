@@ -5,7 +5,7 @@ import { fato, linha036, ocorrencia } from "@erp/dominio/testes/romaneio";
 import { contratosRomaneio as c } from "@erp/shared/contratos/romaneio";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { RomaneioEmMemoria } from "../../testes/romaneio-em-memoria";
 import {
   exportarLista,

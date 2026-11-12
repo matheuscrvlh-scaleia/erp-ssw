@@ -9,7 +9,7 @@ import {
   ORIGENS_INTEGRACAO,
 } from "@erp/shared/contratos/auditoria";
 
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 
 /*
  * Telas de Logs: Alterações (trilha de auditoria) e Integrações (execuções da ingestão).

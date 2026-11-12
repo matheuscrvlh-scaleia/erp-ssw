@@ -23,9 +23,9 @@ import { gerarTokenOpaco, hashDoToken } from "../../infra/aleatorio";
 import { type Correio } from "../../infra/correio";
 import { type IdentidadeGoogle } from "../../infra/google";
 import { type LimitadorDeFalhas } from "../../infra/limitador";
+import { type ExecutorComContexto } from "../../infra/repositorios";
 import { type AlgoritmoSenha, type ServicoDeSenhas } from "../../infra/senhas";
 import { type EmissorDeTokens, type SessaoDoToken } from "../../infra/tokens";
-import { type ExecutorComContexto } from "../../repositorios";
 import {
   carregarAcesso,
   type DependenciasAcesso,

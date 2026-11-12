@@ -5,7 +5,7 @@ import { type Tela } from "@erp/shared/acesso/telas";
 import { type Cargo, type DepartamentoDaEmpresa } from "@erp/shared/contratos/admin";
 
 import { conflito, naoEncontrado } from "../../http/erros";
-import { type Executor } from "../../repositorios";
+import { type Executor } from "../../infra/repositorios";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria";
 
 /*

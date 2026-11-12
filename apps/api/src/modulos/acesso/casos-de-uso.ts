@@ -13,8 +13,8 @@ import { type Acesso, type EmpresaAtiva } from "@erp/shared/contratos/auth";
 import { hojeNoFuso } from "@erp/shared/datas";
 
 import { naoAutenticado, sessaoExpirada } from "../../http/erros";
+import { type ExecutorComContexto } from "../../infra/repositorios";
 import { type SessaoDoToken } from "../../infra/tokens";
-import { type ExecutorComContexto } from "../../repositorios";
 
 export interface UsuarioDoAcesso {
   id: string;

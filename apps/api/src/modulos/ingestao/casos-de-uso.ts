@@ -24,13 +24,13 @@ import { JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
 import { type z } from "@erp/shared/zod";
 
 import { conflito } from "../../http/erros";
+import { type Executor } from "../../infra/repositorios";
 import {
   type ClienteWorkerSsw,
   exigirWorkerSsw,
   type OperacaoManual,
   type PedidoDeOperacao,
 } from "../../infra/worker-ssw";
-import { type Executor } from "../../repositorios";
 import { type Ator, type EventoDeAuditoria } from "../auditoria/auditoria";
 
 // --- Portas -----------------------------------------------------------------------------------
