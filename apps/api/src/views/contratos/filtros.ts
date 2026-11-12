@@ -1,6 +1,6 @@
-import { dataIso, inteiro, lista, textoDeFiltro } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso, inteiro, lista, textoDeFiltro } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 /** Valor do filtro "Tipo documento" que representa o CT-e sem tipo. */
 export const SEM_TIPO_DOCUMENTO = "__SEM_TIPO__";

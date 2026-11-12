@@ -66,6 +66,11 @@ jobs:
       - name: Instalar dependências
         run: bun install --frozen-lockfile
 
+      # shared e dominio do web são cópia da api (ADR 0013).
+      - name: Cópia do shared e do dominio
+        if: matrix.app == 'web'
+        run: bash ../../scripts/copiar-compartilhado.sh --conferir
+
       - name: Checagem de tipos
         run: bun run typecheck
 

@@ -1,6 +1,7 @@
-import { contrato } from "../contrato";
-import { STATUS_EMPRESA, TIPOS_INTEGRACAO } from "../plataforma";
-import { z } from "../zod";
+import { contrato } from "@erp/shared/contrato";
+import { STATUS_EMPRESA, TIPOS_INTEGRACAO } from "@erp/shared/plataforma";
+import { z } from "@erp/shared/zod";
+
 import { saudeSsw } from "./ingestao-ssw";
 
 /*

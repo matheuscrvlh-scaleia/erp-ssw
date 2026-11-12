@@ -2,9 +2,6 @@ import { contratosCodigosOcorrencia as c } from "@erp/shared/contratos/codigos-o
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import {
   alterarEmLote,
   type ContextoCodigos,
@@ -17,6 +14,9 @@ import {
   apresentarCatalogoDeCodigos,
   apresentarHistoricoDoCodigo,
 } from "../views/codigos-ocorrencia.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /**
  * Ler: quem tem a tela; escrever e ver o histórico: admin da empresa (hoje um não-admin recebe

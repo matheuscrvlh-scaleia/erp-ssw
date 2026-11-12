@@ -8,7 +8,7 @@ import underPressure from "@fastify/under-pressure";
 import { type FastifyInstance } from "fastify";
 import { type Redis } from "ioredis";
 
-import { type Ambiente, origensPermitidas } from "../../config/env";
+import { type Ambiente, origensPermitidas } from "../../config";
 import { muitasTentativas } from "../../models/erros";
 
 export interface OpcoesSeguranca {

@@ -3,9 +3,9 @@
  * corpo (a query string não carrega listas); nenhuma delas grava nada.
  * Spec: docs/regras/03-romaneio-prazo-parceiro.md.
  */
-import { dataIso, paginacao } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso, paginacao } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 const textos = z.array(z.string().trim().min(1).max(200)).max(500);
 

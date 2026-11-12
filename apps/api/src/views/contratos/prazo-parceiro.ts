@@ -2,9 +2,9 @@
  * Contratos da tela Prazo do parceiro (visão geral, lista e detalhe).
  * Spec: docs/regras/03-romaneio-prazo-parceiro.md §6.
  */
-import { dataIso, paginacao } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso, paginacao } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 export const filtrosPrazo = z
   .object({

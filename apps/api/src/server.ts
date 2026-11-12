@@ -2,8 +2,8 @@ import { comContexto, conectarBanco, type ContextoBanco, type Transacao } from "
 import { lerChavesDeSegredo } from "@erp/db/segredos";
 import { Redis } from "ioredis";
 
-import { carregarAmbiente } from "./config/env";
-import { construirApp } from "./http/app";
+import { construirApp } from "./app";
+import { carregarAmbiente } from "./config";
 import { criarArmazenamentoS3 } from "./infra/armazenamento";
 import { filaDesligada } from "./infra/fila";
 import { criarProvedorGoogle } from "./infra/google";

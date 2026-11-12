@@ -1,6 +1,7 @@
-import { EFEITOS, PERMISSOES } from "../acesso/permissoes";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { EFEITOS, PERMISSOES } from "@erp/shared/acesso/permissoes";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
+
 import { SENHA_MINIMO } from "./auth";
 
 /*

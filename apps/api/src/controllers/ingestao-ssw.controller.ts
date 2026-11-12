@@ -1,9 +1,6 @@
 import { contratosIngestaoSsw as c } from "@erp/shared/contratos/ingestao-ssw";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirAdminPlataforma, exigirEmpresa, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import {
   atualizacaoDosDados,
   credenciaisSsw,
@@ -26,6 +23,9 @@ import {
   apresentarRodadaDoBi2,
   apresentarStatusBi2,
 } from "../views/ingestao-ssw.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirAdminPlataforma, exigirEmpresa, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /**
  * Faixa de saúde: todo usuário com empresa. Ingestão SSW e Diagnóstico SSW: só a Plataforma, na

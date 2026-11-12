@@ -5,8 +5,6 @@ import { z } from "@erp/shared/zod";
 import { type FastifyReply, type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { exigirAutenticacao } from "../http/middleware/guardas";
-import { sessaoObrigatoria } from "../http/middleware/sessao";
 import { type ProvedorGoogle } from "../infra/google";
 import {
   ajudaDeAcesso,
@@ -28,6 +26,8 @@ import {
   apresentarToken,
 } from "../views/auth.view";
 import { confirmacao } from "../views/comum.view";
+import { exigirAutenticacao } from "./middleware/guardas";
+import { sessaoObrigatoria } from "./middleware/sessao";
 
 const COOKIE_REFRESH = "erp_refresh";
 const COOKIE_GOOGLE = "erp_google";

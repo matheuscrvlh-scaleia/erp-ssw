@@ -1,4 +1,4 @@
-import { type LinhaAuditoria, type OrigemIntegracao } from "./contratos/auditoria";
+import { type LinhaAuditoria, type OrigemIntegracao } from "@erp/shared/contratos/auditoria";
 
 /**
  * Rótulos e texto curto das telas de Logs (tela e exportação).

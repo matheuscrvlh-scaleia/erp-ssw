@@ -28,7 +28,7 @@
     "allowUnreachableCode": false,
 
     // src/shared e src/dominio são cópias dos da api com os imports da origem: o arquivo fica igual
-    // nas cópias e a sincronia é um diff. Vite e vitest leem estes caminhos (apelidos.ts).
+    // nas cópias (scripts/copiar-compartilhado.sh). Vite e vitest leem estes caminhos (apelidos.ts).
     "paths": {
       "@/*": ["./src/*"],
       "@erp/dominio/nucleo": ["./src/dominio/nucleo/index.ts"],

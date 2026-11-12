@@ -7,7 +7,7 @@ lado a lado com este guia.
 | Camada | Calendário (exemplo) |
 | --- | --- |
 | Regra pura | `apps/api/src/dominio/calendario.ts` |
-| Contrato | `apps/api/src/shared/contratos/calendario.ts` |
+| Contrato | `apps/api/src/views/contratos/calendario.ts` |
 | Tabela + RLS | `apps/api/src/db/schema/dominio/feriados.ts` |
 | API | `apps/api/src/{controllers/calendario.controller,models/calendario/calendario.{service,repository},views/calendario.view}.ts` |
 | Tela | `apps/web/src/routes/_autenticado/calendario.tsx` → `apps/web/src/modulos/calendario/` |
@@ -26,7 +26,7 @@ lado a lado com este guia.
 - Violação de regra de negócio: `throw new ErroDeNegocio("ENTRADA_INVALIDA", "<mensagem para o
   operador>")` (`apps/api/src/dominio/erros.ts`).
 
-## 3. Contrato — `apps/api/src/shared/contratos/<dominio>.ts`
+## 3. Contrato — `apps/api/src/views/contratos/<dominio>.ts`
 
 - Um `contrato({ metodo, caminho, parametros?, entrada?, saida })` por endpoint, em
   `contratos<Dominio>`. `entrada` é query string em GET/DELETE e corpo nos demais.
@@ -90,10 +90,10 @@ app.get(
 );
 ```
 
-- Guardas (`../http/middleware/guardas`): `exigirAutenticacao` (já implícita nas outras),
+- Guardas (`./middleware/guardas`): `exigirAutenticacao` (já implícita nas outras),
   `exigirEmpresa`, `exigirPermissao`, `exigirUmaDasTelas`, `exigirModulo`,
   `exigirAdminDaEmpresa`, `exigirAdminPlataforma`.
-- Registre o plugin (`controlador<Recurso>`) em `apps/api/src/http/app.ts`.
+- Registre o plugin (`controlador<Recurso>`) em `apps/api/src/app.ts`.
 
 ## 6. Tela — `apps/web`
 
@@ -115,7 +115,8 @@ app.get(
 
 - [ ] Regras e decisões do dono lidas; diferenças propositais anotadas em ADR.
 - [ ] Cálculos em `apps/api/src/dominio`, com origem citada.
-- [ ] Contratos zod em `apps/api/src/shared/contratos/<dominio>.ts`, copiados para `apps/web/src/shared`.
+- [ ] Contratos zod em `apps/api/src/views/contratos/<dominio>.ts`, copiados para o web com
+      `scripts/copiar-compartilhado.sh`.
 - [ ] Tabelas com `empresa_id`, RLS por helper, exportadas; migration gerada e revisada; nada de
       função/gatilho/matview/extensão.
 - [ ] Casos de uso com transação única, auditoria nas escritas, mensagens para o operador.

@@ -3,13 +3,6 @@ import { contratosCalendario as c } from "@erp/shared/contratos/calendario";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import {
-  exigirModulo,
-  exigirPermissao,
-  exigirPermissaoDaPlataforma,
-} from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import {
   alterarFeriado,
   type ContextoCalendario,
@@ -22,6 +15,9 @@ import {
 } from "../models/calendario/calendario.service";
 import { apresentarCalendario, apresentarFeriadosGerais } from "../views/calendario.view";
 import { confirmacao } from "../views/comum.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao, exigirPermissaoDaPlataforma } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /**
  * Ler, criar/alterar e excluir pela permissão da tela Calendário. Sempre com o módulo.

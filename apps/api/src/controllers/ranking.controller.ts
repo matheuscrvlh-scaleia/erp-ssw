@@ -3,9 +3,6 @@ import { contratosRanking as c } from "@erp/shared/contratos/ranking";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import {
   atribuirEquipe,
   calcularEquipe,
@@ -32,6 +29,9 @@ import {
   apresentarRankingPublico,
   apresentarSimulacao,
 } from "../views/ranking.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /**
  * Ranking operacional: tela Ranking. Equipes e atribuição: tela Admin › Equipes. Regras, simulador

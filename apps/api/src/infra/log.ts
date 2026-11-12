@@ -1,7 +1,7 @@
 import { erroParaLog } from "@erp/db";
 import { type FastifyRequest, type FastifyServerOptions } from "fastify";
 
-import { type Ambiente } from "../config/env";
+import { type Ambiente } from "../config";
 
 /** Nada de segredo em log: token, cookie, senha, refresh e segredos de integração nunca são gravados. */
 export const CAMINHOS_SENSIVEIS = [

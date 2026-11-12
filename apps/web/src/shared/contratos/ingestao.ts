@@ -2,8 +2,8 @@
  * Contratos das telas de ingestão SSW (Admin › Importação SSW e Admin › XML CT-e), só Plataforma.
  * Spec 06 §5.
  */
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 export const RELATORIOS_MANUAIS = ["036", "038", "306", "455csv", "930"] as const;
 

@@ -1,5 +1,6 @@
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
+
 import { RESPONSAVEIS } from "./ocorrencias";
 
 /** Letra do responsável no SSW: F = FR, C = cliente, D = destinatário, T, S, O. */

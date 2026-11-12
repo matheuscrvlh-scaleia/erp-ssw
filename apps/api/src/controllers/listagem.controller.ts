@@ -2,14 +2,14 @@ import { contratosListagem as c } from "@erp/shared/contratos/listagem";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
 import {
   type ContextoListagem,
   exportarCtrcs,
   listarCodigosDoRecorte,
   listarCtrcs,
 } from "../models/listagem/listagem.service";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
 
 /** `/performance/lista` é tela da Performance: módulo e tela iguais aos dela. */
 const ler = [exigirModulo("performance"), exigirPermissao("performance", "ver")];

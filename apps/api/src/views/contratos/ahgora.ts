@@ -1,7 +1,7 @@
-import { dataIsoComMensagem } from "../consulta";
-import { contrato } from "../contrato";
-import { diferencaEmDias, ehDataIso } from "../datas";
-import { z } from "../zod";
+import { dataIsoComMensagem } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { diferencaEmDias, ehDataIso } from "@erp/shared/datas";
+import { z } from "@erp/shared/zod";
 
 const dataIso = dataIsoComMensagem("Data deve estar no formato YYYY-MM-DD");
 

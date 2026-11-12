@@ -1,7 +1,7 @@
-import { dataIso } from "../consulta";
-import { contrato } from "../contrato";
-import { diferencaEmDias, ehDataIso } from "../datas";
-import { z } from "../zod";
+import { dataIso } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { diferencaEmDias, ehDataIso } from "@erp/shared/datas";
+import { z } from "@erp/shared/zod";
 
 const parametrosId = z.object({ id: z.uuid() });
 const ok = z.object({ ok: z.literal(true) });

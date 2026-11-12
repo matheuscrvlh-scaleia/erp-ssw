@@ -1,6 +1,6 @@
-import { dataIso } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 /**
  * Ingestão SSW: faixa "Integração SSW indisponível" (todo usuário com empresa), Admin › Ingestão

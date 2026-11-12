@@ -2,9 +2,6 @@ import { contratosAdmin as c } from "@erp/shared/contratos/admin";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao, executorDePlataforma } from "../http/middleware/contexto";
-import { exigirAdminDaEmpresa, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import { type ExecutorComContexto } from "../models/repositorios";
 import {
   alterarUsuario,
@@ -18,6 +15,9 @@ import {
 } from "../models/usuarios/usuarios.service";
 import { confirmacao } from "../views/comum.view";
 import { apresentarUsuarios } from "../views/usuarios.view";
+import { empresaDaRequisicao, executorDePlataforma } from "./middleware/contexto";
+import { exigirAdminDaEmpresa, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /**
  * Usuários e cargos › Usuários: gerir acesso é do admin da empresa ativa (ou Plataforma), com a

@@ -1,6 +1,6 @@
-import { dataIso, listaComTeto, paginacao } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso, listaComTeto, paginacao } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 export const STATUS_DE_COMPROVANTE = ["todos", "digitalizados", "pendentes"] as const;
 export type StatusDeComprovante = (typeof STATUS_DE_COMPROVANTE)[number];

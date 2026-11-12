@@ -2,8 +2,6 @@ import { contratosFiltros as c } from "@erp/shared/contratos/filtros";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirEmpresa } from "../http/middleware/guardas";
 import {
   type ContextoFiltros,
   listarCodigos,
@@ -15,6 +13,8 @@ import {
   obterOpcoes,
 } from "../models/filtros/filtros.service";
 import { apresentarCodigos, apresentarOpcoes, apresentarPagadores } from "../views/filtros.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirEmpresa } from "./middleware/guardas";
 
 /**
  * Filtros compartilhados pelas telas de CT-e (Performance, Lista, Romaneio, Ocorrências,

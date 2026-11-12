@@ -26,14 +26,16 @@
     "noUncheckedSideEffectImports": true,
     "allowUnreachableCode": false,
 
-    // src/shared e src/dominio são cópias (o web tem as dele, o worker-ssw também) com os imports
-    // da origem: o arquivo fica igual nas cópias e a sincronia é um diff. tsx e esbuild
-    // leem estes mesmos caminhos.
+    // @erp/shared e @erp/dominio são copiados para o web e o worker-ssw com os mesmos imports: o
+    // arquivo fica igual nas cópias. Aqui @erp/shared mora em views/contratos, views/contrato.ts e
+    // models/comum (scripts/copiar-compartilhado.sh). tsx e esbuild leem estes mesmos caminhos.
     "paths": {
       "@erp/dominio/nucleo": ["./src/dominio/nucleo/index.ts"],
       "@erp/dominio/ingestao/relatorios": ["./src/dominio/ingestao/relatorios/index.ts"],
       "@erp/dominio/*": ["./src/dominio/*"],
-      "@erp/shared/*": ["./src/shared/*"],
+      "@erp/shared/contratos/*": ["./src/views/contratos/*"],
+      "@erp/shared/contrato": ["./src/views/contrato.ts"],
+      "@erp/shared/*": ["./src/models/comum/*"],
       "@erp/db": ["./src/db/index.ts"],
       "@erp/db/schema": ["./src/db/schema/index.ts"],
       "@erp/db/segredos": ["./src/db/segredos.ts"],

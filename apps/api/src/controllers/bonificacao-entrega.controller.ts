@@ -2,9 +2,6 @@ import { contratosBonificacaoEntrega as c } from "@erp/shared/contratos/bonifica
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import { clienteDaEmpresa, type DependenciasAhgora } from "../models/ahgora/ahgora.service";
 import {
   apurar,
@@ -16,6 +13,9 @@ import {
   registrarFalta,
 } from "../models/bonificacao-entrega/bonificacao-entrega.service";
 import { confirmacao } from "../views/comum.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 const modulo = exigirModulo("ponto_bonificacao");
 const ler = [modulo, exigirPermissao("admin_bonificacao_entrega", "ver")];

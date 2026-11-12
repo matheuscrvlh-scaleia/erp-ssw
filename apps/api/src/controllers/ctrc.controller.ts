@@ -1,10 +1,10 @@
 import { contratosCtrc as c } from "@erp/shared/contratos/ctrc";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirEmpresa } from "../http/middleware/guardas";
 import { obterDetalheCtrc } from "../models/ctrc/ctrc.service";
 import { apresentarBuscaDoCtrc } from "../views/ctrc.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirEmpresa } from "./middleware/guardas";
 
 /** O detalhe do CT-e não é tela do menu: basta sessão com empresa (igual a hoje). */
 export const controladorCtrc: FastifyPluginCallbackZod<{ agora: () => Date }> = (

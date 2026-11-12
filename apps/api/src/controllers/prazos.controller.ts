@@ -1,9 +1,6 @@
 import { contratosAdmin as c } from "@erp/shared/contratos/admin";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import type { FilaDeJobs } from "../infra/fila";
 import {
   alterarPrazo,
@@ -13,6 +10,9 @@ import {
   listarPrazos,
 } from "../models/prazos/prazos.service";
 import { apresentarPrazos } from "../views/prazos.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /** Prazos configurados ficam em Admin › Configurações: admin com a tela, sem módulo. */
 const ler = exigirPermissao("admin_configuracoes", "ver");

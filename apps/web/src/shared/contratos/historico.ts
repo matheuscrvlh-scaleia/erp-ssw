@@ -1,6 +1,7 @@
-import { dataIso } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
+
 import { contratosCalendario, feriado, UFS } from "./calendario";
 
 export const TIPOS_ANOTACAO = ["clima", "operacional", "feriado", "outro"] as const;

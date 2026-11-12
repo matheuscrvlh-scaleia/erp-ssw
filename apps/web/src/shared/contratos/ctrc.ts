@@ -1,5 +1,5 @@
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 const texto = z.string().nullable();
 const numero = z.number().nullable();

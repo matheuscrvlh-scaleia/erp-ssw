@@ -1,7 +1,6 @@
 import { contratosPrazoParceiro as c } from "@erp/shared/contratos/prazo-parceiro";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
 import {
   exportarLista,
   obterDetalhe,
@@ -15,6 +14,7 @@ import {
   apresentarLista,
   apresentarOpcoes,
 } from "../views/prazo-parceiro.view";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
 
 /** Só leitura: quem tem a tela, com o módulo liberado. */
 const ler = [exigirModulo("prazo_parceiro"), exigirPermissao("prazo_parceiro", "ver")];

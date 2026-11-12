@@ -2,8 +2,6 @@ import { contratosRomaneio as c } from "@erp/shared/contratos/romaneio";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
 import {
   type ContextoRomaneio,
   exportarLista,
@@ -29,6 +27,8 @@ import {
   apresentarLista,
   apresentarOpcoes,
 } from "../views/romaneio.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
 
 /** Só leitura: quem tem a tela, com o módulo liberado. Placa em Performance: `romaneio_placa`. */
 const ler = [exigirModulo("romaneio"), exigirPermissao("romaneio", "ver")];

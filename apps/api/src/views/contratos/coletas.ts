@@ -1,6 +1,6 @@
-import { dataIso, paginacao } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso, paginacao } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 export const ETAPAS_DE_COLETA = ["cadastrada", "comandada", "coletada", "cancelada"] as const;
 export type EtapaDeColeta = (typeof ETAPAS_DE_COLETA)[number];

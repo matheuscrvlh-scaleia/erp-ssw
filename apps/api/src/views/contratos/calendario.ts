@@ -1,6 +1,6 @@
-import { dataIso } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 export const TIPOS_FERIADO = ["nacional", "estadual", "municipal"] as const;
 export type TipoFeriado = (typeof TIPOS_FERIADO)[number];

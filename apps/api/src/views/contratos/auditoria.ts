@@ -1,6 +1,6 @@
-import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
-import { z } from "../zod";
+import { contrato } from "@erp/shared/contrato";
+import { ehDataIso } from "@erp/shared/datas";
+import { z } from "@erp/shared/zod";
 
 /*
  * Logs: aba Alterações (trilha de auditoria) e aba Integrações (execuções da ingestão).

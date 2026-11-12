@@ -1,8 +1,6 @@
 import { contratosComprovantes as c } from "@erp/shared/contratos/comprovantes";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
 import {
   exportarListaDeComprovantes,
   obterListaDeComprovantes,
@@ -12,6 +10,8 @@ import {
   apresentarExportacaoDeComprovantes,
   apresentarListaDeComprovantes,
 } from "../views/comprovantes.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
 
 /** Comprovantes: só leitura; sem restrição por unidade do usuário (Q26 do dono). */
 const ler = [exigirModulo("comprovantes"), exigirPermissao("comprovantes", "ver")];

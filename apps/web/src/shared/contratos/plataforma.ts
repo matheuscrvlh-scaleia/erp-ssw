@@ -1,7 +1,12 @@
-import { contrato } from "../contrato";
-import { ehDataIso } from "../datas";
-import { STATUS_EMPRESA, TIPOS_INTEGRACAO, TIPOS_INTEGRACAO_PLATAFORMA } from "../plataforma";
-import { z } from "../zod";
+import { contrato } from "@erp/shared/contrato";
+import { ehDataIso } from "@erp/shared/datas";
+import {
+  STATUS_EMPRESA,
+  TIPOS_INTEGRACAO,
+  TIPOS_INTEGRACAO_PLATAFORMA,
+} from "@erp/shared/plataforma";
+import { z } from "@erp/shared/zod";
+
 import {
   cargo,
   chaveDeCadastro,

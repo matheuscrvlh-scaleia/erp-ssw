@@ -1,13 +1,6 @@
 import { contratosAdmin as c } from "@erp/shared/contratos/admin";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import {
-  exigirAdminDaEmpresa,
-  exigirPermissao,
-  exigirUmaDasTelas,
-} from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import {
   alterarCargo,
   criarCargo,
@@ -16,6 +9,9 @@ import {
 } from "../models/cadastros/cadastros.service";
 import { apresentarCargos } from "../views/cadastros.view";
 import { confirmacao } from "../views/comum.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirAdminDaEmpresa, exigirPermissao, exigirUmaDasTelas } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /*
  * Cargos da empresa ativa (Q30: cada empresa edita os seus). Gerir acesso é do admin da empresa:

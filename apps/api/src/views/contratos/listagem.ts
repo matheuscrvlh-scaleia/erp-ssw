@@ -1,6 +1,14 @@
-import { dataIso, decimal, inteiro, lista, paginacao, simNao, textoDeFiltro } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import {
+  dataIso,
+  decimal,
+  inteiro,
+  lista,
+  paginacao,
+  simNao,
+  textoDeFiltro,
+} from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 /**
  * Recortes da Listagem detalhada, na ordem do seletor. O CT-e entra se cair em qualquer um dos

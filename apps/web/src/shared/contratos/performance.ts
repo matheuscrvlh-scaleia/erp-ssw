@@ -1,6 +1,6 @@
-import { dataIso } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 /** Valor do filtro "Tipo documento" para CT-e sem tipo (nem 455 nem BI2). */
 export const SEM_TIPO_DOCUMENTO = "__SEM_TIPO__";

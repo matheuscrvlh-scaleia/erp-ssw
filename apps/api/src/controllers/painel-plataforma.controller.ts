@@ -1,8 +1,6 @@
 import { contratosPainelPlataforma as c } from "@erp/shared/contratos/painel-plataforma";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { executorDePlataforma } from "../http/middleware/contexto";
-import { exigirPermissaoDaPlataforma } from "../http/middleware/guardas";
 import { type ClienteWorkerSsw } from "../infra/worker-ssw";
 import {
   criarCacheDoPainel,
@@ -10,6 +8,8 @@ import {
 } from "../models/painel-plataforma/painel-plataforma.service";
 import { type ExecutorComContexto } from "../models/repositorios";
 import { apresentarPainel } from "../views/painel-plataforma.view";
+import { executorDePlataforma } from "./middleware/contexto";
+import { exigirPermissaoDaPlataforma } from "./middleware/guardas";
 
 export interface OpcoesRotasPainelPlataforma {
   executar: ExecutorComContexto;

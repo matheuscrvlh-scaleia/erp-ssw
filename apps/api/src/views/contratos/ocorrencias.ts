@@ -1,6 +1,6 @@
-import { dataIso, listaComTeto, paginacao } from "../consulta";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { dataIso, listaComTeto, paginacao } from "@erp/shared/consulta";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 /** Responsável gravado no catálogo de códigos. */
 export const RESPONSAVEIS = [

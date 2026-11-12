@@ -28,7 +28,10 @@ docker-compose como único ponto que junta os dois. Na raiz ficam só `apps/`, `
 
 ## Consequências
 
-- Mudança em contrato ou regra pura vai às duas cópias no mesmo commit; o revisor confere com
-  `diff -r apps/api/src/shared apps/web/src/shared` (idem `dominio`; só o README fica na api).
+- Mudança em contrato ou regra pura vai às duas cópias no mesmo commit: `scripts/copiar-compartilhado.sh`
+  copia e `scripts/copiar-compartilhado.sh --conferir` compara. Desde a ADR 0014, o `shared` da api
+  mora em `views/contratos`, `views/contrato.ts` e `models/comum`; no web continua em `src/shared`.
+  Só o README do `dominio` fica na api.
 - Dependência nova entra no `package.json` de cada app que a usa; cada `bun.lock` é auditado no CI.
-- O worker-ssw passa a copiar de `apps/api/src/{shared,dominio,db}`.
+- O worker-ssw passa a copiar de `apps/api/src/{dominio,db}` e, do `shared`, de `views/contratos` e
+  `models/comum`.

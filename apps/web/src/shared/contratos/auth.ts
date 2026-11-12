@@ -1,7 +1,7 @@
-import { PERMISSOES } from "../acesso/permissoes";
-import { TELAS } from "../acesso/telas";
-import { contrato } from "../contrato";
-import { z } from "../zod";
+import { PERMISSOES } from "@erp/shared/acesso/permissoes";
+import { TELAS } from "@erp/shared/acesso/telas";
+import { contrato } from "@erp/shared/contrato";
+import { z } from "@erp/shared/zod";
 
 /** Senha nova (redefinição e convite). O login aceita a senha antiga como está. */
 export const SENHA_MINIMO = 8;

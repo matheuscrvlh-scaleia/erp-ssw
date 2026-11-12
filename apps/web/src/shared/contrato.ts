@@ -1,4 +1,4 @@
-import { type z } from "./zod";
+import { type z } from "@erp/shared/zod";
 
 type Metodo = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 

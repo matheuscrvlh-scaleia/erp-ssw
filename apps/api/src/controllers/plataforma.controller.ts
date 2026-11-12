@@ -3,9 +3,6 @@ import { contratosPlataforma as c } from "@erp/shared/contratos/plataforma";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { executorDePlataforma } from "../http/middleware/contexto";
-import { exigirPermissaoDaPlataforma } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import type { Armazenamento } from "../infra/armazenamento";
 import { type FonteDaConfiguracao } from "../infra/configuracao-da-plataforma";
 import { type Correio } from "../infra/correio";
@@ -56,6 +53,9 @@ import {
   apresentarSegredo,
   apresentarVinculos,
 } from "../views/plataforma.view";
+import { executorDePlataforma } from "./middleware/contexto";
+import { exigirPermissaoDaPlataforma } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 export interface OpcoesRotasPlataforma {
   executar: ExecutorComContexto;

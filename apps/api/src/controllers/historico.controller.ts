@@ -2,9 +2,6 @@ import { contratosHistorico as c } from "@erp/shared/contratos/historico";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirModulo, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import {
   alterarFeriado,
   type ContextoCalendario,
@@ -26,6 +23,9 @@ import {
   apresentarFeriados,
   apresentarHistorico,
 } from "../views/historico.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirModulo, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /** Histórico: quem tem a tela lê e anota (alterar/excluir é do autor ou do admin). */
 const modulo = exigirModulo("historico");

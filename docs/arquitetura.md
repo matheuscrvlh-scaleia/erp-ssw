@@ -51,17 +51,22 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 apps/
   api/                    projeto próprio: package.json, bun.lock, tsconfig, eslint, Dockerfile
     src/                  MVC (ADR 0014)
-      controllers/        C: HTTP (Fastify), um por recurso
-      models/             M: services (operações, transação, auditoria) + repositories (Drizzle)
-      views/              V: apresentação (model → resposta do contrato) e e-mails
-      http/               monta o app; middleware (sessão, guardas, contexto, segurança)
+      server.ts           processo: banco, Redis, jobs e HTTP
+      app.ts              monta o Fastify e registra os controllers
+      config.ts           variáveis de ambiente validadas
+      controllers/        C: HTTP (Fastify), um por recurso; middleware/ (sessão, guardas, contexto,
+                          segurança, erro → resposta)
+      models/             M: services (operações, transação, auditoria) + repositories (Drizzle);
+                          comum/ (catálogos de acesso, datas, zod, erros padrão; cópia no web)
+      views/              V: apresentação (model → resposta do contrato) e e-mails; contratos/ (zod de
+                          entrada e saída de cada endpoint; cópia no web)
       jobs/               entrada pela fila (BullMQ): limpar sessões, prazos configurados,
                           classificação de códigos, recifrar segredos
-      shared/             contratos zod (entrada/saída de cada endpoint), tipos, permissões, formatação
       dominio/            regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
                           atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
                           leitores dos relatórios SSW (prévia da importação)...
       db/                 Drizzle: schema, políticas RLS, client com contexto de empresa
+      infra/              clientes externos: S3, SMTP, Google, Ahgora, worker-ssw, tokens, senhas, log
     drizzle/              migrations
   web/                    projeto próprio (SPA): package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
     src/
@@ -86,12 +91,13 @@ views/<recurso>.view.ts                   V  apresentar<Coisa>(dado) → saída 
 
 O passo a passo com exemplo (Calendário) está em `docs/molde.md` §5.
 
-Regras puras (cálculos) ficam em `apps/api/src/dominio` e os contratos em `apps/api/src/shared`. O web
-tem cópias dos dois em `apps/web/src/{dominio,shared}`, e o worker-ssw leva a sua cópia do núcleo do
+Regras puras (cálculos) ficam em `apps/api/src/dominio`; os contratos em `apps/api/src/views/contratos`
+(+ `views/contrato.ts`) e os catálogos e utilitários comuns em `apps/api/src/models/comum`, todos
+importados como `@erp/shared/*`. O web tem cópias em `apps/web/src/{dominio,shared}`, e o worker-ssw leva a sua cópia do núcleo do
 CT-e (ADR 0012). A origem é a api. As cópias usam os mesmos imports (`@erp/dominio/*`,
 `@erp/shared/*`, resolvidos pelo `tsconfig.json` de cada app), então ficam iguais byte a byte:
-mudou na api, copia para o web no mesmo commit e confere com
-`diff -r apps/api/src/shared apps/web/src/shared` (idem `dominio`, só o README fica na api).
+mudou na api, roda `scripts/copiar-compartilhado.sh` no mesmo commit (`--conferir` só compara; o
+README do `dominio` fica na api).
 
 ## Ingestão do SSW: o worker-ssw (ADR 0012)
 
@@ -103,7 +109,7 @@ RLS valendo). O ERP:
 - **lê** direto do banco as leituras puras das telas de Plataforma (pipeline, aplicações, arquivos
   XML, histórico do FTP, Diagnóstico SSW, integrações) e `GET /api/v1/ssw/atualizacao`/`saude`;
 - **pede ao worker-ssw** pelo HTTP interno (`/interno/v1/*`, `WORKER_SSW_URL` +
-  `WORKER_SSW_TOKEN`; contrato em `apps/api/src/shared/contratos/worker-ssw.ts`, cópia do dele):
+  `WORKER_SSW_TOKEN`; contrato em `apps/api/src/views/contratos/worker-ssw.ts`, cópia do dele):
   execuções (rodar FTP/BI2, testar a SSW API, reprocessar webhook e XML órfãos), a situação dos
   jobs e as operações manuais da Importação SSW (retomar/descartar ciclo, importar relatório ou
   XML, aplicar/simular, estado/pausa/trava do FTP). O ERP valida a entrada pelo contrato da tela e

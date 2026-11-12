@@ -8,9 +8,6 @@ import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirAdminPlataforma, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import {
   aplicar,
   type DependenciasIngestao,
@@ -34,6 +31,9 @@ import {
   apresentarFtp,
   apresentarPipeline,
 } from "../views/ingestao.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirAdminPlataforma, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /** Arquivo em base64 da tela: o mesmo teto de antes (o worker-ssw tem o mesmo). */
 const LIMITE_COM_ARQUIVO = 64 * 1024 * 1024;

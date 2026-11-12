@@ -3,13 +3,6 @@ import { contratosPerformance as c } from "@erp/shared/contratos/performance";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import {
-  exigirEmpresa,
-  exigirModulo,
-  exigirPermissao,
-  type Guarda,
-} from "../http/middleware/guardas";
 import { semPermissao } from "../models/erros";
 import {
   type ContextoPerformance,
@@ -27,6 +20,8 @@ import {
   obterTiposDocumento,
 } from "../models/performance/performance.service";
 import { apresentarExportacao } from "../views/performance.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirEmpresa, exigirModulo, exigirPermissao, type Guarda } from "./middleware/guardas";
 
 /** Alguma das telas (a série do gráfico serve à Performance e ao Ranking). */
 function exigirAlgumaTela(...telas: Tela[]): Guarda {

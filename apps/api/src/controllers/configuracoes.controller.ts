@@ -1,9 +1,6 @@
 import { contratosAdmin as c, contratosConfiguracoes } from "@erp/shared/contratos/admin";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirAutenticacao, exigirPermissao } from "../http/middleware/guardas";
-import { atorDa } from "../http/middleware/sessao";
 import { type CacheDeConfiguracoes } from "../models/configuracoes/cache";
 import {
   configuracoesPublicas,
@@ -14,6 +11,9 @@ import {
   apresentarConfiguracoes,
   apresentarConfiguracoesPublicas,
 } from "../views/configuracoes.view";
+import { empresaDaRequisicao } from "./middleware/contexto";
+import { exigirAutenticacao, exigirPermissao } from "./middleware/guardas";
+import { atorDa } from "./middleware/sessao";
 
 /** Admin › Configurações: admin com a tela, sem módulo (essencial). */
 const ler = exigirPermissao("admin_configuracoes", "ver");

@@ -35,30 +35,38 @@ Pastas por camada, como AdonisJS, Laravel e Rails; dentro de cada camada, o recu
 ```
 apps/api/src/
   server.ts                         processo: banco, Redis, jobs e HTTP (composição)
+  app.ts                            monta o Fastify e registra os controllers
+  config.ts                         ambiente
   controllers/<recurso>.controller.ts    C
   models/<recurso>/<recurso>.service.ts  M  operações de negócio (Service Layer)
   models/<recurso>/<recurso>.repository.ts  M  dados (Drizzle)
   models/repositorios.ts            M  todos os repositórios presos à transação com contexto
   models/erros.ts                   M  erros de negócio (`naoEncontrado`, `conflito`, ...)
   models/cte/                       M  gravação do CT-e pelo núcleo + SQL comum de CT-e
+  models/comum/                     M  catálogos (telas, módulos, papéis, permissões), datas, zod, erros
+                                       padrão, peças de query string (@erp/shared, cópia no web)
   views/<recurso>.view.ts           V  apresentação: model → corpo da resposta; e-mails
-  http/app.ts                       monta o Fastify e registra os controllers
-  http/tratador-erros.ts            erro → resposta (código e mensagem ao operador)
-  http/middleware/                  sessão, guardas, contexto da empresa, segurança, métricas
+  views/contratos/ + contrato.ts    V  contratos zod: entrada (validação) e saída (forma da View)
+                                       (@erp/shared/contratos, cópia no web)
+  controllers/middleware/           C  sessão, guardas, contexto da empresa, segurança, erro → resposta
+  controllers/observabilidade.controller.ts  C  saúde, métricas e documentação
   jobs/                             entrada pela fila (BullMQ): o job chama o model, como um controller
   dominio/                          M  regras puras, sem I/O (cópia no web e no worker-ssw, ADR 0013)
-  shared/contratos/                 contratos zod: entrada (validação) e saída (forma da View)
   db/                               M  schema Drizzle, cliente com contexto, RLS
   infra/                            adaptadores externos (S3, SMTP, Google, Ahgora, tokens, worker-ssw)
-  config/                           ambiente
 ```
+
+Não há pasta `http/` nem `shared/`: o que montava o app foi para `app.ts`, os middlewares são parte
+do controller, os contratos são a forma da view e o resto do `shared` é model (`models/comum`). Os
+imports seguem `@erp/shared/*`; o `tsconfig.json` aponta cada caminho para a pasta certa, e o
+`scripts/copiar-compartilhado.sh` monta a cópia do web.
 
 ### Controller (`controllers/<recurso>.controller.ts`)
 
-- Um plugin Fastify por recurso (`controlador<Recurso>`), registrado em `http/app.ts`.
+- Um plugin Fastify por recurso (`controlador<Recurso>`), registrado em `app.ts`.
 - Declara a rota com o contrato (`schema: { querystring/body/params: entrada, response: saida }`):
   a validação acontece antes do handler (o "Form Request" do Laravel).
-- Aplica as guardas (`http/middleware/guardas`), monta o contexto (empresa, ator), chama o service
+- Aplica as guardas (`controllers/middleware/guardas`), monta o contexto (empresa, ator), chama o service
   e entrega o resultado à view. Sem SQL, sem regra, sem montar JSON à mão.
 
 ### Model (`models/`, `dominio/`, `db/`)
