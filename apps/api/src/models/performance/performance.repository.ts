@@ -1,7 +1,6 @@
-import { type Transacao } from "@erp/db";
+import { type Sql, sql, type Transacao } from "@erp/db";
 import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
 import { type CodigoDoCatalogo } from "@erp/dominio/performance/catalogo";
-import { type SQL, sql } from "drizzle-orm";
 
 import { diaNoFuso, lista } from "../cte/sql-cte";
 import {
@@ -34,7 +33,7 @@ const TEMPO_LIMITE_MS = 30_000;
 const LIMITE_DE_OCORRENCIAS = 200_000;
 
 export function criarRepositorioPerformance(tx: Transacao): RepositorioPerformance {
-  const linhas = async (consulta: SQL): Promise<Linha[]> => (await tx.execute(consulta)).rows;
+  const linhas = async (consulta: Sql): Promise<Linha[]> => await tx.consultar(consulta);
 
   return {
     configuracoes: async (empresaId, chaves) => {
@@ -71,7 +70,7 @@ export function criarRepositorioPerformance(tx: Transacao): RepositorioPerforman
     },
 
     ampliarTempoLimite: async () => {
-      await tx.execute(
+      await tx.executar(
         sql`select set_config('statement_timeout', ${String(TEMPO_LIMITE_MS)}, true)`,
       );
     },

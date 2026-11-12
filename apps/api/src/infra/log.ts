@@ -64,7 +64,7 @@ export function opcoesDeLog(ambiente: Ambiente): NonNullable<FastifyServerOption
     redact: { paths: CAMINHOS_SENSIVEIS, censor: "[oculto]" },
     base: { servico: "erp-api" },
     serializers: {
-      // Erro do Drizzle leva SQL e parâmetros na mensagem: sai sem eles.
+      // Erro do banco sai sem SQL e sem os valores (`detail`, `where`).
       err: erroParaLog,
       req: (req: FastifyRequest) => ({
         method: req.method,

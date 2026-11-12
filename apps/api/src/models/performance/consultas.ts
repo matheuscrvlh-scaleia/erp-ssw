@@ -1,6 +1,6 @@
+import { type Sql, sql } from "@erp/db";
 import { type FiltroCtrc } from "@erp/dominio/performance/filtro";
 import { type BaseDeData } from "@erp/shared/contratos/performance";
-import { type SQL, sql } from "drizzle-orm";
 
 import {
   atraso as atrasoDoCte,
@@ -30,19 +30,19 @@ export interface ContextoDaConsulta {
 /** Colunas do CT-e pelo apelido `c` das consultas da Performance. */
 const C = colunasDoApelido("c");
 
-const COLUNA_DA_BASE: Record<BaseDeData, SQL> = {
+const COLUNA_DA_BASE: Record<BaseDeData, Sql> = {
   emissao: sql`c.data_emissao`,
   prevista: sql`c.data_prevista_entrega`,
   concluido: sql`c.data_conclusao_efetiva`,
 };
 
-export const colunaDaBase = (base: BaseDeData): SQL => COLUNA_DA_BASE[base];
+export const colunaDaBase = (base: BaseDeData): Sql => COLUNA_DA_BASE[base];
 
 /** Entregue: data de entrega ou efetiva de entrega (1/18/67). origem: _is_entregue */
 export const ENTREGUE = entregue(C);
 
 /** Baixado sem entrega pelo cadastro da empresa. origem: _is_finalizado_sem_entrega */
-export const finalizado = (baixas: readonly number[]): SQL => finalizadoDoCte(C, baixas);
+export const finalizado = (baixas: readonly number[]): Sql => finalizadoDoCte(C, baixas);
 
 /** Responsabilidade do cliente; nula conta como da transportadora. */
 export const DO_CLIENTE = sql`coalesce(c.responsabilidade_cliente, false)`;
@@ -51,7 +51,7 @@ export const DO_CLIENTE = sql`coalesce(c.responsabilidade_cliente, false)`;
 export const TIPO_EFETIVO = tipoDocumentoDoFiltro(C);
 
 /** Atraso em dias como na lista, no hoje e no fuso da empresa (Q11). origem: atraso_lista_dias */
-export const atraso = (ctx: ContextoDaConsulta, baixas: readonly number[]): SQL =>
+export const atraso = (ctx: ContextoDaConsulta, baixas: readonly number[]): Sql =>
   atrasoDoCte(C, { baixas, hoje: ctx.hoje, fuso: ctx.fuso });
 
 /** Partes do filtro que cada chamada pode deixar de fora. */
@@ -66,8 +66,8 @@ export interface Opcoes {
  * cancelados) e só os filtros preenchidos.
  * origem: _perf_filtro_ctrcs (sistema atual)
  */
-export function ondeDoFiltro(f: FiltroCtrc, ctx: ContextoDaConsulta, opcoes: Opcoes = {}): SQL {
-  const partes: SQL[] = [
+export function ondeDoFiltro(f: FiltroCtrc, ctx: ContextoDaConsulta, opcoes: Opcoes = {}): Sql {
+  const partes: Sql[] = [
     sql`c.empresa_id = ${ctx.empresaId}`,
     sql`not c.fora_universo`,
     sql`c.filial_efetiva = any(${lista(ctx.filiaisProprias)}::text[])`,
@@ -86,10 +86,10 @@ export function ondeDoFiltro(f: FiltroCtrc, ctx: ContextoDaConsulta, opcoes: Opc
   }
   if (f.tipos && !opcoes.semTipos)
     partes.push(sql`${TIPO_EFETIVO} = any(${lista(f.tipos)}::text[])`);
-  return sql.join(partes, sql` and `);
+  return sql.juntar(partes, sql` and `);
 }
 
 /** O filtro de códigos como expressão (os alertas contam com e sem ele na mesma passada). */
-export function casaCodigos(f: FiltroCtrc): SQL {
+export function casaCodigos(f: FiltroCtrc): Sql {
   return f.codigos ? sql`c.ocorr_efetiva_codigo_num = any(${lista(f.codigos)}::int[])` : sql`true`;
 }

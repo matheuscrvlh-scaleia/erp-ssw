@@ -1,148 +1,113 @@
-import { type Transacao } from "@erp/db";
-import {
-  auditoria,
-  bi2Sincronizacoes,
-  empresas,
-  ingestaoAplicacoes,
-  ingestaoArquivos,
-  xmlFtpSincronizacoes,
-} from "@erp/db/schema";
-import { and, type AnyColumn, desc, eq, gte, ilike, isNull, lte, type SQL } from "drizzle-orm";
+import { comInstantes, type Sql, sql, type Transacao } from "@erp/db";
 
-import { type EscopoDosLogs, type Execucao, type RepositorioLogs } from "./logs.service";
+import {
+  type AlteracaoGravada,
+  type EscopoDosLogs,
+  type Execucao,
+  type RepositorioLogs,
+} from "./logs.service";
 
 /** `%` e `_` digitados são texto, não curinga. */
 function trecho(texto: string): string {
   return `%${texto.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 }
 
-function doEscopo(escopo: EscopoDosLogs): SQL | undefined {
-  if (escopo.tipo === "empresa") return eq(auditoria.empresaId, escopo.empresaId);
-  if (escopo.tipo === "plataforma") return isNull(auditoria.empresaId);
-  return undefined;
+function doEscopo(escopo: EscopoDosLogs): Sql {
+  if (escopo.tipo === "empresa") return sql`and a.empresa_id = ${escopo.empresaId}`;
+  if (escopo.tipo === "plataforma") return sql`and a.empresa_id is null`;
+  return sql.vazio();
 }
 
-function noPeriodo(coluna: AnyColumn, periodo: { de: Date | null; ate: Date | null }) {
-  return [
-    periodo.de ? gte(coluna, periodo.de) : undefined,
-    periodo.ate ? lte(coluna, periodo.ate) : undefined,
-  ];
+/** `and <coluna> >= de and <coluna> <= ate`, só com os limites dados. */
+function noPeriodo(coluna: Sql, periodo: { de: Date | null; ate: Date | null }): Sql {
+  const de = periodo.de ? sql`and ${coluna} >= ${periodo.de}` : sql.vazio();
+  const ate = periodo.ate ? sql`and ${coluna} <= ${periodo.ate}` : sql.vazio();
+  return sql`${de} ${ate}`;
 }
+
+/**
+ * Como cada origem vira uma execução: a tabela, a coluna do "quando" (filtro e ordem), o "quando"
+ * mostrado e os campos crus de `dados`.
+ */
+const ORIGENS: Record<
+  Parameters<RepositorioLogs["execucoes"]>[1],
+  { tabela: Sql; filtro: Sql; quando: Sql; status: Sql; erro: Sql; dados: Sql }
+> = {
+  sftp_xml: {
+    tabela: sql`erp.xml_ftp_sincronizacoes`,
+    filtro: sql`executado_em`,
+    quando: sql`executado_em`,
+    status: sql`status`,
+    erro: sql`mensagem`,
+    dados: sql`jsonb_build_object('arquivosProcessados', arquivos_processados,
+      'ctesProcessados', ctes_processados, 'arquivosComErro', arquivos_com_erro,
+      'disparadoPor', disparado_por)`,
+  },
+  relatorio_ssw: {
+    tabela: sql`erp.ingestao_arquivos`,
+    filtro: sql`visto_em`,
+    quando: sql`coalesce(importado_em, visto_em)`,
+    status: sql`status`,
+    erro: sql`mensagem`,
+    dados: sql`jsonb_build_object('relatorio', relatorio, 'nomeArquivo', nome_arquivo,
+      'linhas', linhas)`,
+  },
+  aplicacao_ssw: {
+    tabela: sql`erp.ingestao_aplicacoes`,
+    filtro: sql`iniciado_em`,
+    quando: sql`iniciado_em`,
+    status: sql`status`,
+    erro: sql`erro`,
+    dados: sql`jsonb_build_object('inseridos', total_inseridos, 'atualizados', total_atualizados,
+      'ocorrencias', total_ocorrencias, 'ignorados', total_ignorados, 'simulacao', simulacao)`,
+  },
+  bi2: {
+    tabela: sql`erp.bi2_sincronizacoes`,
+    filtro: sql`iniciado_em`,
+    quando: sql`iniciado_em`,
+    status: sql`status`,
+    erro: sql`erro`,
+    dados: sql`jsonb_build_object('codigo', codigo_relatorio, 'dataAlvo', data_alvo,
+      'modo', modo, 'linhas', total_linhas, 'criados', criados, 'atualizados', atualizados)`,
+  },
+};
 
 export function criarRepositorioLogs(tx: Transacao): RepositorioLogs {
   return {
-    auditoria: (f) =>
-      tx
-        .select({
-          id: auditoria.id,
-          empresaId: auditoria.empresaId,
-          empresaNome: empresas.nome,
-          atorEmail: auditoria.atorEmail,
-          atorTipo: auditoria.atorTipo,
-          acao: auditoria.acao,
-          entidade: auditoria.entidade,
-          entidadeId: auditoria.entidadeId,
-          resumo: auditoria.resumo,
-          antes: auditoria.antes,
-          depois: auditoria.depois,
-          ip: auditoria.ip,
-          criadoEm: auditoria.criadoEm,
-        })
-        .from(auditoria)
-        .leftJoin(empresas, eq(empresas.id, auditoria.empresaId))
-        .where(
-          and(
-            doEscopo(f.escopo),
-            f.ator ? ilike(auditoria.atorEmail, trecho(f.ator)) : undefined,
-            f.entidade ? eq(auditoria.entidade, f.entidade) : undefined,
-            f.acao ? eq(auditoria.acao, f.acao) : undefined,
-            ...noPeriodo(auditoria.criadoEm, f),
-          ),
-        )
-        .orderBy(desc(auditoria.criadoEm), desc(auditoria.id))
-        .limit(f.limite),
+    auditoria: async (f) => {
+      const linhas = comInstantes<Omit<AlteracaoGravada, "id"> & { id: string }>(
+        await tx.consultar(sql`
+          select a.id, a.empresa_id as "empresaId", e.nome as "empresaNome",
+                 a.ator_email as "atorEmail", a.ator_tipo as "atorTipo", a.acao, a.entidade,
+                 a.entidade_id as "entidadeId", a.resumo, a.antes, a.depois, a.ip,
+                 a.criado_em as "criadoEm"
+          from erp.auditoria a
+          left join erp.empresas e on e.id = a.empresa_id
+          where true ${doEscopo(f.escopo)}
+            ${f.ator ? sql`and a.ator_email ilike ${trecho(f.ator)}` : sql.vazio()}
+            ${f.entidade ? sql`and a.entidade = ${f.entidade}` : sql.vazio()}
+            ${f.acao ? sql`and a.acao = ${f.acao}` : sql.vazio()}
+            ${noPeriodo(sql`a.criado_em`, f)}
+          order by a.criado_em desc, a.id desc
+          limit ${f.limite}`),
+        ["criadoEm"],
+      );
+      // bigint chega do pg em texto.
+      return linhas.map((l) => ({ ...l, id: Number(l.id) }));
+    },
 
-    execucoes: async (empresaId, origem, periodo, limite): Promise<Execucao[]> => {
-      if (origem === "sftp_xml") {
-        const t = xmlFtpSincronizacoes;
-        const linhas = await tx
-          .select()
-          .from(t)
-          .where(and(eq(t.empresaId, empresaId), ...noPeriodo(t.executadoEm, periodo)))
-          .orderBy(desc(t.executadoEm))
-          .limit(limite);
-        return linhas.map((l) => ({
-          id: l.id,
-          quando: l.executadoEm,
-          status: l.status,
-          erro: l.mensagem,
-          dados: {
-            arquivosProcessados: l.arquivosProcessados,
-            ctesProcessados: l.ctesProcessados,
-            arquivosComErro: l.arquivosComErro,
-            disparadoPor: l.disparadoPor,
-          },
-        }));
-      }
-      if (origem === "relatorio_ssw") {
-        const t = ingestaoArquivos;
-        const linhas = await tx
-          .select()
-          .from(t)
-          .where(and(eq(t.empresaId, empresaId), ...noPeriodo(t.vistoEm, periodo)))
-          .orderBy(desc(t.vistoEm))
-          .limit(limite);
-        return linhas.map((l) => ({
-          id: l.id,
-          quando: l.importadoEm ?? l.vistoEm,
-          status: l.status,
-          erro: l.mensagem,
-          dados: { relatorio: l.relatorio, nomeArquivo: l.nomeArquivo, linhas: l.linhas },
-        }));
-      }
-      if (origem === "aplicacao_ssw") {
-        const t = ingestaoAplicacoes;
-        const linhas = await tx
-          .select()
-          .from(t)
-          .where(and(eq(t.empresaId, empresaId), ...noPeriodo(t.iniciadoEm, periodo)))
-          .orderBy(desc(t.iniciadoEm))
-          .limit(limite);
-        return linhas.map((l) => ({
-          id: l.id,
-          quando: l.iniciadoEm,
-          status: l.status,
-          erro: l.erro,
-          dados: {
-            inseridos: l.totalInseridos,
-            atualizados: l.totalAtualizados,
-            ocorrencias: l.totalOcorrencias,
-            ignorados: l.totalIgnorados,
-            simulacao: l.simulacao,
-          },
-        }));
-      }
-      const t = bi2Sincronizacoes;
-      const linhas = await tx
-        .select()
-        .from(t)
-        .where(and(eq(t.empresaId, empresaId), ...noPeriodo(t.iniciadoEm, periodo)))
-        .orderBy(desc(t.iniciadoEm))
-        .limit(limite);
-      return linhas.map((l) => ({
-        id: l.id,
-        quando: l.iniciadoEm,
-        status: l.status,
-        erro: l.erro,
-        dados: {
-          codigo: l.codigoRelatorio,
-          dataAlvo: l.dataAlvo,
-          modo: l.modo,
-          linhas: l.totalLinhas,
-          criados: l.criados,
-          atualizados: l.atualizados,
-        },
-      }));
+    execucoes: async (empresaId, origem, periodo, limite) => {
+      const o = ORIGENS[origem];
+      return comInstantes<Execucao>(
+        await tx.consultar(sql`
+          select id::text as id, ${o.quando} as quando, ${o.status} as status, ${o.erro} as erro,
+                 ${o.dados} as dados
+          from ${o.tabela}
+          where empresa_id = ${empresaId} ${noPeriodo(o.filtro, periodo)}
+          order by ${o.filtro} desc
+          limit ${limite}`),
+        ["quando"],
+      );
     },
   };
 }

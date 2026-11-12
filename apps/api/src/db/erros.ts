@@ -1,8 +1,7 @@
 /**
- * Erro pronto para o log, sem o SQL e sem os parâmetros. O `DrizzleQueryError` leva a consulta e
- * os valores (e-mail, CNPJ, hash…) na mensagem, no `stack` e nos campos `query`/`params`; o erro
- * do pg leva valores em `detail`/`where`. Fica o tipo, o código do Postgres, a restrição e o
- * caminho do código.
+ * Erro pronto para o log, sem SQL e sem parâmetros. O erro do pg leva valores (e-mail, CNPJ,
+ * hash…) em `detail`/`where`, e um erro com `query`/`params` os leva também na mensagem. Fica o
+ * tipo, o código do Postgres, a restrição e o caminho do código.
  */
 const CAMPOS_DO_PG = ["code", "severity", "constraint", "table", "column", "routine"] as const;
 const PROFUNDIDADE_MAXIMA = 3;

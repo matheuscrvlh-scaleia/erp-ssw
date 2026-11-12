@@ -1,9 +1,8 @@
 import { MODULOS } from "@erp/shared/acesso/modulos";
 import { ROTULO_DA_TELA, TELAS } from "@erp/shared/acesso/telas";
-import { and, eq, notInArray, sql } from "drizzle-orm";
 
 import { type Banco } from "../cliente";
-import { modulos, moduloTelas, telas } from "../schema";
+import { sql } from "../sql";
 
 /**
  * Catálogo de telas e módulos a partir de `@erp/shared` (a fonte da verdade). Idempotente: pode
@@ -11,46 +10,29 @@ import { modulos, moduloTelas, telas } from "../schema";
  * Roda com o papel de migração (catálogo não é dado de empresa).
  */
 export async function semearCatalogo(banco: Banco): Promise<void> {
-  await banco.transaction(async (tx) => {
-    await tx
-      .insert(telas)
-      .values(TELAS.map((chave) => ({ chave, rotulo: ROTULO_DA_TELA[chave] })))
-      .onConflictDoUpdate({ target: telas.chave, set: { rotulo: sql`excluded.rotulo` } });
+  await banco.transacao(async (tx) => {
+    await tx.executar(sql`
+      insert into erp.telas (chave, rotulo)
+      select * from unnest(${[...TELAS]}::text[], ${TELAS.map((t) => ROTULO_DA_TELA[t])}::text[])
+      on conflict (chave) do update set rotulo = excluded.rotulo`);
 
-    await tx
-      .insert(modulos)
-      .values(
-        MODULOS.map((m) => ({
-          chave: m.chave,
-          nome: m.nome,
-          descricao: m.descricao,
-          essencial: m.essencial,
-          ordem: m.ordem,
-        })),
-      )
-      .onConflictDoUpdate({
-        target: modulos.chave,
-        set: {
-          nome: sql`excluded.nome`,
-          descricao: sql`excluded.descricao`,
-          essencial: sql`excluded.essencial`,
-          ordem: sql`excluded.ordem`,
-        },
-      });
+    await tx.executar(sql`
+      insert into erp.modulos (chave, nome, descricao, essencial, ordem)
+      select * from unnest(
+        ${MODULOS.map((m) => m.chave)}::text[], ${MODULOS.map((m) => m.nome)}::text[],
+        ${MODULOS.map((m) => m.descricao)}::text[], ${MODULOS.map((m) => m.essencial)}::boolean[],
+        ${MODULOS.map((m) => m.ordem)}::int[])
+      on conflict (chave) do update set nome = excluded.nome, descricao = excluded.descricao,
+        essencial = excluded.essencial, ordem = excluded.ordem`);
 
     for (const m of MODULOS) {
-      await tx
-        .delete(moduloTelas)
-        .where(
-          and(
-            eq(moduloTelas.moduloChave, m.chave),
-            notInArray(moduloTelas.telaChave, [...m.telas]),
-          ),
-        );
-      await tx
-        .insert(moduloTelas)
-        .values(m.telas.map((telaChave) => ({ moduloChave: m.chave, telaChave })))
-        .onConflictDoNothing();
+      await tx.executar(sql`
+        delete from erp.modulo_telas
+        where modulo_chave = ${m.chave} and tela_chave <> all(${[...m.telas]}::text[])`);
+      await tx.executar(sql`
+        insert into erp.modulo_telas (modulo_chave, tela_chave)
+        select ${m.chave}, unnest(${[...m.telas]}::text[])
+        on conflict do nothing`);
     }
   });
 }

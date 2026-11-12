@@ -9,8 +9,9 @@ configurações, auditoria) são da fundação e não estão aqui.
 Arquivos de apoio:
 
 - `de-para.md`: mapa `public.<tabela>.<coluna>` → `erp.<tabela>.<coluna>` para o migrador.
-- `ddl-dominio-previa.sql`: o DDL que o drizzle-kit gera deste schema (prévia para revisão).
-- `ddl-complementar.sql`: o que o Drizzle não expressa (índices com INCLUDE, `fillfactor`).
+- `ddl-dominio-previa.sql`: prévia do DDL do schema de domínio, feita para revisão (histórica; o
+  DDL que vale está em `apps/api/migracoes/`).
+- `ddl-complementar.sql`: índices com INCLUDE e `fillfactor`, que a prévia não trazia.
 
 ## Princípios
 

@@ -1,12 +1,24 @@
-import { type SQL, sql } from "drizzle-orm";
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { Pool, type PoolClient, types } from "pg";
 
-import * as schema from "./schema";
+import { compilar, type Sql, sql } from "./sql";
 
-export type Banco = NodePgDatabase<typeof schema>;
-/** Executor dentro da transação com contexto: é o que repositórios recebem. */
-export type Transacao = Parameters<Parameters<Banco["transaction"]>[0]>[0];
+/** Linha crua do `pg`: coluna → valor. */
+export type Linha = Record<string, unknown>;
+
+/**
+ * Executor dentro da transação com contexto: é o que repositórios recebem. O tipo das linhas é o
+ * que o SQL devolve (apelidos `as "campo"`); quem escreve a consulta garante o formato.
+ */
+export interface Transacao {
+  consultar<T extends object = Linha>(consulta: Sql): Promise<T[]>;
+  /** Comando sem linhas de volta: devolve quantas linhas foram afetadas. */
+  executar(consulta: Sql): Promise<number>;
+}
+
+export interface Banco {
+  /** BEGIN, `fn`, COMMIT; ROLLBACK em erro. */
+  transacao<T>(fn: (tx: Transacao) => Promise<T>): Promise<T>;
+}
 
 export interface ConfigBanco {
   url: string;
@@ -22,6 +34,41 @@ export interface ConexaoBanco {
   encerrar: () => Promise<void>;
 }
 
+/**
+ * Data, hora e intervalo chegam como o texto do Postgres (`2026-01-31`,
+ * `2026-01-31 12:00:00+00`), sem conversão para `Date` no fuso do processo: o dia é sempre o do
+ * fuso da empresa, decidido no SQL. Quem precisa de `Date` converte (`comInstantes`).
+ */
+const COMO_TEXTO = new Set<number>([
+  types.builtins.DATE,
+  types.builtins.TIMESTAMP,
+  types.builtins.TIMESTAMPTZ,
+  types.builtins.INTERVAL,
+  1182, // date[]
+  1115, // timestamp[]
+  1185, // timestamptz[]
+  1187, // interval[]
+  1231, // numeric[]
+]);
+const parserPadrao = types.getTypeParser.bind(types) as (
+  oid: number,
+  formato?: "text" | "binary",
+) => (valor: string) => unknown;
+const tiposDoBanco = {
+  getTypeParser: ((oid: number, formato?: "text" | "binary") =>
+    COMO_TEXTO.has(oid)
+      ? (valor: string) => valor
+      : parserPadrao(oid, formato)) as typeof types.getTypeParser,
+};
+
+function executor(cliente: PoolClient): Transacao {
+  const rodar = (consulta: Sql) => cliente.query({ ...compilar(consulta), types: tiposDoBanco });
+  return {
+    consultar: async <T extends object>(consulta: Sql) => (await rodar(consulta)).rows as T[],
+    executar: async (consulta) => (await rodar(consulta)).rowCount ?? 0,
+  };
+}
+
 export function conectarBanco(config: ConfigBanco): ConexaoBanco {
   const pool = new Pool({
     connectionString: config.url,
@@ -30,7 +77,22 @@ export function conectarBanco(config: ConfigBanco): ConexaoBanco {
     // Teto também fora das transações com contexto (ex.: readiness).
     statement_timeout: config.timeoutConsultaMs,
   });
-  const banco = drizzle(pool, { schema });
+  const banco: Banco = {
+    transacao: async (fn) => {
+      const cliente = await pool.connect();
+      try {
+        await cliente.query("begin");
+        const resultado = await fn(executor(cliente));
+        await cliente.query("commit");
+        return resultado;
+      } catch (erro) {
+        await cliente.query("rollback").catch(() => undefined);
+        throw erro;
+      } finally {
+        cliente.release();
+      }
+    },
+  };
   return {
     banco,
     verificar: async () => {
@@ -38,6 +100,31 @@ export function conectarBanco(config: ConfigBanco): ConexaoBanco {
     },
     encerrar: () => pool.end(),
   };
+}
+
+/** `timestamptz` como chega do banco (texto) → `Date`. */
+export function instanteDoBanco(valor: string): Date;
+export function instanteDoBanco(valor: string | null): Date | null;
+export function instanteDoBanco(valor: string | null): Date | null {
+  return valor === null ? null : new Date(valor);
+}
+
+/**
+ * Linhas com os campos de instante convertidos para `Date` (o `pg` os entrega em texto). O tipo
+ * `T` é o formato final da linha, que a consulta garante com os apelidos `as "campo"`.
+ */
+export function comInstantes<T extends object>(
+  linhas: readonly Linha[],
+  campos: readonly (keyof T & string)[],
+): T[] {
+  return linhas.map((linha) => {
+    const saida: Linha = { ...linha };
+    for (const campo of campos) {
+      const valor = saida[campo];
+      saida[campo] = typeof valor === "string" ? new Date(valor) : null;
+    }
+    return saida as T;
+  });
 }
 
 /**
@@ -62,10 +149,10 @@ export const CONTEXTO_VAZIO: ContextoBanco = {
 };
 
 /** `set_config(..., true)` = `SET LOCAL`, mas com os valores como parâmetros (nada concatenado). */
-export function sqlDoContexto(contexto: ContextoBanco): SQL {
+export function sqlDoContexto(contexto: ContextoBanco): Sql {
   const token =
     contexto.tokenPublicoHash === undefined
-      ? sql``
+      ? sql.vazio()
       : sql`, set_config('app.token_publico_hash', ${contexto.tokenPublicoHash}, true)`;
   return sql`select
     set_config('app.empresa_id', ${contexto.empresaId ?? ""}, true),
@@ -82,8 +169,8 @@ export async function comContexto<T>(
   contexto: ContextoBanco,
   fn: (tx: Transacao) => Promise<T>,
 ): Promise<T> {
-  return banco.transaction(async (tx) => {
-    await tx.execute(sqlDoContexto(contexto));
+  return banco.transacao(async (tx) => {
+    await tx.executar(sqlDoContexto(contexto));
     return fn(tx);
   });
 }
@@ -97,7 +184,6 @@ const VIOLACAO_DE_UNICIDADE = "23505";
 function temCodigo(erro: unknown, codigo: string): boolean {
   if (typeof erro !== "object" || erro === null) return false;
   if ("code" in erro && erro.code === codigo) return true;
-  // O driver às vezes embrulha o erro do pg (`cause`).
   return "cause" in erro && temCodigo(erro.cause, codigo);
 }
 

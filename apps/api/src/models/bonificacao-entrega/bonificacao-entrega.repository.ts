@@ -1,50 +1,32 @@
-import { type Transacao } from "@erp/db";
-import {
-  bonificacaoCodigos,
-  bonificacaoFaltas,
-  bonificacaoParametros,
-  ctes,
-  ocorrencias,
-  romaneioViagensCte as viagens,
-} from "@erp/db/schema";
+import { type Sql, sql, type Transacao } from "@erp/db";
 import { type EfeitoBonificacao } from "@erp/dominio/bonificacao-entrega";
-import { and, desc, eq, gte, lte, type SQL, sql } from "drizzle-orm";
 
 import {
   type PeriodoDaApuracao,
   type RepositorioBonificacaoEntrega,
 } from "./bonificacao-entrega.service";
 
-/** Unidade do romaneio: as 3 primeiras letras, em maiúsculas. */
-const unidadeDoRomaneio = sql<string>`upper(left(btrim(${viagens.romaneio}), 3))`;
+/** Unidade do romaneio (`v` = `erp.romaneio_viagens_cte`): as 3 primeiras letras, maiúsculas. */
+const unidadeDoRomaneio = sql`upper(left(btrim(v.romaneio), 3))`;
 
 /**
  * Viagens do período (romaneio por viagem, já sem romaneio cancelado) das unidades pedidas.
  * origem: staging 036 de bonificacao_apurar, agora pela projeção (Q02: sigla + número)
  */
-function doPeriodo(empresaId: string, p: PeriodoDaApuracao): SQL | undefined {
-  return and(
-    eq(viagens.empresaId, empresaId),
-    gte(viagens.dataSaida, p.inicio),
-    lte(viagens.dataSaida, p.fim),
-    p.unidades
-      ? sql`${unidadeDoRomaneio} in (${sql.join(
-          p.unidades.map((u) => sql`${u}`),
-          sql`, `,
-        )})`
-      : undefined,
+function doPeriodo(empresaId: string, p: PeriodoDaApuracao): Sql {
+  return sql.e(
+    sql`v.empresa_id = ${empresaId}`,
+    sql`v.data_saida >= ${p.inicio}`,
+    sql`v.data_saida <= ${p.fim}`,
+    p.unidades ? sql`${unidadeDoRomaneio} = any(${[...p.unidades]}::text[])` : undefined,
   );
 }
 
-const colunasDaFalta = {
-  id: bonificacaoFaltas.id,
-  colaboradorNome: bonificacaoFaltas.colaboradorNome,
-  dataFalta: bonificacaoFaltas.dataFalta,
-  tipo: bonificacaoFaltas.tipo,
-  observacao: bonificacaoFaltas.observacao,
-};
+const SELECT_FALTA = sql`
+  select id, colaborador_nome as "colaboradorNome", data_falta as "dataFalta", tipo, observacao
+  from erp.bonificacao_faltas`;
 
-interface LinhaDoBalde extends Record<string, unknown> {
+interface LinhaDoBalde {
   romaneio: string;
   placa: string | null;
   data: string;
@@ -56,26 +38,43 @@ interface LinhaDoBalde extends Record<string, unknown> {
   ajudante3: string | null;
 }
 
+/** numeric chega do pg em texto. */
+interface LinhaDeParametros {
+  id: string;
+  vigenciaInicio: string;
+  vigenciaFim: string | null;
+  taxaTurbo: string;
+  taxaAcelerado: string;
+  taxaEmRotaGrande: string;
+  taxaEmRotaPequena: string;
+  metaRotaPequena: string;
+  metaRotaGrande: string;
+  metaEmRota: string;
+  limiteNfsRotaPequena: number;
+}
+
 export function criarRepositorioBonificacaoEntrega(tx: Transacao): RepositorioBonificacaoEntrega {
   return {
     unidades: (empresaId) =>
-      tx
-        .select({
-          unidade: unidadeDoRomaneio,
-          romaneios: sql<number>`count(distinct ${viagens.romaneio})::int`,
-          ultimoDia: sql<string>`max(${viagens.dataSaida})::text`,
-        })
-        .from(viagens)
-        .where(and(eq(viagens.empresaId, empresaId), sql`length(btrim(${viagens.romaneio})) >= 3`))
-        .groupBy(sql`1`)
-        .orderBy(sql`2 desc`),
+      tx.consultar(sql`
+        select ${unidadeDoRomaneio} as unidade, count(distinct v.romaneio)::int as romaneios,
+               max(v.data_saida)::text as "ultimoDia"
+        from erp.romaneio_viagens_cte v
+        where v.empresa_id = ${empresaId} and length(btrim(v.romaneio)) >= 3
+        group by 1
+        order by 2 desc`),
 
     parametros: async (empresaId) => {
-      const linhas = await tx
-        .select()
-        .from(bonificacaoParametros)
-        .where(eq(bonificacaoParametros.empresaId, empresaId))
-        .orderBy(desc(bonificacaoParametros.vigenciaInicio));
+      const linhas = await tx.consultar<LinhaDeParametros>(sql`
+        select id, vigencia_inicio as "vigenciaInicio", vigencia_fim as "vigenciaFim",
+               taxa_turbo as "taxaTurbo", taxa_acelerado as "taxaAcelerado",
+               taxa_em_rota_grande as "taxaEmRotaGrande",
+               taxa_em_rota_pequena as "taxaEmRotaPequena",
+               meta_rota_pequena as "metaRotaPequena", meta_rota_grande as "metaRotaGrande",
+               meta_em_rota as "metaEmRota", limite_nfs_rota_pequena as "limiteNfsRotaPequena"
+        from erp.bonificacao_parametros
+        where empresa_id = ${empresaId}
+        order by vigencia_inicio desc`);
       return linhas.map((l) => ({
         id: l.id,
         vigenciaInicio: l.vigenciaInicio,
@@ -92,111 +91,79 @@ export function criarRepositorioBonificacaoEntrega(tx: Transacao): RepositorioBo
     },
 
     colaboradores: async (empresaId, periodo) => {
-      const resultado = await tx.execute<{ nome: string }>(sql`
+      const linhas = await tx.consultar<{ nome: string }>(sql`
         select distinct btrim(pessoa.nome) as nome
-          from ${viagens}
-         cross join lateral (values (${viagens.motorista}), (${viagens.ajudante}),
-                                    (${viagens.ajudante2}), (${viagens.ajudante3})) as pessoa(nome)
+          from erp.romaneio_viagens_cte v
+         cross join lateral (values (v.motorista), (v.ajudante), (v.ajudante_2), (v.ajudante_3))
+           as pessoa(nome)
          where ${doPeriodo(empresaId, periodo)}
            and btrim(coalesce(pessoa.nome, '')) <> ''`);
-      return resultado.rows.map((l) => l.nome);
+      return linhas.map((l) => l.nome);
     },
 
-    baldes: async (empresaId, periodo) => {
+    baldes: async (empresaId, periodo) =>
       // Ocorrência do dia do romaneio (não o desfecho final): a última do dia no fuso da
       // empresa (Q11), fora de quarentena.
-      const resultado = await tx.execute<LinhaDoBalde>(sql`
-        select ${viagens.romaneio} as romaneio, ${viagens.placa} as placa,
-               ${viagens.dataSaida}::text as data, do_dia.codigo,
-               count(*)::int as ctes,
-               max(${viagens.motorista}) as motorista, max(${viagens.ajudante}) as ajudante,
-               max(${viagens.ajudante2}) as "ajudante2", max(${viagens.ajudante3}) as "ajudante3"
-          from ${viagens}
-          left join ${ctes}
-            on ${ctes.empresaId} = ${viagens.empresaId}
-           and ${ctes.sigla} = ${viagens.sigla}
-           and ${ctes.numero} = ${viagens.numero}
+      tx.consultar<LinhaDoBalde>(sql`
+        select v.romaneio as romaneio, v.placa as placa, v.data_saida::text as data,
+               do_dia.codigo, count(*)::int as ctes,
+               max(v.motorista) as motorista, max(v.ajudante) as ajudante,
+               max(v.ajudante_2) as "ajudante2", max(v.ajudante_3) as "ajudante3"
+          from erp.romaneio_viagens_cte v
+          left join erp.ctes
+            on ctes.empresa_id = v.empresa_id
+           and ctes.sigla = v.sigla
+           and ctes.numero = v.numero
           left join lateral (
-            select ${ocorrencias.codigo} as codigo
-              from ${ocorrencias}
-             where ${ocorrencias.cteId} = ${ctes.id}
-               and not ${ocorrencias.quarentena}
-               and (${ocorrencias.dataHora} at time zone ${periodo.fuso})::date = ${viagens.dataSaida}
-             order by ${ocorrencias.dataHora} desc
+            select ocorrencias.codigo as codigo
+              from erp.ocorrencias
+             where ocorrencias.cte_id = ctes.id
+               and not ocorrencias.quarentena
+               and (ocorrencias.data_hora at time zone ${periodo.fuso})::date = v.data_saida
+             order by ocorrencias.data_hora desc
              limit 1
           ) as do_dia on true
          where ${doPeriodo(empresaId, periodo)}
-         group by 1, 2, 3, 4`);
-      return resultado.rows.map((l) => ({
-        romaneio: l.romaneio,
-        placa: l.placa,
-        data: l.data,
-        codigo: l.codigo,
-        ctes: l.ctes,
-        motorista: l.motorista,
-        ajudante: l.ajudante,
-        ajudante2: l.ajudante2,
-        ajudante3: l.ajudante3,
-      }));
-    },
+         group by 1, 2, 3, 4`),
 
-    efeitos: async (empresaId) =>
-      (
-        await tx
-          .select({ codigo: bonificacaoCodigos.codigo, efeito: bonificacaoCodigos.efeito })
-          .from(bonificacaoCodigos)
-          .where(eq(bonificacaoCodigos.empresaId, empresaId))
-      ).map((l) => ({ codigo: l.codigo, efeito: l.efeito satisfies EfeitoBonificacao })),
+    efeitos: (empresaId) =>
+      tx.consultar<{ codigo: number; efeito: EfeitoBonificacao }>(sql`
+        select codigo, efeito from erp.bonificacao_codigos where empresa_id = ${empresaId}`),
 
     todasAsFaltas: (empresaId) =>
-      tx
-        .select({
-          colaboradorNome: bonificacaoFaltas.colaboradorNome,
-          dataFalta: bonificacaoFaltas.dataFalta,
-        })
-        .from(bonificacaoFaltas)
-        .where(eq(bonificacaoFaltas.empresaId, empresaId)),
+      tx.consultar(sql`
+        select colaborador_nome as "colaboradorNome", data_falta as "dataFalta"
+        from erp.bonificacao_faltas where empresa_id = ${empresaId}`),
 
     faltas: (empresaId, inicio, fim) =>
-      tx
-        .select(colunasDaFalta)
-        .from(bonificacaoFaltas)
-        .where(
-          and(
-            eq(bonificacaoFaltas.empresaId, empresaId),
-            gte(bonificacaoFaltas.dataFalta, inicio),
-            lte(bonificacaoFaltas.dataFalta, fim),
-          ),
-        )
-        .orderBy(desc(bonificacaoFaltas.dataFalta)),
+      tx.consultar(sql`
+        ${SELECT_FALTA}
+        where empresa_id = ${empresaId} and data_falta >= ${inicio} and data_falta <= ${fim}
+        order by data_falta desc`),
 
     falta: async (empresaId, id) => {
-      const [linha] = await tx
-        .select(colunasDaFalta)
-        .from(bonificacaoFaltas)
-        .where(and(eq(bonificacaoFaltas.empresaId, empresaId), eq(bonificacaoFaltas.id, id)));
+      const [linha] = await tx.consultar<
+        NonNullable<Awaited<ReturnType<RepositorioBonificacaoEntrega["falta"]>>>
+      >(sql`${SELECT_FALTA} where empresa_id = ${empresaId} and id = ${id}`);
       return linha ?? null;
     },
 
     gravarFalta: async (empresaId, dados, registradoPor) => {
-      const [linha] = await tx
-        .insert(bonificacaoFaltas)
-        .values({ empresaId, ...dados, registradoPor })
-        .onConflictDoUpdate({
-          target: [
-            bonificacaoFaltas.empresaId,
-            bonificacaoFaltas.colaboradorNome,
-            bonificacaoFaltas.dataFalta,
-          ],
-          set: { tipo: dados.tipo, observacao: dados.observacao, registradoPor },
-        })
-        .returning({ id: bonificacaoFaltas.id });
+      const [linha] = await tx.consultar<{ id: string }>(sql`
+        insert into erp.bonificacao_faltas
+          (empresa_id, colaborador_nome, data_falta, tipo, observacao, registrado_por)
+        values (${empresaId}, ${dados.colaboradorNome}, ${dados.dataFalta}, ${dados.tipo},
+                ${dados.observacao}, ${registradoPor})
+        on conflict (empresa_id, colaborador_nome, data_falta) do update
+        set tipo = excluded.tipo, observacao = excluded.observacao,
+            registrado_por = excluded.registrado_por
+        returning id`);
       if (!linha) throw new Error("gravação de falta sem retorno");
       return linha.id;
     },
 
     excluirFalta: async (id) => {
-      await tx.delete(bonificacaoFaltas).where(eq(bonificacaoFaltas.id, id));
+      await tx.executar(sql`delete from erp.bonificacao_faltas where id = ${id}`);
     },
   };
 }

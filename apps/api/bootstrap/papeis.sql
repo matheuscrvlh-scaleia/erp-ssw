@@ -10,7 +10,7 @@ create role erp_migracao login nobypassrls;
 create role erp_app login nobypassrls noinherit;
 create role erp_worker login nobypassrls noinherit;
 
--- erp_migracao cria o schema erp e o schema drizzle (controle das migrations).
+-- erp_migracao cria o schema erp e o schema migracoes (controle das migrations, `bun run db:migrar`).
 grant create on database postgres to erp_migracao;
 
 -- Depois: \password erp_migracao, \password erp_app e \password erp_worker

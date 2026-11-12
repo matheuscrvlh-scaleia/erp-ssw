@@ -1024,7 +1024,7 @@ de CT-e/ocorrência (fragmento: `($podeVerTudo OR c.unidade_id = $unidadeDoUsuar
 `updated_at = now()` em todo UPDATE de: `departamentos`, `roles`, `ssw_config`, `equipes_entrega`,
 `prazo_padrao_cidade`, `prazos_configurados`, `regras_bonificacao`, `ssw_ciclo_importacao`,
 `ssw_relatorio_arquivos`, `ssw_relatorio_tipos`, `sync_state`, `bi2_viagens`, `configuracoes`,
-`ftp_sync_progresso`. No novo: `$onUpdate` do Drizzle (ou o repositório). ⚠ `ctrcs.updated_at`
+`ftp_sync_progresso`. No novo: o repositório grava `atualizado_em`. ⚠ `ctrcs.updated_at`
 **não** tem gatilho: fica com o valor da criação (D11).
 
 ### 10.6 Status de meta (front) — `src/features/dashboard/utils/status.ts`

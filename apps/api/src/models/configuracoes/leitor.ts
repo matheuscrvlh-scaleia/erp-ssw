@@ -1,7 +1,5 @@
-import { type Transacao } from "@erp/db";
-import { configuracoes } from "@erp/db/schema";
+import { sql, type Transacao } from "@erp/db";
 import { type ConfiguracaoLida, configuracoesVigentes } from "@erp/dominio/configuracoes";
-import { eq, isNull, or } from "drizzle-orm";
 
 import { type CacheDeConfiguracoes } from "./cache";
 
@@ -16,18 +14,10 @@ export type CarregarConfiguracoes = (empresaId: string | null) => Promise<Config
 
 export function carregarConfiguracoesDoBanco(tx: Transacao): CarregarConfiguracoes {
   return (empresaId) =>
-    tx
-      .select({
-        empresaId: configuracoes.empresaId,
-        chave: configuracoes.chave,
-        valor: configuracoes.valor,
-      })
-      .from(configuracoes)
-      .where(
-        empresaId === null
-          ? isNull(configuracoes.empresaId)
-          : or(eq(configuracoes.empresaId, empresaId), isNull(configuracoes.empresaId)),
-      );
+    tx.consultar<ConfiguracaoLida>(sql`
+      select empresa_id as "empresaId", chave, valor
+      from erp.configuracoes
+      where empresa_id is null or empresa_id = ${empresaId}`);
 }
 
 /**

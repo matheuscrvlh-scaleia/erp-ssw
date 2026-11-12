@@ -37,10 +37,9 @@
       "@erp/shared/contrato": ["./src/views/contrato.ts"],
       "@erp/shared/*": ["./src/models/comum/*"],
       "@erp/db": ["./src/db/index.ts"],
-      "@erp/db/schema": ["./src/db/schema/index.ts"],
       "@erp/db/segredos": ["./src/db/segredos.ts"],
       "@erp/db/seeds": ["./src/db/seeds/catalogo.ts"]
     }
   },
-  "include": ["src", "drizzle.config.ts"]
+  "include": ["src"]
 }

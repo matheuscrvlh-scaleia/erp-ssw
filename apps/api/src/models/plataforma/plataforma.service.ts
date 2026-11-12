@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { type codigosOcorrencia } from "@erp/db/schema";
 import {
   type ChavesDeSegredo,
   cifrarSegredo,
@@ -131,10 +130,25 @@ export type EstadoDaIntegracaoDaPlataforma = Omit<
   "segredoDefinidoEm" | "atualizadoEm"
 > & { segredoDefinidoEm: Date | null; atualizadoEm: Date | null };
 
+/** Linha de `codigos_ocorrencia` da empresa modelo, sem empresa e sem autoria. */
+export interface CodigoDoModelo {
+  codigo: number;
+  descricao: string;
+  tipoSsw: string | null;
+  processoSsw: string | null;
+  tipoSswManual: boolean;
+  responsavel: string;
+  letraResponsavel: string | null;
+  penaliza: boolean;
+  ativo: boolean;
+  pendenteClassificacao: boolean;
+  pendenciaAcompanhada: boolean;
+  notas: string | null;
+}
+
 /** O que a empresa nova copia da empresa modelo. */
 export interface CopiaDoModelo {
-  /** Linhas de `codigos_ocorrencia` sem empresa e sem autoria. */
-  codigos: Omit<typeof codigosOcorrencia.$inferInsert, "empresaId">[];
+  codigos: CodigoDoModelo[];
   configuracoes: { chave: string; valor: string; descricao: string; grupo: string }[];
   /** Permissões gravadas de cada cargo do modelo (`tela.acao`). */
   permissoesDosCargos: Map<string, Permissao[]>;

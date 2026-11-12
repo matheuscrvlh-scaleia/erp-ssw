@@ -4,22 +4,19 @@
  * TypeScript; o banco só executa. Todo valor de fora entra como parâmetro, inclusive o fuso: o dia
  * é o do fuso da empresa (Brasília na FR, decisão Q11).
  */
-import { type Transacao } from "@erp/db";
-import { ctes, filiais } from "@erp/db/schema";
+import { type Sql, sql } from "@erp/db";
 import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
 import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/filtros";
-import { and, type AnyColumn, eq, type SQL, sql } from "drizzle-orm";
 
-type Expressao = AnyColumn | SQL;
+type Expressao = Sql;
 
-/** Lista JS como UM parâmetro (o `sql` do Drizzle expandiria em `($1, $2…)`); o cast é de quem usa. */
-export const lista = (valores: readonly (string | number)[]): SQL =>
-  sql`${sql.param([...valores])}`;
-export const textos = (valores: readonly string[]): SQL => sql`${lista(valores)}::text[]`;
-export const inteiros = (valores: readonly number[]): SQL => sql`${lista(valores)}::int[]`;
-export const uuids = (valores: readonly string[]): SQL => sql`${lista(valores)}::uuid[]`;
+/** Lista JS como UM parâmetro (array do Postgres); o cast é de quem usa. */
+export const lista = (valores: readonly (string | number)[]): Sql => sql`${[...valores]}`;
+export const textos = (valores: readonly string[]): Sql => sql`${lista(valores)}::text[]`;
+export const inteiros = (valores: readonly number[]): Sql => sql`${lista(valores)}::int[]`;
+export const uuids = (valores: readonly string[]): Sql => sql`${lista(valores)}::uuid[]`;
 
-/** Colunas do CT-e que as regras daqui leem: pela tabela do Drizzle ou por um apelido. */
+/** Colunas do CT-e que as regras daqui leem, pelo apelido da tabela na consulta. */
 export interface ColunasDoCte {
   dataEntregaRealizada: Expressao;
   /** Código da ocorrência efetiva já normalizado (`ocorr_efetiva_codigo_num`). */
@@ -30,19 +27,9 @@ export interface ColunasDoCte {
   tipoDocumento: Expressao;
 }
 
-/** `"ctes"."coluna"`: consultas montadas com o Drizzle a partir de `ctes`. */
-export const COLUNAS_DO_CTE: ColunasDoCte = {
-  dataEntregaRealizada: ctes.dataEntregaRealizada,
-  codigoEfetivo: ctes.ocorrEfetivaCodigoNum,
-  dataPrevistaEntrega: ctes.dataPrevistaEntrega,
-  performanceDias: ctes.performanceDias,
-  tipoDocumento455: ctes.tipoDocumento455,
-  tipoDocumento: ctes.tipoDocumento,
-};
-
-/** `apelido.coluna`: consultas escritas à mão com `from erp.ctes c`. */
+/** `apelido.coluna`: consulta com `from erp.ctes <apelido>`. */
 export function colunasDoApelido(apelido: string): ColunasDoCte {
-  const coluna = (nome: string) => sql`${sql.identifier(apelido)}.${sql.identifier(nome)}`;
+  const coluna = (nome: string) => sql`${sql.identificador(apelido)}.${sql.identificador(nome)}`;
   return {
     dataEntregaRealizada: coluna("data_entrega_realizada"),
     codigoEfetivo: coluna("ocorr_efetiva_codigo_num"),
@@ -53,43 +40,46 @@ export function colunasDoApelido(apelido: string): ColunasDoCte {
   };
 }
 
+/** `ctes.coluna`: consulta com `from erp.ctes` sem apelido. */
+export const COLUNAS_DO_CTE: ColunasDoCte = colunasDoApelido("ctes");
+
 /** Dia de um instante no fuso dado. origem: (x AT TIME ZONE 'America/Sao_Paulo')::date */
-export const diaNoFuso = (instante: Expressao, fuso: string): SQL =>
+export const diaNoFuso = (instante: Expressao, fuso: string): Sql =>
   sql`(${instante} AT TIME ZONE ${fuso})::date`;
 
 /** Meia-noite de um dia no fuso dado. */
-export const inicioDoDia = (dia: Expressao, fuso: string): SQL =>
+export const inicioDoDia = (dia: Expressao, fuso: string): Sql =>
   sql`(${dia}::timestamp AT TIME ZONE ${fuso})`;
 
 /**
  * Tipo de documento efetivo: o do 455 vence o do BI2; maiúsculas; vazio = sem tipo (nulo).
  * origem: tipo_documento_efetivo (sistema atual)
  */
-export const tipoDocumentoEfetivo = (c: ColunasDoCte = COLUNAS_DO_CTE): SQL =>
+export const tipoDocumentoEfetivo = (c: ColunasDoCte = COLUNAS_DO_CTE): Sql =>
   sql`nullif(upper(coalesce(nullif(btrim(${c.tipoDocumento455}), ''), btrim(${c.tipoDocumento}))), '')`;
 
 /** Tipo efetivo como os filtros usam: sem tipo = `__SEM_TIPO__`. */
-export const tipoDocumentoDoFiltro = (c: ColunasDoCte = COLUNAS_DO_CTE): SQL =>
+export const tipoDocumentoDoFiltro = (c: ColunasDoCte = COLUNAS_DO_CTE): Sql =>
   sql`coalesce(${tipoDocumentoEfetivo(c)}, ${SEM_TIPO_DOCUMENTO})`;
 
-const codigoDeEntrega = (c: ColunasDoCte): SQL =>
+const codigoDeEntrega = (c: ColunasDoCte): Sql =>
   sql`coalesce(${c.codigoEfetivo} = any(${inteiros([...CODIGOS_ENTREGA])}), false)`;
-const codigoDeBaixa = (c: ColunasDoCte, baixas: readonly number[]): SQL =>
+const codigoDeBaixa = (c: ColunasDoCte, baixas: readonly number[]): Sql =>
   sql`coalesce(${c.codigoEfetivo} = any(${inteiros(baixas)}), false)`;
 
 /** Entregue: data de entrega gravada ou efetiva de entrega (1/18/67). origem: _is_entregue */
-export const entregue = (c: ColunasDoCte = COLUNAS_DO_CTE): SQL =>
+export const entregue = (c: ColunasDoCte = COLUNAS_DO_CTE): Sql =>
   sql`(${c.dataEntregaRealizada} is not null or ${codigoDeEntrega(c)})`;
 
 /**
  * Finalizado sem entrega por um código de baixa do cadastro da empresa (Q22).
  * origem: _is_finalizado_sem_entrega
  */
-export const finalizado = (c: ColunasDoCte, baixas: readonly number[]): SQL =>
+export const finalizado = (c: ColunasDoCte, baixas: readonly number[]): Sql =>
   sql`(${c.dataEntregaRealizada} is null and ${c.codigoEfetivo} is not null and ${c.codigoEfetivo} <> 1 and ${c.codigoEfetivo} = any(${inteiros(baixas)}))`;
 
 /** Nem entregue nem baixado. A 1ª condição deixa o plano usar os índices de CT-e em aberto. */
-export const aberto = (c: ColunasDoCte, baixas: readonly number[]): SQL =>
+export const aberto = (c: ColunasDoCte, baixas: readonly number[]): Sql =>
   sql`(${c.dataEntregaRealizada} is null and not ${codigoDeEntrega(c)} and not ${codigoDeBaixa(c, baixas)})`;
 
 /** O que o atraso precisa saber de fora: baixas do cadastro (Q22), hoje e o fuso da empresa. */
@@ -105,8 +95,8 @@ export interface RegraDoAtraso {
  * efetiva de entrega → `performance_dias`; baixa → nulo; senão hoje − previsão.
  * origem: atraso_lista_dias (sistema atual; baixa pelo cadastro, decisão Q22)
  */
-export const atraso = (c: ColunasDoCte, regra: RegraDoAtraso): SQL<number | null> =>
-  sql<number | null>`(case
+export const atraso = (c: ColunasDoCte, regra: RegraDoAtraso): Sql =>
+  sql`(case
     when ${c.dataPrevistaEntrega} is null then null
     when ${c.dataEntregaRealizada} is not null
       then ${diaNoFuso(c.dataEntregaRealizada, regra.fuso)} - ${c.dataPrevistaEntrega}
@@ -116,22 +106,18 @@ export const atraso = (c: ColunasDoCte, regra: RegraDoAtraso): SQL<number | null
   end)`;
 
 /** Filtro de texto com vários valores ("a|b"): casa se qualquer padrão ILIKE casar. */
-export const casaAlgumPadrao = (coluna: Expressao, padroes: readonly string[]): SQL =>
+export const casaAlgumPadrao = (coluna: Expressao, padroes: readonly string[]): Sql =>
   sql`${coluna} ilike any(${textos(padroes)})`;
 
 /** NF digitada → igualdade com o número gravado (inteiro); número grande demais não casa. */
-export function nfIgual(termo: string): SQL {
-  return termo.length <= 9 ? eq(ctes.numeroNf, Number(termo)) : sql`false`;
+export function nfIgual(termo: string): Sql {
+  return termo.length <= 9 ? sql`ctes.numero_nf = ${Number(termo)}` : sql`false`;
 }
 
-/** Siglas das filiais próprias da empresa: o universo das telas. */
-export function filiaisProprias(tx: Transacao, empresaId: string) {
-  return tx
-    .select({ sigla: filiais.sigla })
-    .from(filiais)
-    .where(and(eq(filiais.empresaId, empresaId), eq(filiais.propria, true)));
-}
+/** Subconsulta das siglas das filiais próprias da empresa: o universo das telas. */
+export const filiaisProprias = (empresaId: string): Sql =>
+  sql`select sigla from erp.filiais where empresa_id = ${empresaId} and propria`;
 
 /** CT-e fora de todas as telas (cancelado no dia, cópia) sai sempre. */
-export const dentroDoUniverso = (empresaId: string): SQL =>
-  sql`${ctes.empresaId} = ${empresaId} and not ${ctes.foraUniverso}`;
+export const dentroDoUniverso = (empresaId: string): Sql =>
+  sql`ctes.empresa_id = ${empresaId} and not ctes.fora_universo`;

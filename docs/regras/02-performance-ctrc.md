@@ -1141,7 +1141,7 @@ muda). Sem eles, cada tela agrega 1,5 milhão de ocorrências.
 
 ### 8.2 Forma da consulta
 
-Uma CTE `base` só com os filtros preenchidos (SQL montado no backend com Drizzle `sql`, parâmetros
+Uma CTE `base` só com os filtros preenchidos (SQL montado no backend com a tag `sql`, parâmetros
 sempre ligados), depois `count(*) FILTER (WHERE ...)` e `GROUP BY` numa única passada:
 
 ```sql

@@ -8,7 +8,7 @@ lado a lado com este guia.
 | --- | --- |
 | Regra pura | `apps/api/src/dominio/calendario.ts` |
 | Contrato | `apps/api/src/views/contratos/calendario.ts` |
-| Tabela + RLS | `apps/api/src/db/schema/dominio/feriados.ts` |
+| Tabela + RLS | `apps/api/migracoes/0000_schema_erp.sql` (`erp.feriados`) |
 | API | `apps/api/src/{controllers/calendario.controller,models/calendario/calendario.{service,repository},views/calendario.view}.ts` |
 | Tela | `apps/web/src/routes/_autenticado/calendario.tsx` → `apps/web/src/modulos/calendario/` |
 
@@ -34,18 +34,21 @@ lado a lado com este guia.
 - Os tipos saem dos schemas (`z.infer`, `SaidaDe<typeof c.obter>`); não escreva o tipo à mão.
 - Mensagens de validação em português (o `z` de `@erp/shared/zod` já vem com pt-BR).
 
-## 4. Tabela — `apps/api/src/db/schema/dominio/<agregado>.ts`
+## 4. Tabela — `apps/api/migracoes/NNNN_<nome>.sql`
 
-- `empresaId: empresaId()` (de `./_comum`) e `...politicasDeEmpresa("<tabela>", t.empresaId)`.
-  Cadastro que a Plataforma também administra: `politicasDeEmpresaComPlataforma`. Regra
-  especial: `politicas("<tabela>", { select, insert, update, delete })` com `daEmpresa`,
-  `ehPlataforma` (ver `feriados.ts`).
-- `atualizadoEm()` é gravado pelo backend no UPDATE (não há gatilho).
+- Migration escrita à mão, com o próximo número da pasta. Depois de aplicada não se edita: correção
+  é migration nova.
+- Tabela no schema `erp`, colunas em snake_case, `empresa_id uuid not null` com FK para
+  `erp.empresas`.
+- RLS na mesma migration: `enable row level security` e as políticas de select, insert, update e
+  delete para `erp_app` (e `erp_worker`, se o worker-ssw usar), no padrão de `erp.feriados` em
+  `0000_schema_erp.sql`: `empresa_id = nullif(current_setting('app.empresa_id', true), '')::uuid`.
+  Cadastro que a Plataforma também administra soma `current_setting('app.plataforma', true) = 'on'`.
+- O `erp_app` já recebe DML nas tabelas novas (default privileges de `0002_permissoes_app.sql`);
+  revogue o que ele não deve fazer.
+- `atualizado_em` é gravado pelo backend no UPDATE (não há gatilho).
 - **Proibido** no banco: função, gatilho, view materializada, extensão, cron.
-- Exporte em `dominio/index.ts`, rode `bun run db:gerar` em `apps/api` (só gera o SQL; não conecta) e confira o
-  arquivo novo em `apps/api/drizzle/`. Índice ou parâmetro que o Drizzle não expressa:
-  `bunx drizzle-kit generate --custom --name <nome>` e escreva o SQL à mão (só índice/parâmetro).
-- Toda tabela com `empresa_id` precisa de RLS (confira na migration gerada).
+- Aplique com `bun run db:migrar` em `apps/api` (`DATABASE_URL_MIGRACAO`, papel `erp_migracao`).
 
 ## 5. API em MVC — `controllers/`, `models/`, `views/` (ADR 0014)
 
@@ -62,7 +65,8 @@ decisão.
   endpoint: não usa `SaidaDe`. A entrada já validada pode ser tipada pelo contrato (`EntradaDe`,
   import só de tipo); a saída, nunca.
 
-**Model — `models/<recurso>/<recurso>.repository.ts`**: Drizzle, consultas set-based, nenhuma regra
+**Model — `models/<recurso>/<recurso>.repository.ts`**: SQL puro com a tag `sql` de `@erp/db`
+(parâmetros sempre ligados, colunas com `as "camelCase"`), consultas set-based, nenhuma regra
 escondida.
 
 - `criarRepositorio<Recurso>(tx: Transacao): Repositorio<Recurso>`.
@@ -117,7 +121,7 @@ app.get(
 - [ ] Cálculos em `apps/api/src/dominio`, com origem citada.
 - [ ] Contratos zod em `apps/api/src/views/contratos/<dominio>.ts`, copiados para o web com
       `scripts/copiar-compartilhado.sh`.
-- [ ] Tabelas com `empresa_id`, RLS por helper, exportadas; migration gerada e revisada; nada de
+- [ ] Tabelas com `empresa_id` e RLS na migration escrita à mão e revisada; nada de
       função/gatilho/matview/extensão.
 - [ ] Casos de uso com transação única, auditoria nas escritas, mensagens para o operador.
 - [ ] Repositório registrado em `repositorios.ts`; rotas registradas em `app.ts`.

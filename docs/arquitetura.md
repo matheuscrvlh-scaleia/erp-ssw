@@ -37,7 +37,7 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 | Repositório | dois projetos independentes (`apps/api`, `apps/web`), cada um com bun e o seu `bun.lock`; o docker-compose junta (ADR 0013) | cada app sobe e evolui sozinho |
 | Web | Vite + React 19 + TS strict + Tailwind 4 + shadcn/Radix + TanStack Router + TanStack Query + react-hook-form | SPA simples de servir; roteamento tipado; cache de dados |
 | API | Node 22 LTS + Fastify 5 + TS strict + Zod 4 (`fastify-type-provider-zod`) | rápido, schema-first, ecossistema maduro |
-| Banco | Postgres (Supabase DEVELOP) + **Drizzle ORM** + `pg` | schema como código, migrations versionadas, SQL tipado, RLS declarado |
+| Banco | Postgres (Supabase DEVELOP) + `pg` com **SQL puro, sem ORM** (ADR 0015) | SQL explícito e sempre parametrizado (tag `sql`), migrations `.sql` versionadas, RLS escrito na migration |
 | Jobs | **BullMQ + Redis**, dentro do processo da API (`JOBS_LIGADOS`) | padrão de mercado; agendamento repetível, retry, concorrência por fila; os jobs do ERP são poucos e leves |
 | Auth | argon2id (`@node-rs/argon2`), JWT de acesso curto (`jose`, EdDSA), refresh opaco rotativo em cookie httpOnly | padrão OWASP; sessão revogável |
 | Arquivos | S3 compatível (`@aws-sdk/client-s3`) | logo da empresa; troca de provedor sem código |
@@ -56,7 +56,7 @@ apps/
       config.ts           variáveis de ambiente validadas
       controllers/        C: HTTP (Fastify), um por recurso; middleware/ (sessão, guardas, contexto,
                           segurança, erro → resposta)
-      models/             M: services (operações, transação, auditoria) + repositories (Drizzle);
+      models/             M: services (operações, transação, auditoria) + repositories (SQL puro);
                           comum/ (catálogos de acesso, datas, zod, erros padrão; cópia no web)
       views/              V: apresentação (model → resposta do contrato) e e-mails; contratos/ (zod de
                           entrada e saída de cada endpoint; cópia no web)
@@ -65,9 +65,9 @@ apps/
       dominio/            regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
                           atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
                           leitores dos relatórios SSW (prévia da importação)...
-      db/                 Drizzle: schema, políticas RLS, client com contexto de empresa
+      db/                 cliente `pg` com contexto de empresa, tag `sql`, aplicador de migrations
       infra/              clientes externos: S3, SMTP, Google, Ahgora, worker-ssw, tokens, senhas, log
-    drizzle/              migrations
+    migracoes/            migrations em SQL escrito à mão (`NNNN_nome.sql`)
   web/                    projeto próprio (SPA): package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
     src/
       shared/ dominio/    cópias dos da api (mesmo conteúdo, ver abaixo)
@@ -85,7 +85,7 @@ controllers/<recurso>.controller.ts       C  rota + contrato zod (validação), 
                                              Sem SQL, sem regra, sem montar JSON.
 models/<recurso>/<recurso>.service.ts     M  operações: permissão de negócio, transação, auditoria, regras do
                                              dominio. Devolve dado do model, não a resposta do endpoint.
-models/<recurso>/<recurso>.repository.ts  M  acesso a dados (Drizzle). Consultas set-based; nenhuma regra escondida.
+models/<recurso>/<recurso>.repository.ts  M  acesso a dados (SQL puro). Consultas set-based; nenhuma regra escondida.
 views/<recurso>.view.ts                   V  apresentar<Coisa>(dado) → saída do contrato. Pura; sem consulta, sem regra.
 ```
 
@@ -122,7 +122,7 @@ O web do ERP (Caddy) encaminha `/api/public/*` (menos o link público do ranking
 público dele (`worker.ssw.scaleia.ai`): as URLs das integrações externas não mudam (docs/deploy.md §1).
 
 **Agregação pesada** (ex.: performance de 250 mil CT-e) é feita por consulta SQL montada no backend
-(Drizzle/`sql` parametrizado), com a regra expressa em TypeScript: o backend decide o que filtrar,
+(tag `sql`, parametrizado), com a regra expressa em TypeScript: o backend decide o que filtrar,
 agrupar e calcular; o banco só executa a consulta. Nada de função armazenada.
 
 **O que hoje é gatilho, matview ou cron** vira:

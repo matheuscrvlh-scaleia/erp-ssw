@@ -7,7 +7,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist/**", "coverage/**", "drizzle/**", "**/*.js", "**/*.mjs"] },
+  { ignores: ["dist/**", "coverage/**", "**/*.js", "**/*.mjs"] },
   {
     files: ["**/*.ts"],
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],

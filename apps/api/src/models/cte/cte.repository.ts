@@ -3,35 +3,54 @@
  * `@erp/dominio/nucleo`). Usada pelos jobs de recálculo; o worker-ssw tem a cópia dele (ADR 0012).
  * Preso a uma transação no contexto da empresa (RLS); toda gravação leva a empresa explícita.
  */
-import { type Transacao } from "@erp/db";
 import {
-  codigosOcorrencia,
-  configuracoes,
-  ctePrazoHistorico,
-  ctes,
-  empresaIntegracoes,
-  empresas,
-  filiais,
-  ocorrencias,
-  prazosConfigurados,
-} from "@erp/db/schema";
+  atribuicoes,
+  camposDaLinha,
+  instanteDoBanco,
+  type Linha,
+  sql,
+  type Transacao,
+  valoresDeInsercao,
+} from "@erp/db";
 import { configuracoesVigentes } from "@erp/dominio/configuracoes";
 import {
+  type CadastrosDoNucleo,
   cnpjsPropriosDaEmpresa,
   type CteGravado,
-  type CteNucleo,
   lerConfiguracaoDoNucleo,
   montarCatalogo,
   type OcorrenciaDoCte,
   type RepositorioCteNucleo,
 } from "@erp/dominio/nucleo";
-import { and, eq, inArray, sql } from "drizzle-orm";
 
-/** Linha de `ctes` com os tipos do núcleo (ex.: `ocorrEfetivaFonte` fechado). */
-type CteDoErp = Omit<typeof ctes.$inferSelect, keyof CteNucleo> & CteNucleo;
+/** Colunas `timestamptz` de `erp.ctes`: chegam do banco como texto e o núcleo usa `Date`. */
+const INSTANTES_DO_CTE = [
+  "dataEntregaRealizada",
+  "dataBasePrazo",
+  "previsaoSswDataBase",
+  "comprovanteEscaneadoEm",
+  "ultimaOcorrData0013",
+  "ultOcorrData0174",
+  "ocorr036Data",
+  "ocorrEfetivaData",
+  "canceladoEm",
+  "criadoEm",
+  "atualizadoEm",
+] as const;
 
-/** O schema guarda `ocorr_efetiva_fonte` como texto; o núcleo o fecha num tipo. */
-export const comoCte = (c: typeof ctes.$inferSelect) => c as CteDoErp;
+/**
+ * Linha de `erp.ctes` (`select *` / `returning *`) como o núcleo a usa: campos em `camelCase`,
+ * instantes em `Date`, `numero_cte` (bigint) em número. Data sem hora e numeric ficam em texto.
+ */
+export function comoCte(linha: Linha): CteGravado {
+  const cte = camposDaLinha(linha);
+  for (const campo of INSTANTES_DO_CTE) {
+    const valor = cte[campo];
+    cte[campo] = typeof valor === "string" ? instanteDoBanco(valor) : null;
+  }
+  if (cte["numeroCte"] !== null) cte["numeroCte"] = Number(cte["numeroCte"]);
+  return cte as unknown as CteGravado;
+}
 
 /** Configurações que o núcleo lê (padrões em `CONFIGURACAO_PADRAO`). */
 const CHAVES_DO_NUCLEO = [
@@ -56,69 +75,37 @@ export function criarRepositorioCteNucleo(
 ): RepositorioCteNucleo<CteGravado> {
   return {
     async cadastrosDoNucleo() {
-      const codigos = await tx
-        .select({
-          codigo: codigosOcorrencia.codigo,
-          descricao: codigosOcorrencia.descricao,
-          tipoSsw: codigosOcorrencia.tipoSsw,
-          processoSsw: codigosOcorrencia.processoSsw,
-          responsavel: codigosOcorrencia.responsavel,
-          penaliza: codigosOcorrencia.penaliza,
-        })
-        .from(codigosOcorrencia)
-        .where(eq(codigosOcorrencia.empresaId, empresaId));
-      const listaDeFiliais = await tx
-        .select({
-          sigla: filiais.sigla,
-          cidade: filiais.cidade,
-          uf: filiais.uf,
-          propria: filiais.propria,
-        })
-        .from(filiais)
-        .where(eq(filiais.empresaId, empresaId));
-      const regras = await tx
-        .select({
-          id: prazosConfigurados.id,
-          tipo: prazosConfigurados.tipo,
-          unidadeCodigo: prazosConfigurados.unidadeCodigo,
-          unidadeDestinoCodigo: prazosConfigurados.unidadeDestinoCodigo,
-          parceiroCnpj: prazosConfigurados.parceiroCnpj,
-          prazoHoras: prazosConfigurados.prazoHoras,
-          prazoDias: prazosConfigurados.prazoDias,
-          ativo: prazosConfigurados.ativo,
-          criadoEm: prazosConfigurados.criadoEm,
-        })
-        .from(prazosConfigurados)
-        .where(eq(prazosConfigurados.empresaId, empresaId));
-      const [xml] = await tx
-        .select({ parametros: empresaIntegracoes.parametros })
-        .from(empresaIntegracoes)
-        .where(
-          and(eq(empresaIntegracoes.empresaId, empresaId), eq(empresaIntegracoes.tipo, "xml_cte")),
-        );
-      const [empresa] = await tx
-        .select({ cnpj: empresas.cnpj, dominioSsw: empresas.dominioSsw })
-        .from(empresas)
-        .where(eq(empresas.id, empresaId));
+      const codigos = await tx.consultar<Parameters<typeof montarCatalogo>[0][number]>(sql`
+        select codigo, descricao, tipo_ssw as "tipoSsw", processo_ssw as "processoSsw",
+               responsavel, penaliza
+        from erp.codigos_ocorrencia where empresa_id = ${empresaId}`);
+      const listaDeFiliais = await tx.consultar<CadastrosDoNucleo["filiais"][number]>(sql`
+        select sigla, cidade, uf, propria from erp.filiais where empresa_id = ${empresaId}`);
+      const regras = await tx.consultar<
+        Omit<CadastrosDoNucleo["regrasDePrazo"][number], "criadoEm"> & { criadoEm: string }
+      >(sql`
+        select id, tipo, unidade_codigo as "unidadeCodigo",
+               unidade_destino_codigo as "unidadeDestinoCodigo", parceiro_cnpj as "parceiroCnpj",
+               prazo_horas as "prazoHoras", prazo_dias as "prazoDias", ativo,
+               criado_em as "criadoEm"
+        from erp.prazos_configurados where empresa_id = ${empresaId}`);
+      const [xml] = await tx.consultar<{ parametros: Record<string, unknown> }>(sql`
+        select parametros from erp.empresa_integracoes
+        where empresa_id = ${empresaId} and tipo = 'xml_cte'`);
+      const [empresa] = await tx.consultar<{ cnpj: string; dominioSsw: string | null }>(sql`
+        select cnpj, dominio_ssw as "dominioSsw" from erp.empresas where id = ${empresaId}`);
       if (!empresa) throw new Error(`Empresa inexistente: ${empresaId}`);
-      const config = await tx
-        .select({
-          empresaId: configuracoes.empresaId,
-          chave: configuracoes.chave,
-          valor: configuracoes.valor,
-        })
-        .from(configuracoes)
-        .where(
-          and(
-            inArray(configuracoes.chave, CHAVES_DO_NUCLEO),
-            sql`(${configuracoes.empresaId} = ${empresaId} or ${configuracoes.empresaId} is null)`,
-          ),
-        );
-      const emitentes = xml?.parametros.cnpjs_emitentes;
+      const config = await tx.consultar<{ empresaId: string | null; chave: string; valor: string }>(
+        sql`
+          select empresa_id as "empresaId", chave, valor from erp.configuracoes
+          where chave = any(${CHAVES_DO_NUCLEO}::text[])
+            and (empresa_id = ${empresaId} or empresa_id is null)`,
+      );
+      const emitentes = xml?.parametros["cnpjs_emitentes"];
       return {
         catalogo: montarCatalogo(codigos),
         filiais: listaDeFiliais,
-        regrasDePrazo: regras,
+        regrasDePrazo: regras.map((r) => ({ ...r, criadoEm: instanteDoBanco(r.criadoEm) })),
         config: lerConfiguracaoDoNucleo(configuracoesVigentes(config)),
         cnpjsProprios: cnpjsPropriosDaEmpresa(
           empresa.cnpj,
@@ -131,21 +118,25 @@ export function criarRepositorioCteNucleo(
     async ocorrenciasDosCtes(ids) {
       const saida = new Map<string, OcorrenciaDoCte[]>();
       for (const bloco of emBlocos([...new Set(ids)], LOTE_DE_LEITURA)) {
-        const linhas = await tx
-          .select({
-            id: ocorrencias.id,
-            cteId: ocorrencias.cteId,
-            codigo: ocorrencias.codigo,
-            descricao: ocorrencias.descricao,
-            dataHora: ocorrencias.dataHora,
-            filial: ocorrencias.filial,
-            origem: ocorrencias.origem,
-            quarentena: ocorrencias.quarentena,
-            criadoEm: ocorrencias.criadoEm,
-          })
-          .from(ocorrencias)
-          .where(and(eq(ocorrencias.empresaId, empresaId), inArray(ocorrencias.cteId, bloco)));
-        for (const { cteId, ...o } of linhas) saida.set(cteId, [...(saida.get(cteId) ?? []), o]);
+        const linhas = await tx.consultar<
+          Omit<OcorrenciaDoCte, "dataHora" | "criadoEm"> & {
+            cteId: string;
+            dataHora: string;
+            criadoEm: string;
+          }
+        >(sql`
+          select id, cte_id as "cteId", codigo, descricao, data_hora as "dataHora", filial, origem,
+                 quarentena, criado_em as "criadoEm"
+          from erp.ocorrencias
+          where empresa_id = ${empresaId} and cte_id = any(${bloco}::uuid[])`);
+        for (const { cteId, dataHora, criadoEm, ...o } of linhas) {
+          const ocorrencia = {
+            ...o,
+            dataHora: instanteDoBanco(dataHora),
+            criadoEm: instanteDoBanco(criadoEm),
+          };
+          saida.set(cteId, [...(saida.get(cteId) ?? []), ocorrencia]);
+        }
       }
       return saida;
     },
@@ -153,11 +144,10 @@ export function criarRepositorioCteNucleo(
     async inserirCtes(novos) {
       const saida: CteGravado[] = [];
       for (const bloco of emBlocos(novos, LOTE_DE_GRAVACAO)) {
-        const linhas = await tx
-          .insert(ctes)
-          .values(bloco.map((c) => ({ ...c, empresaId, camposSsw: [...c.camposSsw] })))
-          .onConflictDoNothing()
-          .returning();
+        const linhas = await tx.consultar(sql`
+          insert into erp.ctes ${valoresDeInsercao(bloco.map((c) => ({ ...c, empresaId, camposSsw: [...c.camposSsw] })))}
+          on conflict do nothing
+          returning *`);
         saida.push(...linhas.map(comoCte));
       }
       return saida;
@@ -165,14 +155,15 @@ export function criarRepositorioCteNucleo(
 
     async atualizarCte(id, campos) {
       const { camposSsw, ...resto } = campos;
-      await tx
-        .update(ctes)
-        .set({ ...resto, ...(camposSsw ? { camposSsw: [...camposSsw] } : {}) })
-        .where(and(eq(ctes.empresaId, empresaId), eq(ctes.id, id)));
+      await tx.executar(sql`
+        update erp.ctes
+        set ${atribuicoes({ ...resto, ...(camposSsw ? { camposSsw: [...camposSsw] } : {}) })}
+        where empresa_id = ${empresaId} and id = ${id}`);
     },
 
     async registrarTrocaDePrevisao(cteId, troca) {
-      await tx.insert(ctePrazoHistorico).values({ empresaId, cteId, ...troca });
+      await tx.executar(sql`
+        insert into erp.cte_prazo_historico ${valoresDeInsercao([{ empresaId, cteId, ...troca }])}`);
     },
   };
 }

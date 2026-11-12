@@ -1,118 +1,81 @@
-import { type Transacao } from "@erp/db";
-import { anotacoes, empresaUsuarios, feriados, unidades, usuarios } from "@erp/db/schema";
-import { and, asc, between, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
+import { atribuicoes, sql, type Transacao, valoresDeInsercao } from "@erp/db";
 
 import { type RepositorioHistorico } from "./historico.service";
+
+type Retorno<K extends keyof RepositorioHistorico> = Awaited<ReturnType<RepositorioHistorico[K]>>;
 
 export function criarRepositorioHistorico(tx: Transacao): RepositorioHistorico {
   return {
     anotacoes: async (empresaId, filtro, limite) => {
-      const linhas = await tx
-        .select({
-          id: anotacoes.id,
-          data: anotacoes.data,
-          tipo: anotacoes.tipo,
-          texto: anotacoes.texto,
-          autorId: anotacoes.autorId,
-          autorNome: usuarios.nome,
-          unidadeId: anotacoes.unidadeId,
-          unidadeNome: unidades.nome,
-          criadoEm: anotacoes.criadoEm,
-        })
-        .from(anotacoes)
-        .leftJoin(usuarios, eq(usuarios.id, anotacoes.autorId))
-        .leftJoin(unidades, eq(unidades.id, anotacoes.unidadeId))
-        .where(
-          and(
-            eq(anotacoes.empresaId, empresaId),
-            between(anotacoes.data, filtro.inicio, filtro.fim),
-            filtro.unidades.length > 0 ? inArray(anotacoes.unidadeId, filtro.unidades) : undefined,
-          ),
-        )
-        .orderBy(desc(anotacoes.data), desc(anotacoes.criadoEm))
-        .limit(limite);
-      return linhas.map((l) => ({ ...l, criadoEm: l.criadoEm.toISOString() }));
+      const linhas = await tx.consultar<Retorno<"anotacoes">[number]>(sql`
+        select a.id, a.data, a.tipo, a.texto, a.autor_id as "autorId", u.nome as "autorNome",
+               a.unidade_id as "unidadeId", un.nome as "unidadeNome", a.criado_em as "criadoEm"
+        from erp.anotacoes a
+        left join erp.usuarios u on u.id = a.autor_id
+        left join erp.unidades un on un.id = a.unidade_id
+        where a.empresa_id = ${empresaId}
+          and a.data between ${filtro.inicio} and ${filtro.fim}
+          ${filtro.unidades.length > 0 ? sql`and a.unidade_id = any(${filtro.unidades}::uuid[])` : sql.vazio()}
+        order by a.data desc, a.criado_em desc
+        limit ${limite}`);
+      return linhas.map((l) => ({ ...l, criadoEm: new Date(l.criadoEm).toISOString() }));
     },
 
     feriados: (empresaId, filtro, limite) =>
-      tx
-        .select({
-          id: feriados.id,
-          empresaId: feriados.empresaId,
-          data: feriados.data,
-          tipo: feriados.tipo,
-          cidade: feriados.cidade,
-          uf: feriados.uf,
-          descricao: feriados.descricao,
-          geradoAutomaticamente: feriados.geradoAutomaticamente,
-        })
-        .from(feriados)
-        .where(
-          and(
-            or(isNull(feriados.empresaId), eq(feriados.empresaId, empresaId)),
-            between(feriados.data, filtro.de, filtro.ate),
-            filtro.tipo ? eq(feriados.tipo, filtro.tipo) : undefined,
-            filtro.uf ? eq(feriados.uf, filtro.uf) : undefined,
-          ),
-        )
-        .orderBy(desc(feriados.data))
-        .limit(limite),
+      tx.consultar(sql`
+        select id, empresa_id as "empresaId", data, tipo, cidade, uf, descricao,
+               gerado_automaticamente as "geradoAutomaticamente"
+        from erp.feriados
+        where (empresa_id is null or empresa_id = ${empresaId})
+          and data between ${filtro.de} and ${filtro.ate}
+          ${filtro.tipo ? sql`and tipo = ${filtro.tipo}` : sql.vazio()}
+          ${filtro.uf ? sql`and uf = ${filtro.uf}` : sql.vazio()}
+        order by data desc
+        limit ${limite}`),
 
     unidadesAtivas: (empresaId) =>
-      tx
-        .select({ id: unidades.id, nome: unidades.nome })
-        .from(unidades)
-        .where(and(eq(unidades.empresaId, empresaId), eq(unidades.ativo, true)))
-        .orderBy(asc(unidades.nome)),
+      tx.consultar(sql`
+        select id, nome from erp.unidades
+        where empresa_id = ${empresaId} and ativo
+        order by nome`),
 
     unidadeDaEmpresa: async (empresaId, unidadeId) => {
-      const [linha] = await tx
-        .select({ id: unidades.id })
-        .from(unidades)
-        .where(and(eq(unidades.empresaId, empresaId), eq(unidades.id, unidadeId)));
-      return linha !== undefined;
+      const linhas = await tx.consultar(sql`
+        select 1 from erp.unidades where empresa_id = ${empresaId} and id = ${unidadeId}`);
+      return linhas.length > 0;
     },
 
-    autores: async (empresaId) => {
-      const linhas = await tx
-        .select({ id: usuarios.id, nome: usuarios.nome })
-        .from(empresaUsuarios)
-        .innerJoin(usuarios, eq(usuarios.id, empresaUsuarios.usuarioId))
-        .where(and(eq(empresaUsuarios.empresaId, empresaId), isNotNull(usuarios.nome)))
-        .orderBy(asc(usuarios.nome));
-      return linhas.flatMap((l) => (l.nome === null ? [] : [{ id: l.id, nome: l.nome }]));
-    },
+    autores: (empresaId) =>
+      tx.consultar(sql`
+        select u.id, u.nome
+        from erp.empresa_usuarios eu
+        join erp.usuarios u on u.id = eu.usuario_id
+        where eu.empresa_id = ${empresaId} and u.nome is not null
+        order by u.nome`),
 
     anotacao: async (empresaId, id) => {
-      const [linha] = await tx
-        .select({
-          id: anotacoes.id,
-          data: anotacoes.data,
-          tipo: anotacoes.tipo,
-          texto: anotacoes.texto,
-          autorId: anotacoes.autorId,
-          unidadeId: anotacoes.unidadeId,
-        })
-        .from(anotacoes)
-        .where(and(eq(anotacoes.empresaId, empresaId), eq(anotacoes.id, id)));
+      const [linha] = await tx.consultar<NonNullable<Retorno<"anotacao">>>(sql`
+        select id, data, tipo, texto, autor_id as "autorId", unidade_id as "unidadeId"
+        from erp.anotacoes
+        where empresa_id = ${empresaId} and id = ${id}`);
       return linha ?? null;
     },
 
     criarAnotacao: async (nova) => {
-      const [linha] = await tx.insert(anotacoes).values(nova).returning({ id: anotacoes.id });
+      const [linha] = await tx.consultar<{ id: string }>(sql`
+        insert into erp.anotacoes ${valoresDeInsercao([nova])} returning id`);
       if (!linha) throw new Error("insert de anotação não devolveu o id");
       return linha.id;
     },
 
     alterarAnotacao: async (id, dados, agora) => {
-      await tx
-        .update(anotacoes)
-        .set({ ...dados, atualizadoEm: agora })
-        .where(eq(anotacoes.id, id));
+      await tx.executar(sql`
+        update erp.anotacoes set ${atribuicoes({ ...dados, atualizadoEm: agora })}
+        where id = ${id}`);
     },
 
     excluirAnotacao: async (id) => {
-      await tx.delete(anotacoes).where(eq(anotacoes.id, id));
+      await tx.executar(sql`delete from erp.anotacoes where id = ${id}`);
     },
   };
 }

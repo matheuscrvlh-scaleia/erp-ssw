@@ -10,9 +10,9 @@ Especificação: `docs/regras/01-nucleo-ctrc.md`. Decisões do dono aplicadas:
 em `docs/mudancas-visiveis.md` ("Núcleo do CT-e").
 
 Convenções: dia de negócio é `DataIso` (`AAAA-MM-DD`, dia de **Brasília** — Q11); instantes são
-`Date`; quem precisa de "hoje" recebe `agora: Date` do relógio injetado. Os nomes dos campos são os
-do schema Drizzle (`src/db/schema/dominio/ctes.ts`), então a linha do repositório entra
-direto.
+`Date`; quem precisa de "hoje" recebe `agora: Date` do relógio injetado. Os nomes dos campos são as
+colunas de `erp.ctes` em camelCase (`comoCte` em `src/models/cte/cte.repository.ts`), então a
+linha do repositório entra direto.
 
 ### 1. Gravar um CT-e — `prepararGravacaoDoCte`
 

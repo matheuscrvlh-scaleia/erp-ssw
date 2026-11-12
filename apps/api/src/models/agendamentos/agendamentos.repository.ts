@@ -1,7 +1,5 @@
-import { type Transacao } from "@erp/db";
-import { empresas } from "@erp/db/schema";
+import { sql, type Transacao } from "@erp/db";
 import { STATUS_EM_OPERACAO } from "@erp/dominio/empresas";
-import { inArray } from "drizzle-orm";
 
 export interface EmpresaAgendavel {
   id: string;
@@ -16,9 +14,7 @@ export interface RepositorioAgendamentos {
 export function criarRepositorioAgendamentos(tx: Transacao): RepositorioAgendamentos {
   return {
     empresasAtivas: () =>
-      tx
-        .select({ id: empresas.id, fuso: empresas.fuso })
-        .from(empresas)
-        .where(inArray(empresas.status, [...STATUS_EM_OPERACAO])),
+      tx.consultar<EmpresaAgendavel>(sql`
+        select id, fuso from erp.empresas where status = any(${[...STATUS_EM_OPERACAO]})`),
   };
 }

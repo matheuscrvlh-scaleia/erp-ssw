@@ -1,9 +1,7 @@
-import { type Transacao } from "@erp/db";
-import { codigosOcorrencia, ctes, romaneioCteAtual } from "@erp/db/schema";
+import { type Sql, sql, type Transacao } from "@erp/db";
 import { type FiltroLista } from "@erp/dominio/listagem/filtro";
 import { CODIGO_SAIDA_PARA_ENTREGA } from "@erp/dominio/nucleo";
 import { z } from "@erp/shared/zod";
-import { and, type AnyColumn, eq, sql } from "drizzle-orm";
 
 import { diaNoFuso, tipoDocumentoEfetivo } from "../cte/sql-cte";
 import { expressoesDoCtrc, ordemDaLista, whereDaLista } from "./consulta";
@@ -16,12 +14,12 @@ import { type Agregados, type RepositorioListagem } from "./listagem.service";
 const TEMPO_DA_CONSULTA_MS = 30_000;
 
 async function consultaPesada(tx: Transacao): Promise<void> {
-  await tx.execute(
+  await tx.executar(
     sql`select set_config('statement_timeout', ${String(TEMPO_DA_CONSULTA_MS)}, true)`,
   );
 }
 
-const real = (coluna: AnyColumn) => sql<number | null>`${coluna}::float8`;
+const real = (coluna: Sql) => sql`${coluna}::float8`;
 
 const contagemPorCodigo = z.object({
   codigo: z.number().int(),
@@ -47,11 +45,11 @@ function baseDosAgregados(
   const { codigo, atraso } = expressoesDoCtrc(f);
   return sql`select
       ${codigo} as cod,
-      nullif(btrim(${ctes.ocorrEfetivaDescricao}), '') as descr,
-      ${ctes.filialEfetiva} as sigla,
-      nullif(btrim(${ctes.cidadeDestino}), '') as cidade,
+      nullif(btrim(ctes.ocorr_efetiva_descricao), '') as descr,
+      ctes.filial_efetiva as sigla,
+      nullif(btrim(ctes.cidade_destino), '') as cidade,
       ${comAtraso ? atraso : sql`null::int`} as atraso
-    from ${ctes}
+    from erp.ctes
     where ${whereDaLista(empresaId, f, { semCodigos })}`;
 }
 
@@ -66,78 +64,54 @@ export function criarRepositorioListagem(tx: Transacao): RepositorioListagem {
     linhas: async (empresaId, f, pagina) => {
       await consultaPesada(tx);
       const { atraso } = expressoesDoCtrc(f);
-      const linhas = await tx
-        .select({
-          id: ctes.id,
-          sigla: ctes.sigla,
-          numero: ctes.numero,
-          numeroNf: ctes.numeroNf,
-          destinatario: ctes.destinatario,
-          cidadeDestino: ctes.cidadeDestino,
-          bairroDestino: ctes.bairroDestino,
-          setor: ctes.setor,
-          setorDestino: ctes.setorDestino,
-          unidadeDestino: ctes.filialEfetiva,
-          codigo: ctes.ocorrEfetivaCodigoNum,
-          descricao: sql<
-            string | null
-          >`coalesce(nullif(btrim(${ctes.ocorrEfetivaDescricao}), ''), ${codigosOcorrencia.descricao})`,
-          dataOcorrencia: ctes.ocorrEfetivaData,
-          // Placa só quando a efetiva é a saída para entrega (texto exato, como hoje).
-          placa: sql<
-            string | null
-          >`case when ${ctes.ocorrEfetivaCodigo} = ${String(CODIGO_SAIDA_PARA_ENTREGA)} then ${romaneioCteAtual.placa} end`,
-          dataEmissao: ctes.dataEmissao,
-          dataPrevista: ctes.dataPrevistaEntrega,
-          // Dia da entrega em Brasília (Q11; hoje sai o dia UTC).
-          dataEntrega: sql<string | null>`${diaNoFuso(ctes.dataEntregaRealizada, f.fuso)}::text`,
-          dataEmbarque: ctes.dataEmbarque,
-          parceiroNome: ctes.parceiroNome,
-          pagadorNome: ctes.pagadorNome,
-          remetente: ctes.remetente,
-          tipoDocumento: sql<string | null>`${tipoDocumentoEfetivo()}`,
-          peso: real(ctes.peso),
-          valorFrete: real(ctes.valorFrete),
-          volumes: ctes.volumes,
-          localizacao: sql<
-            string | null
-          >`coalesce(nullif(btrim(${ctes.localizacaoAtual}), ''), nullif(btrim(${ctes.ocorrEfetivaLocal}), ''))`,
-          primeiroManifesto: ctes.primeiroManifesto,
-          ultimoManifesto: ctes.ultimoManifesto,
-          valorMercadoria: real(ctes.valorMercadoria),
-          atrasoDias: sql<number | null>`(${atraso})::int`,
-          performanceDias: ctes.performanceDias,
-          noPrazo: ctes.noPrazo,
-          responsabilidadeCliente: ctes.responsabilidadeCliente,
-          tde: real(ctes.tde),
-        })
-        .from(ctes)
-        .leftJoin(
-          codigosOcorrencia,
-          and(
-            eq(codigosOcorrencia.empresaId, ctes.empresaId),
-            eq(codigosOcorrencia.codigo, ctes.ocorrEfetivaCodigoNum),
-          ),
-        )
-        .leftJoin(
-          romaneioCteAtual,
-          and(
-            eq(romaneioCteAtual.empresaId, ctes.empresaId),
-            eq(romaneioCteAtual.sigla, ctes.sigla),
-            eq(romaneioCteAtual.numero, ctes.numero),
-          ),
-        )
-        .where(whereDaLista(empresaId, f))
-        .orderBy(...ordemDaLista(f, pagina.ordem, pagina.direcao))
-        .limit(Math.max(pagina.limite, 1))
-        .offset(Math.max(pagina.deslocamento, 0));
-      return linhas.map((l) => ({ ...l, dataOcorrencia: l.dataOcorrencia?.toISOString() ?? null }));
+      const linhas = await tx.consultar<
+        Omit<Awaited<ReturnType<RepositorioListagem["linhas"]>>[number], "dataOcorrencia"> & {
+          dataOcorrencia: string | null;
+        }
+      >(sql`
+        select ctes.id, ctes.sigla, ctes.numero, ctes.numero_nf as "numeroNf", ctes.destinatario,
+          ctes.cidade_destino as "cidadeDestino", ctes.bairro_destino as "bairroDestino",
+          ctes.setor, ctes.setor_destino as "setorDestino",
+          ctes.filial_efetiva as "unidadeDestino", ctes.ocorr_efetiva_codigo_num as codigo,
+          coalesce(nullif(btrim(ctes.ocorr_efetiva_descricao), ''), co.descricao) as descricao,
+          ctes.ocorr_efetiva_data as "dataOcorrencia",
+          -- Placa só quando a efetiva é a saída para entrega (texto exato, como hoje).
+          case when ctes.ocorr_efetiva_codigo = ${String(CODIGO_SAIDA_PARA_ENTREGA)}
+            then r.placa end as placa,
+          ctes.data_emissao as "dataEmissao", ctes.data_prevista_entrega as "dataPrevista",
+          -- Dia da entrega em Brasília (Q11; hoje sai o dia UTC).
+          ${diaNoFuso(sql`ctes.data_entrega_realizada`, f.fuso)}::text as "dataEntrega",
+          ctes.data_embarque as "dataEmbarque", ctes.parceiro_nome as "parceiroNome",
+          ctes.pagador_nome as "pagadorNome", ctes.remetente,
+          ${tipoDocumentoEfetivo()} as "tipoDocumento", ${real(sql`ctes.peso`)} as peso,
+          ${real(sql`ctes.valor_frete`)} as "valorFrete", ctes.volumes,
+          coalesce(nullif(btrim(ctes.localizacao_atual), ''),
+                   nullif(btrim(ctes.ocorr_efetiva_local), '')) as localizacao,
+          ctes.primeiro_manifesto as "primeiroManifesto",
+          ctes.ultimo_manifesto as "ultimoManifesto",
+          ${real(sql`ctes.valor_mercadoria`)} as "valorMercadoria",
+          (${atraso})::int as "atrasoDias", ctes.performance_dias as "performanceDias",
+          ctes.no_prazo as "noPrazo", ctes.responsabilidade_cliente as "responsabilidadeCliente",
+          ${real(sql`ctes.tde`)} as tde
+        from erp.ctes
+        left join erp.codigos_ocorrencia co
+          on co.empresa_id = ctes.empresa_id and co.codigo = ctes.ocorr_efetiva_codigo_num
+        left join erp.romaneio_cte_atual r
+          on r.empresa_id = ctes.empresa_id and r.sigla = ctes.sigla and r.numero = ctes.numero
+        where ${whereDaLista(empresaId, f)}
+        order by ${sql.juntar(ordemDaLista(f, pagina.ordem, pagina.direcao))}
+        limit ${Math.max(pagina.limite, 1)}
+        offset ${Math.max(pagina.deslocamento, 0)}`);
+      return linhas.map((l) => ({
+        ...l,
+        dataOcorrencia: l.dataOcorrencia === null ? null : new Date(l.dataOcorrencia).toISOString(),
+      }));
     },
 
     agregados: async (empresaId, f, opcoes): Promise<Agregados> => {
       await consultaPesada(tx);
       // Uma passada só: a base é lida uma vez e os quatro gráficos saem dela.
-      const resultado = await tx.execute(sql`
+      const resultado = await tx.consultar(sql`
         with base as materialized (${baseDosAgregados(empresaId, f, opcoes.comAtraso)})
         select
           (select count(*)::int from base) as total,
@@ -157,7 +131,7 @@ export function criarRepositorioListagem(tx: Transacao): RepositorioListagem {
             select json_agg(x) from (
               select atraso, count(*)::int as qtd from base where atraso > 0 group by atraso
             ) x), '[]'::json) as por_atraso`);
-      const [linha] = z.array(linhaDosAgregados).length(1).parse(resultado.rows);
+      const [linha] = z.array(linhaDosAgregados).length(1).parse(resultado);
       return {
         total: linha?.total ?? 0,
         porCodigo: linha?.por_codigo ?? [],
@@ -169,13 +143,13 @@ export function criarRepositorioListagem(tx: Transacao): RepositorioListagem {
 
     codigosDoRecorte: async (empresaId, f, top) => {
       await consultaPesada(tx);
-      const resultado = await tx.execute(sql`
+      const resultado = await tx.consultar(sql`
         with base as materialized (${baseDosAgregados(empresaId, f, false, true)})
         select ${porCodigo(top)} as por_codigo`);
       const [linha] = z
         .array(z.object({ por_codigo: z.array(contagemPorCodigo) }))
         .length(1)
-        .parse(resultado.rows);
+        .parse(resultado);
       return linha?.por_codigo ?? [];
     },
   };

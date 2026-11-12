@@ -1,25 +1,21 @@
-import { type Transacao } from "@erp/db";
-import { cargoPermissoes, cargos, empresaUsuarios } from "@erp/db/schema";
+import { sql, type Transacao, valoresDeInsercao } from "@erp/db";
 import { partesDaPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
-import { and, asc, count, eq } from "drizzle-orm";
 
 import { type RepositorioCadastros } from "./cadastros.service";
 
+interface CargoLido {
+  chave: string;
+  rotulo: string;
+  protegido: boolean;
+}
+
 export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
   async function permissoesPorCargo(empresaId: string, chave?: string) {
-    const linhas = await tx
-      .select({
-        chave: cargoPermissoes.cargoChave,
-        tela: cargoPermissoes.telaChave,
-        acao: cargoPermissoes.acao,
-      })
-      .from(cargoPermissoes)
-      .where(
-        and(
-          eq(cargoPermissoes.empresaId, empresaId),
-          chave === undefined ? undefined : eq(cargoPermissoes.cargoChave, chave),
-        ),
-      );
+    const linhas = await tx.consultar<{ chave: string; tela: string; acao: string }>(sql`
+      select cargo_chave as chave, tela_chave as tela, acao
+      from erp.cargo_permissoes
+      where empresa_id = ${empresaId}
+        ${chave === undefined ? sql.vazio() : sql`and cargo_chave = ${chave}`}`);
     const porCargo = new Map<string, string[]>();
     for (const l of linhas) {
       porCargo.set(l.chave, [...(porCargo.get(l.chave) ?? []), `${l.tela}.${l.acao}`]);
@@ -28,11 +24,10 @@ export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
   }
 
   async function usoPorCargo(empresaId: string) {
-    const linhas = await tx
-      .select({ chave: empresaUsuarios.papel, total: count() })
-      .from(empresaUsuarios)
-      .where(eq(empresaUsuarios.empresaId, empresaId))
-      .groupBy(empresaUsuarios.papel);
+    const linhas = await tx.consultar<{ chave: string; total: number }>(sql`
+      select papel as chave, count(*)::int as total
+      from erp.empresa_usuarios where empresa_id = ${empresaId}
+      group by papel`);
     return new Map(linhas.map((l) => [l.chave, l.total]));
   }
 
@@ -41,25 +36,22 @@ export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
     chave: string,
     permissoes: readonly Permissao[],
   ) {
-    await tx
-      .delete(cargoPermissoes)
-      .where(and(eq(cargoPermissoes.empresaId, empresaId), eq(cargoPermissoes.cargoChave, chave)));
+    await tx.executar(sql`
+      delete from erp.cargo_permissoes where empresa_id = ${empresaId} and cargo_chave = ${chave}`);
     if (permissoes.length === 0) return;
-    await tx.insert(cargoPermissoes).values(
-      permissoes.map((p) => {
-        const { tela, acao } = partesDaPermissao(p);
-        return { empresaId, cargoChave: chave, telaChave: tela, acao };
-      }),
-    );
+    const linhas = permissoes.map((p) => {
+      const { tela, acao } = partesDaPermissao(p);
+      return { empresaId, cargoChave: chave, telaChave: tela, acao };
+    });
+    await tx.executar(sql`insert into erp.cargo_permissoes ${valoresDeInsercao(linhas)}`);
   }
 
   return {
     cargos: async (empresaId) => {
-      const linhas = await tx
-        .select({ chave: cargos.chave, rotulo: cargos.rotulo, protegido: cargos.protegido })
-        .from(cargos)
-        .where(eq(cargos.empresaId, empresaId))
-        .orderBy(asc(cargos.criadoEm), asc(cargos.chave));
+      const linhas = await tx.consultar<CargoLido>(sql`
+        select chave, rotulo, protegido from erp.cargos
+        where empresa_id = ${empresaId}
+        order by criado_em, chave`);
       const permissoes = await permissoesPorCargo(empresaId);
       const uso = await usoPorCargo(empresaId);
       return linhas.map((c) => ({
@@ -70,10 +62,9 @@ export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
     },
 
     cargo: async (empresaId, chave) => {
-      const [linha] = await tx
-        .select({ chave: cargos.chave, rotulo: cargos.rotulo, protegido: cargos.protegido })
-        .from(cargos)
-        .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
+      const [linha] = await tx.consultar<CargoLido>(sql`
+        select chave, rotulo, protegido from erp.cargos
+        where empresa_id = ${empresaId} and chave = ${chave}`);
       if (!linha) return null;
       return {
         ...linha,
@@ -83,21 +74,23 @@ export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
     },
 
     criarCargo: async (empresaId, cargo, permissoes) => {
-      await tx.insert(cargos).values({ empresaId, ...cargo });
+      await tx.executar(
+        sql`insert into erp.cargos ${valoresDeInsercao([{ empresaId, ...cargo }])}`,
+      );
       await trocarPermissoes(empresaId, cargo.chave, permissoes);
     },
 
     alterarCargo: async (empresaId, chave, rotulo) => {
-      await tx
-        .update(cargos)
-        .set({ rotulo, atualizadoEm: new Date() })
-        .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
+      await tx.executar(sql`
+        update erp.cargos set rotulo = ${rotulo}, atualizado_em = now()
+        where empresa_id = ${empresaId} and chave = ${chave}`);
     },
 
     trocarPermissoes,
 
     excluirCargo: async (empresaId, chave) => {
-      await tx.delete(cargos).where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
+      await tx.executar(sql`
+        delete from erp.cargos where empresa_id = ${empresaId} and chave = ${chave}`);
     },
   };
 }

@@ -1,48 +1,32 @@
-import { type Transacao } from "@erp/db";
-import { cargos, empresaUsuarios, usuarioPermissoes, usuarios } from "@erp/db/schema";
+import { sql, type Transacao, valoresDeInsercao } from "@erp/db";
+import { type ExcecaoDePermissao } from "@erp/dominio/acesso";
 import { ehPermissao, partesDaPermissao } from "@erp/shared/acesso/permissoes";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
 
 import { type ContaGravada, type RepositorioUsuarios } from "./usuarios.service";
 
-const temSenha = sql<boolean>`${usuarios.senhaHash} is not null`;
-
-const colunasDaConta = {
-  id: usuarios.id,
-  email: usuarios.email,
-  nome: usuarios.nome,
-  ativo: usuarios.ativo,
-  temSenha,
-};
+const SELECT_CONTA = sql`
+  select id, email, nome, ativo, senha_hash is not null as "temSenha" from erp.usuarios`;
 
 export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
   return {
     listar: (empresaId) =>
-      tx
-        .select({
-          id: usuarios.id,
-          nome: usuarios.nome,
-          email: usuarios.email,
-          temSenha,
-          contaAtiva: usuarios.ativo,
-          papel: empresaUsuarios.papel,
-          ativo: empresaUsuarios.ativo,
-        })
-        .from(empresaUsuarios)
-        .innerJoin(usuarios, eq(usuarios.id, empresaUsuarios.usuarioId))
-        .where(eq(empresaUsuarios.empresaId, empresaId))
-        .orderBy(asc(usuarios.criadoEm), asc(usuarios.id)),
+      tx.consultar(sql`
+        select u.id, u.nome, u.email, u.senha_hash is not null as "temSenha",
+               u.ativo as "contaAtiva", eu.papel, eu.ativo
+        from erp.empresa_usuarios eu
+        join erp.usuarios u on u.id = eu.usuario_id
+        where eu.empresa_id = ${empresaId}
+        order by u.criado_em, u.id`),
 
     excecoes: async (empresaId) => {
-      const linhas = await tx
-        .select({
-          usuarioId: usuarioPermissoes.usuarioId,
-          tela: usuarioPermissoes.telaChave,
-          acao: usuarioPermissoes.acao,
-          efeito: usuarioPermissoes.efeito,
-        })
-        .from(usuarioPermissoes)
-        .where(eq(usuarioPermissoes.empresaId, empresaId));
+      const linhas = await tx.consultar<{
+        usuarioId: string;
+        tela: string;
+        acao: string;
+        efeito: ExcecaoDePermissao["efeito"];
+      }>(sql`
+        select usuario_id as "usuarioId", tela_chave as tela, acao, efeito
+        from erp.usuario_permissoes where empresa_id = ${empresaId}`);
       return linhas.map((l) => ({
         usuarioId: l.usuarioId,
         permissao: `${l.tela}.${l.acao}`,
@@ -50,104 +34,80 @@ export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
       }));
     },
 
-    contaPorEmail: async (email): Promise<ContaGravada | null> => {
-      const [linha] = await tx
-        .select(colunasDaConta)
-        .from(usuarios)
-        .where(eq(usuarios.email, email));
+    contaPorEmail: async (email) => {
+      const [linha] = await tx.consultar<ContaGravada>(sql`${SELECT_CONTA} where email = ${email}`);
       return linha ?? null;
     },
 
-    conta: async (usuarioId): Promise<ContaGravada | null> => {
-      const [linha] = await tx
-        .select(colunasDaConta)
-        .from(usuarios)
-        .where(eq(usuarios.id, usuarioId));
+    conta: async (usuarioId) => {
+      const [linha] = await tx.consultar<ContaGravada>(
+        sql`${SELECT_CONTA} where id = ${usuarioId}`,
+      );
       return linha ?? null;
     },
 
     vinculo: async (empresaId, usuarioId) => {
-      const [linha] = await tx
-        .select({
-          papel: empresaUsuarios.papel,
-          ativo: empresaUsuarios.ativo,
-        })
-        .from(empresaUsuarios)
-        .where(
-          and(eq(empresaUsuarios.empresaId, empresaId), eq(empresaUsuarios.usuarioId, usuarioId)),
-        );
+      const [linha] = await tx.consultar<{ papel: string | null; ativo: boolean }>(sql`
+        select papel, ativo from erp.empresa_usuarios
+        where empresa_id = ${empresaId} and usuario_id = ${usuarioId}`);
       return linha ?? null;
     },
 
     vinculosEmTodasAsEmpresas: (usuarioId) =>
-      tx
-        .select({ empresaId: empresaUsuarios.empresaId, papel: empresaUsuarios.papel })
-        .from(empresaUsuarios)
-        .where(eq(empresaUsuarios.usuarioId, usuarioId)),
+      tx.consultar(sql`
+        select empresa_id as "empresaId", papel from erp.empresa_usuarios
+        where usuario_id = ${usuarioId}`),
 
     existeCargo: async (empresaId, chave) => {
-      const linhas = await tx
-        .select({ chave: cargos.chave })
-        .from(cargos)
-        .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
+      const linhas = await tx.consultar(sql`
+        select 1 from erp.cargos where empresa_id = ${empresaId} and chave = ${chave}`);
       return linhas.length > 0;
     },
 
     criarConta: async (conta) => {
-      const [linha] = await tx
-        .insert(usuarios)
-        .values({
-          email: conta.email,
-          nome: conta.nome,
-          senhaHash: conta.senhaHash,
-          senhaAlgoritmo: conta.senhaHash ? "argon2id" : null,
-          empresaPreferidaId: conta.empresaPreferidaId,
-        })
-        .returning({ id: usuarios.id });
+      const [linha] = await tx.consultar<{ id: string }>(sql`
+        insert into erp.usuarios (email, nome, senha_hash, senha_algoritmo, empresa_preferida_id)
+        values (${conta.email}, ${conta.nome}, ${conta.senhaHash},
+                ${conta.senhaHash ? "argon2id" : null}, ${conta.empresaPreferidaId})
+        returning id`);
       if (!linha) throw new Error("insert de usuário sem retorno");
       return linha.id;
     },
 
     alterarConta: async (usuarioId, dados) => {
-      await tx
-        .update(usuarios)
-        .set({ ...dados, atualizadoEm: new Date() })
-        .where(eq(usuarios.id, usuarioId));
+      await tx.executar(sql`
+        update erp.usuarios
+        set nome = ${dados.nome}, email = ${dados.email}, ativo = ${dados.ativo},
+            atualizado_em = now()
+        where id = ${usuarioId}`);
     },
 
     gravarVinculo: async (empresaId, usuarioId, vinculo, criadoPor) => {
-      const dados = { papel: vinculo.papel, ativo: vinculo.ativo };
-      await tx
-        .insert(empresaUsuarios)
-        .values({ empresaId, usuarioId, criadoPor, ...dados })
-        .onConflictDoUpdate({
-          target: [empresaUsuarios.empresaId, empresaUsuarios.usuarioId],
-          set: dados,
-        });
+      await tx.executar(sql`
+        insert into erp.empresa_usuarios (empresa_id, usuario_id, criado_por, papel, ativo)
+        values (${empresaId}, ${usuarioId}, ${criadoPor}, ${vinculo.papel}, ${vinculo.ativo})
+        on conflict (empresa_id, usuario_id) do update
+        set papel = excluded.papel, ativo = excluded.ativo`);
     },
 
     definirPreferidaSeVazia: async (usuarioId, empresaId) => {
-      await tx
-        .update(usuarios)
-        .set({ empresaPreferidaId: empresaId })
-        .where(and(eq(usuarios.id, usuarioId), isNull(usuarios.empresaPreferidaId)));
+      await tx.executar(sql`
+        update erp.usuarios set empresa_preferida_id = ${empresaId}
+        where id = ${usuarioId} and empresa_preferida_id is null`);
     },
 
     trocarExcecoes: async (empresaId, usuarioId, excecoes, criadoPor) => {
-      await tx
-        .delete(usuarioPermissoes)
-        .where(
-          and(
-            eq(usuarioPermissoes.empresaId, empresaId),
-            eq(usuarioPermissoes.usuarioId, usuarioId),
-          ),
-        );
+      await tx.executar(sql`
+        delete from erp.usuario_permissoes
+        where empresa_id = ${empresaId} and usuario_id = ${usuarioId}`);
       const linhas = excecoes.flatMap((e) => {
         if (!ehPermissao(e.permissao)) return [];
         const { tela, acao } = partesDaPermissao(e.permissao);
         return [{ empresaId, usuarioId, telaChave: tela, acao, efeito: e.efeito, criadoPor }];
       });
-      if (linhas.length > 0) await tx.insert(usuarioPermissoes).values(linhas);
+      if (linhas.length > 0) {
+        await tx.executar(sql`insert into erp.usuario_permissoes ${valoresDeInsercao(linhas)}`);
+      }
     },
   };
 }
