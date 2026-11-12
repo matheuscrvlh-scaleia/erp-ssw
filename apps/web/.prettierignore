@@ -1,2 +1,4 @@
 bun.lock
+coverage
+dist
 src/routeTree.gen.ts

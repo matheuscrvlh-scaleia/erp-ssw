@@ -125,10 +125,3 @@ export const CAMINHOS_GOOGLE = {
   iniciar: "/api/v1/auth/google",
   retorno: "/api/v1/auth/google/retorno",
 } as const;
-
-/** Motivos que a API devolve em `/login?erro=` quando o login pelo Google não fecha. */
-export const ERROS_LOGIN_GOOGLE = {
-  sem_conta:
-    "Este e-mail do Google não tem acesso. Peça um convite ao administrador da sua empresa.",
-  falhou: "Não foi possível entrar com o Google. Tente de novo.",
-} as const;
