@@ -5,13 +5,7 @@ import {
   ocorrenciasExibidas,
 } from "@erp/dominio/ctrc/detalhe";
 import { atrasoDias, normCodigoOcorr } from "@erp/dominio/nucleo";
-import { type SaidaDe } from "@erp/shared/contrato";
-import {
-  type contratosCtrc,
-  type DetalheCtrc,
-  FONTES_OCORRENCIA_EFETIVA,
-  type OpcaoDeCtrc,
-} from "@erp/shared/contratos/ctrc";
+import { FONTES_OCORRENCIA_EFETIVA, type OpcaoDeCtrc } from "@erp/shared/contratos/ctrc";
 
 import { type Executor } from "../repositorios";
 
@@ -92,6 +86,18 @@ export interface OcorrenciaGravada {
   criadoEm: Date;
 }
 
+export interface RomaneioAtual {
+  placa: string | null;
+  motorista: string | null;
+  romaneio: string | null;
+}
+
+export interface UltimoBi2 {
+  codigoRelatorio: string;
+  dataAlvo: string;
+  atualizadoEm: Date;
+}
+
 /**
  * Leituras de CT-e compartilhadas pelas telas (universo, catálogo, configuração) e as do detalhe.
  */
@@ -106,27 +112,42 @@ export interface RepositorioCtrc {
   ctrc(empresaId: string, sigla: string, numero: string): Promise<CtrcGravado | null>;
   /** Ocorrências fora da quarentena. */
   ocorrencias(cteId: string): Promise<OcorrenciaGravada[]>;
-  romaneioAtual(
-    empresaId: string,
-    sigla: string,
-    numero: string,
-  ): Promise<{ placa: string | null; motorista: string | null; romaneio: string | null } | null>;
-  ultimoBi2(
-    empresaId: string,
-    numero: string,
-  ): Promise<{ codigoRelatorio: string; dataAlvo: string; atualizadoEm: Date } | null>;
+  romaneioAtual(empresaId: string, sigla: string, numero: string): Promise<RomaneioAtual | null>;
+  ultimoBi2(empresaId: string, numero: string): Promise<UltimoBi2 | null>;
 }
 
 export interface ContextoCtrc {
   empresaId: string;
 }
 
-type SaidaDetalhe = SaidaDe<typeof contratosCtrc.detalhe>;
+type FonteDaEfetiva = (typeof FONTES_OCORRENCIA_EFETIVA)[number];
 
-const ehFonteConhecida = (
-  fonte: string | null,
-): fonte is (typeof FONTES_OCORRENCIA_EFETIVA)[number] =>
+const ehFonteConhecida = (fonte: string | null): fonte is FonteDaEfetiva =>
   FONTES_OCORRENCIA_EFETIVA.some((f) => f === fonte);
+
+/** O CT-e gravado com o que o detalhe decide sobre ele (atraso, efetiva, finalização...). */
+export interface DetalheDoCtrc {
+  ctrc: CtrcGravado;
+  atrasoDias: number | null;
+  localizacao: string | null;
+  efetiva: {
+    codigo: number | null;
+    descricao: string | null;
+    dataHora: Date | null;
+    fonte: FonteDaEfetiva | null;
+  };
+  finalizacao: ReturnType<typeof finalizacaoDoCtrc>;
+  codigosBaixa: ReadonlySet<number>;
+  /** Só as que a tela mostra, na ordem dela. */
+  ocorrencias: OcorrenciaGravada[];
+  romaneio: RomaneioAtual | null;
+  bi2: UltimoBi2 | null;
+}
+
+export type BuscaDoCtrc =
+  | { tipo: "encontrado"; detalhe: DetalheDoCtrc }
+  | { tipo: "varios"; opcoes: OpcaoDeCtrc[] }
+  | { tipo: "nao_encontrado" };
 
 /**
  * Detalhe do CT-e pela série + número (Q02). Sem série e com o número em mais de uma série,
@@ -139,7 +160,7 @@ export async function obterDetalheCtrc(
   numero: string,
   sigla: string | undefined,
   agora: Date,
-): Promise<SaidaDetalhe> {
+): Promise<BuscaDoCtrc> {
   const id = lerIdentificacao(numero, sigla);
   if (!id) return { tipo: "nao_encontrado" };
   return db(async ({ ctrc: repo }) => {
@@ -158,7 +179,7 @@ export async function obterDetalheCtrc(
     ];
     return {
       tipo: "encontrado",
-      ctrc: montarDetalhe(gravado, { catalogo, ocorrencias, romaneio, bi2 }, agora),
+      detalhe: montarDetalhe(gravado, { catalogo, ocorrencias, romaneio, bi2 }, agora),
     };
   });
 }
@@ -168,98 +189,35 @@ function montarDetalhe(
   extra: {
     catalogo: CodigoCadastrado[];
     ocorrencias: OcorrenciaGravada[];
-    romaneio: Awaited<ReturnType<RepositorioCtrc["romaneioAtual"]>>;
-    bi2: Awaited<ReturnType<RepositorioCtrc["ultimoBi2"]>>;
+    romaneio: RomaneioAtual | null;
+    bi2: UltimoBi2 | null;
   },
   agora: Date,
-): DetalheCtrc {
+): DetalheDoCtrc {
   const baixas = new Set(extra.catalogo.filter((k) => k.tipoSsw === "BAIXA").map((k) => k.codigo));
   const codigo = normCodigoOcorr(c.ocorrEfetivaCodigo);
   const descricao =
     (c.ocorrEfetivaDescricao?.trim() ? c.ocorrEfetivaDescricao : null) ??
     extra.catalogo.find((k) => k.codigo === codigo)?.descricao ??
     null;
-  const finalizacao = finalizacaoDoCtrc(
-    c.dataEntregaRealizada,
-    { codigoTexto: c.ocorrEfetivaCodigo, codigo, descricao },
-    baixas,
-  );
   return {
-    id: c.id,
-    sigla: c.sigla,
-    numero: c.numero,
-    numeroNf: c.numeroNf,
-    chave: c.chave,
-    chaveNfe: c.chaveNfe,
-    dataEmissao: c.dataEmissao,
-    dataEmbarque: c.dataEmbarque,
-    statusAtual: c.statusAtual,
-    prazoContratadoDias: c.prazoContratadoDias,
-    dataPrevista: c.dataPrevistaEntrega,
-    prazoOrigem: c.prazoOrigem,
-    prazoFonte: c.prazoFonte,
-    prazoPadraoDias: c.prazoPadraoDias,
-    prazoPadraoData: c.prazoPadraoData,
-    dataEntrega: c.dataEntregaRealizada?.toISOString() ?? null,
-    performanceDias: c.performanceDias,
+    ctrc: c,
     atrasoDias: atrasoDias(c, baixas, agora),
-    noPrazo: c.noPrazo,
-    responsabilidadeCliente: c.responsabilidadeCliente,
-    fontePerformance: c.fontePerformance,
-    unidadeOrigem: c.unidadeOrigem,
-    unidadeDestino: c.unidadeDestino,
-    unidadeAtual: c.unidadeAtual,
-    filial: c.filial,
-    unidadeCidade: c.unidadeCidade,
-    unidadeUf: c.unidadeUf,
     localizacao: localizacaoExibida(c.localizacaoAtual, c.ultOcorrInstrucao0174),
-    remetente: c.remetente,
-    destinatario: c.destinatario,
-    logradouroDestino: c.logradouroDestino,
-    numeroEnderecoDestino: c.numeroEnderecoDestino,
-    complementoDestino: c.complementoDestino,
-    bairroDestino: c.bairroDestino,
-    cidadeDestino: c.cidadeDestino,
-    ufDestino: c.ufDestino,
-    cepDestinatario: c.cepDestinatario,
-    setor: c.setor,
-    setorDestino: c.setorDestino,
-    peso: c.peso,
-    volumes: c.volumes,
-    valorFrete: c.valorFrete,
-    valorMercadoria: c.valorMercadoria,
-    primeiroManifesto: c.primeiroManifesto,
-    ultimoManifesto: c.ultimoManifesto,
-    parceiroNome: c.parceiroNome,
-    parceiroCnpj: c.parceiroCnpj,
-    parceiro: c.parceiro,
-    placa: extra.romaneio?.placa ?? null,
-    motorista: extra.romaneio?.motorista ?? null,
-    romaneio: extra.romaneio?.romaneio ?? null,
     efetiva: {
       codigo,
       descricao,
-      dataHora: c.ocorrEfetivaData?.toISOString() ?? null,
+      dataHora: c.ocorrEfetivaData,
       fonte: ehFonteConhecida(c.ocorrEfetivaFonte) ? c.ocorrEfetivaFonte : null,
     },
-    finalizacao,
-    codigosBaixa: [...baixas].sort((a, b) => a - b),
-    ocorrencias: ocorrenciasExibidas(extra.ocorrencias, c.dataEmissao).map((o) => ({
-      id: o.id,
-      codigo: o.codigo,
-      descricao: o.descricao,
-      dataHora: o.dataHora.toISOString(),
-      responsavel: o.responsavel,
-      penaliza: o.penaliza,
-    })),
-    bi2: extra.bi2
-      ? {
-          codigoRelatorio: extra.bi2.codigoRelatorio,
-          dataAlvo: extra.bi2.dataAlvo,
-          atualizadoEm: extra.bi2.atualizadoEm.toISOString(),
-        }
-      : null,
-    criadoEm: c.criadoEm.toISOString(),
-    atualizadoEm: c.atualizadoEm.toISOString(),
+    finalizacao: finalizacaoDoCtrc(
+      c.dataEntregaRealizada,
+      { codigoTexto: c.ocorrEfetivaCodigo, codigo, descricao },
+      baixas,
+    ),
+    codigosBaixa: baixas,
+    ocorrencias: ocorrenciasExibidas(extra.ocorrencias, c.dataEmissao),
+    romaneio: extra.romaneio,
+    bi2: extra.bi2,
   };
 }

@@ -4,6 +4,7 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import { empresaDaRequisicao } from "../http/middleware/contexto";
 import { exigirEmpresa } from "../http/middleware/guardas";
 import { obterDetalheCtrc } from "../models/ctrc/ctrc.service";
+import { apresentarBuscaDoCtrc } from "../views/ctrc.view";
 
 /** O detalhe do CT-e não é tela do menu: basta sessão com empresa (igual a hoje). */
 export const controladorCtrc: FastifyPluginCallbackZod<{ agora: () => Date }> = (
@@ -23,12 +24,14 @@ export const controladorCtrc: FastifyPluginCallbackZod<{ agora: () => Date }> = 
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return obterDetalheCtrc(
-        request.db,
-        { empresaId: empresa.id },
-        request.params.numero,
-        request.query.sigla,
-        agora(),
+      return apresentarBuscaDoCtrc(
+        await obterDetalheCtrc(
+          request.db,
+          { empresaId: empresa.id },
+          request.params.numero,
+          request.query.sigla,
+          agora(),
+        ),
       );
     },
   );
