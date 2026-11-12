@@ -1,4 +1,0 @@
-{
-  "extends": "@erp/config/tsconfig.base.json",
-  "include": ["src", "drizzle.config.ts", "vitest.config.ts"]
-}

@@ -1,7 +1,10 @@
 # ERP SSW: api, web e redis. Variáveis em .env na raiz (fora do git; modelo em .env.example).
 #
 #   docker compose up -d --build           # produção
-#   docker compose up -d redis             # desenvolvimento: só o Redis (api e web com bun run dev)
+#   docker compose up -d redis             # desenvolvimento: só o Redis (bun run dev em apps/api e apps/web)
+#
+# Cada app é um projeto independente (package.json, bun.lock e Dockerfile próprios) e a imagem
+# dele é construída só com a pasta dele.
 #
 # Portas no host: api 3001 (→ 3000), web 8081 (→ 80). O web repassa /api para a api e
 # /api/public/* para o worker-ssw, então o sistema inteiro responde na 8081. ERP e worker-ssw se
@@ -12,8 +15,7 @@ name: erp
 services:
   api:
     build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+      context: ./apps/api
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -46,8 +48,7 @@ services:
 
   web:
     build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+      context: ./apps/web
     restart: unless-stopped
     ports:
       - "${WEB_PORTA_HOST:-8081}:80"

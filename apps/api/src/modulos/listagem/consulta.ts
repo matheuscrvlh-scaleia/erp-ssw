@@ -1,5 +1,5 @@
 /**
- * Tradução do `FiltroLista` (packages/dominio) para o WHERE da Listagem detalhada. As cinco
+ * Tradução do `FiltroLista` (src/dominio) para o WHERE da Listagem detalhada. As cinco
  * consultas (lista, total e gráficos, códigos do recorte, exportação) usam este mesmo WHERE.
  * origem: _lista_ctrcs_detalhado_filtro (sistema atual), escrito por extenso como lá.
  */

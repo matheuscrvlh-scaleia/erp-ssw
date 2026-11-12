@@ -34,7 +34,7 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 
 | Camada | Escolha | Por quê |
 | --- | --- | --- |
-| Monorepo | bun workspaces | já é a ferramenta do time; rápido |
+| Repositório | dois projetos independentes (`apps/api`, `apps/web`), cada um com bun e o seu `bun.lock`; o docker-compose junta (ADR 0013) | cada app sobe e evolui sozinho |
 | Web | Vite + React 19 + TS strict + Tailwind 4 + shadcn/Radix + TanStack Router + TanStack Query + react-hook-form | SPA simples de servir; roteamento tipado; cache de dados |
 | API | Node 22 LTS + Fastify 5 + TS strict + Zod 4 (`fastify-type-provider-zod`) | rápido, schema-first, ecossistema maduro |
 | Banco | Postgres (Supabase DEVELOP) + **Drizzle ORM** + `pg` | schema como código, migrations versionadas, SQL tipado, RLS declarado |
@@ -49,16 +49,20 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 
 ```
 apps/
-  web/                    SPA
-  api/                    HTTP (Fastify) + jobs do ERP no BullMQ (src/jobs: limpar sessões, prazos
+  api/                    projeto próprio: package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
+    src/
+      modulos/ jobs/ ...  HTTP (Fastify) + jobs do ERP no BullMQ (limpar sessões, prazos
                           configurados, classificação de códigos, recifrar segredos)
-packages/
-  config/                 tsconfig, eslint, prettier
-  shared/                 contratos zod (entrada/saída de cada endpoint), tipos, permissões, formatação
-  dominio/                regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
+      shared/             contratos zod (entrada/saída de cada endpoint), tipos, permissões, formatação
+      dominio/            regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
                           atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
                           leitores dos relatórios SSW (prévia da importação)...
-  db/                     Drizzle: schema, migrations, políticas RLS, client com contexto de empresa
+      db/                 Drizzle: schema, políticas RLS, client com contexto de empresa
+    drizzle/              migrations
+  web/                    projeto próprio (SPA): package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
+    src/
+      shared/ dominio/    cópias dos da api (mesmo conteúdo, ver abaixo)
+docker-compose.yml        sobe api, web e redis, cada imagem construída da pasta do app
 docs/
   arquitetura.md          este arquivo
   regras/                 especificação das regras extraídas do sistema atual
@@ -74,7 +78,12 @@ repositorio.ts    acesso a dados (Drizzle). Consultas set-based; nenhuma regra d
 *.test.ts         testes dos casos de uso com repositório falso.
 ```
 
-Regras puras (cálculos) ficam em `packages/dominio` e são usadas pela API e pela web. O worker-ssw leva a sua cópia do núcleo do CT-e (ADR 0012).
+Regras puras (cálculos) ficam em `apps/api/src/dominio` e os contratos em `apps/api/src/shared`. O web
+tem cópias dos dois em `apps/web/src/{dominio,shared}`, e o worker-ssw leva a sua cópia do núcleo do
+CT-e (ADR 0012). A origem é a api. As cópias usam os mesmos imports (`@erp/dominio/*`,
+`@erp/shared/*`, resolvidos pelo `tsconfig.json` de cada app), então ficam iguais byte a byte:
+mudou na api, copia para o web no mesmo commit e confere com
+`diff -r apps/api/src/shared apps/web/src/shared` (idem `dominio`, só o README fica na api).
 
 ## Ingestão do SSW: o worker-ssw (ADR 0012)
 
@@ -86,7 +95,7 @@ RLS valendo). O ERP:
 - **lê** direto do banco as leituras puras das telas de Plataforma (pipeline, aplicações, arquivos
   XML, histórico do FTP, Diagnóstico SSW, integrações) e `GET /api/v1/ssw/atualizacao`/`saude`;
 - **pede ao worker-ssw** pelo HTTP interno (`/interno/v1/*`, `WORKER_SSW_URL` +
-  `WORKER_SSW_TOKEN`; contrato em `packages/shared/src/contratos/worker-ssw.ts`, cópia do dele):
+  `WORKER_SSW_TOKEN`; contrato em `apps/api/src/shared/contratos/worker-ssw.ts`, cópia do dele):
   execuções (rodar FTP/BI2, testar a SSW API, reprocessar webhook e XML órfãos), a situação dos
   jobs e as operações manuais da Importação SSW (retomar/descartar ciclo, importar relatório ou
   XML, aplicar/simular, estado/pausa/trava do FTP). O ERP valida a entrada pelo contrato da tela e

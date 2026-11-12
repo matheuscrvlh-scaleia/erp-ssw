@@ -1,4 +1,0 @@
-{
-  "extends": "@erp/config/tsconfig.base.json",
-  "include": ["vitest.config.ts"]
-}

@@ -318,7 +318,7 @@ Romaneio, Comprovantes etc. Exemplos: entrega `2026-11-06T02:59Z` (23:59 SP de 0
 
 ### 3.5 Regras de exibição da página do CT-e (front, `ctrc.$numero.tsx`)
 
-Ficam no web/`packages/shared` (não são SQL), mas usam as mesmas constantes:
+Ficam no web (`src/shared`, não são SQL), mas usam as mesmas constantes:
 
 - `finalizacaoCtrc`: `entregue = !!data_entrega_realizada || CODIGOS_ENTREGA.has(efetiva)`;
   `baixa = !entregue && efetiva ∈ CODIGOS_BAIXA (lista fixa do front)`; `aberto = !entregue && !baixa`.
@@ -1036,7 +1036,7 @@ não pontos percentuais inteiros).
 
 ## 11. Gatilhos → onde a regra roda no sistema novo
 
-Sem gatilho no banco: as regras abaixo viram **funções puras** em `packages/dominio` chamadas
+Sem gatilho no banco: as regras abaixo viram **funções puras** em `apps/api/src/dominio` chamadas
 pelos casos de uso que gravam CT-e ou ocorrência (API e worker), na mesma transação.
 
 ### 11.1 Gravação de CT-e (`ctrcs`) — ordem de hoje
@@ -1078,7 +1078,7 @@ Antes de gravar ocorrência, a ingestão chama §8.4 (garantir código). Cadastr
 ### 11.3 Proposta de ordem no novo (uma função, sempre na mesma sequência)
 
 ```ts
-// packages/dominio — puro; o caso de uso carrega antes: CT-e antigo, ocorrências do CT-e, cadastro de códigos,
+// apps/api/src/dominio — puro; o caso de uso carrega antes: CT-e antigo, ocorrências do CT-e, cadastro de códigos,
 // filiais_ssw, configurações da empresa; e grava depois numa transação.
 function derivarCtrc(antigo: Ctrc | null, novo: Ctrc, ctx: ContextoDerivacao): Ctrc | "descartar" {
   if (!antigo) { if (abaixoDaDataMinima(novo, ctx)) return "descartar"; if (ehFonteBi2(ctx.fonte)) return "descartar"; }

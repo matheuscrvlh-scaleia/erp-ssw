@@ -6,9 +6,9 @@ lado a lado com este guia.
 
 | Camada | Calendário (exemplo) |
 | --- | --- |
-| Regra pura | `packages/dominio/src/calendario.ts` (+ `.test.ts`) |
-| Contrato | `packages/shared/src/contratos/calendario.ts` |
-| Tabela + RLS | `packages/db/src/schema/dominio/feriados.ts` |
+| Regra pura | `apps/api/src/dominio/calendario.ts` (+ `.test.ts`) |
+| Contrato | `apps/api/src/shared/contratos/calendario.ts` |
+| Tabela + RLS | `apps/api/src/db/schema/dominio/feriados.ts` |
 | API | `apps/api/src/modulos/calendario/{rotas,casos-de-uso,repositorio}.ts` (+ testes) |
 | Tela | `apps/web/src/routes/_autenticado/calendario.tsx` → `apps/web/src/modulos/calendario/` |
 
@@ -17,17 +17,17 @@ lado a lado com este guia.
 1. Abra a spec do domínio em `docs/regras/0X-*.md` e as decisões do dono em
    `docs/duvidas-do-dono.md` (vale a recomendação de cada item). Paridade com o sistema atual,
    salvo o que o dono decidiu mudar.
-2. Liste os cálculos (o que vira `packages/dominio`) separados do que é só leitura/gravação.
+2. Liste os cálculos (o que vira `apps/api/src/dominio`) separados do que é só leitura/gravação.
 
-## 2. Regra pura — `packages/dominio/src/<dominio>.ts`
+## 2. Regra pura — `apps/api/src/dominio/<dominio>.ts`
 
 - Funções sem I/O, sem `Date.now()` escondido (recebem `hoje`/`agora`), sem banco.
 - Comentário curto com a origem: `// origem: calcular_performance (sistema atual)`.
 - Violação de regra de negócio: `throw new ErroDeNegocio("ENTRADA_INVALIDA", "<mensagem para o
-  operador>")` (`packages/dominio/src/erros.ts`).
+  operador>")` (`apps/api/src/dominio/erros.ts`).
 - Teste com os casos-limite da spec (`<dominio>.test.ts`).
 
-## 3. Contrato — `packages/shared/src/contratos/<dominio>.ts`
+## 3. Contrato — `apps/api/src/shared/contratos/<dominio>.ts`
 
 - Um `contrato({ metodo, caminho, parametros?, entrada?, saida })` por endpoint, em
   `contratos<Dominio>`. `entrada` é query string em GET/DELETE e corpo nos demais.
@@ -35,7 +35,7 @@ lado a lado com este guia.
 - Os tipos saem dos schemas (`z.infer`, `SaidaDe<typeof c.obter>`); não escreva o tipo à mão.
 - Mensagens de validação em português (o `z` de `@erp/shared/zod` já vem com pt-BR).
 
-## 4. Tabela — `packages/db/src/schema/dominio/<agregado>.ts`
+## 4. Tabela — `apps/api/src/db/schema/dominio/<agregado>.ts`
 
 - `empresaId: empresaId()` (de `./_comum`) e `...politicasDeEmpresa("<tabela>", t.empresaId)`.
   Cadastro que a Plataforma também administra: `politicasDeEmpresaComPlataforma`. Regra
@@ -43,10 +43,10 @@ lado a lado com este guia.
   `ehPlataforma` (ver `feriados.ts`).
 - `atualizadoEm()` é gravado pelo backend no UPDATE (não há gatilho).
 - **Proibido** no banco: função, gatilho, view materializada, extensão, cron.
-- Exporte em `dominio/index.ts`, rode `bun run db:gerar` (só gera o SQL; não conecta) e confira o
-  arquivo novo em `packages/db/drizzle/`. Índice ou parâmetro que o Drizzle não expressa:
+- Exporte em `dominio/index.ts`, rode `bun run db:gerar` em `apps/api` (só gera o SQL; não conecta) e confira o
+  arquivo novo em `apps/api/drizzle/`. Índice ou parâmetro que o Drizzle não expressa:
   `bunx drizzle-kit generate --custom --name <nome>` e escreva o SQL à mão (só índice/parâmetro).
-- O teste `packages/db/src/schema/rls.test.ts` falha se a tabela com `empresa_id` vier sem RLS.
+- O teste `apps/api/src/db/schema/rls.test.ts` falha se a tabela com `empresa_id` vier sem RLS.
 
 ## 5. API — `apps/api/src/modulos/<dominio>/`
 
@@ -100,7 +100,7 @@ app.get(
 - Permissão na tela vem do acesso (`useSuspenseQuery(consultaAcesso)`): `ehAdminDaEmpresa(papel)`,
   `adminPlataforma`, `telas`. A API confere de novo; a tela só esconde botão.
 - Formulário com `react-hook-form` + `zodResolver`, reaproveitando o schema do contrato e a regra
-  do `packages/dominio` (ver `ModalDeFeriado.tsx`).
+  do `src/dominio` (cópia do web; ver `ModalDeFeriado.tsx`).
 - Mesmo visual do sistema atual: copie classes e textos da tela de referência; componentes em
   `src/componentes/ui` (shadcn).
 - Teste de lógica pura (`*.test.ts`) e de componente com lógica (`*.test.tsx`, Testing Library).
@@ -108,8 +108,8 @@ app.get(
 ## Checklist do domínio portado
 
 - [ ] Regras e decisões do dono lidas; diferenças propositais anotadas em ADR.
-- [ ] Cálculos em `packages/dominio`, com origem citada e testes dos casos-limite.
-- [ ] Contratos zod em `packages/shared/src/contratos/<dominio>.ts`.
+- [ ] Cálculos em `apps/api/src/dominio`, com origem citada e testes dos casos-limite.
+- [ ] Contratos zod em `apps/api/src/shared/contratos/<dominio>.ts`, copiados para `apps/web/src/shared`.
 - [ ] Tabelas com `empresa_id`, RLS por helper, exportadas; migration gerada e revisada; nada de
       função/gatilho/matview/extensão.
 - [ ] Casos de uso com transação única, auditoria nas escritas, mensagens para o operador.

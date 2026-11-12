@@ -7,10 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "../../testes/cenario";
 
 const AMOSTRA = readFileSync(
-  join(
-    __dirname,
-    "../../../../../packages/dominio/src/coletas/__fixtures__/relatorio-050-amostra.txt",
-  ),
+  join(__dirname, "../../dominio/coletas/__fixtures__/relatorio-050-amostra.txt"),
   "latin1",
 );
 

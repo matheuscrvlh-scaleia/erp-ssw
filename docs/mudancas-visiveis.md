@@ -4,7 +4,7 @@ O que o usuário pode notar de diferente, e por quê. Cada linha vem de uma deci
 `docs/duvidas-do-dono.md` (vale a recomendação de Q01–Q55). Serve para avisar os usuários na virada e
 para explicar as diferenças da conferência lado a lado (Q52). Uma seção por domínio.
 
-## Núcleo do CT-e (`packages/dominio/src/nucleo`, spec 01)
+## Núcleo do CT-e (`apps/api/src/dominio/nucleo`, spec 01)
 
 - **Q11 — "hoje" é o dia de Brasília.** Depois das 21h, o bloco "Previstos" não mostra mais o que
   vence hoje como vencido; o atraso e o "sem movimento" já eram por Brasília. "Em rota" do Romaneio

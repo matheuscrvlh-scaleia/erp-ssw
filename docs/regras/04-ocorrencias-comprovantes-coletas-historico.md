@@ -812,7 +812,7 @@ async function importarRelatorio050(empresaId, conteudo, arquivo) {
 
 ### 4.5 Leitor do 050 (`parse050`) — portar com o mesmo comportamento
 
-Função pura (vai para `packages/dominio`). Portar junto os testes e as fixtures
+Função pura (vai para `apps/api/src/dominio`). Portar junto os testes e as fixtures
 `__fixtures__/relatorio-050-amostra.{txt,csv}` de `src/features/coletas/` (expectativas abaixo).
 
 **Detecção**: `pareceRelatorio050` olha os primeiros 2000 chars: linha começando com

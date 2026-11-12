@@ -1,5 +1,6 @@
-// Empacota a API num único ESM: o código dos pacotes do workspace (@erp/*) entra no bundle;
-// as dependências de node_modules ficam de fora (instaladas na imagem).
+// Empacota a API num único ESM. Os caminhos @erp/* (src/shared, src/dominio, src/db) vêm do
+// tsconfig.json e entram no bundle; as dependências de node_modules ficam de fora (instaladas na
+// imagem).
 import { build } from "esbuild";
 
 await build({
@@ -10,6 +11,7 @@ await build({
   target: "node22",
   format: "esm",
   sourcemap: true,
+  tsconfig: "tsconfig.json",
   plugins: [
     {
       name: "dependencias-externas",

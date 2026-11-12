@@ -2,7 +2,7 @@
 
 Schema de domínio do ERP SSW: o que o sistema atual guarda em `public` e que alguma tela, rota
 pública ou job usa hoje, remodelado para o banco que só guarda dados. Código em
-`packages/db/src/schema/dominio/*.ts` (um arquivo por agregado). Identidade, plataforma e
+`apps/api/src/db/schema/dominio/*.ts` (um arquivo por agregado). Identidade, plataforma e
 auditoria (empresas, usuários, sessões, cargos, departamentos, telas, módulos, integrações,
 configurações, auditoria) são da fundação e não estão aqui.
 

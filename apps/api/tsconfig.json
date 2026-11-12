@@ -1,4 +1,44 @@
 {
-  "extends": "@erp/config/tsconfig.base.json",
-  "include": ["src", "vitest.config.ts"]
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedSideEffectImports": true,
+    "allowUnreachableCode": false,
+
+    // src/shared e src/dominio são cópias (o web tem as dele, o worker-ssw também) com os imports
+    // da origem: o arquivo fica igual nas cópias e a sincronia é um diff. tsx, esbuild e vitest
+    // leem estes mesmos caminhos.
+    "paths": {
+      "@erp/dominio/nucleo": ["./src/dominio/nucleo/index.ts"],
+      "@erp/dominio/ingestao/relatorios": ["./src/dominio/ingestao/relatorios/index.ts"],
+      "@erp/dominio/*": ["./src/dominio/*"],
+      "@erp/shared/*": ["./src/shared/*"],
+      "@erp/db": ["./src/db/index.ts"],
+      "@erp/db/schema": ["./src/db/schema/index.ts"],
+      "@erp/db/segredos": ["./src/db/segredos.ts"],
+      "@erp/db/seeds": ["./src/db/seeds/catalogo.ts"]
+    }
+  },
+  "include": ["src", "vitest.config.ts", "drizzle.config.ts"]
 }

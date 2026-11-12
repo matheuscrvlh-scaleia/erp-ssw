@@ -1,8 +1,41 @@
 {
-  "extends": "@erp/config/tsconfig.react.json",
+  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
     "types": ["vite/client", "node"],
-    "paths": { "@/*": ["./src/*"] }
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedSideEffectImports": true,
+    "allowUnreachableCode": false,
+
+    // src/shared e src/dominio são cópias dos da api com os imports da origem: o arquivo fica igual
+    // nas cópias e a sincronia é um diff. Vite e vitest leem estes caminhos (apelidos.ts).
+    "paths": {
+      "@/*": ["./src/*"],
+      "@erp/dominio/nucleo": ["./src/dominio/nucleo/index.ts"],
+      "@erp/dominio/ingestao/relatorios": ["./src/dominio/ingestao/relatorios/index.ts"],
+      "@erp/dominio/*": ["./src/dominio/*"],
+      "@erp/shared/*": ["./src/shared/*"]
+    }
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "apelidos.ts", "vite.config.ts", "vitest.config.ts"]
 }

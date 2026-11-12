@@ -1,13 +1,14 @@
 # Web (SPA Vite) servida por Caddy na porta 80, repassando /api para a api.
-# Contexto = raiz do repositório (monorepo): `docker compose build web`.
+# Contexto = apps/web: `docker compose build web`.
 FROM oven/bun:1.4.2-slim AS build
-WORKDIR /repo
+WORKDIR /app
+COPY package.json bun.lock bunfig.toml ./
+RUN bun install --frozen-lockfile --ignore-scripts
 COPY . .
-RUN bun install --frozen-lockfile --ignore-scripts --filter "@erp/web" \
-    && bun run --cwd apps/web build \
-    && find apps/web/dist -name '*.map' -delete
+RUN bun run build \
+    && find dist -name '*.map' -delete
 
 FROM caddy:2.11-alpine
-COPY apps/web/Caddyfile /etc/caddy/Caddyfile
-COPY --from=build /repo/apps/web/dist /srv
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv
 EXPOSE 80

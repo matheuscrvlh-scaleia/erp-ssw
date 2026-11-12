@@ -6,6 +6,6 @@ coverage/
 !.env.example
 .worktrees/
 *.log
-.turbo/
+.tanstack/
 # CA do Supabase (só para conexões locais com verify-full).
 certs/

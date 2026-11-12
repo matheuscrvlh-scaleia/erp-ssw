@@ -1,0 +1,9 @@
+# Contexto do build da imagem = esta pasta (apps/api).
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo

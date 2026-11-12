@@ -2,7 +2,7 @@
 
 Configuração padrão por enquanto: um `docker-compose.yml` na raiz, com o Dockerfile de cada app em
 `apps/api/Dockerfile` e `apps/web/Dockerfile`. No desenvolvimento sobe só o Redis
-(`docker compose up -d redis`, em `127.0.0.1:6379`); api e web rodam com `bun run dev`.
+(`docker compose up -d redis`, em `127.0.0.1:6379`); api e web rodam com `bun run dev`, cada um na sua pasta (`apps/api`, `apps/web`).
 
 ## 1. O que sobe
 
@@ -46,7 +46,7 @@ com o papel `erp_app` (sem BYPASSRLS) em `DATABASE_URL`, de preferência pelo po
 sessão, porta 5432, cifrado: `...?sslmode=no-verify`. A conexão é cifrada mas não confere o
 certificado (neste driver, `sslmode=require` equivale a `verify-full` e pediria a CA do Supabase
 num arquivo). Migration nova:
-`bun run db:migrar` de uma máquina confiável, com o papel de migração.
+`bun run db:migrar` (em `apps/api`) de uma máquina confiável, com o papel de migração.
 
 Conexões no Postgres: `API_DB_MAX_CONEXOES` (padrão 10) + as do worker-ssw; tem de caber no Pool
 Size do pooler junto com o que o sistema atual usa.

@@ -3,22 +3,34 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "API HTTP (Fastify 5) e os jobs do ERP (BullMQ).",
+  "description": "API HTTP (Fastify 5) e os jobs do ERP (BullMQ). Projeto independente: dependências, lint e testes próprios.",
+  "packageManager": "bun@1.4.2",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.12.0",
+    "bun": ">=1.4.0"
   },
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env --import tsx src/server.ts",
     "build": "node build.mjs",
     "start": "node --enable-source-maps dist/server.js",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "test:cobertura": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "db:gerar": "drizzle-kit generate",
+    "db:migrar": "drizzle-kit migrate",
+    "db:semear": "node --env-file-if-exists=.env --import tsx src/db/seeds/executar.ts"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "semi": true,
+    "singleQuote": false,
+    "trailingComma": "all",
+    "endOfLine": "lf"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1164.0",
-    "@erp/db": "workspace:*",
-    "@erp/dominio": "workspace:*",
-    "@erp/shared": "workspace:*",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
     "@fastify/helmet": "^13.0.1",
@@ -38,12 +50,26 @@
     "jose": "^6.1.0",
     "nodemailer": "^10.4.0",
     "openid-client": "^6.8.0",
-    "prom-client": "^15.1.3"
+    "pg": "^8.16.3",
+    "prom-client": "^15.1.3",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
-    "@erp/config": "workspace:*",
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.18.0",
+    "@types/pg": "^8.15.5",
+    "@vitest/coverage-v8": "^4.1.12",
+    "drizzle-kit": "^0.31.5",
     "esbuild": "^0.25.10",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.4.0",
     "pino": "^9.11.0",
-    "tsx": "^4.20.5"
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.5",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^4.1.12"
   }
 }
