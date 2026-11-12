@@ -179,6 +179,12 @@ export interface RepositorioPlataforma {
   /** Último login de algum usuário com vínculo ativo, por empresa. */
   ultimoLoginPorEmpresa(): Promise<Map<string, Date>>;
   integracoesAtivasPorEmpresa(): Promise<Map<string, number>>;
+  /** Dos vínculos ativos, quantos entraram desde `desde`, por empresa. */
+  usuariosComAcessoDesde(desde: Date): Promise<Map<string, number>>;
+  /** Integrações ligadas de todas as empresas. */
+  integracoesLigadas(): Promise<{ empresaId: string; tipo: TipoIntegracao }[]>;
+  /** CT-e emitidos por mês ("AAAA-MM") desde o dia `desde`, na empresa do contexto (RLS). */
+  ctesPorMes(desde: string): Promise<{ mes: string; total: number }[]>;
   /** Liberações de módulo de uma empresa, ou de todas (nulo). */
   liberacoes(empresaId: string | null): Promise<LiberacaoGravada[]>;
   gravarModulo(

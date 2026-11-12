@@ -36,7 +36,7 @@ export interface EntradaDaSaude {
   ultimoDadoEm: Date | null;
   xmlExpirados: number;
   ultimoLoginEm: Date | null;
-  /** A consulta dos números do mês falhou. */
+  /** A contagem dos CT-e da empresa falhou. */
   semNumeros: boolean;
   agora: Date;
 }
@@ -55,7 +55,7 @@ export function tempoDecorrido(ms: number): string {
 /**
  * Crítico: a SSW API da empresa está quebrada ou os dados pararam (ativa sem dado nenhum ou há mais
  * de um dia). Atenção: dados com mais de 2 h, worker-ssw fora ou com job falhando, XML expirado,
- * ninguém entra há uma semana ou os números do mês não saíram. Em implantação nada é crítico (a
+ * ninguém entra há uma semana ou a contagem dos CT-e não saiu. Em implantação nada é crítico (a
  * integração ainda está sendo montada) e o acesso não conta. Suspensa ou encerrada = inativa.
  */
 export function saudeDaEmpresa(e: EntradaDaSaude): SaudeDaEmpresa {
@@ -98,9 +98,30 @@ export function saudeDaEmpresa(e: EntradaDaSaude): SaudeDaEmpresa {
     }
   }
 
-  if (e.semNumeros) atencao.push("Números do mês indisponíveis");
+  if (e.semNumeros) atencao.push("Contagem de CT-e indisponível");
 
   const nivel: NivelDeSaude =
     criticos.length > 0 ? "critico" : atencao.length > 0 ? "atencao" : "ok";
   return { nivel, motivos: [...criticos, ...atencao] };
+}
+
+/** Os `n` meses ("AAAA-MM") que terminam no mês de `hoje` (AAAA-MM-DD), do mais antigo ao atual. */
+export function ultimosMeses(hoje: string, n = 12): string[] {
+  const ano = Number(hoje.slice(0, 4));
+  const mes = Number(hoje.slice(5, 7));
+  return Array.from({ length: n }, (_, i) => {
+    const total = ano * 12 + (mes - 1) - (n - 1 - i);
+    return `${String(Math.floor(total / 12))}-${String((total % 12) + 1).padStart(2, "0")}`;
+  });
+}
+
+/**
+ * Quanto a empresa cresceu: o último mês fechado contra o anterior (o mês corrente está pela
+ * metade e não entra). Nulo sem os dois meses ou sem base (mês anterior zerado).
+ */
+export function variacaoDoMes(porMes: readonly number[]): number | null {
+  const anterior = porMes.at(-3);
+  const ultimo = porMes.at(-2);
+  if (anterior === undefined || ultimo === undefined || anterior === 0) return null;
+  return ultimo / anterior - 1;
 }

@@ -1,11 +1,11 @@
-import { dataIso } from "../consulta";
 import { contrato } from "../contrato";
-import { STATUS_EMPRESA } from "../plataforma";
+import { STATUS_EMPRESA, TIPOS_INTEGRACAO } from "../plataforma";
 import { z } from "../zod";
 import { saudeSsw } from "./ingestao-ssw";
 
 /*
- * Plataforma › Dashboard: saúde e números de todas as empresas numa tela. Só admin da Plataforma.
+ * Plataforma › Dashboard: as empresas da Plataforma numa tela — quantas são, como crescem, as
+ * integrações e o uso. Só a equipe da Plataforma.
  */
 
 const instante = z.iso.datetime();
@@ -19,28 +19,18 @@ export type NivelDeSaude = (typeof NIVEIS_DE_SAUDE)[number];
 export const SITUACOES_DO_WORKER = ["ok", "com_falha", "fora", "nao_configurado"] as const;
 export type SituacaoDoWorker = (typeof SITUACOES_DO_WORKER)[number];
 
-/** Os números da Performance no mês (por emissão, sem filtros); SLA em fração 0–1. */
-export const numerosDaEmpresa = z.object({
-  ctesNoMes: inteiro,
-  entreguesNoMes: inteiro,
-  emAberto: inteiro,
-  /** Em aberto com o prazo vencido hoje, dos emitidos no mês (o "Em Atraso" da Performance). */
-  emAtraso: inteiro,
-  /** SLA Operacional; nulo sem CT-e no mês. */
-  slaOperacional: z.number().nullable(),
-  slaMeta: z.number(),
-  /** Pela meta e pelo alerta amarelo da empresa; nulo sem SLA. */
-  situacaoDoSla: z.enum(["bom", "alerta", "ruim"]).nullable(),
-});
-export type NumerosDaEmpresa = z.infer<typeof numerosDaEmpresa>;
-
 export const empresaNoPainel = z.object({
   id: z.uuid(),
   nome: z.string(),
   nomeCurto: z.string(),
   status: z.enum(STATUS_EMPRESA),
   corPrimaria: z.string(),
+  /** Quando a empresa entrou na Plataforma. */
+  criadaEm: instante,
+  /** Vínculos ativos. */
   usuariosAtivos: inteiro,
+  /** Dos vínculos ativos, quantos entraram nos últimos 30 dias. */
+  usuariosNoMes: inteiro,
   modulosLiberados: inteiro,
   ultimoLoginEm: instante.nullable(),
   saude: z.object({
@@ -48,6 +38,8 @@ export const empresaNoPainel = z.object({
     /** O que puxou o nível para baixo, do mais grave para o mais leve. */
     motivos: z.array(z.string()),
   }),
+  /** Integrações ligadas no cadastro da empresa. */
+  integracoes: z.array(z.enum(TIPOS_INTEGRACAO)),
   ssw: saudeSsw,
   workerSsw: z.object({
     situacao: z.enum(SITUACOES_DO_WORKER),
@@ -57,26 +49,41 @@ export const empresaNoPainel = z.object({
   /** Última aplicação do ciclo de arquivos do SSW ("Dados atualizados em"). */
   ultimoDadoEm: instante.nullable(),
   xml: z.object({ pendentes: inteiro, expirados: inteiro }),
-  /** Nulo quando a consulta dos números falhou (ex.: demorou demais). */
-  numeros: numerosDaEmpresa.nullable(),
+  /** CT-e emitidos em cada mês de `meses`; nulo quando a contagem falhou. */
+  ctesPorMes: z.array(inteiro).nullable(),
 });
 export type EmpresaNoPainel = z.infer<typeof empresaNoPainel>;
 
+const porStatus = z.object({
+  implantacao: inteiro,
+  ativa: inteiro,
+  suspensa: inteiro,
+  encerrada: inteiro,
+});
+
 export const painelPlataforma = z.object({
   geradoEm: instante,
-  /** Mês corrente até hoje (fuso do negócio). */
-  periodo: z.object({ inicio: dataIso, fim: dataIso }),
+  /** Os 12 meses do crescimento ("AAAA-MM"), do mais antigo ao corrente (fuso do negócio). */
+  meses: z.array(z.string()),
   totais: z.object({
     empresas: inteiro,
+    porStatus,
     porNivel: z.object({ ok: inteiro, atencao: inteiro, critico: inteiro, inativa: inteiro }),
+    /** Empresas cadastradas no mês corrente. */
+    novasNoMes: inteiro,
+    /** Empresas cadastradas nos 12 meses. */
+    novasNoAno: inteiro,
     /** Soma dos vínculos ativos (quem está em duas empresas conta duas vezes). */
     usuariosAtivos: inteiro,
-    ctesNoMes: inteiro,
-    entreguesNoMes: inteiro,
-    emAtraso: inteiro,
-    /** SLA Operacional de todas as empresas juntas. */
-    slaOperacional: z.number().nullable(),
+    usuariosNoMes: inteiro,
+    /** CT-e emitidos por mês, todas as empresas (mesma ordem de `meses`). */
+    ctesPorMes: z.array(inteiro),
   }),
+  /** Por mês: empresas novas e o total cadastrado até o fim dele. */
+  crescimento: z.array(z.object({ mes: z.string(), novas: inteiro, total: inteiro })),
+  /** Quantas empresas têm cada integração ligada. */
+  integracoes: z.array(z.object({ tipo: z.enum(TIPOS_INTEGRACAO), empresas: inteiro })),
+  /** Da saúde mais grave à mais leve; empate pelo nome. */
   empresas: z.array(empresaNoPainel),
 });
 export type PainelPlataforma = z.infer<typeof painelPlataforma>;

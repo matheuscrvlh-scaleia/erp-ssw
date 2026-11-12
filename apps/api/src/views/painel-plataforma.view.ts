@@ -13,6 +13,7 @@ export function apresentarPainel(
     geradoEm: painel.geradoEm.toISOString(),
     empresas: painel.empresas.map((e) => ({
       ...e,
+      criadaEm: e.criadaEm.toISOString(),
       ultimoLoginEm: iso(e.ultimoLoginEm),
       ultimoDadoEm: iso(e.ultimoDadoEm),
     })),

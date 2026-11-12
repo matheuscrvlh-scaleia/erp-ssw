@@ -3,6 +3,7 @@ import {
   cargoPermissoes,
   codigosOcorrencia,
   configuracoes,
+  ctes,
   empresaIntegracoes,
   empresaModulos,
   empresas,
@@ -14,7 +15,7 @@ import {
   usuarios,
 } from "@erp/db/schema";
 import { ehPermissao, partesDaPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
-import { and, count, eq, isNotNull, max, sql } from "drizzle-orm";
+import { and, count, eq, gte, isNotNull, max, sql } from "drizzle-orm";
 
 import { type EmpresaGravada, type RepositorioPlataforma } from "./plataforma.service";
 
@@ -121,6 +122,33 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
           .where(eq(empresaIntegracoes.ativo, true))
           .groupBy(empresaIntegracoes.empresaId),
       ),
+
+    usuariosComAcessoDesde: async (desde) =>
+      contagem(
+        await tx
+          .select({ chave: empresaUsuarios.empresaId, total: count() })
+          .from(empresaUsuarios)
+          .innerJoin(usuarios, eq(usuarios.id, empresaUsuarios.usuarioId))
+          .where(and(eq(empresaUsuarios.ativo, true), gte(usuarios.ultimoLoginEm, desde)))
+          .groupBy(empresaUsuarios.empresaId),
+      ),
+
+    integracoesLigadas: () =>
+      tx
+        .select({ empresaId: empresaIntegracoes.empresaId, tipo: empresaIntegracoes.tipo })
+        .from(empresaIntegracoes)
+        .where(eq(empresaIntegracoes.ativo, true)),
+
+    // Mesmo universo das telas (sem cancelado no dia nem duplicado), pela data de emissão.
+    ctesPorMes: async (desde) => {
+      const mes = sql<string>`to_char(${ctes.dataEmissao}, 'YYYY-MM')`;
+      const linhas = await tx
+        .select({ mes, total: count() })
+        .from(ctes)
+        .where(and(eq(ctes.foraUniverso, false), gte(ctes.dataEmissao, desde)))
+        .groupBy(mes);
+      return linhas;
+    },
 
     liberacoes: (empresaId) =>
       tx
