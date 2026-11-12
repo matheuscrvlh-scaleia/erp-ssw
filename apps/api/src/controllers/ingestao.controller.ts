@@ -25,6 +25,13 @@ import {
   retomarCiclo,
   rodarFtpAgora,
 } from "../models/ingestao/ingestao.service";
+import { confirmacao } from "../views/comum.view";
+import {
+  apresentarAplicacoes,
+  apresentarArquivosXml,
+  apresentarFtp,
+  apresentarPipeline,
+} from "../views/ingestao.view";
 
 /** Arquivo em base64 da tela: o mesmo teto de antes (o worker-ssw tem o mesmo). */
 const LIMITE_COM_ARQUIVO = 64 * 1024 * 1024;
@@ -41,7 +48,8 @@ export const controladorIngestao: FastifyPluginCallbackZod<{ deps: DependenciasI
   app.get(
     c.pipeline.caminho,
     { schema: { response: { 200: c.pipeline.saida } }, preHandler: soPlataforma },
-    async (request) => lerPipeline(request.db, deps, await empresa(request)),
+    async (request) =>
+      apresentarPipeline(await lerPipeline(request.db, deps, await empresa(request))),
   );
 
   app.post(
@@ -111,13 +119,14 @@ export const controladorIngestao: FastifyPluginCallbackZod<{ deps: DependenciasI
   app.get(
     c.aplicacoes.caminho,
     { schema: { response: { 200: c.aplicacoes.saida } }, preHandler: soPlataforma },
-    async (request) => lerAplicacoes(request.db, await empresa(request)),
+    async (request) =>
+      apresentarAplicacoes(await lerAplicacoes(request.db, await empresa(request))),
   );
 
   app.get(
     c.ftp.caminho,
     { schema: { response: { 200: c.ftp.saida } }, preHandler: soPlataforma },
-    async (request) => lerFtp(request.db, deps, await empresa(request)),
+    async (request) => apresentarFtp(await lerFtp(request.db, deps, await empresa(request))),
   );
 
   app.post(
@@ -125,7 +134,7 @@ export const controladorIngestao: FastifyPluginCallbackZod<{ deps: DependenciasI
     { schema: { response: { 200: c.rodarFtp.saida } }, preHandler: soPlataforma },
     async (request) => {
       await rodarFtpAgora(request.db, deps, await atorDa(request), await empresa(request));
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -143,7 +152,7 @@ export const controladorIngestao: FastifyPluginCallbackZod<{ deps: DependenciasI
         await empresa(request),
         request.body.ativo,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -152,7 +161,7 @@ export const controladorIngestao: FastifyPluginCallbackZod<{ deps: DependenciasI
     { schema: { response: { 200: c.liberarTravaFtp.saida } }, preHandler: soPlataforma },
     async (request) => {
       await liberarTravaFtp(request.db, deps, await atorDa(request), await empresa(request));
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -170,7 +179,8 @@ export const controladorIngestao: FastifyPluginCallbackZod<{ deps: DependenciasI
   app.get(
     c.arquivosXml.caminho,
     { schema: { response: { 200: c.arquivosXml.saida } }, preHandler: soPlataforma },
-    async (request) => lerArquivosXml(request.db, await empresa(request)),
+    async (request) =>
+      apresentarArquivosXml(await lerArquivosXml(request.db, await empresa(request))),
   );
 
   app.post(
