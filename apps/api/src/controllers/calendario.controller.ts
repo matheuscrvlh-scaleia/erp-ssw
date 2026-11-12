@@ -15,6 +15,8 @@ import {
   listarFeriadosGerais,
   obterCalendario,
 } from "../models/calendario/calendario.service";
+import { apresentarCalendario, apresentarFeriadosGerais } from "../views/calendario.view";
+import { confirmacao } from "../views/comum.view";
 
 /**
  * Ler, criar/alterar e excluir pela permissão da tela Calendário. Sempre com o módulo.
@@ -44,7 +46,9 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
       preHandler: ler,
     },
     async (request) =>
-      obterCalendario(request.db, await contextoDe(request), request.query.ano, agora()),
+      apresentarCalendario(
+        await obterCalendario(request.db, await contextoDe(request), request.query.ano, agora()),
+      ),
   );
 
   app.post(
@@ -90,7 +94,7 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
         await atorDa(request),
         request.params.id,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -113,7 +117,8 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
       },
       preHandler: gerais,
     },
-    async (request) => listarFeriadosGerais(request.db, request.query.ano),
+    async (request) =>
+      apresentarFeriadosGerais(await listarFeriadosGerais(request.db, request.query.ano)),
   );
 
   app.post(
@@ -156,7 +161,7 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
     },
     async (request) => {
       await excluirFeriado(request.db, ESCOPO_GERAL, await atorDa(request), request.params.id);
-      return { ok: true as const };
+      return confirmacao();
     },
   );
   pronto();

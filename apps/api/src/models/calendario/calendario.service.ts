@@ -8,9 +8,7 @@ import {
   type LocalDoFeriado,
   normalizarLocal,
 } from "@erp/dominio/calendario";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
-  type contratosCalendario,
   type DadosDoFeriado,
   type Feriado,
   type TipoFeriado,
@@ -81,8 +79,17 @@ export const ESCOPO_GERAL: EscopoDoFeriado = { empresaId: null, plataforma: true
 
 type Db = Executor<"calendario" | "auditoria">;
 
-function semEmpresaNaSaida({ empresaId: _empresaId, ...feriado }: FeriadoGravado): Feriado {
+/** Retrato do feriado para a auditoria (a empresa já vai na linha do registro). */
+function semEmpresa({ empresaId: _empresaId, ...feriado }: FeriadoGravado): Feriado {
   return feriado;
+}
+
+export interface CalendarioDoAno {
+  ano: number;
+  feriados: FeriadoGravado[];
+  unidades: UnidadeDoCalendario[];
+  contagens: ReturnType<typeof contarPorTipo>;
+  proximo: FeriadoGravado | null;
 }
 
 /**
@@ -94,16 +101,15 @@ export async function obterCalendario(
   ctx: ContextoCalendario,
   ano: number,
   agora: Date,
-): Promise<SaidaDe<typeof contratosCalendario.obter>> {
+): Promise<CalendarioDoAno> {
   return db(async ({ calendario }) => {
     const feriados = await calendario.feriados(ctx.empresaId, `${ano}-01-01`, `${ano}-12-31`);
-    const proximo = await calendario.proximo(ctx.empresaId, hojeNoFuso(ctx.fuso, agora));
     return {
       ano,
-      feriados: feriados.map(semEmpresaNaSaida),
+      feriados,
       unidades: await calendario.unidadesAtivas(ctx.empresaId),
       contagens: contarPorTipo(feriados),
-      proximo: proximo ? semEmpresaNaSaida(proximo) : null,
+      proximo: await calendario.proximo(ctx.empresaId, hojeNoFuso(ctx.fuso, agora)),
     };
   });
 }
@@ -112,12 +118,8 @@ export async function obterCalendario(
 export async function listarFeriadosGerais(
   db: Executor<"calendario">,
   ano: number,
-): Promise<SaidaDe<typeof contratosCalendario.listarFeriadosGerais>> {
-  return db(async ({ calendario }) => ({
-    feriados: (await calendario.feriados(null, `${ano}-01-01`, `${ano}-12-31`)).map(
-      semEmpresaNaSaida,
-    ),
-  }));
+): Promise<FeriadoGravado[]> {
+  return db(({ calendario }) => calendario.feriados(null, `${ano}-01-01`, `${ano}-12-31`));
 }
 
 /**
@@ -213,7 +215,7 @@ export async function alterarFeriado(
       entidade: "feriado",
       entidadeId: id,
       resumo: dados.descricao,
-      antes: semEmpresaNaSaida(antes),
+      antes: semEmpresa(antes),
       depois,
     });
     return { inseridos: 0, atualizados: 1 };
@@ -235,7 +237,7 @@ export async function excluirFeriado(
       entidade: "feriado",
       entidadeId: id,
       resumo: antes.descricao,
-      antes: semEmpresaNaSaida(antes),
+      antes: semEmpresa(antes),
       depois: null,
     });
   });
