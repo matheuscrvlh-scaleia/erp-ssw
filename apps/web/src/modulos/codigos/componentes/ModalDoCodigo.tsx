@@ -16,8 +16,8 @@ import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
 
-import { consultaHistoricoDoCodigo } from "./api";
-import { ehLetra, rotulosDaLetra } from "./regras";
+import { consultaHistoricoDoCodigo } from "../api";
+import { ehLetra, rotulosDaLetra } from "../regras";
 
 export interface CodigoParaSalvar {
   codigo: number;
