@@ -1,11 +1,6 @@
 import { mudancaParaAuditoria, type Registro } from "@erp/dominio/auditoria";
 import { chaveDaRegra, normalizarRegra } from "@erp/dominio/prazos-configurados";
-import { type SaidaDe } from "@erp/shared/contrato";
-import {
-  type contratosAdmin,
-  type DadosDoPrazo,
-  type PrazoConfigurado,
-} from "@erp/shared/contratos/admin";
+import { type DadosDoPrazo, type PrazoConfigurado } from "@erp/shared/contratos/admin";
 import { JOB_RECALCULAR_PRAZOS } from "@erp/shared/jobs";
 
 import type { FilaDeJobs } from "../../infra/fila";
@@ -41,15 +36,14 @@ export interface RepositorioPrazos {
 }
 
 type Db = Executor<"prazos" | "auditoria">;
-type Resultado = SaidaDe<typeof contratosAdmin.criarPrazo>;
+
+/** A regra gravada e se o recálculo da previsão dos CT-e entrou na fila. */
+interface Resultado {
+  id: string;
+  recalculoAgendado: boolean;
+}
 
 const naoAchada = () => naoEncontrado("Regra não encontrada nesta empresa.");
-
-const ORDEM_DO_TIPO = { unidade: 1, transbordo: 2, parceiro: 3 } as const;
-
-function paraSaida({ criadoEm: _criadoEm, ...r }: RegraGravada): PrazoConfigurado {
-  return { ...r, atualizadoEm: r.atualizadoEm.toISOString() };
-}
 
 function registroDaRegra(r: DadosDoPrazo): Registro {
   return {
@@ -107,26 +101,25 @@ async function exigirSemRepeticao(
   if (repetida) throw conflito("Já existe uma regra para esta unidade, parceiro ou rota.");
 }
 
+export interface PrazosDaEmpresa {
+  regras: RegraGravada[];
+  unidades: { codigo: string; cidade: string }[];
+  parceiros: { cnpj: string; nome: string }[];
+}
+
 /**
- * Regras da empresa (por tipo e mais recentes antes) e as opções de unidade e parceiro, de todos
- * os CT-e da empresa (decisão P10: hoje saíam de só 1000 CT-e).
+ * Regras da empresa e as opções de unidade e parceiro, de todos os CT-e da empresa (decisão P10:
+ * hoje saíam de só 1000 CT-e).
  */
 export async function listarPrazos(
   db: Executor<"prazos">,
   empresaId: string,
-): Promise<SaidaDe<typeof contratosAdmin.listarPrazos>> {
-  return db(async ({ prazos }) => {
-    const regras = (await prazos.regras(empresaId)).sort(
-      (a, b) =>
-        ORDEM_DO_TIPO[a.tipo] - ORDEM_DO_TIPO[b.tipo] ||
-        b.atualizadoEm.getTime() - a.atualizadoEm.getTime(),
-    );
-    return {
-      regras: regras.map(paraSaida),
-      unidades: await prazos.unidadesDosCtes(empresaId),
-      parceiros: await prazos.parceirosDosCtes(empresaId),
-    };
-  });
+): Promise<PrazosDaEmpresa> {
+  return db(async ({ prazos }) => ({
+    regras: await prazos.regras(empresaId),
+    unidades: await prazos.unidadesDosCtes(empresaId),
+    parceiros: await prazos.parceirosDosCtes(empresaId),
+  }));
 }
 
 export async function criarPrazo(

@@ -20,6 +20,12 @@ import {
   listarFeriados,
   obterHistorico,
 } from "../models/historico/historico.service";
+import { confirmacao } from "../views/comum.view";
+import {
+  apresentarFeriadoCriado,
+  apresentarFeriados,
+  apresentarHistorico,
+} from "../views/historico.view";
 
 /** Histórico: quem tem a tela lê e anota (alterar/excluir é do autor ou do admin). */
 const modulo = exigirModulo("historico");
@@ -52,7 +58,10 @@ export const controladorHistorico: FastifyPluginCallbackZod<{ agora: () => Date 
       schema: { querystring: c.obter.entrada, response: { 200: c.obter.saida } },
       preHandler: historico,
     },
-    async (request) => obterHistorico(request.db, await contextoDe(request), request.query),
+    async (request) =>
+      apresentarHistorico(
+        await obterHistorico(request.db, await contextoDe(request), request.query),
+      ),
   );
 
   app.post(
@@ -84,7 +93,7 @@ export const controladorHistorico: FastifyPluginCallbackZod<{ agora: () => Date 
         request.body,
         agora(),
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -101,7 +110,7 @@ export const controladorHistorico: FastifyPluginCallbackZod<{ agora: () => Date 
         await atorDa(request),
         request.params.id,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -111,7 +120,10 @@ export const controladorHistorico: FastifyPluginCallbackZod<{ agora: () => Date 
       schema: { querystring: c.listarFeriados.entrada, response: { 200: c.listarFeriados.saida } },
       preHandler: feriados,
     },
-    async (request) => listarFeriados(request.db, await contextoDe(request), request.query),
+    async (request) =>
+      apresentarFeriados(
+        await listarFeriados(request.db, await contextoDe(request), request.query),
+      ),
   );
 
   app.post(
@@ -120,15 +132,14 @@ export const controladorHistorico: FastifyPluginCallbackZod<{ agora: () => Date 
       schema: { body: c.criarFeriado.entrada, response: { 200: c.criarFeriado.saida } },
       preHandler: editarFeriado,
     },
-    async (request) => {
-      const { inseridos } = await criarFeriado(
-        request.db,
-        await contextoDoCalendario(request),
-        await atorDa(request),
-        { ...request.body, recorrente: false, anosAFrente: 0 },
-      );
-      return { inseridos };
-    },
+    async (request) =>
+      apresentarFeriadoCriado(
+        await criarFeriado(request.db, await contextoDoCalendario(request), await atorDa(request), {
+          ...request.body,
+          recorrente: false,
+          anosAFrente: 0,
+        }),
+      ),
   );
 
   app.put(
@@ -149,7 +160,7 @@ export const controladorHistorico: FastifyPluginCallbackZod<{ agora: () => Date 
         request.params.id,
         request.body,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 
@@ -166,7 +177,7 @@ export const controladorHistorico: FastifyPluginCallbackZod<{ agora: () => Date 
         await atorDa(request),
         request.params.id,
       );
-      return { ok: true as const };
+      return confirmacao();
     },
   );
 

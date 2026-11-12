@@ -20,6 +20,7 @@ import {
   SEM_TIPO,
 } from "@erp/dominio/romaneio/hoje";
 import {
+  type EventoDaLinhaDoTempo,
   type Linha930,
   linhaDoTempo,
   type OcorrenciaGravada,
@@ -65,29 +66,74 @@ import {
   performanceCarro,
   performanceMotorista,
   porViagem,
+  type Prejuizo,
   prejuizo,
   type Viagem,
 } from "@erp/dominio/romaneio/viagens";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type CampoData,
-  type contratosRomaneio,
+  type comBusca,
+  type entradaLista,
+  type FaixaDoDia,
   type FiltrosRomaneio,
   LIMITE_EXPORTACAO,
-  type LinhaExportada,
-  type LinhaLista,
 } from "@erp/shared/contratos/romaneio";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { type z } from "@erp/shared/zod";
 
 import { type Executor } from "../repositorios";
 
-type C = typeof contratosRomaneio;
-/** Entrada já validada (com os padrões do contrato aplicados). */
-type Entrada<K extends keyof C> = C[K] extends { entrada: infer E extends z.ZodType }
-  ? z.output<E>
-  : never;
-type Saida<K extends keyof C> = SaidaDe<C[K]>;
+// Entradas já validadas (com os padrões do contrato aplicados).
+
+export interface FiltrosDoDia {
+  filiais?: string[] | undefined;
+  tipos?: string[] | undefined;
+}
+
+export interface EntradaDaFaixa extends FiltrosDoDia {
+  faixa: FaixaDoDia;
+  apenasNaoEntregues: boolean;
+}
+
+/** CT-e/NF digitados (só cards do topo e lista). */
+interface DocumentoDigitado {
+  ctrc?: string | undefined;
+  nf?: string | undefined;
+}
+
+export interface EntradaDosTotais extends DocumentoDigitado {
+  filtros: FiltrosRomaneio;
+  universo: "todos" | "romaneados";
+  semMovimento: boolean;
+}
+
+export type EntradaDaLista = z.output<typeof entradaLista>;
+
+type FiltrosDaLista = Pick<
+  EntradaDaLista,
+  "filtros" | "ctrc" | "nf" | "busca" | "recorte" | "emRotaAgora" | "status" | "semMovimento"
+>;
+
+export interface EntradaDaExportacao extends FiltrosDaLista {
+  /** "somente": só os ids dados; "todas": todas menos os ids dados. */
+  selecao: { modo: "todas" | "somente"; ids: string[] };
+}
+
+export interface EntradaDaAba {
+  filtros: FiltrosRomaneio;
+}
+
+export interface EntradaDosMotivos extends EntradaDaAba {
+  limite: number;
+}
+
+export interface EntradaDasOpcoes {
+  campo: CampoData;
+  inicio: string;
+  fim: string;
+  placas?: string[] | undefined;
+  motoristas?: string[] | undefined;
+}
 
 // ---------------------------------------------------------------------------------------------
 // Porta do repositório
@@ -382,10 +428,7 @@ async function ctesDoDia(repo: RepositorioRomaneio, linhas: readonly Linha036[],
   }));
 }
 
-const filtrosDoDia = (
-  dia: string,
-  e: { filiais?: string[] | undefined; tipos?: string[] | undefined },
-) => ({
+const filtrosDoDia = (dia: string, e: FiltrosDoDia) => ({
   dia,
   filiais: naoVazio(e.filiais?.map((s) => s.toUpperCase())),
   tipos: naoVazio(e.tipos),
@@ -395,12 +438,7 @@ const filtrosDoDia = (
  * Romaneios emitidos hoje (dia de Brasília). Código de prejuízo fixo 13.
  * origem: romaneio_do_dia
  */
-export async function obterHoje(
-  db: Db,
-  ctx: ContextoRomaneio,
-  entrada: Entrada<"hoje">,
-  agora: Date,
-): Promise<Saida<"hoje">> {
+export async function obterHoje(db: Db, ctx: ContextoRomaneio, entrada: FiltrosDoDia, agora: Date) {
   const dia = hojeNoFuso(ctx.fuso, agora);
   return db(async ({ romaneio }) => {
     const regras = await carregarRegras(romaneio);
@@ -424,9 +462,9 @@ export async function obterHoje(
 export async function obterCtesDoDia(
   db: Db,
   ctx: ContextoRomaneio,
-  entrada: Entrada<"hojeCtes">,
+  entrada: EntradaDaFaixa,
   agora: Date,
-): Promise<Saida<"hojeCtes">> {
+) {
   const dia = hojeNoFuso(ctx.fuso, agora);
   return db(async ({ romaneio }) => {
     const regras = await carregarRegras(romaneio);
@@ -450,7 +488,7 @@ const LIMITE_DA_GAVETA = 2000;
 // Cards do topo e lista (aba Total)
 
 /** CT-e/NF digitados. `vazio` = digitou algo que não casa com CT-e nenhum. */
-function documento(e: { ctrc?: string | undefined; nf?: string | undefined }) {
+function documento(e: DocumentoDigitado) {
   const ctrc = e.ctrc?.trim() ? ctrcDigitado(e.ctrc) : null;
   const nf = e.nf?.trim() ? nfDigitada(e.nf) : null;
   const vazio = (ctrc !== null && ctrc.numero === "") || (!!e.nf?.trim() && nf === null);
@@ -461,12 +499,7 @@ function documento(e: { ctrc?: string | undefined; nf?: string | undefined }) {
  * Cards do topo. Sem recorte, sem "Em rota agora" e sem "só em andamento".
  * origem: get_romaneio_base_totais
  */
-export async function obterTotais(
-  db: Db,
-  ctx: ContextoRomaneio,
-  e: Entrada<"totais">,
-  agora: Date,
-): Promise<Saida<"totais">> {
+export async function obterTotais(db: Db, ctx: ContextoRomaneio, e: EntradaDosTotais, agora: Date) {
   const hoje = hojeNoFuso(ctx.fuso, agora);
   return db(async ({ romaneio }) => {
     const config = await romaneio.configuracoes(["otif_visivel", CONFIG.diasSemMovimento.chave]);
@@ -487,11 +520,6 @@ export async function obterTotais(
     return { totais: totaisDoTopo(itens, e.universo, cadastro, hoje), otifVisivel };
   });
 }
-
-type FiltrosDaLista = Pick<
-  Entrada<"lista">,
-  "filtros" | "ctrc" | "nf" | "busca" | "recorte" | "emRotaAgora" | "status" | "semMovimento"
->;
 
 /** A base com os filtros próprios da lista (Em rota agora, status, sem movimento, recorte). */
 async function filtrarLista(
@@ -519,66 +547,51 @@ async function filtrarLista(
   return { itens, regras: b.regras };
 }
 
-const FONTES = ["bi2_0174", "bi2_0013", "webhook"] as const;
-const ehFonte = (f: string | null | undefined): f is (typeof FONTES)[number] =>
-  FONTES.some((x) => x === f);
+/** CT-e da página (ou da exportação): o fato analisado e as colunas de exibição. */
+export interface LinhaDoRomaneio extends Item {
+  detalhe: DetalheDaLinha | undefined;
+  /** Ocorrência efetiva com a descrição do SSW, senão a do cadastro. */
+  ocorrencia: { codigo: number; descricao: string | null } | null;
+}
 
-function linhaDaLista(
-  { fato: f, analise: a }: Item,
-  d: DetalheDaLinha | undefined,
+/** Junta aos itens as colunas só de exibição (lidas só para eles) e a ocorrência efetiva. */
+async function comDetalhes(
+  romaneio: RepositorioRomaneio,
+  itens: readonly Item[],
   cadastro: Cadastro,
-): LinhaLista {
-  const codigo = normCodigoOcorr(f.ocorrEfetivaCodigo);
-  const fonte = d?.ocorrEfetivaFonte;
-  return {
-    id: f.id,
-    sigla: f.sigla,
-    numero: f.numero,
-    numeroNf: f.numeroNf,
-    dataEmissao: f.dataEmissao,
-    dataEmbarque: f.dataEmbarque,
-    dataPrevista: f.dataPrevista,
-    dataEntregaRealizada: f.dataEntregaRealizada?.toISOString() ?? null,
-    parceiroId: f.parceiroId,
-    parceiroNome: f.parceiroNome,
-    unidadeId: f.unidadeId,
-    filial: f.filial,
-    unidadeCidade: d?.unidadeCidade ?? null,
-    unidadeUf: d?.unidadeUf ?? null,
-    unidadeAtual: d?.unidadeAtual ?? null,
-    placa: d?.placa ?? null,
-    motorista: d?.motorista ?? null,
-    remetente: f.remetente,
-    destinatario: d?.destinatario ?? null,
-    cidadeDestino: f.cidadeDestino,
-    ufDestino: f.ufDestino,
-    setor: f.setor,
-    bairro: d?.bairro ?? null,
-    endereco: d?.endereco ?? null,
-    valorMercadoria: d?.valorMercadoria ?? null,
-    peso: f.peso,
-    volumes: f.volumes,
-    valorFrete: f.valorFrete,
-    tde: f.tde,
-    statusAtual: f.statusAtual,
-    ultimaOcorrencia:
+): Promise<LinhaDoRomaneio[]> {
+  const detalhes = await romaneio.detalhes(itens.map((i) => i.fato.id));
+  const porId = new Map(detalhes.map((d) => [d.id, d]));
+  return itens.map((item) => {
+    const detalhe = porId.get(item.fato.id);
+    const codigo = normCodigoOcorr(item.fato.ocorrEfetivaCodigo);
+    const ocorrencia =
       codigo === null
         ? null
         : {
             codigo,
-            descricao: d?.ocorrEfetivaDescricao || cadastro.codigo(codigo)?.descricao || null,
-            dataHora: d?.ocorrEfetivaData?.toISOString() ?? null,
-            fonte: ehFonte(fonte) ? fonte : null,
-          },
-    baixadoSemEntrega: a.finalizado,
-    emRotaAgora: a.emRotaAgora,
-    atrasoDias: d?.atrasoDias ?? null,
-    performanceDias: d?.performanceDias ?? null,
-    responsabilidadeCliente: d?.responsabilidadeCliente ?? null,
-  };
+            descricao: detalhe?.ocorrEfetivaDescricao || cadastro.codigo(codigo)?.descricao || null,
+          };
+    return { ...item, detalhe, ocorrencia };
+  });
 }
 
-async function limitesDeCarga(romaneio: RepositorioRomaneio) {
+interface LimitesDeCarga {
+  pesoKg: number;
+  volumes: number;
+}
+
+export interface ExportacaoDoRomaneio {
+  linhas: LinhaDoRomaneio[];
+  limites: LimitesDeCarga;
+  hoje: string;
+}
+
+export interface ListaDoRomaneio extends ExportacaoDoRomaneio, ReturnType<typeof resumirLista> {
+  total: number;
+}
+
+async function limitesDeCarga(romaneio: RepositorioRomaneio): Promise<LimitesDeCarga> {
   const config = await romaneio.configuracoes([
     CONFIG.pesoCritico.chave,
     CONFIG.volumeCritico.chave,
@@ -597,21 +610,18 @@ async function limitesDeCarga(romaneio: RepositorioRomaneio) {
 export async function obterLista(
   db: Db,
   ctx: ContextoRomaneio,
-  e: Entrada<"lista">,
+  e: EntradaDaLista,
   agora: Date,
-): Promise<Saida<"lista">> {
+): Promise<ListaDoRomaneio> {
   const hoje = hojeNoFuso(ctx.fuso, agora);
   return db(async ({ romaneio }) => {
     const limites = await limitesDeCarga(romaneio);
     const r = await filtrarLista(romaneio, e, hoje, agora, null);
     const itens = r?.itens ?? [];
     const { totais, grupos } = resumirLista(itens, e.agrupar);
-    const pagina = paginaDaLista(itens, e);
-    const detalhes = await romaneio.detalhes(pagina.map((i) => i.fato.id));
-    const porId = new Map(detalhes.map((d) => [d.id, d]));
     const cadastro = r?.regras.cadastro ?? criarCadastro([]);
     return {
-      linhas: pagina.map((i) => linhaDaLista(i, porId.get(i.fato.id), cadastro)),
+      linhas: await comDetalhes(romaneio, paginaDaLista(itens, e), cadastro),
       total: totais.ctes,
       totais,
       grupos,
@@ -629,9 +639,9 @@ export async function obterLista(
 export async function exportarLista(
   db: Db,
   ctx: ContextoRomaneio,
-  e: Entrada<"exportar">,
+  e: EntradaDaExportacao,
   agora: Date,
-): Promise<Saida<"exportar">> {
+): Promise<ExportacaoDoRomaneio> {
   const hoje = hojeNoFuso(ctx.fuso, agora);
   return db(async ({ romaneio }) => {
     const limites = await limitesDeCarga(romaneio);
@@ -642,20 +652,8 @@ export async function exportarLista(
     const itens = ordenarLista(r?.itens ?? [], "data_emissao", "desc")
       .filter((i) => !desmarcadas.has(i.fato.id))
       .slice(0, LIMITE_EXPORTACAO);
-    const detalhes = await romaneio.detalhes(itens.map((i) => i.fato.id));
-    const porId = new Map(detalhes.map((d) => [d.id, d]));
     const cadastro = r?.regras.cadastro ?? criarCadastro([]);
-    const linhas = itens.map((i): LinhaExportada => {
-      const d = porId.get(i.fato.id);
-      return {
-        ...linhaDaLista(i, d, cadastro),
-        pagador: i.fato.pagadorNome,
-        cep: d?.cep ?? null,
-        placaColeta: d?.placaColeta ?? null,
-        placaEntrega: d?.placaEntrega ?? null,
-      };
-    });
-    return { linhas, limites, hoje };
+    return { linhas: await comDetalhes(romaneio, itens, cadastro), limites, hoje };
   });
 }
 
@@ -663,7 +661,7 @@ export async function exportarLista(
 // Demais abas (filtros da barra, sem documento nem recorte)
 
 /** Distribuição dos não finalizados por código. origem: romaneio_distribuicao_codigos */
-export async function obterDistribuicao(db: Db, e: Entrada<"distribuicao">) {
+export async function obterDistribuicao(db: Db, e: EntradaDaAba) {
   return db(async ({ romaneio }) => {
     const b = await base(romaneio, e.filtros);
     return b ? distribuicaoDosNaoFinalizados(b.itens, b.regras.cadastro) : [];
@@ -671,12 +669,12 @@ export async function obterDistribuicao(db: Db, e: Entrada<"distribuicao">) {
 }
 
 /** origem: romaneio_kpis */
-export async function obterKpis(db: Db, e: Entrada<"kpis">) {
+export async function obterKpis(db: Db, e: EntradaDaAba) {
   return db(async ({ romaneio }) => kpisDoRomaneio((await base(romaneio, e.filtros))?.itens ?? []));
 }
 
 /** origem: romaneio_notas_por_carro */
-export async function obterCtesPorCarro(db: Db, e: Entrada<"ctesPorCarro">) {
+export async function obterCtesPorCarro(db: Db, e: EntradaDaAba) {
   return db(async ({ romaneio }) => {
     const b = await base(romaneio, e.filtros);
     return b ? ctesPorCarro(await comViagens(romaneio, b)) : [];
@@ -684,7 +682,7 @@ export async function obterCtesPorCarro(db: Db, e: Entrada<"ctesPorCarro">) {
 }
 
 /** origem: romaneio_por_viagem */
-export async function obterPorViagem(db: Db, e: Entrada<"porViagem">) {
+export async function obterPorViagem(db: Db, e: z.output<typeof comBusca>) {
   return db(async ({ romaneio }) => {
     const b = await base(romaneio, e.filtros);
     if (!b) return [];
@@ -694,11 +692,7 @@ export async function obterPorViagem(db: Db, e: Entrada<"porViagem">) {
 }
 
 /** origem: romaneio_performance_motorista */
-export async function obterPerformanceMotoristas(
-  db: Db,
-  ctx: ContextoRomaneio,
-  e: Entrada<"performanceMotoristas">,
-) {
+export async function obterPerformanceMotoristas(db: Db, ctx: ContextoRomaneio, e: EntradaDaAba) {
   return db(async ({ romaneio }) => {
     const b = await base(romaneio, e.filtros);
     if (!b) return [];
@@ -714,11 +708,7 @@ export async function obterPerformanceMotoristas(
 }
 
 /** origem: romaneio_performance_ajudante */
-export async function obterPerformanceAjudantes(
-  db: Db,
-  ctx: ContextoRomaneio,
-  e: Entrada<"performanceAjudantes">,
-) {
+export async function obterPerformanceAjudantes(db: Db, ctx: ContextoRomaneio, e: EntradaDaAba) {
   return db(async ({ romaneio }) => {
     const b = await base(romaneio, e.filtros);
     if (!b) return [];
@@ -733,7 +723,7 @@ export async function obterPerformanceAjudantes(
 }
 
 /** origem: romaneio_performance_carro */
-export async function obterPerformanceCarros(db: Db, e: Entrada<"performanceCarros">) {
+export async function obterPerformanceCarros(db: Db, e: EntradaDaAba) {
   return db(async ({ romaneio }) => {
     const b = await base(romaneio, e.filtros);
     if (!b) return [];
@@ -745,7 +735,7 @@ export async function obterPerformanceCarros(db: Db, e: Entrada<"performanceCarr
   });
 }
 
-const PREJUIZO_VAZIO: Saida<"prejuizo"> = {
+const PREJUIZO_VAZIO: Prejuizo = {
   porDia: [],
   porHora: [],
   cidades: [],
@@ -754,7 +744,7 @@ const PREJUIZO_VAZIO: Saida<"prejuizo"> = {
 };
 
 /** origem: get_romaneio_prejuizo (janela do período — Q14) */
-export async function obterPrejuizo(db: Db, e: Entrada<"prejuizo">): Promise<Saida<"prejuizo">> {
+export async function obterPrejuizo(db: Db, e: EntradaDaAba): Promise<Prejuizo> {
   return db(async ({ romaneio }) => {
     const b = await base(romaneio, e.filtros);
     return b ? prejuizo(await comViagens(romaneio, b), contextoPorViagem(b)) : PREJUIZO_VAZIO;
@@ -765,7 +755,7 @@ export async function obterPrejuizo(db: Db, e: Entrada<"prejuizo">): Promise<Sai
  * Motivos de não entrega. Filtro de ajudante pelo último romaneio do CT-e.
  * origem: romaneio_motivos_nao_entrega
  */
-export async function obterMotivos(db: Db, e: Entrada<"motivos">) {
+export async function obterMotivos(db: Db, e: EntradaDosMotivos) {
   return db(async ({ romaneio }) => {
     const ajudantes = naoVazio(e.filtros.ajudantes?.map((a) => a.trim().toUpperCase()));
     const b = await base(romaneio, e.filtros, { ajudantes });
@@ -784,7 +774,17 @@ export async function obterMotivos(db: Db, e: Entrada<"motivos">) {
  * pagadores e tipos do período, filiais próprias, "Local. atual" e códigos.
  * origem: romaneio_opcoes_placa_motorista, listar_pagadores_ctrcs, tipos_documento_no_periodo
  */
-export async function obterOpcoes(db: Db, e: Entrada<"opcoes">): Promise<Saida<"opcoes">> {
+export interface OpcoesDoRomaneio {
+  placas: string[];
+  motoristas: string[];
+  pagadores: { cnpj: string; nome: string }[];
+  tipos: string[];
+  filiais: { sigla: string; nome: string }[];
+  locaisAtuais: string[];
+  codigos: CodigoCadastrado[];
+}
+
+export async function obterOpcoes(db: Db, e: EntradaDasOpcoes): Promise<OpcoesDoRomaneio> {
   return db(async ({ romaneio }) => {
     const periodo = { inicio: e.inicio, fim: e.fim };
     const [filiais, codigos, config] = await Promise.all([
@@ -812,9 +812,7 @@ export async function obterOpcoes(db: Db, e: Entrada<"opcoes">): Promise<Saida<"
       ...pagadoresETipos,
       filiais,
       locaisAtuais: locais && locais.length > 0 ? locais : [...LOCAIS_ATUAIS.padrao],
-      codigos: codigos
-        .map((c) => ({ codigo: c.codigo, descricao: c.descricao }))
-        .sort((a, b) => a.codigo - b.codigo),
+      codigos,
     };
   });
 }
@@ -824,12 +822,9 @@ export async function obterLinhaDoTempo(
   db: Db,
   sigla: string,
   numero: string,
-): Promise<Saida<"linhaDoTempo">> {
+): Promise<EventoDaLinhaDoTempo[]> {
   return db(async ({ romaneio }) => {
     const { ocorrencias, linhas930 } = await romaneio.linhaDoTempo(sigla, numero);
-    return linhaDoTempo(ocorrencias, linhas930).map((ev) => ({
-      ...ev,
-      dataHora: ev.dataHora.toISOString(),
-    }));
+    return linhaDoTempo(ocorrencias, linhas930);
   });
 }

@@ -12,6 +12,7 @@ import {
   ligarPrazo,
   listarPrazos,
 } from "../models/prazos/prazos.service";
+import { apresentarPrazos } from "../views/prazos.view";
 
 /** Prazos configurados ficam em Admin › Configurações: admin com a tela, sem módulo. */
 const ler = exigirPermissao("admin_configuracoes", "ver");
@@ -28,7 +29,7 @@ export const controladorPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> =
     { schema: { response: { 200: c.listarPrazos.saida } }, onRequest: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return listarPrazos(request.db, empresa.id);
+      return apresentarPrazos(await listarPrazos(request.db, empresa.id));
     },
   );
 

@@ -4,11 +4,9 @@ import {
   garantirQuePodeAlterarAnotacao,
   nacionaisFixosDoAno,
 } from "@erp/dominio/historico";
-import { type SaidaDe } from "@erp/shared/contrato";
-import { type Feriado, type TipoFeriado } from "@erp/shared/contratos/calendario";
+import { type TipoFeriado } from "@erp/shared/contratos/calendario";
 import {
   type Anotacao,
-  type contratosHistorico,
   type DadosDaAnotacao,
   LIMITE_DO_HISTORICO,
   type TipoAnotacao,
@@ -66,14 +64,22 @@ export interface ContextoHistorico {
 const PRIMEIRO_DIA = "0001-01-01";
 const ULTIMO_DIA = "9999-12-31";
 
-const semEmpresa = ({ empresaId: _empresaId, ...feriado }: FeriadoGravado): Feriado => feriado;
-
 /** Corta no teto e diz se cortou (Q04 do dono: aviso em vez de corte silencioso). */
 function noTeto<T>(linhas: T[]): { linhas: T[]; truncado: boolean } {
   return {
     linhas: linhas.slice(0, LIMITE_DO_HISTORICO),
     truncado: linhas.length > LIMITE_DO_HISTORICO,
   };
+}
+
+export interface HistoricoDoPeriodo {
+  anotacoes: Anotacao[];
+  feriados: FeriadoGravado[];
+  unidades: { id: string; nome: string }[];
+  autores: { id: string; nome: string }[];
+  totais: { anotacoes: number; feriados: number; diasComContexto: number };
+  /** Passou do teto em anotações ou em feriados. */
+  truncado: boolean;
 }
 
 /**
@@ -85,7 +91,7 @@ export async function obterHistorico(
   db: Executor<"historico">,
   ctx: ContextoHistorico,
   filtro: { inicio: string; fim: string; unidades: string[] },
-): Promise<SaidaDe<typeof contratosHistorico.obter>> {
+): Promise<HistoricoDoPeriodo> {
   return db(async ({ historico }) => {
     const anotacoes = noTeto(
       await historico.anotacoes(ctx.empresaId, filtro, LIMITE_DO_HISTORICO + 1),
@@ -99,7 +105,7 @@ export async function obterHistorico(
     );
     return {
       anotacoes: anotacoes.linhas,
-      feriados: feriados.linhas.map(semEmpresa),
+      feriados: feriados.linhas,
       unidades: await historico.unidadesAtivas(ctx.empresaId),
       autores: await historico.autores(ctx.empresaId),
       totais: {
@@ -217,9 +223,9 @@ export async function listarFeriados(
     tipo?: "nacional" | "municipal" | undefined;
     uf?: string | undefined;
   },
-): Promise<SaidaDe<typeof contratosHistorico.listarFeriados>> {
+): Promise<{ feriados: FeriadoGravado[]; truncado: boolean }> {
   return db(async ({ historico }) => {
-    const { linhas, truncado } = noTeto(
+    const { linhas: feriados, truncado } = noTeto(
       await historico.feriados(
         ctx.empresaId,
         {
@@ -231,10 +237,7 @@ export async function listarFeriados(
         LIMITE_DO_HISTORICO + 1,
       ),
     );
-    return {
-      feriados: linhas.map((f) => ({ ...semEmpresa(f), global: f.empresaId === null })),
-      truncado,
-    };
+    return { feriados, truncado };
   });
 }
 

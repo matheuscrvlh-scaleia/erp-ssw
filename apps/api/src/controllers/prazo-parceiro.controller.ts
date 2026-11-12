@@ -9,6 +9,12 @@ import {
   obterOpcoes,
   obterVisaoGeral,
 } from "../models/prazo-parceiro/prazo-parceiro.service";
+import {
+  apresentarDetalhe,
+  apresentarExportacao,
+  apresentarLista,
+  apresentarOpcoes,
+} from "../views/prazo-parceiro.view";
 
 /** Só leitura: quem tem a tela, com o módulo liberado. */
 const ler = [exigirModulo("prazo_parceiro"), exigirPermissao("prazo_parceiro", "ver")];
@@ -28,17 +34,17 @@ export const controladorPrazoParceiro: FastifyPluginCallbackZod = (app, _opcoes,
       schema: { querystring: c.opcoes.entrada, response: { 200: c.opcoes.saida } },
       preHandler: ler,
     },
-    (request) => obterOpcoes(request.db, request.query),
+    async (request) => apresentarOpcoes(await obterOpcoes(request.db, request.query)),
   );
   app.post(
     c.lista.caminho,
     { schema: { body: c.lista.entrada, response: { 200: c.lista.saida } }, preHandler: ler },
-    (request) => obterLista(request.db, request.body),
+    async (request) => apresentarLista(await obterLista(request.db, request.body)),
   );
   app.post(
     c.exportar.caminho,
     { schema: { body: c.exportar.entrada, response: { 200: c.exportar.saida } }, preHandler: ler },
-    (request) => exportarLista(request.db, request.body),
+    async (request) => apresentarExportacao(await exportarLista(request.db, request.body)),
   );
   app.post(
     c.detalhe.caminho,
@@ -50,7 +56,8 @@ export const controladorPrazoParceiro: FastifyPluginCallbackZod = (app, _opcoes,
       },
       preHandler: ler,
     },
-    (request) => obterDetalhe(request.db, request.params.id, request.body),
+    async (request) =>
+      apresentarDetalhe(await obterDetalhe(request.db, request.params.id, request.body)),
   );
   pronto();
 };
