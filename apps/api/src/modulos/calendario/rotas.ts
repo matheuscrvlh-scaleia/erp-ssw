@@ -1,10 +1,9 @@
-import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 import { contratosCalendario as c } from "@erp/shared/contratos/calendario";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirAdminPlataforma, exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { exigirAdminPlataforma, exigirModulo, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import {
   alterarFeriado,
@@ -16,11 +15,13 @@ import {
 } from "./casos-de-uso";
 
 /**
- * Ler: quem tem a tela; escrever: admin da empresa (ou Plataforma). Sempre com o módulo.
+ * Ler, criar/alterar e excluir pela permissão da tela Calendário. Sempre com o módulo.
  * Gerar nacionais grava para todas as empresas: só a Plataforma (Q28 do dono).
  */
-const ler = [exigirModulo("historico"), exigirTela("calendario")];
-const escrever = [...ler, exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN)];
+const modulo = exigirModulo("historico");
+const ler = [modulo, exigirPermissao("calendario", "ver")];
+const editar = [modulo, exigirPermissao("calendario", "editar")];
+const excluir = [modulo, exigirPermissao("calendario", "excluir")];
 const gerarParaTodas = [...ler, exigirAdminPlataforma];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoCalendario> {
@@ -47,7 +48,7 @@ export const rotasCalendario: FastifyPluginCallbackZod<{ agora: () => Date }> = 
     c.criarFeriado.caminho,
     {
       schema: { body: c.criarFeriado.entrada, response: { 200: c.criarFeriado.saida } },
-      preHandler: escrever,
+      preHandler: editar,
     },
     async (request) =>
       criarFeriado(request.db, await contextoDe(request), await atorDa(request), request.body),
@@ -61,7 +62,7 @@ export const rotasCalendario: FastifyPluginCallbackZod<{ agora: () => Date }> = 
         body: c.alterarFeriado.entrada,
         response: { 200: c.alterarFeriado.saida },
       },
-      preHandler: escrever,
+      preHandler: editar,
     },
     async (request) =>
       alterarFeriado(
@@ -77,7 +78,7 @@ export const rotasCalendario: FastifyPluginCallbackZod<{ agora: () => Date }> = 
     c.excluirFeriado.caminho,
     {
       schema: { params: c.excluirFeriado.parametros, response: { 200: c.excluirFeriado.saida } },
-      preHandler: escrever,
+      preHandler: excluir,
     },
     async (request) => {
       await excluirFeriado(

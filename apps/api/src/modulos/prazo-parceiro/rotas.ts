@@ -1,7 +1,7 @@
 import { contratosPrazoParceiro as c } from "@erp/shared/contratos/prazo-parceiro";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { exigirModulo, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import {
   exportarLista,
   obterDetalhe,
@@ -11,7 +11,7 @@ import {
 } from "./casos-de-uso";
 
 /** Só leitura: quem tem a tela, com o módulo liberado. */
-const ler = [exigirModulo("prazo_parceiro"), exigirTela("prazo_parceiro")];
+const ler = [exigirModulo("prazo_parceiro"), exigirPermissao("prazo_parceiro", "ver")];
 
 export const rotasPrazoParceiro: FastifyPluginCallbackZod = (app, _opcoes, pronto) => {
   app.post(

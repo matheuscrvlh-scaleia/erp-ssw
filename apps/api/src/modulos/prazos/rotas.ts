@@ -2,13 +2,15 @@ import { contratosAdmin as c } from "@erp/shared/contratos/admin";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirAdminDaEmpresa, exigirTela } from "../../http/guardas";
+import { exigirPermissao } from "../../http/guardas";
 import type { FilaDeJobs } from "../../infra/fila";
 import { atorDa } from "../../plugins/sessao";
 import { alterarPrazo, criarPrazo, excluirPrazo, ligarPrazo, listarPrazos } from "./casos-de-uso";
 
 /** Prazos configurados ficam em Admin › Configurações: admin com a tela, sem módulo. */
-const admin = [exigirAdminDaEmpresa, exigirTela("admin_configuracoes")];
+const ler = exigirPermissao("admin_configuracoes", "ver");
+const editar = exigirPermissao("admin_configuracoes", "editar");
+const excluir = exigirPermissao("admin_configuracoes", "excluir");
 
 export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
   app,
@@ -17,7 +19,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
 ) => {
   app.get(
     c.listarPrazos.caminho,
-    { schema: { response: { 200: c.listarPrazos.saida } }, onRequest: admin },
+    { schema: { response: { 200: c.listarPrazos.saida } }, onRequest: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return listarPrazos(request.db, empresa.id);
@@ -28,7 +30,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
     c.criarPrazo.caminho,
     {
       schema: { body: c.criarPrazo.entrada, response: { 200: c.criarPrazo.saida } },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -44,7 +46,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
         body: c.alterarPrazo.entrada,
         response: { 200: c.alterarPrazo.saida },
       },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -67,7 +69,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
         body: c.ligarPrazo.entrada,
         response: { 200: c.ligarPrazo.saida },
       },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
@@ -86,7 +88,7 @@ export const rotasPrazos: FastifyPluginCallbackZod<{ fila: FilaDeJobs }> = (
     c.excluirPrazo.caminho,
     {
       schema: { params: c.excluirPrazo.parametros, response: { 200: c.excluirPrazo.saida } },
-      onRequest: admin,
+      onRequest: excluir,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);

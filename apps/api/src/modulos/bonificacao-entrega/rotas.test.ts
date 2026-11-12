@@ -25,12 +25,15 @@ beforeEach(async () => {
   app = await construirAppDeTeste(cenario);
   empresaId = cenario.banco.criarEmpresa().id;
   cenario.banco.liberarModulo(empresaId, "ponto_bonificacao");
-  for (const papel of ["admin", "gestor"]) {
-    cenario.banco.definirCargo(empresaId, papel, {
-      rotulo: papel,
-      telas: ["admin_bonificacao_entrega"],
-    });
-  }
+  cenario.banco.definirCargo(empresaId, "admin", {
+    rotulo: "admin",
+    telas: ["admin_bonificacao_entrega"],
+  });
+  // Gestor com a tela liberada só para ver (a migração não dá a ele as ações de admin).
+  cenario.banco.definirCargo(empresaId, "gestor", {
+    rotulo: "gestor",
+    permissoes: ["admin_bonificacao_entrega.ver"],
+  });
 });
 afterEach(() => app.close());
 
@@ -43,16 +46,19 @@ async function comoPapel(papel: string) {
 const APURAR = { inicio: "2026-11-01", fim: "2026-11-30", usarPonto: false };
 
 describe("bonificação de entrega", () => {
-  it("401 sem sessão; gestor com a tela recebe 403 (só admin); 422 acima de 45 dias", async () => {
+  it("401 sem sessão; gestor só com Ver apura mas recebe 403 ao registrar falta; 422 acima de 45 dias", async () => {
     const url = "/api/v1/bonificacao-entrega/apuracao";
     expect((await app.inject({ method: "POST", url, payload: APURAR })).statusCode).toBe(401);
-    const gestor = await app.inject({
+    const gestor = await comoPapel("gestor");
+    const apuracao = await app.inject({ method: "POST", url, payload: APURAR, headers: gestor });
+    expect(apuracao.statusCode).toBe(422);
+    const falta = await app.inject({
       method: "POST",
-      url,
-      payload: APURAR,
-      headers: await comoPapel("gestor"),
+      url: "/api/v1/bonificacao-entrega/faltas",
+      payload: { colaboradorNome: "JOAO", dataFalta: "2026-11-03", tipo: "falta_injustificada" },
+      headers: gestor,
     });
-    expect(gestor.statusCode).toBe(403);
+    expect(falta.statusCode).toBe(403);
     const longo = await app.inject({
       method: "POST",
       url,

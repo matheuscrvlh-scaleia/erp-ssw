@@ -10,7 +10,7 @@ import { type FonteDaConfiguracao } from "../../infra/configuracao-da-plataforma
 import { type Correio } from "../../infra/correio";
 import { atorDa } from "../../plugins/sessao";
 import { type ExecutorComContexto } from "../../repositorios";
-import { listarCargos, listarDepartamentos } from "../cadastros/casos-de-uso";
+import { listarCargos } from "../cadastros/casos-de-uso";
 import { convidarParaEmpresa, type DependenciasUsuarios } from "../usuarios/casos-de-uso";
 import {
   adicionarAdmin,
@@ -23,6 +23,7 @@ import {
   listarIntegracoes,
   listarIntegracoesDaPlataforma,
   listarModulos,
+  listarPessoas,
   listarVinculos,
   obterEmpresa,
   removerAdmin,
@@ -236,11 +237,11 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
   );
 
   app.get(
-    c.cadastrosDaEmpresa.caminho,
+    c.cargosDaEmpresa.caminho,
     {
       schema: {
-        params: c.cadastrosDaEmpresa.parametros,
-        response: { 200: c.cadastrosDaEmpresa.saida },
+        params: c.cargosDaEmpresa.parametros,
+        response: { 200: c.cargosDaEmpresa.saida },
       },
       onRequest,
     },
@@ -248,10 +249,7 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
       const { id } = request.params;
       const db = naEmpresa(request)(id);
       await obterEmpresa(db, opcoes.urlDoLogo, id);
-      return {
-        cargos: await listarCargos(db, id),
-        departamentos: await listarDepartamentos(db, id),
-      };
+      return { cargos: await listarCargos(db, id) };
     },
   );
 
@@ -382,6 +380,12 @@ export const rotasPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlataforma> = 
       await testarEmailDaPlataforma(opcoes.correio, request.body.para);
       return ok;
     },
+  );
+
+  app.get(
+    c.listarPessoas.caminho,
+    { schema: { response: { 200: c.listarPessoas.saida } }, onRequest },
+    async (request) => ({ pessoas: await listarPessoas(naEmpresa(request)(null)) }),
   );
 
   app.get(

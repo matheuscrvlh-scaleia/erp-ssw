@@ -2,12 +2,7 @@ import { type FastifyInstance } from "fastify";
 
 import { type Cenario, construirAppDeTeste, criarCenario, entrarComo } from "./cenario";
 
-const TELAS_DE_ADMIN = [
-  "admin_usuarios",
-  "admin_roles",
-  "admin_departamentos",
-  "admin_configuracoes",
-];
+const TELAS_DE_ADMIN = ["admin_usuarios", "admin_roles", "admin_configuracoes"];
 
 /**
  * Duas empresas (A e B) com os cargos padrão: o admin tem as telas de Admin, o operador não. Base

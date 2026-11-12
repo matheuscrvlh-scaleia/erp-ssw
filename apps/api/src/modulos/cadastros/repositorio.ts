@@ -1,99 +1,70 @@
 import { type Transacao } from "@erp/db";
-import {
-  cargos,
-  cargoTelas,
-  departamentos,
-  departamentoTelas,
-  empresaUsuarios,
-} from "@erp/db/schema";
-import { ehTela, type Tela } from "@erp/shared/acesso/telas";
+import { cargoPermissoes, cargos, empresaUsuarios } from "@erp/db/schema";
+import { partesDaPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
 import { and, asc, count, eq } from "drizzle-orm";
 
 import { type RepositorioCadastros } from "./casos-de-uso";
 
-const soTelas = (linhas: { tela: string }[]): Tela[] =>
-  linhas.flatMap((l) => (ehTela(l.tela) ? [l.tela] : []));
-
 export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
-  async function telasDoCargo(empresaId: string, chave: string) {
-    return soTelas(
-      await tx
-        .select({ tela: cargoTelas.telaChave })
-        .from(cargoTelas)
-        .where(and(eq(cargoTelas.empresaId, empresaId), eq(cargoTelas.cargoChave, chave))),
-    );
-  }
-
-  async function telasDoDepartamento(empresaId: string, chave: string) {
-    return soTelas(
-      await tx
-        .select({ tela: departamentoTelas.telaChave })
-        .from(departamentoTelas)
-        .where(
-          and(
-            eq(departamentoTelas.empresaId, empresaId),
-            eq(departamentoTelas.departamentoChave, chave),
-          ),
-        ),
-    );
-  }
-
-  async function usoPorChave(empresaId: string, campo: "papel" | "departamento") {
-    const coluna = campo === "papel" ? empresaUsuarios.papel : empresaUsuarios.departamentoChave;
+  async function permissoesPorCargo(empresaId: string, chave?: string) {
     const linhas = await tx
-      .select({ chave: coluna, total: count() })
+      .select({
+        chave: cargoPermissoes.cargoChave,
+        tela: cargoPermissoes.telaChave,
+        acao: cargoPermissoes.acao,
+      })
+      .from(cargoPermissoes)
+      .where(
+        and(
+          eq(cargoPermissoes.empresaId, empresaId),
+          chave === undefined ? undefined : eq(cargoPermissoes.cargoChave, chave),
+        ),
+      );
+    const porCargo = new Map<string, string[]>();
+    for (const l of linhas) {
+      porCargo.set(l.chave, [...(porCargo.get(l.chave) ?? []), `${l.tela}.${l.acao}`]);
+    }
+    return porCargo;
+  }
+
+  async function usoPorCargo(empresaId: string) {
+    const linhas = await tx
+      .select({ chave: empresaUsuarios.papel, total: count() })
       .from(empresaUsuarios)
       .where(eq(empresaUsuarios.empresaId, empresaId))
-      .groupBy(coluna);
+      .groupBy(empresaUsuarios.papel);
     return new Map(linhas.map((l) => [l.chave, l.total]));
   }
 
-  async function trocarTelasDoCargo(empresaId: string, chave: string, telas: readonly Tela[]) {
-    await tx
-      .delete(cargoTelas)
-      .where(and(eq(cargoTelas.empresaId, empresaId), eq(cargoTelas.cargoChave, chave)));
-    if (telas.length === 0) return;
-    await tx
-      .insert(cargoTelas)
-      .values(telas.map((telaChave) => ({ empresaId, cargoChave: chave, telaChave })));
-  }
-
-  async function trocarTelasDoDepartamento(
+  async function trocarPermissoes(
     empresaId: string,
     chave: string,
-    telas: readonly Tela[],
+    permissoes: readonly Permissao[],
   ) {
     await tx
-      .delete(departamentoTelas)
-      .where(
-        and(
-          eq(departamentoTelas.empresaId, empresaId),
-          eq(departamentoTelas.departamentoChave, chave),
-        ),
-      );
-    if (telas.length === 0) return;
-    await tx
-      .insert(departamentoTelas)
-      .values(telas.map((telaChave) => ({ empresaId, departamentoChave: chave, telaChave })));
+      .delete(cargoPermissoes)
+      .where(and(eq(cargoPermissoes.empresaId, empresaId), eq(cargoPermissoes.cargoChave, chave)));
+    if (permissoes.length === 0) return;
+    await tx.insert(cargoPermissoes).values(
+      permissoes.map((p) => {
+        const { tela, acao } = partesDaPermissao(p);
+        return { empresaId, cargoChave: chave, telaChave: tela, acao };
+      }),
+    );
   }
 
   return {
     cargos: async (empresaId) => {
       const linhas = await tx
-        .select()
+        .select({ chave: cargos.chave, rotulo: cargos.rotulo, protegido: cargos.protegido })
         .from(cargos)
         .where(eq(cargos.empresaId, empresaId))
         .orderBy(asc(cargos.criadoEm), asc(cargos.chave));
-      const telas = await tx
-        .select({ chave: cargoTelas.cargoChave, tela: cargoTelas.telaChave })
-        .from(cargoTelas)
-        .where(eq(cargoTelas.empresaId, empresaId));
-      const uso = await usoPorChave(empresaId, "papel");
+      const permissoes = await permissoesPorCargo(empresaId);
+      const uso = await usoPorCargo(empresaId);
       return linhas.map((c) => ({
-        chave: c.chave,
-        rotulo: c.rotulo,
-        protegido: c.protegido,
-        telas: soTelas(telas.filter((t) => t.chave === c.chave)),
+        ...c,
+        permissoes: permissoes.get(c.chave) ?? [],
         usuarios: uso.get(c.chave) ?? 0,
       }));
     },
@@ -103,12 +74,17 @@ export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
         .select({ chave: cargos.chave, rotulo: cargos.rotulo, protegido: cargos.protegido })
         .from(cargos)
         .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
-      return linha ? { ...linha, telas: await telasDoCargo(empresaId, chave) } : null;
+      if (!linha) return null;
+      return {
+        ...linha,
+        permissoes: (await permissoesPorCargo(empresaId, chave)).get(chave) ?? [],
+        usuarios: (await usoPorCargo(empresaId)).get(chave) ?? 0,
+      };
     },
 
-    criarCargo: async (empresaId, cargo, telas) => {
+    criarCargo: async (empresaId, cargo, permissoes) => {
       await tx.insert(cargos).values({ empresaId, ...cargo });
-      await trocarTelasDoCargo(empresaId, cargo.chave, telas);
+      await trocarPermissoes(empresaId, cargo.chave, permissoes);
     },
 
     alterarCargo: async (empresaId, chave, rotulo) => {
@@ -118,69 +94,10 @@ export function criarRepositorioCadastros(tx: Transacao): RepositorioCadastros {
         .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
     },
 
-    trocarTelasDoCargo,
+    trocarPermissoes,
 
     excluirCargo: async (empresaId, chave) => {
       await tx.delete(cargos).where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
     },
-
-    departamentos: async (empresaId) => {
-      const linhas = await tx
-        .select()
-        .from(departamentos)
-        .where(eq(departamentos.empresaId, empresaId))
-        .orderBy(asc(departamentos.criadoEm), asc(departamentos.chave));
-      const telas = await tx
-        .select({ chave: departamentoTelas.departamentoChave, tela: departamentoTelas.telaChave })
-        .from(departamentoTelas)
-        .where(eq(departamentoTelas.empresaId, empresaId));
-      const uso = await usoPorChave(empresaId, "departamento");
-      return linhas.map((d) => ({
-        chave: d.chave,
-        rotulo: d.rotulo,
-        descricao: d.descricao,
-        ativo: d.ativo,
-        protegido: d.protegido,
-        telas: soTelas(telas.filter((t) => t.chave === d.chave)),
-        usuarios: uso.get(d.chave) ?? 0,
-      }));
-    },
-
-    departamento: async (empresaId, chave) => {
-      const [linha] = await tx
-        .select({
-          chave: departamentos.chave,
-          rotulo: departamentos.rotulo,
-          descricao: departamentos.descricao,
-          ativo: departamentos.ativo,
-          protegido: departamentos.protegido,
-        })
-        .from(departamentos)
-        .where(and(eq(departamentos.empresaId, empresaId), eq(departamentos.chave, chave)));
-      return linha ? { ...linha, telas: await telasDoDepartamento(empresaId, chave) } : null;
-    },
-
-    criarDepartamento: async (empresaId, departamento, telas) => {
-      await tx.insert(departamentos).values({ empresaId, ...departamento });
-      await trocarTelasDoDepartamento(empresaId, departamento.chave, telas);
-    },
-
-    alterarDepartamento: async (empresaId, chave, dados) => {
-      await tx
-        .update(departamentos)
-        .set({ ...dados, atualizadoEm: new Date() })
-        .where(and(eq(departamentos.empresaId, empresaId), eq(departamentos.chave, chave)));
-    },
-
-    trocarTelasDoDepartamento,
-
-    excluirDepartamento: async (empresaId, chave) => {
-      await tx
-        .delete(departamentos)
-        .where(and(eq(departamentos.empresaId, empresaId), eq(departamentos.chave, chave)));
-    },
-
-    usuariosCom: async (empresaId, campo, chave) =>
-      (await usoPorChave(empresaId, campo)).get(chave) ?? 0,
   };
 }

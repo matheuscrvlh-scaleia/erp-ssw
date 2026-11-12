@@ -16,9 +16,14 @@ beforeEach(async () => {
   empresaId = cenario.banco.criarEmpresa().id;
   cenario.banco.liberarModulo(empresaId, "ranking");
   const telas = ["ranking", "admin_equipes", "admin_bonificacao"];
-  for (const papel of ["admin", "gestor", "operador"]) {
+  for (const papel of ["admin", "gestor"]) {
     cenario.banco.definirCargo(empresaId, papel, { rotulo: papel, telas });
   }
+  // Operador: só Ver (a escrita em Equipes e Regras era do gestor; a migração mantém assim).
+  cenario.banco.definirCargo(empresaId, "operador", {
+    rotulo: "operador",
+    permissoes: ["ranking.ver", "admin_equipes.ver", "admin_bonificacao.ver"],
+  });
   cenario.banco.definirCargo(empresaId, "rh", { rotulo: "RH", telas: ["performance"] });
 });
 afterEach(() => app.close());
@@ -112,7 +117,7 @@ describe("POST /api/v1/ranking/operacional", () => {
 });
 
 describe("equipes e membros", () => {
-  it("operador lê mas não grava (só gestão)", async () => {
+  it("operador só com Ver lê mas não grava", async () => {
     const headers = await comoPapel("operador");
     const lista = await app.inject({ url: "/api/v1/ranking/equipes", headers });
     expect(lista.statusCode).toBe(200);
@@ -301,7 +306,7 @@ describe("link público do ranking", () => {
 });
 
 describe("regras", () => {
-  it("gestor salva regra com critérios na ordem; operador não grava", async () => {
+  it("gestor salva regra com critérios na ordem; operador só com Ver não grava", async () => {
     const payload = {
       nome: "Q4",
       vigenciaInicio: "2026-10-01",

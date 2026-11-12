@@ -1,6 +1,7 @@
 import { type Transacao } from "@erp/db";
 import {
-  cargoTelas,
+  cargoPermissoes,
+  cargos,
   codigosOcorrencia,
   configuracoes,
   empresaIntegracoes,
@@ -11,8 +12,8 @@ import {
   plataformaIntegracoes,
   usuarios,
 } from "@erp/db/schema";
-import { ehTela, type Tela } from "@erp/shared/acesso/telas";
-import { count, eq, sql } from "drizzle-orm";
+import { ehPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 
 import { type EmpresaGravada, type RepositorioPlataforma } from "./casos-de-uso";
 
@@ -134,7 +135,6 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
           nome: usuarios.nome,
           email: usuarios.email,
           papel: empresaUsuarios.papel,
-          departamento: empresaUsuarios.departamentoChave,
           ativo: empresaUsuarios.ativo,
           criadoEm: empresaUsuarios.criadoEm,
           // Contexto de Plataforma: a RLS deixa ver os vínculos de todas as empresas.
@@ -252,20 +252,26 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         })
         .from(configuracoes)
         .where(eq(configuracoes.empresaId, modeloId));
-      const telas = await tx
-        .select({ cargo: cargoTelas.cargoChave, tela: cargoTelas.telaChave })
-        .from(cargoTelas)
-        .where(eq(cargoTelas.empresaId, modeloId));
-      const telasDosCargos = new Map<string, Tela[]>();
-      for (const { cargo, tela } of telas) {
-        if (ehTela(tela)) telasDosCargos.set(cargo, [...(telasDosCargos.get(cargo) ?? []), tela]);
+      const linhas = await tx
+        .select({
+          cargo: cargoPermissoes.cargoChave,
+          tela: cargoPermissoes.telaChave,
+          acao: cargoPermissoes.acao,
+        })
+        .from(cargoPermissoes)
+        .where(eq(cargoPermissoes.empresaId, modeloId));
+      const permissoesDosCargos = new Map<string, Permissao[]>();
+      for (const { cargo, tela, acao } of linhas) {
+        const p = `${tela}.${acao}`;
+        if (!ehPermissao(p)) continue;
+        permissoesDosCargos.set(cargo, [...(permissoesDosCargos.get(cargo) ?? []), p]);
       }
       return {
         codigos: codigos.map(
           ({ empresaId: _e, atualizadoEm: _a, atualizadoPor: _p, ...codigo }) => codigo,
         ),
         configuracoes: configs,
-        telasDosCargos,
+        permissoesDosCargos,
       };
     },
 
@@ -294,6 +300,37 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         })
         .from(plataformaAdmins)
         .innerJoin(usuarios, eq(usuarios.id, plataformaAdmins.usuarioId)),
+
+    contas: () =>
+      tx
+        .select({
+          id: usuarios.id,
+          nome: usuarios.nome,
+          email: usuarios.email,
+          ativo: usuarios.ativo,
+        })
+        .from(usuarios),
+
+    vinculosDeTodas: () =>
+      tx
+        .select({
+          usuarioId: empresaUsuarios.usuarioId,
+          empresaId: empresaUsuarios.empresaId,
+          empresaNome: empresas.nome,
+          papel: empresaUsuarios.papel,
+          cargoRotulo: cargos.rotulo,
+          ativo: empresaUsuarios.ativo,
+        })
+        .from(empresaUsuarios)
+        .innerJoin(empresas, eq(empresas.id, empresaUsuarios.empresaId))
+        .leftJoin(
+          cargos,
+          and(
+            eq(cargos.empresaId, empresaUsuarios.empresaId),
+            eq(cargos.chave, empresaUsuarios.papel),
+          ),
+        )
+        .orderBy(asc(empresas.nome)),
 
     travarAdmins: async () => {
       const linhas = await tx.select().from(plataformaAdmins).for("update");

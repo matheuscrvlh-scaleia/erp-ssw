@@ -14,7 +14,6 @@ import {
   CARGOS_PADRAO,
   escolherEmpresaModelo,
   exigirPodeRemoverAdminPlataforma,
-  setorLegado,
   validarLogo,
   validarParametrosDeIntegracao,
   validarVigencia,
@@ -23,7 +22,7 @@ import { mudancaParaAuditoria, type Registro } from "@erp/dominio/auditoria";
 import { copiaParaEmpresaNova } from "@erp/dominio/configuracoes";
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import { MODULOS } from "@erp/shared/acesso/modulos";
-import { type Tela } from "@erp/shared/acesso/telas";
+import { type Permissao } from "@erp/shared/acesso/permissoes";
 import {
   type AdminDaPlataforma,
   type DadosDaEmpresa,
@@ -33,6 +32,7 @@ import {
   type IntegracaoDaPlataforma,
   type ModuloDaEmpresa,
   PARAMETROS_DA_INTEGRACAO_PLATAFORMA,
+  type PessoaDaPlataforma,
   type ValorDeParametro,
   valorDeParametro,
   type VinculoNaEmpresa,
@@ -117,7 +117,18 @@ export interface CopiaDoModelo {
   /** Linhas de `codigos_ocorrencia` sem empresa e sem autoria. */
   codigos: Omit<typeof codigosOcorrencia.$inferInsert, "empresaId">[];
   configuracoes: { chave: string; valor: string; descricao: string; grupo: string }[];
-  telasDosCargos: Map<string, Tela[]>;
+  /** Permissões gravadas de cada cargo do modelo (`tela.acao`). */
+  permissoesDosCargos: Map<string, Permissao[]>;
+}
+
+/** Vínculo de alguém numa empresa, com o nome do cargo (Plataforma › Usuários e cargos). */
+export interface VinculoDaPessoa {
+  usuarioId: string;
+  empresaId: string;
+  empresaNome: string;
+  papel: string | null;
+  cargoRotulo: string | null;
+  ativo: boolean;
 }
 
 export interface RepositorioPlataforma {
@@ -161,7 +172,10 @@ export interface RepositorioPlataforma {
     atualizadoPor: string,
   ): Promise<void>;
   copiaDoModelo(modeloId: string): Promise<CopiaDoModelo>;
-  copiarParaEmpresa(empresaId: string, copia: Omit<CopiaDoModelo, "telasDosCargos">): Promise<void>;
+  copiarParaEmpresa(
+    empresaId: string,
+    copia: Omit<CopiaDoModelo, "permissoesDosCargos">,
+  ): Promise<void>;
   integracoesDaPlataforma(): Promise<IntegracaoDaPlataformaGravada[]>;
   gravarIntegracaoDaPlataforma(
     tipo: TipoIntegracaoPlataforma,
@@ -175,6 +189,9 @@ export interface RepositorioPlataforma {
     atualizadoPor: string,
   ): Promise<void>;
   admins(): Promise<{ usuarioId: string; nome: string | null; email: string; criadoEm: Date }[]>;
+  /** Todas as contas e os vínculos de todas as empresas (contexto de Plataforma). */
+  contas(): Promise<{ id: string; nome: string | null; email: string; ativo: boolean }[]>;
+  vinculosDeTodas(): Promise<VinculoDaPessoa[]>;
   /** Trava a lista (duas remoções ao mesmo tempo não zeram a equipe) e devolve quantos são. */
   travarAdmins(): Promise<number>;
   adicionarAdmin(usuarioId: string, criadoPor: string): Promise<void>;
@@ -271,7 +288,7 @@ export async function listarEmpresas(
 
 /**
  * Empresa nova em implantação, já com os cargos padrão e a cópia da empresa modelo (a mais
- * antiga): códigos de ocorrência, configurações de negócio e as telas dos cargos padrão. Tudo na
+ * antiga): códigos de ocorrência, configurações de negócio e as permissões dos cargos padrão. Tudo na
  * mesma transação.
  * origem: criarEmpresa + empresa_semear (sistema atual); cargos por empresa: ADR 0005
  */
@@ -294,7 +311,7 @@ export async function criarEmpresa(
   await naEmpresa(id)(async ({ plataforma, cadastros, auditoria }) => {
     await plataforma.criarEmpresa({ id, ...entrada, criadoPor: ator.usuarioId });
     for (const cargo of CARGOS_PADRAO) {
-      await cadastros.criarCargo(id, cargo, copia?.telasDosCargos.get(cargo.chave) ?? []);
+      await cadastros.criarCargo(id, cargo, copia?.permissoesDosCargos.get(cargo.chave) ?? []);
     }
     if (copia) {
       await plataforma.copiarParaEmpresa(id, {
@@ -505,8 +522,7 @@ export async function listarVinculos(
 }
 
 /**
- * Vínculo da pessoa com a empresa (papel, departamento, ativo). Papel e departamento têm de ser
- * da empresa editada (Q29).
+ * Vínculo da pessoa com a empresa (cargo e ativo). O cargo tem de ser da empresa editada (Q29).
  * origem: salvarVinculoUsuario + plataforma_vincular_usuario (sistema atual)
  */
 export async function salvarVinculo(
@@ -514,21 +530,17 @@ export async function salvarVinculo(
   ator: Ator,
   id: string,
   usuarioId: string,
-  dados: { papel: string | null; departamento: string | null; ativo: boolean },
+  dados: { papel: string | null; ativo: boolean },
 ): Promise<void> {
   await db(async ({ plataforma, usuarios, auditoria }) => {
     await empresaExistente(plataforma, id);
     if (!(await usuarios.conta(usuarioId))) throw naoEncontrado("Usuário não encontrado.");
     if (dados.papel && !(await usuarios.existeCargo(id, dados.papel))) {
-      throw new ErroDeNegocio("ENTRADA_INVALIDA", `Papel inexistente: ${dados.papel}`);
-    }
-    if (dados.departamento && !(await usuarios.existeDepartamento(id, dados.departamento))) {
-      throw new ErroDeNegocio("ENTRADA_INVALIDA", "Departamento inexistente");
+      throw new ErroDeNegocio("ENTRADA_INVALIDA", `Cargo inexistente: ${dados.papel}`);
     }
     const antes = await usuarios.vinculo(id, usuarioId);
-    const depois = { ...dados, setor: setorLegado(dados.departamento) };
-    await usuarios.gravarVinculo(id, usuarioId, depois, ator.usuarioId);
-    await registrarVinculo(auditoria, ator, id, usuarioId, antes, depois);
+    await usuarios.gravarVinculo(id, usuarioId, dados, ator.usuarioId);
+    await registrarVinculo(auditoria, ator, id, usuarioId, antes, dados);
   });
 }
 
@@ -750,6 +762,28 @@ export async function listarAdmins(db: Executor<"plataforma">): Promise<AdminDaP
   return admins
     .sort((a, b) => a.email.localeCompare(b.email))
     .map((a) => ({ ...a, criadoEm: a.criadoEm.toISOString() }));
+}
+
+/**
+ * Plataforma › Usuários e cargos: todas as pessoas, com o cargo em cada empresa e se são da
+ * equipe da Plataforma.
+ */
+export async function listarPessoas(db: Executor<"plataforma">): Promise<PessoaDaPlataforma[]> {
+  const { contas, vinculos, admins } = await db(async ({ plataforma }) => ({
+    contas: await plataforma.contas(),
+    vinculos: await plataforma.vinculosDeTodas(),
+    admins: new Set((await plataforma.admins()).map((a) => a.usuarioId)),
+  }));
+  return contas
+    .map((conta) => ({
+      ...conta,
+      adminPlataforma: admins.has(conta.id),
+      empresas: vinculos
+        .filter((v) => v.usuarioId === conta.id)
+        .sort((a, b) => a.empresaNome.localeCompare(b.empresaNome, "pt-BR"))
+        .map(({ usuarioId: _u, ...v }) => v),
+    }))
+    .sort((a, b) => (a.nome ?? a.email).localeCompare(b.nome ?? b.email, "pt-BR"));
 }
 
 /**

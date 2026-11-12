@@ -93,7 +93,7 @@ describe("empresas", () => {
       .map((k) => k.slice(id.length + 1));
     expect(chavesDosCargos).toEqual(["super_admin", "admin", "gestor", "operador", "equipe"]);
     expect(t.banco.cargos.get(`${id}:super_admin`)?.protegido).toBe(true);
-    expect(t.banco.cargos.get(`${id}:admin`)?.telas).toContain("admin_usuarios");
+    expect(t.banco.cargos.get(`${id}:admin`)?.permissoes).toContain("admin_usuarios.ver");
     expect(t.banco.adm.codigos.filter((c) => c.empresaId === id)).toHaveLength(1);
     expect(t.banco.adm.configuracoes.filter((c) => c.empresaId === id).map((c) => c.chave)).toEqual(
       ["sla_meta_pct"],
@@ -344,7 +344,6 @@ describe("integrações da Plataforma (domínio, e-mail, worker-ssw)", () => {
         email: "nova@fr.com.br",
         nome: "Nova",
         papel: "admin",
-        departamento: null,
       },
     });
     expect(r.statusCode).toBe(200);
@@ -367,11 +366,11 @@ describe("integrações da Plataforma (domínio, e-mail, worker-ssw)", () => {
 });
 
 describe("usuários por empresa", () => {
-  it("cadastros vêm da empresa editada, não da ativa de quem opera (Q29)", async () => {
+  it("cargos vêm da empresa editada, não da ativa de quem opera (Q29)", async () => {
     t.banco.definirCargo(t.empresaB.id, "so_da_b", { rotulo: "Só da B", telas: [] });
     const { headers } = await t.comoPlataforma(t.empresaA.id);
     const r = await t.app.inject({
-      url: `/api/v1/plataforma/empresas/${t.empresaB.id}/cadastros`,
+      url: `/api/v1/plataforma/empresas/${t.empresaB.id}/cargos`,
       headers,
     });
     expect(r.json<{ cargos: { chave: string }[] }>().cargos.map((c) => c.chave)).toContain(
@@ -393,7 +392,6 @@ describe("usuários por empresa", () => {
         email: "ja@fr.com.br",
         nome: "Já",
         papel: "admin",
-        departamento: null,
       },
     });
     expect(r.json()).toEqual({ id: pessoa.id, jaExistia: true });
@@ -409,7 +407,7 @@ describe("usuários por empresa", () => {
       method: "PUT",
       url: `/api/v1/plataforma/empresas/${t.empresaB.id}/usuarios/${pessoa.id}`,
       headers,
-      payload: { papel: "so_da_a", departamento: null, ativo: true },
+      payload: { papel: "so_da_a", ativo: true },
     });
     expect(r.statusCode).toBe(422);
     expect(t.banco.vinculos.some((v) => v.usuarioId === pessoa.id)).toBe(false);

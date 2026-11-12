@@ -1,10 +1,9 @@
-import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 import { contratosHistorico as c } from "@erp/shared/contratos/historico";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import {
   alterarFeriado,
@@ -23,13 +22,14 @@ import {
 } from "./casos-de-uso";
 
 /** Histórico: quem tem a tela lê e anota (alterar/excluir é do autor ou do admin). */
-const historico = [exigirModulo("historico"), exigirTela("historico")];
-/** Histórico › Feriados: página só do admin da empresa. */
-const feriados = [
-  exigirModulo("historico"),
-  exigirTela("admin_historico"),
-  exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN),
-];
+const modulo = exigirModulo("historico");
+const historico = [modulo, exigirPermissao("historico", "ver")];
+/** Anotação: escreve quem tem a ação; mexer na de outra pessoa é só do admin (domínio). */
+const anotar = [modulo, exigirPermissao("historico", "editar")];
+const apagarAnotacao = [modulo, exigirPermissao("historico", "excluir")];
+const feriados = [modulo, exigirPermissao("admin_historico", "ver")];
+const editarFeriado = [modulo, exigirPermissao("admin_historico", "editar")];
+const apagarFeriado = [modulo, exigirPermissao("admin_historico", "excluir")];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoHistorico> {
   const { acesso, empresa } = await empresaDaRequisicao(request);
@@ -59,7 +59,7 @@ export const rotasHistorico: FastifyPluginCallbackZod<{ agora: () => Date }> = (
     c.criarAnotacao.caminho,
     {
       schema: { body: c.criarAnotacao.entrada, response: { 200: c.criarAnotacao.saida } },
-      preHandler: historico,
+      preHandler: anotar,
     },
     async (request) =>
       criarAnotacao(request.db, await contextoDe(request), await atorDa(request), request.body),
@@ -73,7 +73,7 @@ export const rotasHistorico: FastifyPluginCallbackZod<{ agora: () => Date }> = (
         body: c.alterarAnotacao.entrada,
         response: { 200: c.alterarAnotacao.saida },
       },
-      preHandler: historico,
+      preHandler: anotar,
     },
     async (request) => {
       await alterarAnotacao(
@@ -92,7 +92,7 @@ export const rotasHistorico: FastifyPluginCallbackZod<{ agora: () => Date }> = (
     c.excluirAnotacao.caminho,
     {
       schema: { params: c.excluirAnotacao.parametros, response: { 200: c.excluirAnotacao.saida } },
-      preHandler: historico,
+      preHandler: apagarAnotacao,
     },
     async (request) => {
       await excluirAnotacao(
@@ -118,7 +118,7 @@ export const rotasHistorico: FastifyPluginCallbackZod<{ agora: () => Date }> = (
     c.criarFeriado.caminho,
     {
       schema: { body: c.criarFeriado.entrada, response: { 200: c.criarFeriado.saida } },
-      preHandler: feriados,
+      preHandler: editarFeriado,
     },
     async (request) => {
       const { inseridos } = await criarFeriado(
@@ -139,7 +139,7 @@ export const rotasHistorico: FastifyPluginCallbackZod<{ agora: () => Date }> = (
         body: c.alterarFeriado.entrada,
         response: { 200: c.alterarFeriado.saida },
       },
-      preHandler: feriados,
+      preHandler: editarFeriado,
     },
     async (request) => {
       await alterarFeriado(
@@ -157,7 +157,7 @@ export const rotasHistorico: FastifyPluginCallbackZod<{ agora: () => Date }> = (
     c.excluirFeriado.caminho,
     {
       schema: { params: c.excluirFeriado.parametros, response: { 200: c.excluirFeriado.saida } },
-      preHandler: feriados,
+      preHandler: apagarFeriado,
     },
     async (request) => {
       await excluirFeriado(
@@ -177,7 +177,7 @@ export const rotasHistorico: FastifyPluginCallbackZod<{ agora: () => Date }> = (
         body: c.importarNacionais.entrada,
         response: { 200: c.importarNacionais.saida },
       },
-      preHandler: feriados,
+      preHandler: editarFeriado,
     },
     async (request) =>
       importarNacionaisFixos(

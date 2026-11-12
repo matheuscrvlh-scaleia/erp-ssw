@@ -5,7 +5,7 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
 import { semPermissao } from "../../http/erros";
-import { exigirEmpresa, exigirModulo, exigirTela, type Guarda } from "../../http/guardas";
+import { exigirEmpresa, exigirModulo, exigirPermissao, type Guarda } from "../../http/guardas";
 import {
   type ContextoPerformance,
   exportarTela,
@@ -33,7 +33,7 @@ function exigirAlgumaTela(...telas: Tela[]): Guarda {
   };
 }
 
-const ler = [exigirModulo("performance"), exigirTela("performance")];
+const ler = [exigirModulo("performance"), exigirPermissao("performance", "ver")];
 const lerSerie = [
   exigirModulo("performance", "ranking"),
   exigirAlgumaTela("performance", "ranking", "ranking_novo"),

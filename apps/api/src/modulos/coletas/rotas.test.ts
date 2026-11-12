@@ -21,7 +21,7 @@ beforeEach(async () => {
   empresaId = cenario.banco.criarEmpresa().id;
   cenario.banco.liberarModulo(empresaId, "coletas");
   cenario.banco.definirCargo(empresaId, "admin", { rotulo: "Admin", telas: ["coletas"] });
-  cenario.banco.definirCargo(empresaId, "operador", { rotulo: "Op", telas: ["coletas"] });
+  cenario.banco.definirCargo(empresaId, "operador", { rotulo: "Op", permissoes: ["coletas.ver"] });
 });
 afterEach(() => app.close());
 
@@ -49,7 +49,7 @@ describe("importação do 050", () => {
     expect(r.statusCode).toBe(401);
   });
 
-  it("403 para quem não é admin", async () => {
+  it("403 para quem só tem Ver em Coletas", async () => {
     expect((await importar(await comoPapel("operador"))).statusCode).toBe(403);
   });
 

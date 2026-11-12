@@ -3,7 +3,7 @@ import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import {
   type ContextoListagem,
   exportarCtrcs,
@@ -12,7 +12,7 @@ import {
 } from "./casos-de-uso";
 
 /** `/performance/lista` é tela da Performance: módulo e tela iguais aos dela. */
-const ler = [exigirModulo("performance"), exigirTela("performance")];
+const ler = [exigirModulo("performance"), exigirPermissao("performance", "ver")];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoListagem> {
   const { empresa } = await empresaDaRequisicao(request);
