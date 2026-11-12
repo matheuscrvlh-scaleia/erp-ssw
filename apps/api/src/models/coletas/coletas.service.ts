@@ -9,13 +9,11 @@ import {
   type RepositorioGravacao050,
 } from "@erp/dominio/coletas/gravacao-050";
 import { tipoDocumentoEfetivo } from "@erp/dominio/nucleo";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type contratosColetas,
   type EtapaDeColeta,
   eventoDeColeta,
   type FiltrosDeColetas,
-  type LinhaDeColeta,
   type StatusDaLista,
   type StatusDePrazo,
 } from "@erp/shared/contratos/coletas";
@@ -100,6 +98,30 @@ export interface PedidoDaLista {
 /** Coleta da lista: com o prazo e o tipo do CT-e como a tela mostra. */
 export type ColetaDaLista = ColetaLida & { statusPrazo: StatusDePrazo; tipoDaTela: string | null };
 
+/** Uma página da lista e o total da lista inteira. */
+export interface ListaDeColetas {
+  linhas: ColetaDaLista[];
+  total: number;
+}
+
+/** Os números do painel e o resumo das coletas do período. */
+export interface PainelDasColetas {
+  indicadores: ReturnType<typeof calcularPainelDeColetas>;
+  resumo: ResumoDasColetas;
+}
+
+export type EventoDaColeta = z.infer<typeof eventoDeColeta>;
+
+/** Detalhe com o histórico já lido (os eventos fora do formato ficam de fora). */
+export type DetalheComHistorico = Omit<DetalheDaColeta, "historico"> & {
+  historico: EventoDaColeta[];
+};
+
+/** Resultado da gravação do 050 e as unidades presentes no arquivo. */
+export type ImportacaoDo050 = Awaited<ReturnType<typeof importarColetas050>> & {
+  unidades: string[];
+};
+
 export interface RepositorioColetas extends RepositorioGravacao050 {
   coletas(empresaId: string, filtros: FiltrosDeColetas, limite: number): Promise<ColetaLida[]>;
   /**
@@ -111,7 +133,7 @@ export interface RepositorioColetas extends RepositorioGravacao050 {
     filtros: FiltrosDeColetas,
     pedido: PedidoDaLista,
     pagina: { limite: number; deslocamento: number },
-  ): Promise<{ linhas: ColetaDaLista[]; total: number }>;
+  ): Promise<ListaDeColetas>;
   resumo(empresaId: string, inicio: string, fim: string): Promise<ResumoDasColetas>;
   detalhe(empresaId: string, unidade: string, numero: number): Promise<DetalheDaColeta | null>;
 }
@@ -122,8 +144,6 @@ export interface ContextoColetas {
 }
 
 type Db = Executor<"coletas">;
-
-const iso = (d: Date | null) => d?.toISOString() ?? null;
 
 function paraATela(c: ColetaLida, agora: Date, fuso: string): ColetaDaTela & ColetaLida {
   return {
@@ -157,50 +177,11 @@ export async function obterPainelDeColetas(
   ctx: ContextoColetas,
   filtros: FiltrosDeColetas,
   agora: Date,
-): Promise<SaidaDe<typeof contratosColetas.painel>> {
-  return db(async ({ coletas }) => {
-    const daTela = await coletasDaTela(coletas, ctx, filtros, agora);
-    const resumo = await coletas.resumo(ctx.empresaId, filtros.inicio, filtros.fim);
-    return {
-      ...calcularPainelDeColetas(daTela),
-      opcoes: { unidades: resumo.unidades, solicitantes: resumo.solicitantes },
-      posicaoEm: iso(resumo.posicaoEm),
-      cobertura: { inicio: resumo.coberturaInicio, fim: resumo.coberturaFim },
-    };
-  });
-}
-
-function paraALinha(c: ColetaDaLista): LinhaDeColeta {
-  return {
-    unidade: c.unidade,
-    numero: c.numero,
-    tipo: c.tipo,
-    etapa: c.etapa,
-    statusPrazo: c.statusPrazo,
-    cadastradaEm: iso(c.cadastradaEm),
-    limiteEm: iso(c.limiteEm),
-    coletadaEm: iso(c.coletadaEm),
-    canceladaEm: iso(c.canceladaEm),
-    solicitante: c.solicitante,
-    remetenteCnpj: c.remetenteCnpj,
-    remetenteNome: c.remetenteNome,
-    remetenteCidade: c.remetenteCidade,
-    destinatarioNome: c.destinatarioNome,
-    destinoCidade: c.destinoCidade,
-    motorista: c.motorista,
-    placa: c.placa,
-    volumes: c.volumes,
-    pesoKg: c.pesoKg,
-    valorMercadoria: c.valorMercadoria,
-    tipoFrete: c.tipoFrete,
-    notasFiscais: c.notasFiscais,
-    cteSigla: c.cteSigla,
-    cteNumero: c.cteNumero,
-    cteTipoDocumento: c.tipoDaTela,
-    cteEmissao: c.cteEmissao,
-    prejudicadaHorario: c.prejudicadaHorario,
-    ultimoEvento: c.ultimoEvento,
-  };
+): Promise<PainelDasColetas> {
+  return db(async ({ coletas }) => ({
+    indicadores: calcularPainelDeColetas(await coletasDaTela(coletas, ctx, filtros, agora)),
+    resumo: await coletas.resumo(ctx.empresaId, filtros.inicio, filtros.fim),
+  }));
 }
 
 type EntradaDaLista = z.output<typeof contratosColetas.exportar.entrada>;
@@ -235,14 +216,13 @@ export async function obterListaDeColetas(
   ctx: ContextoColetas,
   entrada: z.output<typeof contratosColetas.lista.entrada>,
   agora: Date,
-): Promise<SaidaDe<typeof contratosColetas.lista>> {
-  return db(async ({ coletas }) => {
-    const { linhas, total } = await lerLista(coletas, ctx, entrada, agora, {
+): Promise<ListaDeColetas> {
+  return db(({ coletas }) =>
+    lerLista(coletas, ctx, entrada, agora, {
       limite: entrada.tamanho,
       deslocamento: (entrada.pagina - 1) * entrada.tamanho,
-    });
-    return { total, linhas: linhas.map(paraALinha) };
-  });
+    }),
+  );
 }
 
 /** Lista inteira de um card, numa leitura só, na ordem da tela (exportação). */
@@ -251,19 +231,19 @@ export async function exportarListaDeColetas(
   ctx: ContextoColetas,
   entrada: EntradaDaLista,
   agora: Date,
-): Promise<SaidaDe<typeof contratosColetas.exportar>> {
+): Promise<ColetaDaLista[]> {
   return db(async ({ coletas }) => {
     const { linhas } = await lerLista(coletas, ctx, entrada, agora, {
       limite: LIMITE_DE_COLETAS + 1,
       deslocamento: 0,
     });
     if (linhas.length > LIMITE_DE_COLETAS) throw consultaAmplaDemais();
-    return { linhas: linhas.map(paraALinha) };
+    return linhas;
   });
 }
 
 /** Histórico gravado do 050 (lista de eventos); o que não tiver o formato é ignorado. */
-function eventosDoHistorico(historico: unknown) {
+function eventosDoHistorico(historico: unknown): EventoDaColeta[] {
   return (Array.isArray(historico) ? historico : []).flatMap((e: unknown) => {
     const lido = eventoDeColeta.safeParse(e);
     return lido.success ? [lido.data] : [];
@@ -275,21 +255,11 @@ export async function obterDetalheDaColeta(
   ctx: ContextoColetas,
   unidade: string,
   numero: number,
-): Promise<SaidaDe<typeof contratosColetas.detalhe>> {
+): Promise<DetalheComHistorico> {
   return db(async ({ coletas }) => {
     const d = await coletas.detalhe(ctx.empresaId, unidade, numero);
     if (!d) throw naoEncontrado("Coleta não encontrada.");
-    return {
-      observacao: d.observacao,
-      mercadoria: d.mercadoria,
-      setor: d.setor,
-      romaneio: d.romaneio,
-      cadastradaPor: d.cadastradaPor,
-      comandadaEm: iso(d.comandadaEm),
-      limiteInicial: d.limiteInicial,
-      relatorioEmitidoEm: d.relatorioEmitidoEm.toISOString(),
-      historico: eventosDoHistorico(d.historico),
-    };
+    return { ...d, historico: eventosDoHistorico(d.historico) };
   });
 }
 
@@ -302,25 +272,16 @@ export async function importarRelatorio050(
   ctx: ContextoColetas,
   entrada: z.output<typeof contratosColetas.importar050.entrada>,
   agora: Date,
-): Promise<SaidaDe<typeof contratosColetas.importar050>> {
+): Promise<ImportacaoDo050> {
   return db(async ({ coletas }) => {
-    const { relatorio, lidas, gravadas, ignoradas } = await importarColetas050(
+    const importacao = await importarColetas050(
       coletas,
       ctx.empresaId,
       entrada.conteudo,
       entrada.arquivoOrigem,
       agora,
     );
-    return {
-      emitidoEm: relatorio.emitidoEm,
-      periodoCadastro: relatorio.periodoCadastro,
-      periodoColeta: relatorio.periodoColeta,
-      unidades: [...new Set(relatorio.coletas.map((c) => c.unidade))].sort(),
-      lidas,
-      gravadas,
-      ignoradas,
-      resumoSsw: relatorio.resumo,
-      avisos: relatorio.avisos.slice(0, 50),
-    };
+    const unidades = importacao.relatorio.coletas.map((c) => c.unidade);
+    return { ...importacao, unidades: [...new Set(unidades)].sort() };
   });
 }
