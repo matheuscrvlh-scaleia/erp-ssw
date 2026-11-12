@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { resumoDaExecucao } from "../models/logs/logs.service";
 import { cenarioDeAdmin } from "../testes/admin";
+import { resumoDaExecucao } from "../views/logs.view";
 
 let t: Awaited<ReturnType<typeof cenarioDeAdmin>>;
 beforeEach(async () => {

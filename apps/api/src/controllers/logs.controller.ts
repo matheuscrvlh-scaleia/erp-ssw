@@ -9,6 +9,7 @@ import {
   listarIntegracoes,
 } from "../models/logs/logs.service";
 import { type ExecutorComContexto } from "../models/repositorios";
+import { apresentarAlteracoes, apresentarIntegracoes } from "../views/logs.view";
 
 /** Admin › Logs: admin (ou Plataforma) na empresa ativa; só os registros dela (Q31). */
 /** Logs da empresa: dado por regra ao admin da empresa e à Plataforma. */
@@ -30,10 +31,12 @@ export const controladorLogs: FastifyPluginCallbackZod<{ executar: ExecutorComCo
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return listarAlteracoes(
-        request.db,
-        { tipo: "empresa", empresaId: empresa.id },
-        request.query,
+      return apresentarAlteracoes(
+        await listarAlteracoes(
+          request.db,
+          { tipo: "empresa", empresaId: empresa.id },
+          request.query,
+        ),
       );
     },
   );
@@ -49,7 +52,7 @@ export const controladorLogs: FastifyPluginCallbackZod<{ executar: ExecutorComCo
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return listarIntegracoes(request.db, empresa.id, request.query);
+      return apresentarIntegracoes(await listarIntegracoes(request.db, empresa.id, request.query));
     },
   );
 
@@ -70,7 +73,9 @@ export const controladorLogs: FastifyPluginCallbackZod<{ executar: ExecutorComCo
           : empresa === "plataforma"
             ? { tipo: "plataforma" }
             : { tipo: "empresa", empresaId: empresa };
-      return listarAlteracoes(executorDePlataforma(executar, request, null), escopo, filtros);
+      return apresentarAlteracoes(
+        await listarAlteracoes(executorDePlataforma(executar, request, null), escopo, filtros),
+      );
     },
   );
 
@@ -85,10 +90,12 @@ export const controladorLogs: FastifyPluginCallbackZod<{ executar: ExecutorComCo
       onRequest: exigirAdminPlataforma,
     },
     async (request) =>
-      listarIntegracoes(
-        executorDePlataforma(executar, request, request.params.id),
-        request.params.id,
-        request.query,
+      apresentarIntegracoes(
+        await listarIntegracoes(
+          executorDePlataforma(executar, request, request.params.id),
+          request.params.id,
+          request.query,
+        ),
       ),
   );
   pronto();
