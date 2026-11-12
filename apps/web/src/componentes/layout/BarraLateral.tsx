@@ -139,9 +139,15 @@ export function BarraLateral({
         )}
       </SidebarHeader>
       <SidebarContent className="gap-1 px-3 pb-2">
-        <Secao titulo="Menu principal" recolhida={recolhida}>
-          <SidebarMenu className="gap-1">{menu.principal.map(desenharItem)}</SidebarMenu>
-        </Secao>
+        <SecaoRecolhivel
+          titulo="Menu principal"
+          chave="principal"
+          itens={menu.principal}
+          recolhida={recolhida}
+          algumAtivo={menu.principal.some((i) => ativo(i.caminho))}
+          desenharItem={desenharItem}
+          primeira
+        />
         <SecaoRecolhivel
           titulo="Administração"
           chave="admin"
@@ -213,25 +219,6 @@ function BotaoIcone({
   );
 }
 
-function Secao({
-  titulo,
-  recolhida,
-  children,
-}: {
-  titulo: string;
-  recolhida: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="pt-2">
-      {!recolhida && (
-        <div className="px-1 pb-2 text-[12px] font-semibold text-white/90">{titulo}</div>
-      )}
-      {children}
-    </div>
-  );
-}
-
 function lerAberta(chave: string): boolean {
   try {
     return window.localStorage.getItem(chave) !== "0";
@@ -240,7 +227,7 @@ function lerAberta(chave: string): boolean {
   }
 }
 
-/** Seção recolhível do menu (Administração, Plataforma). Lembra aberta/fechada por navegador. */
+/** Seção recolhível do menu (Menu principal, Administração, Plataforma). Lembra aberta/fechada por navegador. */
 function SecaoRecolhivel({
   titulo,
   chave,
@@ -248,6 +235,7 @@ function SecaoRecolhivel({
   recolhida,
   algumAtivo,
   desenharItem,
+  primeira = false,
 }: {
   titulo: string;
   chave: string;
@@ -255,6 +243,8 @@ function SecaoRecolhivel({
   recolhida: boolean;
   algumAtivo: boolean;
   desenharItem: (item: ItemDoMenu) => ReactNode;
+  /** A primeira seção não tem a linha de cima. */
+  primeira?: boolean;
 }) {
   const chaveGuardada = `sidebar:${chave}-open`;
   const [aberta, setAberta] = useState(() => lerAberta(chaveGuardada));
@@ -273,7 +263,7 @@ function SecaoRecolhivel({
 
   if (itens.length === 0) return null;
   return (
-    <div className="mt-2 border-t border-dashed border-sidebar-border pt-3">
+    <div className={primeira ? "pt-2" : "mt-2 border-t border-dashed border-sidebar-border pt-3"}>
       {!recolhida && (
         <button
           type="button"

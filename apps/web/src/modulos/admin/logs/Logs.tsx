@@ -43,34 +43,27 @@ const ABAS_DOS_LOGS: readonly { valor: AbaDosLogs; rotulo: string }[] = [
 ];
 
 /**
- * Logs com as abas Alterações e Integrações (decisão Q31: a aba Integrações segue o papel na
- * empresa ativa). Sem `empresaId`: Admin › Logs (empresa ativa). Com ele: Plataforma › Empresa ›
- * Logs. Com `ativo` falso (a aba da empresa está fechada), nada é consultado.
+ * Admin › Logs da empresa ativa, com as abas Alterações e Integrações (decisão Q31: a aba
+ * Integrações segue o papel na empresa ativa).
  */
-export function useLogsComAbas({
-  empresaId,
-  ativo = true,
-}: {
-  empresaId?: string | undefined;
-  ativo?: boolean | undefined;
-} = {}) {
+export function useLogsComAbas() {
   const [aba, setAba] = useState<AbaDosLogs>("alteracoes");
-  const alteracoes = useAlteracoes(
-    empresaId ? { empresaFixa: empresaId } : "empresa",
-    ativo && aba === "alteracoes",
-  );
-  const integracoes = useIntegracoes(empresaId, ativo && aba === "integracoes");
+  const alteracoes = useAlteracoes("empresa", aba === "alteracoes");
+  const integracoes = useIntegracoes({ ativo: aba === "integracoes" });
   const atual = aba === "alteracoes" ? alteracoes : integracoes;
   return {
-    /** Abas no cabeçalho da página (Admin › Logs). */
     abas: <Abas abas={ABAS_DOS_LOGS} valor={aba} aoMudar={setAba} rotulo="Tipo de log" />,
-    /** A mesma escolha dentro de uma aba da empresa, na barra de filtros. */
-    alternador: (
-      <Alternador opcoes={ABAS_DOS_LOGS} valor={aba} aoMudar={setAba} rotulo="Tipo de log" />
-    ),
     filtros: atual.filtros,
     conteudo: atual.conteudo,
   };
+}
+
+/**
+ * Plataforma › Empresa › Integrações › Logs: as execuções das integrações da empresa, uma
+ * integração por vez no alternador (ou todas). Com `ativo` falso nada é consultado.
+ */
+export function useLogsDasIntegracoes(empresaId: string, ativo: boolean) {
+  return useIntegracoes({ empresaId, ativo, porIntegracao: true });
 }
 
 const ultimosDias = (dias: number, fuso: string) => {
@@ -79,8 +72,7 @@ const ultimosDias = (dias: number, fuso: string) => {
 };
 const ouNada = (v: string) => (v.trim() ? v.trim() : undefined);
 
-type EscopoDasAlteracoes =
-  "empresa" | { empresaFixa: string } | { empresas: readonly { id: string; nome: string }[] };
+type EscopoDasAlteracoes = "empresa" | { empresas: readonly { id: string; nome: string }[] };
 
 function colunasDaAuditoria(comEmpresa: boolean): ColunaTabela<LinhaAuditoria>[] {
   return [
@@ -167,8 +159,9 @@ export function useAlteracoes(escopo: EscopoDasAlteracoes, ativo = true): Partes
     queryKey: ["logs", "alteracoes", escopo, filtros],
     queryFn: () => {
       if (escopo === "empresa") return chamar(a.alteracoesDaEmpresa, { entrada });
-      const empresa = "empresaFixa" in escopo ? escopo.empresaFixa : ouNada(filtros.empresa);
-      return chamar(a.alteracoesDaPlataforma, { entrada: { ...entrada, empresa } });
+      return chamar(a.alteracoesDaPlataforma, {
+        entrada: { ...entrada, empresa: ouNada(filtros.empresa) },
+      });
     },
     enabled: ativo,
   });
@@ -302,7 +295,23 @@ const COLUNAS_DA_INTEGRACAO: ColunaTabela<LinhaIntegracao>[] = [
   { chave: "erro", titulo: "Mensagem", classe: "max-w-[320px] truncate text-muted-foreground" },
 ];
 
-function useIntegracoes(empresaId: string | undefined, ativo: boolean): PartesDosLogs {
+/** "" = todas as integrações. */
+const OPCOES_DAS_INTEGRACOES = [
+  { valor: "", rotulo: "Todas" },
+  ...ORIGENS_INTEGRACAO.map((o) => ({ valor: o, rotulo: ROTULO_DA_ORIGEM[o] })),
+];
+
+function useIntegracoes({
+  empresaId,
+  ativo,
+  porIntegracao = false,
+}: {
+  /** Sem ela: a empresa ativa da sessão. */
+  empresaId?: string;
+  ativo: boolean;
+  /** A integração vai num alternador fora dos filtros, um log por integração. */
+  porIntegracao?: boolean;
+}): PartesDosLogs & { alternador: ReactNode } {
   // Dezenas de execuções por dia: começa nos últimos 7 dias.
   const fuso = useFusoDaEmpresa();
   const inicial = () => ({ ...ultimosDias(7, fuso), origem: "" });
@@ -311,7 +320,10 @@ function useIntegracoes(empresaId: string | undefined, ativo: boolean): PartesDo
     setFiltros((f) => ({ ...f, ...parte }));
   };
   const padrao = inicial();
-  const mexidos = filtros.origem !== "" || filtros.de !== padrao.de || filtros.ate !== padrao.ate;
+  const mexidos =
+    (!porIntegracao && filtros.origem !== "") ||
+    filtros.de !== padrao.de ||
+    filtros.ate !== padrao.ate;
   const origem = ORIGENS_INTEGRACAO.find((o) => o === filtros.origem);
   const entrada = { origem, de: ouNada(filtros.de), ate: ouNada(filtros.ate) };
   const consulta = useQuery({
@@ -331,20 +343,22 @@ function useIntegracoes(empresaId: string | undefined, ativo: boolean): PartesDo
     <FiltrosAvancados
       ativos={mexidos}
       aoLimpar={() => {
-        setFiltros(inicial());
+        setFiltros((f) => ({ ...inicial(), origem: porIntegracao ? f.origem : "" }));
       }}
     >
       <Periodo de={filtros.de} ate={filtros.ate} aoMudar={mudar} />
-      <Escolha
-        filtro
-        rotulo="Integração"
-        vazio="Todas as integrações"
-        opcoes={opcoesDoMapa(ROTULO_DA_ORIGEM)}
-        valor={filtros.origem}
-        aoMudar={(o) => {
-          mudar({ origem: o });
-        }}
-      />
+      {!porIntegracao && (
+        <Escolha
+          filtro
+          rotulo="Integração"
+          vazio="Todas as integrações"
+          opcoes={opcoesDoMapa(ROTULO_DA_ORIGEM)}
+          valor={filtros.origem}
+          aoMudar={(o) => {
+            mudar({ origem: o });
+          }}
+        />
+      )}
     </FiltrosAvancados>
   );
 
@@ -374,7 +388,17 @@ function useIntegracoes(empresaId: string | undefined, ativo: boolean): PartesDo
     </>
   );
 
-  return { filtros: filtrosDaTela, conteudo };
+  const alternador = (
+    <Alternador
+      opcoes={OPCOES_DAS_INTEGRACOES}
+      valor={filtros.origem}
+      aoMudar={(o) => {
+        mudar({ origem: o });
+      }}
+      rotulo="Integração"
+    />
+  );
+  return { filtros: filtrosDaTela, conteudo, alternador };
 }
 
 /** De / Até num controle só, no desenho dos outros filtros da barra. */

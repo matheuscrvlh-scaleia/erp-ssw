@@ -16,15 +16,14 @@ import { HubDeAbas, useAbasDoHub } from "@/componentes/layout/HubDeAbas";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { useAlteracoes, useLogsComAbas } from "@/modulos/admin/logs/Logs";
-import { PaginaAhgora } from "@/modulos/ahgora/PaginaAhgora";
+import { useAlteracoes, useLogsDasIntegracoes } from "@/modulos/admin/logs/Logs";
 import { PaginaImportacaoSsw } from "@/modulos/ingestao/PaginaImportacaoSsw";
 import { PaginaXmlCte } from "@/modulos/ingestao/PaginaXmlCte";
 import { PaginaDiagnostico } from "@/modulos/ingestao-ssw/PaginaDiagnostico";
 import { PaginaIngestao } from "@/modulos/ingestao-ssw/PaginaIngestao";
 
 import { AbaDados } from "./AbaDados";
-import { AbaImplantacao, AbaIntegracoes, AbaModulos, AbaUsuarios } from "./AbasDaEmpresa";
+import { AbaIntegracoes, AbaModulos } from "./AbasDaEmpresa";
 import { consultaEmpresa, consultaEmpresas } from "./api";
 import { TOM_DO_STATUS } from "./PaginaEmpresas";
 
@@ -32,7 +31,6 @@ const CONTEUDO_NA_EMPRESA_ATIVA: Record<string, ComponentType> = {
   ingestao: PaginaIngestao,
   "importacao-ssw": PaginaImportacaoSsw,
   "xml-cte": PaginaXmlCte,
-  ahgora: PaginaAhgora,
   diagnostico: PaginaDiagnostico,
 };
 
@@ -50,10 +48,7 @@ export function PaginaEmpresa({
   const { visiveis, atual } = useAbasDoHub(ABAS_DA_EMPRESA, aba);
   const empresa = consulta.data;
   // Os filtros dos logs ficam na barra de filtros da página, como nas outras telas.
-  const logs = useLogsComAbas({
-    empresaId: id,
-    ativo: atual?.valor === "logs" && Boolean(empresa),
-  });
+  const logs = useLogsDasIntegracoes(id, atual?.valor === "logs" && Boolean(empresa));
 
   const titulo = (
     <span className="inline-flex flex-wrap items-center gap-3">
@@ -128,10 +123,8 @@ export function PaginaEmpresa({
           >
             {a.valor === "dados" && <AbaDados empresa={empresa} />}
             {a.valor === "modulos" && <AbaModulos empresaId={id} />}
-            {a.valor === "usuarios" && <AbaUsuarios empresaId={id} />}
             {a.valor === "integracoes" && <AbaIntegracoes empresaId={id} />}
             {a.valor === "logs" && logs.conteudo}
-            {a.valor === "implantacao" && <AbaImplantacao empresa={empresa} />}
           </Pagina>
         )
       }
@@ -140,7 +133,7 @@ export function PaginaEmpresa({
 }
 
 /**
- * Ingestão, importação, Ahgora e Diagnóstico SSW leem e gravam na empresa ativa da sessão (o token
+ * Ingestão, importação e Diagnóstico SSW leem e gravam na empresa ativa da sessão (o token
  * leva a empresa). Para operar a empresa aberta, a pessoa troca a empresa ativa com um clique; a
  * página recarrega já nela. Nada troca sozinho: a troca vale para a sessão inteira.
  */

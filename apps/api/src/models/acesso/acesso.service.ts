@@ -1,3 +1,4 @@
+import { type ContextoBanco } from "@erp/db";
 import {
   calcularAcesso,
   escolherEmpresaAtiva,
@@ -15,7 +16,7 @@ import { hojeNoFuso } from "@erp/shared/datas";
 
 import { type SessaoDoToken } from "../../infra/tokens";
 import { naoAutenticado, sessaoExpirada } from "../erros";
-import { type ExecutorComContexto } from "../repositorios";
+import { type ExecutorComContexto, type Repositorios } from "../repositorios";
 
 export interface UsuarioDoAcesso {
   id: string;
@@ -69,13 +70,24 @@ export interface DependenciasAcesso {
   urlDoLogo: (caminho: string | null) => string | null;
 }
 
+/**
+ * Cada leitura na sua transação, todas ao mesmo tempo. Numa transação só as consultas vão uma por
+ * vez, e cada uma é uma ida e volta ao banco: no login e no acesso isso somava segundos.
+ */
+function leitorEmParalelo(deps: DependenciasAcesso, contexto: ContextoBanco) {
+  return <T>(ler: (acesso: Repositorios["acesso"]) => Promise<T>) =>
+    deps.executar(contexto, ({ acesso }) => ler(acesso));
+}
+
 /** Identidade da sessão: usuário, se é da Plataforma e os vínculos (lidos sem empresa). */
 export async function lerIdentidade(deps: DependenciasAcesso, usuarioId: string) {
-  return deps.executar({ empresaId: null, usuarioId, plataforma: false }, async ({ acesso }) => ({
-    usuario: await acesso.usuario(usuarioId),
-    adminPlataforma: await acesso.ehAdminPlataforma(usuarioId),
-    vinculos: await acesso.vinculos(usuarioId),
-  }));
+  const ler = leitorEmParalelo(deps, { empresaId: null, usuarioId, plataforma: false });
+  const [usuario, adminPlataforma, vinculos] = await Promise.all([
+    ler((a) => a.usuario(usuarioId)),
+    ler((a) => a.ehAdminPlataforma(usuarioId)),
+    ler((a) => a.vinculos(usuarioId)),
+  ]);
+  return { usuario, adminPlataforma, vinculos };
 }
 
 /**
@@ -122,16 +134,13 @@ export async function carregarAcesso(
   sessao: SessaoDoToken,
 ): Promise<Acesso> {
   const { usuarioId } = sessao;
-  const { familiaAtiva, usuario, adminPlataforma, vinculos } = await deps.executar(
-    { empresaId: null, usuarioId, plataforma: false },
-    async ({ acesso }) => ({
-      // Logout e senha redefinida revogam a família: o access token antigo para de valer já.
-      familiaAtiva: await acesso.familiaAtiva(sessao.familiaId, deps.agora()),
-      usuario: await acesso.usuario(usuarioId),
-      adminPlataforma: await acesso.ehAdminPlataforma(usuarioId),
-      vinculos: await acesso.vinculos(usuarioId),
-    }),
-  );
+  const [familiaAtiva, { usuario, adminPlataforma, vinculos }] = await Promise.all([
+    // Logout e senha redefinida revogam a família: o access token antigo para de valer já.
+    leitorEmParalelo(deps, { empresaId: null, usuarioId, plataforma: false })((a) =>
+      a.familiaAtiva(sessao.familiaId, deps.agora()),
+    ),
+    lerIdentidade(deps, usuarioId),
+  ]);
   if (!familiaAtiva) throw sessaoExpirada();
   if (!usuario) throw naoAutenticado();
 
@@ -140,51 +149,57 @@ export async function carregarAcesso(
     (adminPlataforma || vinculos.some((v) => v.empresaId === sessao.empresaId && vinculoVale(v)));
   const empresaId = pedidaVale ? sessao.empresaId : null;
 
-  return deps.executar(
-    { empresaId, usuarioId, plataforma: adminPlataforma },
-    async ({ acesso }) => {
-      const empresa = empresaId ? await acesso.empresa(empresaId) : null;
-      const vinculo = vinculos.find((v) => v.empresaId === empresaId) ?? null;
-      const papel = papelNaEmpresa({ vinculo, adminPlataforma, empresaId: empresa?.id ?? null });
-      const cargo = empresa && papel ? await acesso.cargo(empresa.id, papel) : null;
-      const excecoes = empresa ? await acesso.excecoes(empresa.id, usuarioId) : [];
-      const daPlataforma = adminPlataforma ? await acesso.cargoDaPlataforma(usuarioId) : null;
-      const liberacoes = empresa ? await acesso.liberacoes(empresa.id) : [];
-      const vigentes = empresa
-        ? modulosVigentes(MODULOS, liberacoes, hojeNoFuso(empresa.fuso, deps.agora()))
-        : [];
+  const ler = leitorEmParalelo(deps, { empresaId, usuarioId, plataforma: adminPlataforma });
+  const vinculo = vinculos.find((v) => v.empresaId === empresaId) ?? null;
+  // O papel só depende de a empresa existir, então o cargo é lido junto com ela (sem empresa, a
+  // leitura do cargo volta vazia e é descartada).
+  const papelSeExistir = papelNaEmpresa({ vinculo, adminPlataforma, empresaId });
+  const [empresa, cargoLido, excecoesLidas, daPlataforma, liberacoesLidas, todas] =
+    await Promise.all([
+      empresaId ? ler((a) => a.empresa(empresaId)) : null,
+      empresaId && papelSeExistir ? ler((a) => a.cargo(empresaId, papelSeExistir)) : null,
+      empresaId ? ler((a) => a.excecoes(empresaId, usuarioId)) : [],
+      adminPlataforma ? ler((a) => a.cargoDaPlataforma(usuarioId)) : null,
+      empresaId ? ler((a) => a.liberacoes(empresaId)) : [],
+      adminPlataforma ? ler((a) => a.todasAsEmpresas()) : null,
+    ]);
+  const papel = papelNaEmpresa({ vinculo, adminPlataforma, empresaId: empresa?.id ?? null });
+  const cargo = empresa && papel ? cargoLido : null;
+  const excecoes = empresa ? excecoesLidas : [];
+  const liberacoes = empresa ? liberacoesLidas : [];
+  const vigentes = empresa
+    ? modulosVigentes(MODULOS, liberacoes, hojeNoFuso(empresa.fuso, deps.agora()))
+    : [];
 
-      const resultado = calcularAcesso({
-        usuarioAtivo: usuario.ativo,
-        empresaId: empresa?.id ?? null,
-        adminPlataforma,
-        vinculo,
-        permissoesDaPlataforma: daPlataforma
-          ? permissoesDoCargoDaPlataforma(daPlataforma.chave, daPlataforma.permissoes)
-          : [],
-        permissoesDoCargo: cargo?.permissoes ?? [],
-        excecoes,
-        catalogo: MODULOS,
-        modulosVigentes: vigentes,
-      });
+  const resultado = calcularAcesso({
+    usuarioAtivo: usuario.ativo,
+    empresaId: empresa?.id ?? null,
+    adminPlataforma,
+    vinculo,
+    permissoesDaPlataforma: daPlataforma
+      ? permissoesDoCargoDaPlataforma(daPlataforma.chave, daPlataforma.permissoes)
+      : [],
+    permissoesDoCargo: cargo?.permissoes ?? [],
+    excecoes,
+    catalogo: MODULOS,
+    modulosVigentes: vigentes,
+  });
 
-      const empresas = adminPlataforma
-        ? await acesso.todasAsEmpresas()
-        : vinculos.filter(vinculoVale).map((v) => ({ id: v.empresaId, nome: v.empresaNome }));
+  // Da Plataforma: todas as empresas (lidas acima); senão, as dos vínculos que valem.
+  const empresas =
+    todas ?? vinculos.filter(vinculoVale).map((v) => ({ id: v.empresaId, nome: v.empresaNome }));
 
-      return {
-        usuario: { id: usuario.id, email: usuario.email, nome: usuario.nome },
-        ativo: resultado.ativo,
-        papel: resultado.papel,
-        papelRotulo: papel ? (cargo?.rotulo ?? papel) : null,
-        permissoes: resultado.permissoes,
-        telas: resultado.telas,
-        empresa: empresa ? paraEmpresaAtiva(deps, empresa) : null,
-        empresas: [...empresas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
-        modulos: vigentes,
-        telasBloqueadas: resultado.telasBloqueadas,
-        adminPlataforma,
-      };
-    },
-  );
+  return {
+    usuario: { id: usuario.id, email: usuario.email, nome: usuario.nome },
+    ativo: resultado.ativo,
+    papel: resultado.papel,
+    papelRotulo: papel ? (cargo?.rotulo ?? papel) : null,
+    permissoes: resultado.permissoes,
+    telas: resultado.telas,
+    empresa: empresa ? paraEmpresaAtiva(deps, empresa) : null,
+    empresas: [...empresas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    modulos: vigentes,
+    telasBloqueadas: resultado.telasBloqueadas,
+    adminPlataforma,
+  };
 }

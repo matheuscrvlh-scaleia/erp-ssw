@@ -6,7 +6,6 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import type { Armazenamento } from "../infra/armazenamento";
 import { type FonteDaConfiguracao } from "../infra/configuracao-da-plataforma";
 import { type Correio } from "../infra/correio";
-import { listarCargos } from "../models/cadastros/cadastros.service";
 import {
   adicionarAdmin,
   alterarCargoDaPlataforma,
@@ -22,7 +21,6 @@ import {
   listarIntegracoes,
   listarIntegracoesDaPlataforma,
   listarModulos,
-  listarVinculos,
   obterEmpresa,
   removerAdmin,
   removerLogo,
@@ -30,16 +28,10 @@ import {
   salvarIntegracao,
   salvarIntegracaoDaPlataforma,
   salvarModulo,
-  salvarVinculo,
   testarEmailDaPlataforma,
   trocarCargoDoAdmin,
 } from "../models/plataforma/plataforma.service";
 import { type ExecutorComContexto } from "../models/repositorios";
-import {
-  convidarParaEmpresa,
-  type DependenciasUsuarios,
-} from "../models/usuarios/usuarios.service";
-import { apresentarCargos } from "../views/cadastros.view";
 import { confirmacao } from "../views/comum.view";
 import {
   apresentarAdmins,
@@ -51,7 +43,6 @@ import {
   apresentarLogo,
   apresentarModulos,
   apresentarSegredo,
-  apresentarVinculos,
 } from "../views/plataforma.view";
 import { executorDePlataforma } from "./middleware/contexto";
 import { exigirPermissaoDaPlataforma } from "./middleware/guardas";
@@ -59,7 +50,6 @@ import { atorDa } from "./middleware/sessao";
 
 interface OpcoesRotasPlataforma {
   executar: ExecutorComContexto;
-  usuarios: DependenciasUsuarios;
   armazenamento: Armazenamento | null;
   chavesDeSegredo: ChavesDeSegredo | null;
   urlDoLogo: (caminho: string | null) => string | null;
@@ -201,82 +191,6 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
       const { id, modulo } = request.params;
       await salvarModulo(naEmpresa(request)(id), await atorDa(request), id, modulo, request.body);
       return confirmacao();
-    },
-  );
-
-  app.get(
-    c.listarUsuarios.caminho,
-    {
-      schema: { params: c.listarUsuarios.parametros, response: { 200: c.listarUsuarios.saida } },
-      onRequest: pode("plataforma_empresas", "ver"),
-    },
-    async (request) =>
-      apresentarVinculos(
-        await listarVinculos(naEmpresa(request)(request.params.id), request.params.id),
-      ),
-  );
-
-  app.post(
-    c.convidarUsuario.caminho,
-    {
-      schema: {
-        params: c.convidarUsuario.parametros,
-        body: c.convidarUsuario.entrada,
-        response: { 200: c.convidarUsuario.saida },
-      },
-      onRequest: pode("plataforma_empresas", "editar"),
-    },
-    async (request) => {
-      const { id } = request.params;
-      const db = naEmpresa(request)(id);
-      const empresa = await obterEmpresa(db, id);
-      return convidarParaEmpresa(
-        opcoes.usuarios,
-        db,
-        { empresaId: id, empresaNome: empresa.nome, papel: null, plataforma: true },
-        await atorDa(request),
-        request.body,
-      );
-    },
-  );
-
-  app.put(
-    c.salvarVinculo.caminho,
-    {
-      schema: {
-        params: c.salvarVinculo.parametros,
-        body: c.salvarVinculo.entrada,
-        response: { 200: c.salvarVinculo.saida },
-      },
-      onRequest: pode("plataforma_empresas", "editar"),
-    },
-    async (request) => {
-      const { id, usuarioId } = request.params;
-      await salvarVinculo(
-        naEmpresa(request)(id),
-        await atorDa(request),
-        id,
-        usuarioId,
-        request.body,
-      );
-      return confirmacao();
-    },
-  );
-
-  app.get(
-    c.cargosDaEmpresa.caminho,
-    {
-      schema: {
-        params: c.cargosDaEmpresa.parametros,
-        response: { 200: c.cargosDaEmpresa.saida },
-      },
-      onRequest: pode("plataforma_empresas", "ver"),
-    },
-    async (request) => {
-      const { id } = request.params;
-      const db = naEmpresa(request)(id);
-      await obterEmpresa(db, id);
-      return apresentarCargos(await listarCargos(db, id));
     },
   );
 

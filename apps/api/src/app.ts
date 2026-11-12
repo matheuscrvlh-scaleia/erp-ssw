@@ -263,7 +263,6 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   await app.register(controladorLogs, { executar: deps.executar });
   await app.register(controladorPlataforma, {
     executar: deps.executar,
-    usuarios,
     armazenamento: deps.armazenamento,
     chavesDeSegredo: deps.chavesDeSegredo,
     urlDoLogo: acesso.urlDoLogo,

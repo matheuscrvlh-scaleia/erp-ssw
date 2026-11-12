@@ -269,37 +269,11 @@ export async function criarUsuario(
   return { id: await criarConta(deps, db, ctx, ator, entrada) };
 }
 
-/**
- * Plataforma › Empresa › Usuários: e-mail que já tem conta só ganha (ou reativa) o vínculo.
- * origem: convidarUsuarioEmpresa (plataforma.functions.ts, sistema atual)
- */
-export async function convidarParaEmpresa(
-  deps: DependenciasUsuarios,
-  db: Db,
-  ctx: ContextoUsuarios,
-  ator: Ator,
-  entrada: NovoUsuario,
-): Promise<{ id: string; jaExistia: boolean }> {
-  const existente = await db(({ usuarios }) => usuarios.contaPorEmail(entrada.email));
-  if (!existente) {
-    return { id: await criarConta(deps, db, ctx, ator, entrada), jaExistia: false };
-  }
-  await db(async ({ usuarios, auditoria }) => {
-    await exigirCargo(usuarios, ctx.empresaId, entrada.papel);
-    const antes = await usuarios.vinculo(ctx.empresaId, existente.id);
-    const depois: VinculoGravado = { papel: entrada.papel, ativo: true };
-    await usuarios.gravarVinculo(ctx.empresaId, existente.id, depois, ator.usuarioId);
-    await usuarios.definirPreferidaSeVazia(existente.id, ctx.empresaId);
-    await registrarVinculo(auditoria, ator, ctx.empresaId, existente.id, antes, depois);
-  });
-  return { id: existente.id, jaExistia: true };
-}
-
 function registroDoVinculo(v: VinculoGravado): Registro {
   return { papel: v.papel, ativo: v.ativo };
 }
 
-export async function registrarVinculo(
+async function registrarVinculo(
   auditoria: RepositorioAuditoria,
   ator: Ator,
   empresaId: string,

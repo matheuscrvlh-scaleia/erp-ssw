@@ -14,6 +14,7 @@ import { useMarcaDaEmpresa } from "@/acesso/marca";
 import { consultaAcesso, sair } from "@/acesso/sessao";
 import { BarraLateral } from "@/componentes/layout/BarraLateral";
 import { BuscaRapida, useAtalhoDaBusca } from "@/componentes/layout/BuscaRapida";
+import { EsqueletoDaTela } from "@/componentes/layout/EsqueletoDaTela";
 import { ModuloDesligado } from "@/componentes/layout/ModuloDesligado";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/componentes/ui/sidebar";
 import { ehSessaoVencida } from "@/lib/api";
@@ -35,17 +36,13 @@ export const Route = createFileRoute("/_autenticado")({
     const decisao = decidirAcesso(acesso, location.pathname);
     if (decisao.tipo === "redirecionar") throw redirect({ href: decisao.para });
   },
-  pendingComponent: Carregando,
+  // Logo depois do login o acesso ainda está carregando: o esqueleto entra na hora, no lugar do
+  // botão "Aguarde..." parado no login.
+  pendingComponent: EsqueletoDaTela,
+  pendingMs: 0,
+  pendingMinMs: 200,
   component: LayoutAutenticado,
 });
-
-function Carregando() {
-  return (
-    <div className="flex min-h-screen items-center justify-center text-[13px] text-muted-foreground">
-      Carregando…
-    </div>
-  );
-}
 
 const LARGURAS: CSSProperties & Record<`--${string}`, string> = {
   "--sidebar-width": "17rem",

@@ -70,7 +70,8 @@ export function Pagina({ largura = "normal", className, children, ...props }: Pa
   const faixa = hub && juntar(hub.subAbas, props.abas);
   return (
     <>
-      <header className="border-b border-border bg-card">
+      {/* Sem faixa branca: o cabeçalho é do fundo da página; só as abas têm a linha embaixo. */}
+      <header className={cn(abas && "border-b border-border")}>
         <div
           className={cn(
             "mx-auto flex w-full flex-wrap items-start gap-x-6 gap-y-3 px-4 pt-5 md:px-8 md:pt-6",
@@ -99,7 +100,7 @@ export function Pagina({ largura = "normal", className, children, ...props }: Pa
         </div>
       </header>
       {faixa && (
-        <div className="border-b border-border bg-card">
+        <div className="border-b border-border">
           <div
             className={cn(
               "mx-auto flex w-full flex-wrap items-end gap-3 px-4 py-3 md:px-8",
