@@ -17,7 +17,7 @@ const COR_DA_MEDALHA: Record<number, string> = {
  * O cabeçalho (nome da equipe e período) é de quem usa: a página logada e o link público.
  * origem: EquipeMobileView.tsx (sistema atual)
  */
-export function EquipeMobileView({
+export function ResumoDaEquipe({
   calculo,
   posicao,
   totalEquipes,

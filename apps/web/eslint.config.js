@@ -30,14 +30,13 @@ const CHAMAM_FORA_DO_API = [
   "src/modulos/ingestao/**", // atalho: sai na migração do módulo ingestao
   "src/modulos/ingestao-ssw/**", // atalho: sai na migração do módulo ingestao-ssw
   "src/modulos/plataforma/**", // atalho: sai na migração do módulo plataforma
-  "src/modulos/ranking/**", // atalho: sai na migração do módulo ranking
 ];
 
 /** Arquivo interno de outro módulo que ainda é importado (o público é só o `api.ts`). */
 const INTERNOS_AINDA_IMPORTADOS = [
   "filtros/componentes", // atalho: sai na migração do módulo filtros
   "filtros/regras", // atalho: sai na migração do módulo filtros
-  "listagem/busca", // atalho: sai na migração do módulo ranking
+  "listagem/busca", // atalho: link para a tela da lista; decisão pendente do dono (busca.ts público?)
   "admin/use-alteracoes", // atalho: sai na migração do módulo plataforma
   "admin/use-integracoes", // atalho: sai na migração do módulo plataforma
   "admin/use-aba-cargos", // atalho: sai na migração do módulo plataforma

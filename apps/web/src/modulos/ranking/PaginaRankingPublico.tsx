@@ -10,7 +10,7 @@ import { Skeleton } from "@/componentes/ui/skeleton";
 import { mesDe, periodoDoMes } from "@/lib/periodo-do-mes";
 
 import { consultaRankingPublico } from "./api";
-import { EquipeMobileView } from "./EquipeMobileView";
+import { ResumoDaEquipe } from "./componentes/ResumoDaEquipe";
 
 /**
  * Link público do ranking da equipe (sem login). Período = mês corrente no dia de Brasília (Q11;
@@ -74,7 +74,7 @@ export function PaginaRankingPublico({ token }: { token: string }) {
               </h1>
               <p className="mt-1 text-[13px] text-muted-foreground">{periodo.rotulo}</p>
             </div>
-            <EquipeMobileView
+            <ResumoDaEquipe
               calculo={data.calculo}
               posicao={data.posicao}
               totalEquipes={data.totalEquipes}

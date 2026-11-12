@@ -1,5 +1,7 @@
+import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { useState } from "react";
 
+import { type EtiquetaFiltroOpcional, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { type Periodo } from "@/componentes/comum/periodo";
 import { unirParceiros } from "@/modulos/filtros/regras";
 
@@ -79,3 +81,59 @@ export function useFiltrosDoRanking() {
 }
 
 export type FiltrosDoRanking = ReturnType<typeof useFiltrosDoRanking>;
+
+/**
+ * Etiquetas do "Filtrando por"; cada uma limpa o seu filtro. Os nomes dos parceiros vêm prontos
+ * (nos dois seletores, CNPJs de mesmo nome contam como um parceiro, como hoje).
+ */
+export function etiquetasDosFiltros(
+  f: FiltrosDoRanking,
+  nomes: { parceiros: readonly string[]; agrupados: readonly string[]; tipos: string },
+): EtiquetaFiltroOpcional[] {
+  const { parceiros: nomesParceiros, agrupados: nomesAgrupados, tipos: rotuloTipos } = nomes;
+  const { filiais, destino, remetente, tipos } = f;
+  return [
+    nomesParceiros.length > 0 && {
+      rotulo: nomesParceiros.length === 1 ? "Parceiro" : "Parceiros",
+      ...resumirNomes(nomesParceiros),
+      limpar: () => {
+        f.setParceirosCnpj([]);
+      },
+    },
+    nomesAgrupados.length > 0 && {
+      rotulo: nomesAgrupados.length === 1 ? "Parceiro agrupado" : "Parceiros agrupados",
+      ...resumirNomes(nomesAgrupados),
+      limpar: () => {
+        f.setParceirosAgrupados([]);
+      },
+    },
+    remetente.trim() !== "" && {
+      rotulo: "Remetente",
+      ...resumirNomes(lerFiltroTexto(remetente)),
+      limpar: () => {
+        f.setRemetente("");
+      },
+    },
+    destino.trim() !== "" && {
+      rotulo: "Destino",
+      ...resumirNomes(lerFiltroTexto(destino)),
+      limpar: () => {
+        f.setDestino("");
+      },
+    },
+    filiais.length > 0 && {
+      rotulo: "Unidade responsável",
+      valor: filiais.join(", "),
+      limpar: () => {
+        f.setFiliais([]);
+      },
+    },
+    tipos.length > 0 && {
+      rotulo: "Tipo",
+      valor: rotuloTipos,
+      limpar: () => {
+        f.setTipos([]);
+      },
+    },
+  ];
+}

@@ -9,7 +9,7 @@ import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
 
 import { consultaCalculoDaEquipe } from "./api";
-import { EquipeMobileView } from "./EquipeMobileView";
+import { ResumoDaEquipe } from "./componentes/ResumoDaEquipe";
 
 /** origem: routes/_authenticated/ranking.equipe.$id.tsx (sistema atual) */
 export function PaginaEquipeDetalhe({
@@ -46,7 +46,7 @@ export function PaginaEquipeDetalhe({
           <Skeleton className="h-24 w-full rounded-2xl bg-muted" />
         </div>
       ) : (
-        <EquipeMobileView
+        <ResumoDaEquipe
           calculo={data.calculo}
           posicao={null}
           totalEquipes={data.totalEquipes}

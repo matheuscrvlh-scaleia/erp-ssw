@@ -7,6 +7,6 @@ describe("chaves de consulta do ranking", () => {
     const novembro = consultaRankingPublico("t", "2026-11-01", "2026-11-30").queryKey;
     const parcial = consultaRankingPublico("t", "2026-11-01", "2026-11-15").queryKey;
     expect(novembro).not.toEqual(parcial);
-    expect(novembro).toEqual(["ranking-publico", "t", "2026-11-01", "2026-11-30"]);
+    expect(novembro).toEqual(["ranking", "publico", "t", "2026-11-01", "2026-11-30"]);
   });
 });
