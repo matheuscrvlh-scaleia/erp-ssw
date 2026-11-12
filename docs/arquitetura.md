@@ -43,13 +43,13 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 | Arquivos | S3 compatível (`@aws-sdk/client-s3`) | logo da empresa; troca de provedor sem código |
 | Segredos de integração | AES-256-GCM no backend (chave mestra por env, rotação por versão) | sem Vault do banco |
 | Observabilidade | pino (JSON), `/healthz`, `/readyz`, métricas Prometheus | 12-factor, SRE |
-| Testes | vitest (unidade das regras de domínio e casos de uso) | regra no TS precisa de teste no TS |
+| Testes | só no web (vitest); a api não tem testes | decisão do dono |
 
 ## Estrutura
 
 ```
 apps/
-  api/                    projeto próprio: package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
+  api/                    projeto próprio: package.json, bun.lock, tsconfig, eslint, Dockerfile
     src/                  MVC (ADR 0014)
       controllers/        C: HTTP (Fastify), um por recurso
       models/             M: services (operações, transação, auditoria) + repositories (Drizzle)
@@ -82,7 +82,6 @@ models/<recurso>/<recurso>.service.ts     M  operações: permissão de negócio
                                              dominio. Devolve dado do model, não a resposta do endpoint.
 models/<recurso>/<recurso>.repository.ts  M  acesso a dados (Drizzle). Consultas set-based; nenhuma regra escondida.
 views/<recurso>.view.ts                   V  apresentar<Coisa>(dado) → saída do contrato. Pura; sem consulta, sem regra.
-*.test.ts                                    service com repositório falso; controller por app.inject (contrato).
 ```
 
 O passo a passo com exemplo (Calendário) está em `docs/molde.md` §5.
@@ -158,7 +157,7 @@ agrupar e calcular; o banco só executa a consulta. Nada de função armazenada.
 - Funções pequenas, nomes que dizem a intenção, sem efeito colateral escondido; injeção de
   dependência pela composição em `app.ts` (sem container mágico).
 - Toda regra portada de uma função SQL cita a origem num comentário curto
-  (`// origem: calcular_performance (sistema atual)`) e tem teste com os casos-limite da spec.
+  (`// origem: calcular_performance (sistema atual)`).
 - Sem código morto, sem `_v2/_v3`, sem flag para comportamento antigo.
 - Prettier: `printWidth 100`, aspas duplas, ponto e vírgula, `trailingComma all`. LF.
 - Dependência nova: estável, mantida, mais de 24 h publicada (`bunfig.toml`).

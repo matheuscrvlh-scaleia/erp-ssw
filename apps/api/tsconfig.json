@@ -27,7 +27,7 @@
     "allowUnreachableCode": false,
 
     // src/shared e src/dominio são cópias (o web tem as dele, o worker-ssw também) com os imports
-    // da origem: o arquivo fica igual nas cópias e a sincronia é um diff. tsx, esbuild e vitest
+    // da origem: o arquivo fica igual nas cópias e a sincronia é um diff. tsx e esbuild
     // leem estes mesmos caminhos.
     "paths": {
       "@erp/dominio/nucleo": ["./src/dominio/nucleo/index.ts"],
@@ -40,5 +40,5 @@
       "@erp/db/seeds": ["./src/db/seeds/catalogo.ts"]
     }
   },
-  "include": ["src", "vitest.config.ts", "drizzle.config.ts"]
+  "include": ["src", "drizzle.config.ts"]
 }

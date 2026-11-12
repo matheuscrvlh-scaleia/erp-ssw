@@ -1,5 +1,5 @@
 # CI do ERP SSW. Jobs em paralelo:
-#   verificar     tipos, ESLint, Prettier, testes com cobertura e build (um job por app: api, web)
+#   verificar     tipos, ESLint, Prettier, testes com cobertura (só web) e build (um job por app: api, web)
 #   dependencias  vulnerabilidades nos bun.lock da api e do web (osv-scanner)
 #   imagens       build das imagens api e web (sem push) + Trivy (vulnerabilidade e segredo)
 #   infra         docker-compose.yml, Caddyfile do web, Dockerfiles (hadolint) e workflows (actionlint)
@@ -75,11 +75,13 @@ jobs:
       - name: Prettier
         run: bunx prettier --check .
 
+      # A api não tem testes; só o web roda vitest.
       - name: Testes com cobertura
+        if: matrix.app == 'web'
         run: bun run test:cobertura
 
       - name: Relatório de cobertura
-        if: always()
+        if: always() && matrix.app == 'web'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cobertura-${{ matrix.app }}

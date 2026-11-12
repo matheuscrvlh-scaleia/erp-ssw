@@ -6,10 +6,10 @@ lado a lado com este guia.
 
 | Camada | Calendário (exemplo) |
 | --- | --- |
-| Regra pura | `apps/api/src/dominio/calendario.ts` (+ `.test.ts`) |
+| Regra pura | `apps/api/src/dominio/calendario.ts` |
 | Contrato | `apps/api/src/shared/contratos/calendario.ts` |
 | Tabela + RLS | `apps/api/src/db/schema/dominio/feriados.ts` |
-| API | `apps/api/src/{controllers/calendario.controller,models/calendario/calendario.{service,repository},views/calendario.view}.ts` (+ testes) |
+| API | `apps/api/src/{controllers/calendario.controller,models/calendario/calendario.{service,repository},views/calendario.view}.ts` |
 | Tela | `apps/web/src/routes/_autenticado/calendario.tsx` → `apps/web/src/modulos/calendario/` |
 
 ## 1. Ler a regra antes do código
@@ -25,7 +25,6 @@ lado a lado com este guia.
 - Comentário curto com a origem: `// origem: calcular_performance (sistema atual)`.
 - Violação de regra de negócio: `throw new ErroDeNegocio("ENTRADA_INVALIDA", "<mensagem para o
   operador>")` (`apps/api/src/dominio/erros.ts`).
-- Teste com os casos-limite da spec (`<dominio>.test.ts`).
 
 ## 3. Contrato — `apps/api/src/shared/contratos/<dominio>.ts`
 
@@ -46,7 +45,7 @@ lado a lado com este guia.
 - Exporte em `dominio/index.ts`, rode `bun run db:gerar` em `apps/api` (só gera o SQL; não conecta) e confira o
   arquivo novo em `apps/api/drizzle/`. Índice ou parâmetro que o Drizzle não expressa:
   `bunx drizzle-kit generate --custom --name <nome>` e escreva o SQL à mão (só índice/parâmetro).
-- O teste `apps/api/src/db/schema/rls.test.ts` falha se a tabela com `empresa_id` vier sem RLS.
+- Toda tabela com `empresa_id` precisa de RLS (confira na migration gerada).
 
 ## 5. API em MVC — `controllers/`, `models/`, `views/` (ADR 0014)
 
@@ -96,13 +95,6 @@ app.get(
   `exigirAdminDaEmpresa`, `exigirAdminPlataforma`.
 - Registre o plugin (`controlador<Recurso>`) em `apps/api/src/http/app.ts`.
 
-**Testes**
-
-- `models/<recurso>/<recurso>.service.test.ts`: regra com repositório falso.
-- `controllers/<recurso>.controller.test.ts`: contrato por `app.inject` com `construirAppDeTeste`
-  e `BancoEmMemoria` (`apps/api/src/testes/`): 401 sem sessão, 403 sem permissão/módulo, 422
-  entrada inválida, caminho feliz e auditoria. Nada contra banco ou Redis reais.
-
 ## 6. Tela — `apps/web`
 
 - Rota: `src/routes/_autenticado/<caminho>.tsx` só aponta para a página em
@@ -122,14 +114,13 @@ app.get(
 ## Checklist do domínio portado
 
 - [ ] Regras e decisões do dono lidas; diferenças propositais anotadas em ADR.
-- [ ] Cálculos em `apps/api/src/dominio`, com origem citada e testes dos casos-limite.
+- [ ] Cálculos em `apps/api/src/dominio`, com origem citada.
 - [ ] Contratos zod em `apps/api/src/shared/contratos/<dominio>.ts`, copiados para `apps/web/src/shared`.
 - [ ] Tabelas com `empresa_id`, RLS por helper, exportadas; migration gerada e revisada; nada de
       função/gatilho/matview/extensão.
 - [ ] Casos de uso com transação única, auditoria nas escritas, mensagens para o operador.
 - [ ] Repositório registrado em `repositorios.ts`; rotas registradas em `app.ts`.
 - [ ] Toda rota com guarda de tela e módulo (e papel quando grava).
-- [ ] Testes de contrato: 401, 403, 422, caminho feliz.
 - [ ] Tela no caminho de hoje, com o visual de hoje; ações escondidas para quem não pode.
-- [ ] `bunx tsc` em cada pacote, `bunx eslint .`, `bunx prettier --check .`, `bunx vitest run` e
-      `bunx vite build` (web) passando.
+- [ ] `bunx tsc` em cada pacote, `bunx eslint .`, `bunx prettier --check .`, e no web
+      `bunx vitest run` e `bunx vite build` passando.

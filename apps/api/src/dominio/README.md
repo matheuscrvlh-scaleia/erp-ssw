@@ -90,7 +90,7 @@ Webhook: `cidadeDoComplemento(complemento)` dá o nome a buscar em `filiais_apel
 
 Agregações grandes rodam em SQL montado pelo repositório com a **mesma** regra: os parâmetros saem
 daqui (`hojeSp(agora)`, `[...codigosDeBaixa(catalogo)]`, `padroesTextoFiltro(f)`,
-`filiaisProprias(...)`). Os fragmentos equivalentes estão na spec (§2–§5); teste as duas formas
+`filiaisProprias(...)`). Os fragmentos equivalentes estão na spec (§2–§5); confira as duas formas
 com os mesmos casos.
 
 ### 4. Configuração — `lerConfiguracaoDoNucleo` / `validarConfiguracaoDoNucleo`

@@ -42,12 +42,5 @@ export default tseslint.config(
       eqeqeq: ["error", "always", { null: "ignore" }],
     },
   },
-  {
-    files: ["**/*.test.ts"],
-    rules: {
-      "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/unbound-method": "off",
-    },
-  },
   prettier,
 );
