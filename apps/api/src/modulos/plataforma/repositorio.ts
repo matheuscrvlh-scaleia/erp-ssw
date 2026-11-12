@@ -12,7 +12,7 @@ import {
   usuarios,
 } from "@erp/db/schema";
 import { ehTela, type Tela } from "@erp/shared/acesso/telas";
-import { count, eq, sql } from "drizzle-orm";
+import { and, count, eq, isNotNull, max, sql } from "drizzle-orm";
 
 import { type EmpresaGravada, type RepositorioPlataforma } from "./casos-de-uso";
 
@@ -100,6 +100,16 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
           .where(eq(empresaUsuarios.ativo, true))
           .groupBy(empresaUsuarios.empresaId),
       ),
+
+    ultimoLoginPorEmpresa: async () => {
+      const linhas = await tx
+        .select({ empresaId: empresaUsuarios.empresaId, em: max(usuarios.ultimoLoginEm) })
+        .from(empresaUsuarios)
+        .innerJoin(usuarios, eq(usuarios.id, empresaUsuarios.usuarioId))
+        .where(and(eq(empresaUsuarios.ativo, true), isNotNull(usuarios.ultimoLoginEm)))
+        .groupBy(empresaUsuarios.empresaId);
+      return new Map(linhas.flatMap((l) => (l.em ? [[l.empresaId, l.em] as const] : [])));
+    },
 
     integracoesAtivasPorEmpresa: async () =>
       contagem(

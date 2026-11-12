@@ -525,6 +525,15 @@ export function criarRepositoriosDeAdministracao(
         if (v.ativo) m.set(v.empresaId, (m.get(v.empresaId) ?? 0) + 1);
       return Promise.resolve(m);
     },
+    ultimoLoginPorEmpresa: () => {
+      const m = new Map<string, Date>();
+      for (const v of banco.vinculos) {
+        const em = v.ativo ? banco.usuario(v.usuarioId).ultimoLoginEm : null;
+        const atual = m.get(v.empresaId);
+        if (em && (!atual || em > atual)) m.set(v.empresaId, em);
+      }
+      return Promise.resolve(m);
+    },
     integracoesAtivasPorEmpresa: () => {
       const m = new Map<string, number>();
       for (const i of adm.integracoes)

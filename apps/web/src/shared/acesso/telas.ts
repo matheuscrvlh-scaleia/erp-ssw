@@ -30,6 +30,7 @@ export const TELAS = [
   "romaneio_placa",
   "admin_logs",
   "admin_ssw_diagnostico",
+  "plataforma_painel",
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
@@ -44,6 +45,7 @@ export function ehTela(valor: string): valor is Tela {
 
 /** Telas só da equipe da Plataforma: nunca vêm de cargo, departamento ou exceção. */
 export const TELAS_SO_PLATAFORMA: readonly Tela[] = [
+  "plataforma_painel",
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
@@ -77,6 +79,7 @@ export const TELAS_ADMIN: readonly Tela[] = [
   "admin_bonificacao_entrega",
   "admin_logs",
   "admin_ssw_diagnostico",
+  "plataforma_painel",
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
@@ -116,6 +119,7 @@ export const CAMINHO_DA_TELA: Record<Tela, string> = {
   romaneio_placa: "/romaneio",
   admin_logs: "/admin/logs",
   admin_ssw_diagnostico: "/admin/ssw-diagnostico",
+  plataforma_painel: "/plataforma/painel",
   plataforma_empresas: "/plataforma/empresas",
   plataforma_logs: "/plataforma/logs",
   plataforma_admins: "/plataforma/administradores",
@@ -149,6 +153,7 @@ export const ROTULO_DA_TELA: Record<Tela, string> = {
   romaneio_placa: "Romaneio · Ver placa (Performance Motorista/Ajudante)",
   admin_logs: "Admin · Logs",
   admin_ssw_diagnostico: "Plataforma · Diagnóstico SSW",
+  plataforma_painel: "Plataforma · Dashboard",
   plataforma_empresas: "Plataforma · Empresas",
   plataforma_logs: "Plataforma · Logs",
   plataforma_admins: "Plataforma · Administradores",

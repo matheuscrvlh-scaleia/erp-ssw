@@ -141,6 +141,22 @@ function texto(parametros: Record<string, unknown>, chave: string): string {
 
 // --- Faixa de saúde ---------------------------------------------------------------------------
 
+/** Saúde da SSW API pela integração gravada e pelo token do worker-ssw (faixa e Dashboard). */
+export function saudeDaIntegracao(
+  integracao: IntegracaoLida | null,
+  tokenGeradoEm: Date | null,
+  agora: Date,
+): SaidaDe<typeof contratosIngestaoSsw.saude> {
+  const p = integracao?.parametros ?? {};
+  const s = saudeDaIntegracaoSsw({
+    ativa: integracao?.ativo ?? false,
+    configurado: Boolean(texto(p, "usuario") && integracao?.temSegredo),
+    tokenGeradoEm,
+    agora,
+  });
+  return { ...s, tokenAtualizadoEm: iso(s.tokenAtualizadoEm) };
+}
+
 /** origem: getSswHealth (sistema atual) */
 export async function saudeSsw(
   db: Db,
@@ -148,16 +164,8 @@ export async function saudeSsw(
   empresaId: string,
 ): Promise<SaidaDe<typeof contratosIngestaoSsw.saude>> {
   const integracao = await db(({ ingestaoSsw }) => ingestaoSsw.integracao(empresaId, "ssw_api"));
-  const ativa = integracao?.ativo ?? false;
-  const tokenGeradoEm = ativa ? await tokenSswGeradoEm(deps, empresaId) : null;
-  const p = integracao?.parametros ?? {};
-  const s = saudeDaIntegracaoSsw({
-    ativa,
-    configurado: Boolean(texto(p, "usuario") && integracao?.temSegredo),
-    tokenGeradoEm,
-    agora: deps.agora(),
-  });
-  return { ...s, tokenAtualizadoEm: iso(s.tokenAtualizadoEm) };
+  const tokenGeradoEm = integracao?.ativo ? await tokenSswGeradoEm(deps, empresaId) : null;
+  return saudeDaIntegracao(integracao, tokenGeradoEm, deps.agora());
 }
 
 /**

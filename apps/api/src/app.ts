@@ -51,6 +51,7 @@ import { rotasIngestaoSsw } from "./modulos/ingestao-ssw/rotas";
 import { rotasListagem } from "./modulos/listagem/rotas";
 import { rotasLogs } from "./modulos/logs/rotas";
 import { rotasOcorrencias } from "./modulos/ocorrencias/rotas";
+import { rotasPainelPlataforma } from "./modulos/painel-plataforma/rotas";
 import { rotasPerformance } from "./modulos/performance/rotas";
 import { rotasPlataforma } from "./modulos/plataforma/rotas";
 import { rotasPrazoParceiro } from "./modulos/prazo-parceiro/rotas";
@@ -272,6 +273,11 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     agora: deps.agora,
     configuracao,
     correio,
+  });
+  await app.register(rotasPainelPlataforma, {
+    executar: deps.executar,
+    workerSsw,
+    agora: deps.agora,
   });
 
   return app;

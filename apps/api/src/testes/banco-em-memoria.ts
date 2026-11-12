@@ -38,6 +38,7 @@ export interface UsuarioFalso {
   tentativasFalhas: number;
   bloqueadoAte: Date | null;
   empresaPreferidaId: string | null;
+  ultimoLoginEm: Date | null;
 }
 
 export interface VinculoFalso {
@@ -182,6 +183,7 @@ export class BancoEmMemoria {
       tentativasFalhas: 0,
       bloqueadoAte: null,
       empresaPreferidaId: null,
+      ultimoLoginEm: null,
       ...dados,
     };
     this.usuarios.push(usuario);
