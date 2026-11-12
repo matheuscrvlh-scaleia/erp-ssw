@@ -43,6 +43,7 @@ import { Route as AutenticadoPlataformaAdministradoresRouteImport } from './rout
 import { Route as AutenticadoPlataformaConfiguracoesRouteImport } from './routes/_autenticado/plataforma.configuracoes'
 import { Route as AutenticadoPlataformaIntegracoesRouteImport } from './routes/_autenticado/plataforma.integracoes'
 import { Route as AutenticadoPlataformaLogsRouteImport } from './routes/_autenticado/plataforma.logs'
+import { Route as AutenticadoPlataformaPainelRouteImport } from './routes/_autenticado/plataforma.painel'
 import { Route as AutenticadoPrazoParceiroIdRouteImport } from './routes/_autenticado/prazo-parceiro_.$id'
 import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
 import { Route as AutenticadoRankingRegrasRouteImport } from './routes/_autenticado/ranking.regras'
@@ -235,6 +236,12 @@ const AutenticadoPlataformaLogsRoute =
     path: '/plataforma/logs',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoPlataformaPainelRoute =
+  AutenticadoPlataformaPainelRouteImport.update({
+    id: '/plataforma/painel',
+    path: '/plataforma/painel',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoPrazoParceiroIdRoute =
   AutenticadoPrazoParceiroIdRouteImport.update({
     id: '/prazo-parceiro_/$id',
@@ -309,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/plataforma/configuracoes': typeof AutenticadoPlataformaConfiguracoesRoute
   '/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/plataforma/painel': typeof AutenticadoPlataformaPainelRoute
   '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
@@ -351,6 +359,7 @@ export interface FileRoutesByTo {
   '/plataforma/configuracoes': typeof AutenticadoPlataformaConfiguracoesRoute
   '/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
   '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/plataforma/painel': typeof AutenticadoPlataformaPainelRoute
   '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
@@ -395,6 +404,7 @@ export interface FileRoutesById {
   '/_autenticado/plataforma/configuracoes': typeof AutenticadoPlataformaConfiguracoesRoute
   '/_autenticado/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
   '/_autenticado/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
+  '/_autenticado/plataforma/painel': typeof AutenticadoPlataformaPainelRoute
   '/_autenticado/prazo-parceiro_/$id': typeof AutenticadoPrazoParceiroIdRoute
   '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
@@ -439,6 +449,7 @@ export interface FileRouteTypes {
     | '/plataforma/configuracoes'
     | '/plataforma/integracoes'
     | '/plataforma/logs'
+    | '/plataforma/painel'
     | '/prazo-parceiro/$id'
     | '/ranking/regras'
     | '/ranking/publico/$token'
@@ -481,6 +492,7 @@ export interface FileRouteTypes {
     | '/plataforma/configuracoes'
     | '/plataforma/integracoes'
     | '/plataforma/logs'
+    | '/plataforma/painel'
     | '/prazo-parceiro/$id'
     | '/ranking/regras'
     | '/ranking/publico/$token'
@@ -524,6 +536,7 @@ export interface FileRouteTypes {
     | '/_autenticado/plataforma/configuracoes'
     | '/_autenticado/plataforma/integracoes'
     | '/_autenticado/plataforma/logs'
+    | '/_autenticado/plataforma/painel'
     | '/_autenticado/prazo-parceiro_/$id'
     | '/_autenticado/ranking/regras'
     | '/ranking/publico/$token'
@@ -782,6 +795,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoPlataformaLogsRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/plataforma/painel': {
+      id: '/_autenticado/plataforma/painel'
+      path: '/plataforma/painel'
+      fullPath: '/plataforma/painel'
+      preLoaderRoute: typeof AutenticadoPlataformaPainelRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/prazo-parceiro_/$id': {
       id: '/_autenticado/prazo-parceiro_/$id'
       path: '/prazo-parceiro/$id'
@@ -864,6 +884,7 @@ interface AutenticadoRouteChildren {
   AutenticadoPlataformaConfiguracoesRoute: typeof AutenticadoPlataformaConfiguracoesRoute
   AutenticadoPlataformaIntegracoesRoute: typeof AutenticadoPlataformaIntegracoesRoute
   AutenticadoPlataformaLogsRoute: typeof AutenticadoPlataformaLogsRoute
+  AutenticadoPlataformaPainelRoute: typeof AutenticadoPlataformaPainelRoute
   AutenticadoPrazoParceiroIdRoute: typeof AutenticadoPrazoParceiroIdRoute
   AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
   AutenticadoPerformanceIndexRoute: typeof AutenticadoPerformanceIndexRoute
@@ -906,6 +927,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
     AutenticadoPlataformaConfiguracoesRoute,
   AutenticadoPlataformaIntegracoesRoute: AutenticadoPlataformaIntegracoesRoute,
   AutenticadoPlataformaLogsRoute: AutenticadoPlataformaLogsRoute,
+  AutenticadoPlataformaPainelRoute: AutenticadoPlataformaPainelRoute,
   AutenticadoPrazoParceiroIdRoute: AutenticadoPrazoParceiroIdRoute,
   AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,
   AutenticadoPerformanceIndexRoute: AutenticadoPerformanceIndexRoute,

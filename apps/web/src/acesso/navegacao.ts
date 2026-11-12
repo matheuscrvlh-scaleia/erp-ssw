@@ -17,6 +17,7 @@ import {
   FileUp,
   HandCoins,
   History,
+  LayoutDashboard,
   ListChecks,
   type LucideIcon,
   PackageOpen,
@@ -225,8 +226,8 @@ const ADMINISTRACAO: readonly ItemDoCatalogo[] = [
   tela("admin_logs", "Logs", History),
 ];
 
-/** O Dashboard da Plataforma entra no topo desta lista. */
 const PLATAFORMA: readonly ItemDoCatalogo[] = [
+  tela("plataforma_painel", "Dashboard", LayoutDashboard),
   tela("plataforma_empresas", "Empresas", Building),
   tela("plataforma_admins", "Usuários e cargos", UserCog),
   hub(HUB_CONFIGURACOES_DA_PLATAFORMA, "Configurações", Settings),

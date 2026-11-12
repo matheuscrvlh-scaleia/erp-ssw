@@ -135,6 +135,8 @@ export interface RepositorioPlataforma {
   alterarEmpresa(id: string, dados: DadosDaEmpresa, atualizadoPor: string): Promise<void>;
   definirLogo(id: string, caminho: string | null, atualizadoPor: string): Promise<void>;
   usuariosAtivosPorEmpresa(): Promise<Map<string, number>>;
+  /** Último login de algum usuário com vínculo ativo, por empresa. */
+  ultimoLoginPorEmpresa(): Promise<Map<string, Date>>;
   integracoesAtivasPorEmpresa(): Promise<Map<string, number>>;
   /** Liberações de módulo de uma empresa, ou de todas (nulo). */
   liberacoes(empresaId: string | null): Promise<LiberacaoGravada[]>;
@@ -233,6 +235,20 @@ function registroDaEmpresa(e: DadosDaEmpresa): Registro {
  * Empresas por nome, com usuários ativos, módulos liberados hoje (sem os essenciais) e
  * integrações ativas.
  */
+/** Módulos vigentes hoje na empresa, sem contar os essenciais. */
+export function modulosLiberados(
+  empresa: Pick<EmpresaGravada, "id" | "fuso">,
+  liberacoes: readonly LiberacaoGravada[],
+  agora: Date,
+): number {
+  const vigentes = modulosVigentes(
+    MODULOS,
+    liberacoes.filter((l) => l.empresaId === empresa.id),
+    hojeNoFuso(empresa.fuso, agora),
+  );
+  return vigentes.filter((m) => !MODULOS.find((c) => c.chave === m)?.essencial).length;
+}
+
 export async function listarEmpresas(
   db: Executor<"plataforma">,
   agora: Date,
@@ -244,28 +260,18 @@ export async function listarEmpresas(
     const liberacoes = await plataforma.liberacoes(null);
     return empresas
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-      .map((e) => {
-        const vigentes = modulosVigentes(
-          MODULOS,
-          liberacoes.filter((l) => l.empresaId === e.id),
-          hojeNoFuso(e.fuso, agora),
-        );
-        const naoEssenciais = vigentes.filter(
-          (m) => !MODULOS.find((c) => c.chave === m)?.essencial,
-        );
-        return {
-          id: e.id,
-          slug: e.slug,
-          nome: e.nome,
-          nomeCurto: e.nomeCurto,
-          cnpj: e.cnpj,
-          status: e.status,
-          criadoEm: e.criadoEm.toISOString(),
-          usuariosAtivos: usuarios.get(e.id) ?? 0,
-          modulosLiberados: naoEssenciais.length,
-          integracoesAtivas: integracoes.get(e.id) ?? 0,
-        };
-      });
+      .map((e) => ({
+        id: e.id,
+        slug: e.slug,
+        nome: e.nome,
+        nomeCurto: e.nomeCurto,
+        cnpj: e.cnpj,
+        status: e.status,
+        criadoEm: e.criadoEm.toISOString(),
+        usuariosAtivos: usuarios.get(e.id) ?? 0,
+        modulosLiberados: modulosLiberados(e, liberacoes, agora),
+        integracoesAtivas: integracoes.get(e.id) ?? 0,
+      }));
   });
 }
 
