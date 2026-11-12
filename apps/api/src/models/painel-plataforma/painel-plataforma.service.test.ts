@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cenarioDeAdmin } from "../../testes/admin";
 import { BancoEmMemoria } from "../../testes/banco-em-memoria";
 import { WorkerSswFalso } from "../../testes/worker-ssw-falso";
-import { criarCacheDoPainel, type NaEmpresa, obterPainel } from "./painel-plataforma.service";
+import {
+  criarCacheDoPainel,
+  type NaEmpresa,
+  obterPainel,
+  type PainelMontado,
+} from "./painel-plataforma.service";
 
 const AGORA = new Date("2026-11-12T15:00:00Z");
 const MINUTO = 60_000;
@@ -99,7 +104,7 @@ describe("obterPainel", () => {
     expect(painel.empresas.find((e) => e.id === outra.id)?.numeros?.situacaoDoSla).toBe("ruim");
     expect(linhaFr).toMatchObject({
       usuariosAtivos: 1,
-      ultimoLoginEm: AGORA.toISOString(),
+      ultimoLoginEm: AGORA,
       saude: { nivel: "ok", motivos: [] },
       workerSsw: { situacao: "ok", jobsComFalha: [] },
     });
@@ -201,8 +206,8 @@ describe("obterPainel", () => {
 });
 
 describe("criarCacheDoPainel", () => {
-  const painel: PainelPlataforma = {
-    geradoEm: AGORA.toISOString(),
+  const painel: PainelMontado = {
+    geradoEm: AGORA,
     periodo: { inicio: "2026-11-01", fim: "2026-11-12" },
     totais: {
       empresas: 0,

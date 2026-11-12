@@ -9,6 +9,7 @@ import {
   obterPainel,
 } from "../models/painel-plataforma/painel-plataforma.service";
 import { type ExecutorComContexto } from "../models/repositorios";
+import { apresentarPainel } from "../views/painel-plataforma.view";
 
 export interface OpcoesRotasPainelPlataforma {
   executar: ExecutorComContexto;
@@ -28,14 +29,16 @@ export const controladorPainelPlataforma: FastifyPluginCallbackZod<OpcoesRotasPa
     c.obter.caminho,
     { schema: { response: { 200: c.obter.saida } }, onRequest: exigirAdminPlataforma },
     async (request) =>
-      doCache(() =>
-        obterPainel((empresaId) => executorDePlataforma(opcoes.executar, request, empresaId), {
-          workerSsw: opcoes.workerSsw,
-          agora: opcoes.agora,
-          aoFalhar: (erro, empresaId) => {
-            request.log.warn({ err: erro, empresaId }, "números do Dashboard não saíram");
-          },
-        }),
+      apresentarPainel(
+        await doCache(() =>
+          obterPainel((empresaId) => executorDePlataforma(opcoes.executar, request, empresaId), {
+            workerSsw: opcoes.workerSsw,
+            agora: opcoes.agora,
+            aoFalhar: (erro, empresaId) => {
+              request.log.warn({ err: erro, empresaId }, "números do Dashboard não saíram");
+            },
+          }),
+        ),
       ),
   );
   pronto();
