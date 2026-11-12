@@ -60,7 +60,8 @@ decisão.
 - Escrita grava auditoria na mesma transação (`auditoria.registrar(ator, {...})`).
 - Erros para o operador: `naoEncontrado`, `semPermissao`, `conflito` (`../erros`).
 - Devolve dado do model (tipo declarado aqui ou entidade de `@erp/shared`), nunca a resposta do
-  endpoint: não importa `SaidaDe` nem `contratos<Recurso>`.
+  endpoint: não usa `SaidaDe`. A entrada já validada pode ser tipada pelo contrato (`EntradaDe`,
+  import só de tipo); a saída, nunca.
 
 **Model — `models/<recurso>/<recurso>.repository.ts`**: Drizzle, consultas set-based, nenhuma regra
 escondida.

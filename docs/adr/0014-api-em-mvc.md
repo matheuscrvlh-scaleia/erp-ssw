@@ -67,7 +67,8 @@ apps/api/src/
   (`db(async (repos) => ...)`), auditoria na mesma transação, chamada às regras puras de `dominio/`.
   Declara a porta `Repositorio<Recurso>` que usa.
 - O service devolve dado do model (tipos dele ou entidades de `shared`), **não** a resposta do
-  endpoint: não importa `SaidaDe` nem o objeto `contratos<Recurso>`.
+  endpoint: não usa `SaidaDe`. A entrada já validada pelo controller pode ser tipada pelo
+  contrato (`EntradaDe`, import só de tipo); a saída, nunca.
 - `<recurso>.repository.ts`: Drizzle, consultas set-based, nenhuma regra escondida.
 - `dominio/` continua a casa das regras puras (prazo, ocorrência efetiva, performance, ranking...).
   Fica fora de `models/` porque é copiado byte a byte para o web e o worker-ssw (ADR 0012/0013).
