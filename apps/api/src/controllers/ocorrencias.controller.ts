@@ -13,6 +13,12 @@ import {
   obterOpcoes,
   obterPainel,
 } from "../models/ocorrencias/ocorrencias.service";
+import {
+  apresentarCodigosDoCard,
+  apresentarConferentes,
+  apresentarExportacaoDeOcorrencias,
+  apresentarOpcoesDeOcorrencias,
+} from "../views/ocorrencias.view";
 
 const ler = [exigirModulo("ocorrencias"), exigirPermissao("ocorrencias", "ver")];
 
@@ -48,7 +54,9 @@ export const controladorOcorrencias: FastifyPluginCallbackZod<{ agora: () => Dat
       preHandler: ler,
     },
     async (request) =>
-      exportarLista(request.db, await contextoDaEmpresa(request), request.body, agora()),
+      apresentarExportacaoDeOcorrencias(
+        await exportarLista(request.db, await contextoDaEmpresa(request), request.body, agora()),
+      ),
   );
 
   app.post(
@@ -58,19 +66,30 @@ export const controladorOcorrencias: FastifyPluginCallbackZod<{ agora: () => Dat
       preHandler: ler,
     },
     async (request) =>
-      obterCodigosDoCard(request.db, await contextoDaEmpresa(request), request.body, agora()),
+      apresentarCodigosDoCard(
+        await obterCodigosDoCard(
+          request.db,
+          await contextoDaEmpresa(request),
+          request.body,
+          agora(),
+        ),
+      ),
   );
 
   app.post(
     c.opcoes.caminho,
     { schema: { body: c.opcoes.entrada, response: { 200: c.opcoes.saida } }, preHandler: ler },
-    async (request) => obterOpcoes(request.db, await contextoDaEmpresa(request), request.body),
+    async (request) =>
+      apresentarOpcoesDeOcorrencias(
+        await obterOpcoes(request.db, await contextoDaEmpresa(request), request.body),
+      ),
   );
 
   app.get(
     c.conferentes.caminho,
     { schema: { response: { 200: c.conferentes.saida } }, preHandler: ler },
-    async (request) => listarConferentes(request.db, await contextoDaEmpresa(request)),
+    async (request) =>
+      apresentarConferentes(await listarConferentes(request.db, await contextoDaEmpresa(request))),
   );
   pronto();
 };
