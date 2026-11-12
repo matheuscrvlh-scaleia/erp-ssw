@@ -18,6 +18,14 @@ import {
   statusBi2,
   testarConexaoSsw,
 } from "../models/ingestao-ssw/ingestao-ssw.service";
+import {
+  apresentarAtualizacaoDosDados,
+  apresentarCredenciaisSsw,
+  apresentarDiagnosticoSsw,
+  apresentarEventosWebhook,
+  apresentarRodadaDoBi2,
+  apresentarStatusBi2,
+} from "../views/ingestao-ssw.view";
 
 /**
  * Faixa de saúde: todo usuário com empresa. Ingestão SSW e Diagnóstico SSW: só a Plataforma, na
@@ -39,7 +47,10 @@ export const controladorIngestaoSsw: FastifyPluginCallbackZod<{ deps: Dependenci
   app.get(
     c.atualizacao.caminho,
     { schema: { response: { 200: c.atualizacao.saida } }, preHandler: [exigirEmpresa] },
-    async (request) => atualizacaoDosDados(request.db, (await request.acesso()).adminPlataforma),
+    async (request) =>
+      apresentarAtualizacaoDosDados(
+        await atualizacaoDosDados(request.db, (await request.acesso()).adminPlataforma),
+      ),
   );
 
   app.get(
@@ -51,7 +62,7 @@ export const controladorIngestaoSsw: FastifyPluginCallbackZod<{ deps: Dependenci
   app.get(
     c.bi2Status.caminho,
     { schema: { response: { 200: c.bi2Status.saida } }, preHandler: ingestao },
-    async (request) => statusBi2(request.db),
+    async (request) => apresentarStatusBi2(await statusBi2(request.db)),
   );
 
   app.post(
@@ -61,13 +72,22 @@ export const controladorIngestaoSsw: FastifyPluginCallbackZod<{ deps: Dependenci
       preHandler: editarIngestao,
     },
     async (request) =>
-      rodarBi2(request.db, deps, await atorDa(request), await empresa(request), request.body.data),
+      apresentarRodadaDoBi2(
+        await rodarBi2(
+          request.db,
+          deps,
+          await atorDa(request),
+          await empresa(request),
+          request.body.data,
+        ),
+      ),
   );
 
   app.get(
     c.credenciais.caminho,
     { schema: { response: { 200: c.credenciais.saida } }, preHandler: ingestao },
-    async (request) => credenciaisSsw(request.db, deps, await empresa(request)),
+    async (request) =>
+      apresentarCredenciaisSsw(await credenciaisSsw(request.db, deps, await empresa(request))),
   );
 
   app.put(
@@ -95,7 +115,7 @@ export const controladorIngestaoSsw: FastifyPluginCallbackZod<{ deps: Dependenci
   app.get(
     c.eventosWebhook.caminho,
     { schema: { response: { 200: c.eventosWebhook.saida } }, preHandler: ingestao },
-    async (request) => eventosWebhook(request.db),
+    async (request) => apresentarEventosWebhook(await eventosWebhook(request.db)),
   );
 
   app.post(
@@ -120,7 +140,8 @@ export const controladorIngestaoSsw: FastifyPluginCallbackZod<{ deps: Dependenci
   app.get(
     c.diagnostico.caminho,
     { schema: { response: { 200: c.diagnostico.saida } }, preHandler: diagnostico },
-    async (request) => diagnosticoSsw(request.db, deps, await empresa(request)),
+    async (request) =>
+      apresentarDiagnosticoSsw(await diagnosticoSsw(request.db, deps, await empresa(request))),
   );
 
   app.post(
