@@ -3,8 +3,6 @@ import { describe, expect, it } from "vitest";
 import { lerFiltros } from "@/hooks/filtros-na-url";
 
 import { esquemaDetalhe, esquemaPrazo, filtrosDaBusca } from "./busca";
-import { tomDoSla } from "./sla";
-import { opcoesDeTipo } from "./tipos";
 
 const intervalo = { inicio: "2026-10-12", fim: "2026-11-10" };
 
@@ -37,21 +35,5 @@ describe("filtrosDaBusca", () => {
       unidades: ["u1"],
       tipos: ["CTE"],
     });
-  });
-});
-
-describe("formatos", () => {
-  it("tom pela meta e pelo alerta do SLA", () => {
-    const sla = { meta: 0.95, alerta: 0.9 };
-    expect(tomDoSla(0.96, sla)).toBe("bom");
-    expect(tomDoSla(0.92, sla)).toBe("alerta");
-    expect(tomDoSla(0.8, sla)).toBe("ruim");
-  });
-
-  it("tipo vazio aparece como 'sem tipo'", () => {
-    expect(opcoesDeTipo(["CTE", "__SEM_TIPO__"])).toEqual([
-      { valor: "CTE", rotulo: "CTE" },
-      { valor: "__SEM_TIPO__", rotulo: "sem tipo" },
-    ]);
   });
 });

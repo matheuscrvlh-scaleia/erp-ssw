@@ -21,6 +21,8 @@ export const esquemaPrazo = z.object({
     .refine((n) => TAMANHOS_DA_LISTA.some((t) => t === n))
     .catch(50),
 });
+export type BuscaPrazo = z.output<typeof esquemaPrazo>;
+
 /** Detalhe do parceiro: período, unidades e tipos vêm da visão geral. */
 export const esquemaDetalhe = z.object({
   periodo,
@@ -29,19 +31,6 @@ export const esquemaDetalhe = z.object({
 });
 export const tamanhoDaLista = (n: number): (typeof TAMANHOS_DA_LISTA)[number] =>
   TAMANHOS_DA_LISTA.find((t) => t === n) ?? 50;
-
-export const ROTULO_PERIODO: Record<Periodo, string> = {
-  hoje: "Hoje",
-  "7d": "Últimos 7 dias",
-  "30d": "Últimos 30 dias",
-  mes: "Este mês",
-};
-
-export const ROTULO_FILTRO = {
-  nascidos: "Só nascidos em atraso",
-  prazo_parceiro: "Com prazo do parceiro",
-  todos: "Todos",
-} as const;
 
 /** Filtros da consulta: só as listas preenchidas. */
 export function filtrosDaBusca(
