@@ -16,6 +16,7 @@ import { BarraLateral } from "@/componentes/layout/BarraLateral";
 import { BuscaRapida, useAtalhoDaBusca } from "@/componentes/layout/BuscaRapida";
 import { ModuloDesligado } from "@/componentes/layout/ModuloDesligado";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/componentes/ui/sidebar";
+import { Skeleton } from "@/componentes/ui/skeleton";
 import { ehSessaoVencida } from "@/lib/api";
 import { FaixaSaudeSsw } from "@/modulos/ingestao-ssw/FaixaSaudeSsw";
 
@@ -39,10 +40,27 @@ export const Route = createFileRoute("/_autenticado")({
   component: LayoutAutenticado,
 });
 
+/** Esqueleto da tela enquanto o acesso carrega (como no Copiloto RH). */
 function Carregando() {
   return (
-    <div className="flex min-h-screen items-center justify-center text-[13px] text-muted-foreground">
-      Carregando…
+    <div
+      role="status"
+      aria-label="Carregando"
+      className="mx-auto min-h-screen w-full max-w-[1600px] space-y-5 px-4 py-8 md:px-8"
+    >
+      <div className="flex items-center gap-4">
+        <Skeleton className="size-12 rounded-2xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-64" />
+          <Skeleton className="h-4 w-80 max-w-[60vw]" />
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-32 rounded-2xl" />
+        ))}
+      </div>
+      <Skeleton className="h-72 w-full rounded-2xl" />
     </div>
   );
 }
