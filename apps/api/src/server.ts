@@ -2,14 +2,12 @@ import { comContexto, conectarBanco, type ContextoBanco, type Transacao } from "
 import { lerChavesDeSegredo } from "@erp/db/segredos";
 import { Redis } from "ioredis";
 
-import { criarRepositorioCteNucleo } from "./compartilhado/gravacao-cte";
 import { carregarAmbiente } from "./config/env";
 import { construirApp } from "./http/app";
 import { criarArmazenamentoS3 } from "./infra/armazenamento";
 import { filaDesligada } from "./infra/fila";
 import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
-import { criarRepositorios } from "./infra/repositorios";
 import { criarServicoDeSenhas } from "./infra/senhas";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
 import { criarFilasDosJobs, ligarWorkersDosJobs, pedirRecifragemDeSegredos } from "./jobs/iniciar";
@@ -19,7 +17,9 @@ import { criarRepositorioPrazosDoJob } from "./jobs/prazos/repositorio";
 import { criarRepositorioRecalculo } from "./jobs/recalculo/repositorio";
 import { type RepositoriosDosJobs } from "./jobs/registro";
 import { criarRepositorioAgendamentos } from "./jobs/repositorio-agendamentos";
-import { criarCacheDeConfiguracoes } from "./modulos/configuracoes/cache";
+import { criarCacheDeConfiguracoes } from "./models/configuracoes/cache";
+import { criarRepositorioCteNucleo } from "./models/cte/cte.repository";
+import { criarRepositorios } from "./models/repositorios";
 
 /**
  * Tempo para terminar as requisições e os jobs em andamento depois do SIGTERM. O job que não

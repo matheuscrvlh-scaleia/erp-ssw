@@ -10,20 +10,23 @@ import { tipoDocumentoEfetivo } from "@erp/dominio/nucleo";
 import { montarLista } from "@erp/dominio/ocorrencias/lista";
 import { type LinhaDeOcorrencia } from "@erp/shared/contratos/ocorrencias";
 
-import { type Repositorios } from "../infra/repositorios";
-import { type CodigoGravado } from "../modulos/codigos-ocorrencia/casos-de-uso";
-import { type ColetaLida } from "../modulos/coletas/casos-de-uso";
+import { type CodigoGravado } from "../models/codigos-ocorrencia/codigos-ocorrencia.service";
+import { type ColetaLida } from "../models/coletas/coletas.service";
 import {
   type ComprovanteDaLista,
   type RepositorioComprovantes,
-} from "../modulos/comprovantes/casos-de-uso";
-import { type AnotacaoGravada, type RepositorioHistorico } from "../modulos/historico/casos-de-uso";
+} from "../models/comprovantes/comprovantes.service";
+import {
+  type AnotacaoGravada,
+  type RepositorioHistorico,
+} from "../models/historico/historico.service";
 import {
   type CteLido,
   type OcorrenciaLida,
   paraOPainel,
   type RepositorioOcorrencias,
-} from "../modulos/ocorrencias/casos-de-uso";
+} from "../models/ocorrencias/ocorrencias.service";
+import { type Repositorios } from "../models/repositorios";
 import { type BancoEmMemoria } from "./banco-em-memoria";
 
 /*

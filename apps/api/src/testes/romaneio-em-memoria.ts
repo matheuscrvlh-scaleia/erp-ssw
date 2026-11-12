@@ -9,7 +9,7 @@ import {
   type DetalheDaLinha,
   type FatoDaLista,
   type RepositorioRomaneio,
-} from "../modulos/romaneio/casos-de-uso";
+} from "../models/romaneio/romaneio.service";
 
 /*
  * Romaneio falso: devolve o que o teste gravou. Não simula os filtros SQL (só `ids`); guarda as

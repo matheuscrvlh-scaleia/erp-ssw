@@ -2,7 +2,7 @@ import { type Transacao } from "@erp/db";
 import { codigosOcorrencia, ctes, ocorrencias } from "@erp/db/schema";
 import { and, asc, eq, exists, gt, inArray, or, sql } from "drizzle-orm";
 
-import { comoCte } from "../../compartilhado/gravacao-cte";
+import { comoCte } from "../../models/cte/cte.repository";
 import { type RepositorioRecalculo } from "./job";
 
 export function criarRepositorioRecalculo(tx: Transacao): RepositorioRecalculo {

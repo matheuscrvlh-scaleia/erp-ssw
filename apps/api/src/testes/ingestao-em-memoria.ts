@@ -1,12 +1,12 @@
 import { type IntegracaoDaIngestao } from "@erp/shared/ingestao";
 
-import { type CicloLido, type RepositorioIngestao } from "../modulos/ingestao/casos-de-uso";
+import { type CicloLido, type RepositorioIngestao } from "../models/ingestao/ingestao.service";
 import {
   type EventoLido,
   type IntegracaoLida,
   type RepositorioIngestaoSsw,
   type SincronizacaoLida,
-} from "../modulos/ingestao-ssw/casos-de-uso";
+} from "../models/ingestao-ssw/ingestao-ssw.service";
 
 /** Evento do webhook como o worker-ssw o grava em `ssw_webhook_eventos`. */
 export interface EventoGravado {

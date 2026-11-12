@@ -6,18 +6,18 @@ import { ehPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
 import { type OrigemIntegracao } from "@erp/shared/contratos/auditoria";
 import { type TipoIntegracao, type TipoIntegracaoPlataforma } from "@erp/shared/plataforma";
 
-import { type RepositorioCadastros } from "../modulos/cadastros/casos-de-uso";
-import { type RepositorioConfiguracoes } from "../modulos/configuracoes/casos-de-uso";
-import { type Execucao, type RepositorioLogs } from "../modulos/logs/casos-de-uso";
+import { type RepositorioCadastros } from "../models/cadastros/cadastros.service";
+import { type RepositorioConfiguracoes } from "../models/configuracoes/configuracoes.service";
+import { type Execucao, type RepositorioLogs } from "../models/logs/logs.service";
 import {
   type CopiaDoModelo,
   type EmpresaGravada,
   type IntegracaoDaPlataformaGravada,
   type IntegracaoGravada,
   type RepositorioPlataforma,
-} from "../modulos/plataforma/casos-de-uso";
-import { type RegraGravada, type RepositorioPrazos } from "../modulos/prazos/casos-de-uso";
-import { type RepositorioUsuarios } from "../modulos/usuarios/casos-de-uso";
+} from "../models/plataforma/plataforma.service";
+import { type RegraGravada, type RepositorioPrazos } from "../models/prazos/prazos.service";
+import { type RepositorioUsuarios } from "../models/usuarios/usuarios.service";
 import { type BancoEmMemoria } from "./banco-em-memoria";
 
 /*

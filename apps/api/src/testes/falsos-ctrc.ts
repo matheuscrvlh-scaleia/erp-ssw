@@ -8,18 +8,18 @@ import {
   type CtrcGravado,
   type OcorrenciaGravada,
   type RepositorioCtrc,
-} from "../modulos/ctrc/casos-de-uso";
+} from "../models/ctrc/ctrc.service";
 import {
   type ContextoDeOpcoes,
   type FiltroDePagadores,
   type PagadorAgrupado,
   type RepositorioFiltros,
-} from "../modulos/filtros/casos-de-uso";
+} from "../models/filtros/filtros.service";
 import {
   type Agregados,
   type ContagemPorCodigo,
   type RepositorioListagem,
-} from "../modulos/listagem/casos-de-uso";
+} from "../models/listagem/listagem.service";
 
 /*
  * Repositórios falsos das telas de CT-e. Não simulam SQL: devolvem o que o teste preparou e

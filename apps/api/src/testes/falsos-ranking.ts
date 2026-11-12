@@ -9,14 +9,14 @@ import {
 } from "@erp/shared/contratos/bonificacao-entrega";
 import { type Regra } from "@erp/shared/contratos/ranking";
 
-import { type IntegracaoAhgora, type RepositorioAhgora } from "../modulos/ahgora/casos-de-uso";
-import { type RepositorioBonificacaoEntrega } from "../modulos/bonificacao-entrega/casos-de-uso";
+import { type IntegracaoAhgora, type RepositorioAhgora } from "../models/ahgora/ahgora.service";
+import { type RepositorioBonificacaoEntrega } from "../models/bonificacao-entrega/bonificacao-entrega.service";
 import {
   type ConsultaDoRanking,
   type EquipeGravada,
   type MembroGravado,
   type RepositorioRanking,
-} from "../modulos/ranking/casos-de-uso";
+} from "../models/ranking/ranking.service";
 
 /*
  * Dados falsos de Ranking, Bonificação de entrega e Ahgora para os testes: arrays por empresa e

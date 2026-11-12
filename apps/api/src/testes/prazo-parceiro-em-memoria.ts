@@ -5,7 +5,7 @@ import {
   type ConsultaPrazo,
   type FatoDoPrazo,
   type RepositorioPrazoParceiro,
-} from "../modulos/prazo-parceiro/casos-de-uso";
+} from "../models/prazo-parceiro/prazo-parceiro.service";
 
 /*
  * Prazo do parceiro falso: filtra por período e pelo recorte do detalhe/lista como o SQL faria

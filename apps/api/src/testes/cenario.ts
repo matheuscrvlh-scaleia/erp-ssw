@@ -13,7 +13,7 @@ import { type ProvedorGoogle } from "../infra/google";
 import { criarLimitadorEmMemoria } from "../infra/limitador";
 import { criarServicoDeSenhas } from "../infra/senhas";
 import { criarEmissorDeTokens, type EmissorDeTokens } from "../infra/tokens";
-import { type DependenciasAuth } from "../modulos/auth/casos-de-uso";
+import { type DependenciasAuth } from "../models/auth/auth.service";
 import { BancoEmMemoria, type UsuarioFalso } from "./banco-em-memoria";
 
 export function gerarChavePem(): string {

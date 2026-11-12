@@ -1,4 +1,4 @@
-import { type RepositorioPerformance } from "../modulos/performance/casos-de-uso";
+import { type RepositorioPerformance } from "../models/performance/performance.service";
 
 /*
  * Repositório de leitura da Performance para os testes: tudo vazio por padrão;

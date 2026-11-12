@@ -9,7 +9,7 @@ lado a lado com este guia.
 | Regra pura | `apps/api/src/dominio/calendario.ts` (+ `.test.ts`) |
 | Contrato | `apps/api/src/shared/contratos/calendario.ts` |
 | Tabela + RLS | `apps/api/src/db/schema/dominio/feriados.ts` |
-| API | `apps/api/src/modulos/calendario/{rotas,casos-de-uso,repositorio}.ts` (+ testes) |
+| API | `apps/api/src/{controllers/calendario.controller,models/calendario/calendario.{service,repository},views/calendario.view}.ts` (+ testes) |
 | Tela | `apps/web/src/routes/_autenticado/calendario.tsx` → `apps/web/src/modulos/calendario/` |
 
 ## 1. Ler a regra antes do código
@@ -48,46 +48,59 @@ lado a lado com este guia.
   `bunx drizzle-kit generate --custom --name <nome>` e escreva o SQL à mão (só índice/parâmetro).
 - O teste `apps/api/src/db/schema/rls.test.ts` falha se a tabela com `empresa_id` vier sem RLS.
 
-## 5. API — `apps/api/src/modulos/<dominio>/`
+## 5. API em MVC — `controllers/`, `models/`, `views/` (ADR 0014)
 
-**`casos-de-uso.ts`** — orquestra; é onde mora a decisão.
+**Model — `apps/api/src/models/<recurso>/<recurso>.service.ts`**: as operações; é onde mora a
+decisão.
 
-- Declara a porta `Repositorio<Dominio>` (interface) que ele usa.
-- Cada caso de uso recebe `db: Executor<"<dominio>" | "auditoria">` (de `../../repositorios`):
-  tudo o que roda dentro de `db(async ({ <dominio>, auditoria }) => ...)` é uma transação só, já
-  com o contexto da empresa (RLS).
+- Declara a porta `Repositorio<Recurso>` (interface) que ele usa.
+- Cada operação recebe `db: Executor<"<recurso>" | "auditoria">` (de `../repositorios`): tudo o
+  que roda dentro de `db(async ({ <recurso>, auditoria }) => ...)` é uma transação só, já com o
+  contexto da empresa (RLS).
 - Escrita grava auditoria na mesma transação (`auditoria.registrar(ator, {...})`).
-- Erros para o operador: `naoEncontrado`, `semPermissao`, `conflito` (`../../http/erros`).
+- Erros para o operador: `naoEncontrado`, `semPermissao`, `conflito` (`../erros`).
+- Devolve dado do model (tipo declarado aqui ou entidade de `@erp/shared`), nunca a resposta do
+  endpoint: não importa `SaidaDe` nem `contratos<Recurso>`.
 
-**`repositorio.ts`** — Drizzle, consultas set-based, nenhuma regra escondida.
+**Model — `models/<recurso>/<recurso>.repository.ts`**: Drizzle, consultas set-based, nenhuma regra
+escondida.
 
-- `criarRepositorio<Dominio>(tx: Transacao): Repositorio<Dominio>`.
-- Registre em `apps/api/src/infra/repositorios.ts` (`Repositorios` + `criarRepositorios`).
+- `criarRepositorio<Recurso>(tx: Transacao): Repositorio<Recurso>`.
+- Registre em `apps/api/src/models/repositorios.ts` (`Repositorios` + `criarRepositorios`).
 - Consulta ampla tem teto (`.limit(...)`) e o timeout do banco vira "reduza o período" sozinho
   (tratador central).
 
-**`rotas.ts`** — HTTP fino: schema do contrato, guardas, chama o caso de uso.
+**View — `apps/api/src/views/<recurso>.view.ts`**: `apresentar<Coisa>(dado) → SaidaDe<contrato>`.
+Função pura: tira campo interno, renomeia, monta envelope, rótulo ou texto de exibição. Sem
+consulta e sem regra (número calculado vem do model). Se o dado do model já é a resposta, não
+crie view: o controller devolve direto.
+
+**Controller — `apps/api/src/controllers/<recurso>.controller.ts`**: HTTP fino. Schema do contrato
+(a validação roda antes do handler), guardas, contexto, chama o model e entrega à view.
 
 ```ts
-const ler = [exigirModulo("<modulo>"), exigirTela("<tela>")];
+const ler = [exigirModulo("<modulo>"), exigirPermissao("<tela>", "ver")];
 app.get(
   c.obter.caminho,
   { schema: { querystring: c.obter.entrada, response: { 200: c.obter.saida } }, preHandler: ler },
   async (request) =>
-    obterCalendario(request.db, await contextoDe(request), request.query.ano, agora()),
+    apresentarCalendario(
+      await obterCalendario(request.db, await contextoDe(request), request.query.ano, agora()),
+    ),
 );
 ```
 
-- Guardas (`../../http/guardas`): `exigirAutenticacao` (já implícita nas outras),
-  `exigirEmpresa`, `exigirTela`, `exigirModulo`, `exigirPapel`, `exigirAdminPlataforma`.
-- Registre o plugin em `apps/api/src/http/app.ts`.
+- Guardas (`../http/middleware/guardas`): `exigirAutenticacao` (já implícita nas outras),
+  `exigirEmpresa`, `exigirPermissao`, `exigirUmaDasTelas`, `exigirModulo`,
+  `exigirAdminDaEmpresa`, `exigirAdminPlataforma`.
+- Registre o plugin (`controlador<Recurso>`) em `apps/api/src/http/app.ts`.
 
 **Testes**
 
-- `casos-de-uso.test.ts`: regra com repositório falso.
-- `rotas.test.ts`: contrato por `app.inject` com `construirAppDeTeste` e `BancoEmMemoria`
-  (`apps/api/src/testes/`): 401 sem sessão, 403 sem tela/módulo/papel, 422 entrada inválida,
-  caminho feliz e auditoria. Nada contra banco ou Redis reais.
+- `models/<recurso>/<recurso>.service.test.ts`: regra com repositório falso.
+- `controllers/<recurso>.controller.test.ts`: contrato por `app.inject` com `construirAppDeTeste`
+  e `BancoEmMemoria` (`apps/api/src/testes/`): 401 sem sessão, 403 sem permissão/módulo, 422
+  entrada inválida, caminho feliz e auditoria. Nada contra banco ou Redis reais.
 
 ## 6. Tela — `apps/web`
 

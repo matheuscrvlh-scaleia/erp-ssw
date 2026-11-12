@@ -10,6 +10,31 @@ import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod
 import { type Redis } from "ioredis";
 
 import { type Ambiente } from "../config/env";
+import { controladorAhgora } from "../controllers/ahgora.controller";
+import { controladorAuth } from "../controllers/auth.controller";
+import { controladorBonificacaoEntrega } from "../controllers/bonificacao-entrega.controller";
+import { controladorCadastros } from "../controllers/cadastros.controller";
+import { controladorCalendario } from "../controllers/calendario.controller";
+import { controladorCodigosOcorrencia } from "../controllers/codigos-ocorrencia.controller";
+import { controladorColetas } from "../controllers/coletas.controller";
+import { controladorComprovantes } from "../controllers/comprovantes.controller";
+import { controladorConfiguracoes } from "../controllers/configuracoes.controller";
+import { controladorCtrc } from "../controllers/ctrc.controller";
+import { controladorFiltros } from "../controllers/filtros.controller";
+import { controladorHistorico } from "../controllers/historico.controller";
+import { controladorIngestao } from "../controllers/ingestao.controller";
+import { controladorIngestaoSsw } from "../controllers/ingestao-ssw.controller";
+import { controladorListagem } from "../controllers/listagem.controller";
+import { controladorLogs } from "../controllers/logs.controller";
+import { controladorOcorrencias } from "../controllers/ocorrencias.controller";
+import { controladorPainelPlataforma } from "../controllers/painel-plataforma.controller";
+import { controladorPerformance } from "../controllers/performance.controller";
+import { controladorPlataforma } from "../controllers/plataforma.controller";
+import { controladorPrazoParceiro } from "../controllers/prazo-parceiro.controller";
+import { controladorPrazos } from "../controllers/prazos.controller";
+import { controladorRanking } from "../controllers/ranking.controller";
+import { controladorRomaneio } from "../controllers/romaneio.controller";
+import { controladorUsuarios } from "../controllers/usuarios.controller";
 import type { Armazenamento } from "../infra/armazenamento";
 import {
   criarFonteDaConfiguracao,
@@ -24,49 +49,24 @@ import type { FilaDeJobs } from "../infra/fila";
 import { type ProvedorGoogle } from "../infra/google";
 import { type LimitadorDeFalhas } from "../infra/limitador";
 import { opcoesDeLog } from "../infra/log";
-import { type ExecutorComContexto } from "../infra/repositorios";
 import { type ServicoDeSenhas } from "../infra/senhas";
 import { type EmissorDeTokens } from "../infra/tokens";
 import { type ClienteWorkerSsw, criarClienteWorkerSswDaPlataforma } from "../infra/worker-ssw";
-import { type DependenciasAhgora } from "../modulos/ahgora/casos-de-uso";
-import { rotasAhgora } from "../modulos/ahgora/rotas";
-import { type DependenciasAuth } from "../modulos/auth/casos-de-uso";
-import { rotasAuth } from "../modulos/auth/rotas";
-import { rotasBonificacaoEntrega } from "../modulos/bonificacao-entrega/rotas";
-import { rotasCadastros } from "../modulos/cadastros/rotas";
-import { rotasCalendario } from "../modulos/calendario/rotas";
-import { rotasCodigosOcorrencia } from "../modulos/codigos-ocorrencia/rotas";
-import { rotasColetas } from "../modulos/coletas/rotas";
-import { rotasComprovantes } from "../modulos/comprovantes/rotas";
+import { type DependenciasAhgora } from "../models/ahgora/ahgora.service";
+import { type DependenciasAuth } from "../models/auth/auth.service";
 import {
   type CacheDeConfiguracoes,
   criarCacheDeConfiguracoes,
-} from "../modulos/configuracoes/cache";
-import { rotasConfiguracoes } from "../modulos/configuracoes/rotas";
-import { rotasCtrc } from "../modulos/ctrc/rotas";
-import { rotasFiltros } from "../modulos/filtros/rotas";
-import { rotasHistorico } from "../modulos/historico/rotas";
-import { rotasIngestao } from "../modulos/ingestao/rotas-admin";
-import { rotasIngestaoSsw } from "../modulos/ingestao-ssw/rotas";
-import { rotasListagem } from "../modulos/listagem/rotas";
-import { rotasLogs } from "../modulos/logs/rotas";
-import { rotasOcorrencias } from "../modulos/ocorrencias/rotas";
-import { rotasPainelPlataforma } from "../modulos/painel-plataforma/rotas";
-import { rotasPerformance } from "../modulos/performance/rotas";
-import { rotasPlataforma } from "../modulos/plataforma/rotas";
-import { rotasPrazoParceiro } from "../modulos/prazo-parceiro/rotas";
-import { rotasPrazos } from "../modulos/prazos/rotas";
-import { rotasRanking } from "../modulos/ranking/rotas";
-import { rotasRomaneio } from "../modulos/romaneio/rotas";
-import { type DependenciasUsuarios } from "../modulos/usuarios/casos-de-uso";
-import { rotasUsuarios } from "../modulos/usuarios/rotas";
+} from "../models/configuracoes/cache";
+import { type ExecutorComContexto } from "../models/repositorios";
+import { type DependenciasUsuarios } from "../models/usuarios/usuarios.service";
 import {
   registrarDocumentacao,
   registrarMetricas,
   registrarSaude,
-} from "../plugins/observabilidade";
-import { registrarSeguranca } from "../plugins/seguranca";
-import { pluginSessao } from "../plugins/sessao";
+} from "./middleware/observabilidade";
+import { registrarSeguranca } from "./middleware/seguranca";
+import { pluginSessao } from "./middleware/sessao";
 import { registrarTratadorDeErros } from "./tratador-erros";
 
 /** Tudo o que a API usa de fora. Produção monta em `server.ts`; os testes passam falsos. */
@@ -206,33 +206,33 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     correio,
     webUrl,
   };
-  await app.register(rotasAuth, {
+  await app.register(controladorAuth, {
     deps: auth,
     google: deps.google,
     googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
-  await app.register(rotasCalendario, { agora: deps.agora });
-  await app.register(rotasIngestao, { deps: { workerSsw } });
-  await app.register(rotasRomaneio, { agora: deps.agora });
-  await app.register(rotasPrazoParceiro);
-  await app.register(rotasOcorrencias, { agora: deps.agora });
-  await app.register(rotasComprovantes);
-  await app.register(rotasColetas, { agora: deps.agora });
-  await app.register(rotasHistorico, { agora: deps.agora });
-  await app.register(rotasCodigosOcorrencia, {
+  await app.register(controladorCalendario, { agora: deps.agora });
+  await app.register(controladorIngestao, { deps: { workerSsw } });
+  await app.register(controladorRomaneio, { agora: deps.agora });
+  await app.register(controladorPrazoParceiro);
+  await app.register(controladorOcorrencias, { agora: deps.agora });
+  await app.register(controladorComprovantes);
+  await app.register(controladorColetas, { agora: deps.agora });
+  await app.register(controladorHistorico, { agora: deps.agora });
+  await app.register(controladorCodigosOcorrencia, {
     agora: deps.agora,
     fila: deps.fila,
   });
-  await app.register(rotasFiltros);
-  await app.register(rotasListagem, { agora: deps.agora });
-  await app.register(rotasCtrc, { agora: deps.agora });
-  await app.register(rotasPerformance, { agora: deps.agora });
+  await app.register(controladorFiltros);
+  await app.register(controladorListagem, { agora: deps.agora });
+  await app.register(controladorCtrc, { agora: deps.agora });
+  await app.register(controladorPerformance, { agora: deps.agora });
   const ahgora = deps.ahgora ?? { segredos: null, ambiente: {}, http: fetch };
-  await app.register(rotasRanking, { agora: deps.agora, executar: deps.executar });
-  await app.register(rotasBonificacaoEntrega, { ahgora });
-  await app.register(rotasAhgora, { ahgora });
+  await app.register(controladorRanking, { agora: deps.agora, executar: deps.executar });
+  await app.register(controladorBonificacaoEntrega, { ahgora });
+  await app.register(controladorAhgora, { ahgora });
 
-  await app.register(rotasIngestaoSsw, {
+  await app.register(controladorIngestaoSsw, {
     deps: {
       workerSsw,
       cifrador: chaves
@@ -257,14 +257,14 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     webUrl,
     agora: deps.agora,
   };
-  await app.register(rotasUsuarios, { deps: usuarios, executar: deps.executar });
-  await app.register(rotasCadastros);
-  await app.register(rotasConfiguracoes, {
+  await app.register(controladorUsuarios, { deps: usuarios, executar: deps.executar });
+  await app.register(controladorCadastros);
+  await app.register(controladorConfiguracoes, {
     cache: deps.cacheDeConfiguracoes ?? criarCacheDeConfiguracoes(deps.agora),
   });
-  await app.register(rotasPrazos, { fila: deps.fila });
-  await app.register(rotasLogs, { executar: deps.executar });
-  await app.register(rotasPlataforma, {
+  await app.register(controladorPrazos, { fila: deps.fila });
+  await app.register(controladorLogs, { executar: deps.executar });
+  await app.register(controladorPlataforma, {
     executar: deps.executar,
     usuarios,
     armazenamento: deps.armazenamento,
@@ -274,7 +274,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     configuracao,
     correio,
   });
-  await app.register(rotasPainelPlataforma, {
+  await app.register(controladorPainelPlataforma, {
     executar: deps.executar,
     workerSsw,
     agora: deps.agora,
