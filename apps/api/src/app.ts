@@ -1,9 +1,4 @@
-import {
-  type ChavesDeSegredo,
-  cifrarSegredo,
-  decifrarSegredo,
-  derivarSegredo,
-} from "@erp/db/segredos";
+import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/segredos";
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
@@ -22,7 +17,6 @@ import {
   criarCorreioDeDesenvolvimento,
 } from "./infra/correio";
 import type { FilaDeJobs } from "./infra/fila";
-import { type ProvedorGoogle } from "./infra/google";
 import { type LimitadorDeFalhas } from "./infra/limitador";
 import { opcoesDeLog } from "./infra/log";
 import { type ServicoDeSenhas } from "./infra/senhas";
@@ -82,7 +76,6 @@ export interface Dependencias {
    * desenvolvimento e erro em produção). Os testes passam um falso.
    */
   correio?: Correio;
-  google: ProvedorGoogle | null;
   /**
    * HTTP interno do worker-ssw (ADR 0012). Ausente = endereço e token de Plataforma › Integrações;
    * nulo (testes) = não configurado: as ações de ingestão respondem 503 e as leituras continuam.
@@ -129,15 +122,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
 
   const comDocumentacao = ambiente.NODE_ENV !== "production";
   const chaves = deps.chavesDeSegredo;
-  // O env exige um dos dois (SEGREDOS_CHAVES ou COOKIE_SEGREDO).
-  const segredoDoCookie =
-    ambiente.COOKIE_SEGREDO ?? (chaves ? derivarSegredo(chaves, "cookie") : "");
-  await registrarSeguranca(app, {
-    ambiente,
-    redis: deps.redis,
-    comDocumentacao,
-    segredoDoCookie,
-  });
+  await registrarSeguranca(app, { ambiente, redis: deps.redis, comDocumentacao });
   if (comDocumentacao) await registrarDocumentacao(app);
   registrarMetricas(app, ambiente.METRICAS_TOKEN);
   const redis = deps.redis;
@@ -207,8 +192,6 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
   };
   await app.register(rotasAuth, {
     deps: auth,
-    google: deps.google,
-    googleRedirectUri: ambiente.GOOGLE_REDIRECT_URI ?? null,
   });
   await app.register(rotasCalendario, { agora: deps.agora });
   await app.register(rotasIngestao, { deps: { workerSsw } });

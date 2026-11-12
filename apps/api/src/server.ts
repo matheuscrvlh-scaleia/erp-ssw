@@ -7,7 +7,6 @@ import { criarRepositorioCteNucleo } from "./compartilhado/gravacao-cte";
 import { carregarAmbiente } from "./config/env";
 import { criarArmazenamentoS3 } from "./infra/armazenamento";
 import { filaDesligada } from "./infra/fila";
-import { criarProvedorGoogle } from "./infra/google";
 import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
 import { criarServicoDeSenhas } from "./infra/senhas";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
@@ -90,14 +89,6 @@ const app = await construirApp({
   }),
   senhas: criarServicoDeSenhas(),
   limitador: redis ? criarLimitadorRedis(redis) : criarLimitadorEmMemoria(),
-  google:
-    ambiente.GOOGLE_CLIENT_ID && ambiente.GOOGLE_CLIENT_SECRET && ambiente.GOOGLE_REDIRECT_URI
-      ? criarProvedorGoogle({
-          clientId: ambiente.GOOGLE_CLIENT_ID,
-          clientSecret: ambiente.GOOGLE_CLIENT_SECRET,
-          redirectUri: ambiente.GOOGLE_REDIRECT_URI,
-        })
-      : null,
   fila: filasDosJobs?.fila ?? filaDesligada,
   ...(ambiente.JOBS_LIGADOS
     ? { verificarJobs: () => workers?.verificar() ?? Promise.resolve() }

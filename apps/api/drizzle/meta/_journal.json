@@ -92,6 +92,13 @@
       "when": 1794422035175,
       "tag": "0012_plataforma_integracoes",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794490071647,
+      "tag": "0013_sem_login_google",
+      "breakpoints": true
     }
   ]
 }

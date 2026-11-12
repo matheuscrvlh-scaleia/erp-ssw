@@ -1,11 +1,5 @@
 import { type Transacao } from "@erp/db";
-import {
-  empresaUsuarios,
-  identidadesExternas,
-  sessoes,
-  tokensSenha,
-  usuarios,
-} from "@erp/db/schema";
+import { empresaUsuarios, sessoes, tokensSenha, usuarios } from "@erp/db/schema";
 import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 
@@ -160,23 +154,6 @@ export function criarRepositorioAuth(tx: Transacao): RepositorioAuth {
           ...(nome ? { nome } : {}),
         })
         .where(eq(usuarios.id, usuarioId));
-    },
-
-    usuarioPorIdentidade: async (provedor, sujeito) => {
-      const [linha] = await tx
-        .select({ usuarioId: identidadesExternas.usuarioId })
-        .from(identidadesExternas)
-        .where(
-          and(eq(identidadesExternas.provedor, provedor), eq(identidadesExternas.sujeito, sujeito)),
-        );
-      return linha?.usuarioId ?? null;
-    },
-
-    vincularIdentidade: async (usuarioId, provedor, sujeito, email) => {
-      await tx
-        .insert(identidadesExternas)
-        .values({ usuarioId, provedor, sujeito, email })
-        .onConflictDoNothing();
     },
 
     adminsDaEmpresa: (empresaId) =>

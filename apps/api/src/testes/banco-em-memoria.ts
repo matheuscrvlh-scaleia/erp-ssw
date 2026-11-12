@@ -111,7 +111,6 @@ export class BancoEmMemoria {
   }[] = [];
   sessoes: SessaoFalsa[] = [];
   tokensSenha: TokenSenhaFalso[] = [];
-  identidades: { usuarioId: string; provedor: string; sujeito: string; email: string }[] = [];
   auditoria: (EventoDeAuditoria & { ator: Ator })[] = [];
   feriados: FeriadoGravado[] = [];
   unidades: (UnidadeDoCalendario & { empresaId: string; ativo: boolean })[] = [];
@@ -347,15 +346,6 @@ export class BancoEmMemoria {
             bloqueadoAte: null,
             ...(nome ? { nome } : {}),
           });
-          return Promise.resolve();
-        },
-        usuarioPorIdentidade: (provedor, sujeito) =>
-          Promise.resolve(
-            this.identidades.find((i) => i.provedor === provedor && i.sujeito === sujeito)
-              ?.usuarioId ?? null,
-          ),
-        vincularIdentidade: (usuarioId, provedor, sujeito, email) => {
-          this.identidades.push({ usuarioId, provedor, sujeito, email });
           return Promise.resolve();
         },
         adminsDaEmpresa: (empresaId) =>

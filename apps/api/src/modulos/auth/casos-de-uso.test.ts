@@ -7,7 +7,6 @@ import {
   ajudaDeAcesso,
   definirSenhaPorToken,
   entrar,
-  entrarComGoogle,
   JANELA_DE_RENOVACAO_CONCORRENTE_MS,
   pedirRedefinicao,
   renovar,
@@ -254,22 +253,6 @@ describe("senha por e-mail", () => {
     );
     expect(usuario).toMatchObject({ nome: "Novo", senhaAlgoritmo: "argon2id" });
     expect(cenario.banco.auditoria.at(-1)?.acao).toBe("aceitar_convite");
-  });
-});
-
-describe("Google", () => {
-  const identidade = { sujeito: "google-1", email: "Joana@fr.com.br", emailVerificado: true };
-
-  it("só entra quem já é usuário, com e-mail verificado", async () => {
-    await expect(entrarComGoogle(cenario.deps, identidade, origem)).resolves.toBeNull();
-    await preparar();
-    await expect(
-      entrarComGoogle(cenario.deps, { ...identidade, emailVerificado: false }, origem),
-    ).resolves.toBeNull();
-    await expect(entrarComGoogle(cenario.deps, identidade, origem)).resolves.toMatchObject({
-      expiraEmSegundos: 900,
-    });
-    expect(cenario.banco.identidades).toMatchObject([{ provedor: "google", sujeito: "google-1" }]);
   });
 });
 

@@ -5,12 +5,9 @@ import { ambienteDeTeste } from "../testes/cenario";
 import { mascararUrl, opcoesDeLog } from "./log";
 
 describe("mascararUrl", () => {
-  it("esconde o segredo do webhook do SSW e o code do OAuth", () => {
+  it("esconde o segredo do webhook do SSW", () => {
     expect(mascararUrl("/api/public/ssw-webhook?secret=abc123&empresa=fr")).toBe(
       "/api/public/ssw-webhook?secret=[oculto]&empresa=fr",
-    );
-    expect(mascararUrl("/api/v1/auth/google/retorno?code=xyz&state=s1")).toBe(
-      "/api/v1/auth/google/retorno?code=[oculto]&state=[oculto]",
     );
   });
 

@@ -53,11 +53,6 @@ export const acesso = z.object({
 export type Acesso = z.infer<typeof acesso>;
 
 export const contratosAuth = {
-  provedores: contrato({
-    metodo: "GET",
-    caminho: "/api/v1/auth/provedores",
-    saida: z.object({ google: z.boolean() }),
-  }),
   login: contrato({
     metodo: "POST",
     caminho: "/api/v1/auth/login",
@@ -118,10 +113,4 @@ export const contratosAuth = {
     }),
     saida: ok,
   }),
-} as const;
-
-/** Rotas de redirecionamento do Google (não são JSON: o navegador navega até elas). */
-export const CAMINHOS_GOOGLE = {
-  iniciar: "/api/v1/auth/google",
-  retorno: "/api/v1/auth/google/retorno",
 } as const;

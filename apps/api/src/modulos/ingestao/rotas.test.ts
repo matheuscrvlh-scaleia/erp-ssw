@@ -16,7 +16,7 @@ beforeEach(async () => {
   cenario = criarCenario();
   empresaId = cenario.banco.criarEmpresa().id;
   workerSsw = new WorkerSswFalso();
-  app = await construirAppDeTeste(cenario, null, { workerSsw });
+  app = await construirAppDeTeste(cenario, { workerSsw });
 });
 afterEach(() => app.close());
 
@@ -238,7 +238,7 @@ describe("telas de ingestão (só Plataforma)", () => {
 
   it("sem o worker-ssw configurado: ações 503 (sem auditoria), leituras seguem", async () => {
     await app.close();
-    app = await construirAppDeTeste(cenario, null);
+    app = await construirAppDeTeste(cenario);
     const headers = await plataforma();
     const r = await app.inject({ method: "POST", url: `${BASE}/ftp/liberar-trava`, headers });
     expect(r.statusCode).toBe(503);

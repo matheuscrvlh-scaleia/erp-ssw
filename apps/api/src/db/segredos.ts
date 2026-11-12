@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 /**
  * Segredos de integração (senha de SFTP, token do SSW…) cifrados pela aplicação com AES-256-GCM.
@@ -35,16 +35,6 @@ export function lerChavesDeSegredo(texto: string, versaoAtual?: number): ChavesD
   const atual = versaoAtual ?? Math.max(0, ...porVersao.keys());
   if (!porVersao.has(atual)) throw new Error(`Chave de segredo atual (${atual}) não informada.`);
   return { atual, porVersao };
-}
-
-/**
- * Segredo derivado da chave mestra atual (HKDF-SHA256) para outra finalidade (ex.: assinar
- * cookie): uma variável a menos no ambiente, e as finalidades não se misturam.
- */
-export function derivarSegredo(chaves: ChavesDeSegredo, finalidade: string): string {
-  const chave = chaves.porVersao.get(chaves.atual);
-  if (!chave) throw new Error(`Chave de segredo atual (${chaves.atual}) não informada.`);
-  return Buffer.from(hkdfSync("sha256", chave, "", `erp-ssw:${finalidade}`, 32)).toString("base64");
 }
 
 export interface SegredoCifrado {

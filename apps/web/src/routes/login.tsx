@@ -1,7 +1,7 @@
-import { CAMINHOS_GOOGLE, contratosAuth } from "@erp/shared/contratos/auth";
+import { contratosAuth } from "@erp/shared/contratos/auth";
 import { z } from "@erp/shared/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -38,10 +38,6 @@ function PaginaLogin() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [modo, setModo] = useState<"entrar" | "esqueci">("entrar");
-  const provedores = useQuery({
-    queryKey: ["provedores-de-login"],
-    queryFn: () => chamar(contratosAuth.provedores),
-  });
 
   useEffect(() => {
     document.title = "Entrar — Painel BI Logístico";
@@ -79,28 +75,6 @@ function PaginaLogin() {
           setModo("esqueci");
         }}
       />
-      {provedores.data?.google && (
-        <>
-          <div className="my-5 flex items-center gap-3 text-[12px] text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            ou
-            <span className="h-px flex-1 bg-border" />
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 w-full"
-            onClick={() => {
-              // O navegador sai daqui: a API leva ao Google e volta já com o cookie de sessão.
-              window.location.assign(
-                `${CAMINHOS_GOOGLE.iniciar}?redirect=${encodeURIComponent(destino)}`,
-              );
-            }}
-          >
-            Continuar com Google
-          </Button>
-        </>
-      )}
     </CartaoDeEntrada>
   );
 }

@@ -8,18 +8,18 @@ describe("ambiente", () => {
     expect(() => carregarAmbiente({})).toThrow(/DATABASE_URL[\s\S]*JWT_CHAVE_PRIVADA/);
   });
 
-  it("Google exige as três variáveis juntas; produção exige Redis e a chave mestra", () => {
-    expect(() => ambienteDeTeste({ GOOGLE_CLIENT_ID: "x" })).toThrow("GOOGLE_CLIENT_SECRET");
+  it("produção exige Redis e a chave mestra", () => {
     expect(() => ambienteDeTeste({ NODE_ENV: "production" })).toThrow(
       /REDIS_URL[\s\S]*SEGREDOS_CHAVES/,
     );
   });
 
-  it("jobs do ERP precisam de Redis; o cookie precisa da chave mestra ou de segredo próprio", () => {
+  it("jobs do ERP precisam de Redis; a chave mestra é opcional fora de produção", () => {
     expect(() => ambienteDeTeste({ JOBS_LIGADOS: "true" })).toThrow("JOBS_LIGADOS");
-    expect(() =>
-      carregarAmbiente({ DATABASE_URL: "postgres://x", JWT_CHAVE_PRIVADA: gerarChavePem() }),
-    ).toThrow("SEGREDOS_CHAVES");
+    expect(
+      carregarAmbiente({ DATABASE_URL: "postgres://x", JWT_CHAVE_PRIVADA: gerarChavePem() })
+        .SEGREDOS_CHAVES,
+    ).toBeUndefined();
     expect(
       carregarAmbiente({
         DATABASE_URL: "postgres://x",

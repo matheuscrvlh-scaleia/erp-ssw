@@ -437,6 +437,7 @@ Os exemplos marcados "ilustrativo" mostram o tipo de efeito; os números não fo
 - **Recomendação:** b).
 - **Até a resposta:** a pessoa vê "Sem acesso", como hoje.
 - **Ref.:** 05 §9 P3.
+- **Decisão (12/11/2026):** não há mais login com Google; a pergunta deixa de valer.
 
 ### Q36 — Usuário criado pela metade
 

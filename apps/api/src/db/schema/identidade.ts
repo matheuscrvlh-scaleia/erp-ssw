@@ -7,7 +7,6 @@ import {
   integer,
   text,
   timestamp,
-  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -87,23 +86,6 @@ export const tokensSenha = erp.table(
     criadoPor: uuid("criado_por").references(() => usuarios.id),
   },
   (t) => [index("tokens_senha_usuario_idx").on(t.usuarioId)],
-);
-
-/** Login social (Google). Só liga a um usuário que já existe: o cadastro é fechado. */
-export const identidadesExternas = erp.table(
-  "identidades_externas",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    usuarioId: uuid("usuario_id")
-      .notNull()
-      .references(() => usuarios.id, { onDelete: "cascade" }),
-    provedor: text("provedor", { enum: ["google"] }).notNull(),
-    sujeito: text("sujeito").notNull(),
-    email: text("email").notNull(),
-    criadoEm: criadoEm(),
-    ultimoUsoEm: timestamp("ultimo_uso_em", { withTimezone: true, mode: "date" }),
-  },
-  (t) => [unique("identidades_externas_provedor_sujeito").on(t.provedor, t.sujeito)],
 );
 
 /** Equipe da Plataforma: vê e administra todas as empresas. */

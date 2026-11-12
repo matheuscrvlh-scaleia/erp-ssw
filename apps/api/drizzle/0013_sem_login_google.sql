@@ -1,0 +1,1 @@
+DROP TABLE "erp"."identidades_externas" CASCADE;

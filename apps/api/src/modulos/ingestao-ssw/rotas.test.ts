@@ -25,7 +25,7 @@ let empresaId: string;
 beforeEach(async () => {
   cenario = criarCenario();
   workerSsw = new WorkerSswFalso();
-  app = await construirAppDeTeste(cenario, null, { workerSsw, chavesDeSegredo: chaves });
+  app = await construirAppDeTeste(cenario, { workerSsw, chavesDeSegredo: chaves });
   empresaId = cenario.banco.criarEmpresa().id;
   cenario.banco.liberarModulo(empresaId, "integracao_ssw");
   cenario.banco.definirCargo(empresaId, "admin", { rotulo: "Admin", telas: ["admin_ingestao"] });
@@ -132,7 +132,7 @@ describe("Admin › Ingestão SSW", () => {
 
   it("sem o worker-ssw configurado: ações 503, leituras seguem", async () => {
     await app.close();
-    app = await construirAppDeTeste(cenario, null, { chavesDeSegredo: chaves });
+    app = await construirAppDeTeste(cenario, { chavesDeSegredo: chaves });
     const headers = await plataforma();
     const acao = await app.inject({
       method: "POST",

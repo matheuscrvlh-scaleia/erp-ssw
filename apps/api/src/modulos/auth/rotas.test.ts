@@ -1,7 +1,6 @@
 import { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { type ProvedorGoogle } from "../../infra/google";
 import {
   type Cenario,
   construirAppDeTeste,
@@ -203,72 +202,6 @@ describe("esqueci a senha", () => {
     const inexistente = await pedir("ninguem@fr.com.br");
     expect(existente.statusCode).toBe(200);
     expect(existente.json()).toEqual(inexistente.json());
-  });
-});
-
-describe("Google", () => {
-  it("rota não existe sem configuração e provedores diz que está desligado", async () => {
-    expect((await app.inject({ url: "/api/v1/auth/google" })).statusCode).toBe(404);
-    expect((await app.inject({ url: "/api/v1/auth/provedores" })).json()).toEqual({
-      google: false,
-    });
-  });
-
-  it("ida guarda o desafio em cookie assinado; volta cria a sessão e redireciona", async () => {
-    const google: ProvedorGoogle = {
-      iniciar: () =>
-        Promise.resolve({
-          url: "https://accounts.google.com/o/oauth2/v2/auth?x=1",
-          desafio: { verificador: "v", estado: "e", nonce: "n" },
-        }),
-      concluir: (_url, desafio) =>
-        Promise.resolve({
-          sujeito: `sub-${desafio.estado}`,
-          email: "joana@fr.com.br",
-          emailVerificado: true,
-        }),
-    };
-    cenario.ambiente = {
-      ...cenario.ambiente,
-      GOOGLE_REDIRECT_URI: "http://localhost:5173/api/v1/auth/google/retorno",
-    };
-    await app.close();
-    app = await construirAppDeTeste(cenario, google);
-    cenario.banco.criarUsuario({ email: "joana@fr.com.br" });
-
-    const ida = await app.inject({ url: "/api/v1/auth/google?redirect=//malicioso.com" });
-    expect(ida.statusCode).toBe(302);
-    expect(ida.headers.location).toContain("accounts.google.com");
-    const desafio = ida.cookies.find((c) => c.name === "erp_google");
-    expect(desafio).toMatchObject({ httpOnly: true, sameSite: "Lax" });
-
-    const volta = await app.inject({
-      url: "/api/v1/auth/google/retorno?code=abc&state=e",
-      cookies: { erp_google: desafio?.value ?? "" },
-    });
-    expect(volta.statusCode).toBe(302);
-    expect(volta.headers.location).toBe("/");
-    expect(cookieDeRefresh(volta)).toBeDefined();
-
-    const semCookie = await app.inject({ url: "/api/v1/auth/google/retorno?code=abc" });
-    expect(semCookie.headers.location).toBe("/login?erro=falhou");
-
-    // Tab entre as barras: o navegador descarta e "/<tab>/site" viraria "//site".
-    for (const redirect of [
-      "%2F%09%2Fevil.example",
-      "%2F%20%2Fevil.example",
-      "%2Fpainel%3Fa%3D1",
-    ]) {
-      const outraIda = await app.inject({ url: `/api/v1/auth/google?redirect=${redirect}` });
-      const outroDesafio = outraIda.cookies.find((c) => c.name === "erp_google")?.value ?? "";
-      const outraVolta = await app.inject({
-        url: "/api/v1/auth/google/retorno?code=abc&state=e",
-        cookies: { erp_google: outroDesafio },
-      });
-      expect(outraVolta.headers.location).toBe(
-        redirect.startsWith("%2Fpainel") ? "/painel?a=1" : "/",
-      );
-    }
   });
 });
 

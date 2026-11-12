@@ -197,7 +197,7 @@ describe("rotas do Ahgora", () => {
 
   beforeEach(async () => {
     cenario = criarCenario();
-    app = await construirAppDeTeste(cenario, null, {
+    app = await construirAppDeTeste(cenario, {
       ahgora: { segredos: CHAVES, ambiente: {}, http },
     });
     empresaId = cenario.banco.criarEmpresa().id;

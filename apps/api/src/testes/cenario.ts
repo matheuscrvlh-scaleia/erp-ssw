@@ -9,7 +9,6 @@ import { type Ambiente, carregarAmbiente } from "../config/env";
 import type { Armazenamento } from "../infra/armazenamento";
 import { type Correio, type Mensagem } from "../infra/correio";
 import type { DadosDoJob, FilaDeJobs } from "../infra/fila";
-import { type ProvedorGoogle } from "../infra/google";
 import { criarLimitadorEmMemoria } from "../infra/limitador";
 import { criarServicoDeSenhas } from "../infra/senhas";
 import { criarEmissorDeTokens, type EmissorDeTokens } from "../infra/tokens";
@@ -28,7 +27,6 @@ export function ambienteDeTeste(extra: Record<string, string> = {}): Ambiente {
     DATABASE_URL: "postgres://teste@localhost/teste",
     WEB_URL: "http://localhost:5173",
     JWT_CHAVE_PRIVADA: gerarChavePem(),
-    COOKIE_SEGREDO: "segredo-de-teste-com-mais-de-32-caracteres",
     ...extra,
   });
 }
@@ -119,7 +117,6 @@ export function criarCenario(): Cenario {
 
 export async function construirAppDeTeste(
   cenario: Cenario,
-  google: ProvedorGoogle | null = null,
   extras: Partial<Dependencias> = {},
 ): Promise<FastifyInstance> {
   const { deps } = cenario;
@@ -133,7 +130,6 @@ export async function construirAppDeTeste(
     senhas: deps.senhas,
     limitador: deps.limitador,
     correio: cenario.correio,
-    google,
     workerSsw: null,
     fila: cenario.fila,
     armazenamento: cenario.armazenamento,

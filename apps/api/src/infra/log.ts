@@ -21,16 +21,8 @@ export const CAMINHOS_SENSIVEIS = [
   "*.segredo",
 ];
 
-/** Parâmetros de query que carregam segredo (webhook do SSW manda `?secret=`; OAuth manda `code`/`state`). */
-const PARAMETROS_SENSIVEIS = new Set([
-  "secret",
-  "token",
-  "code",
-  "state",
-  "senha",
-  "apikey",
-  "key",
-]);
+/** Parâmetros de query que carregam segredo (o webhook do SSW manda `?secret=`). */
+const PARAMETROS_SENSIVEIS = new Set(["secret", "token", "senha", "apikey", "key"]);
 
 /** Caminhos com segredo num segmento: o token do link público do ranking. */
 const CAMINHOS_COM_SEGREDO = /^(\/(?:api\/public\/ranking|ranking\/publico)\/)[^/?#]+/i;

@@ -21,7 +21,6 @@ import {
 } from "../../http/erros";
 import { gerarTokenOpaco, hashDoToken } from "../../infra/aleatorio";
 import { type Correio } from "../../infra/correio";
-import { type IdentidadeGoogle } from "../../infra/google";
 import { type LimitadorDeFalhas } from "../../infra/limitador";
 import { type AlgoritmoSenha, type ServicoDeSenhas } from "../../infra/senhas";
 import { type EmissorDeTokens, type SessaoDoToken } from "../../infra/tokens";
@@ -103,13 +102,6 @@ export interface RepositorioAuth {
   /** Marca como usado só se ainda não foi (dois cliques no mesmo link: só um vale). */
   consumirTokenSenha(tokenId: string, agora: Date): Promise<boolean>;
   definirSenha(usuarioId: string, hash: string, nome: string | null): Promise<void>;
-  usuarioPorIdentidade(provedor: "google", sujeito: string): Promise<string | null>;
-  vincularIdentidade(
-    usuarioId: string,
-    provedor: "google",
-    sujeito: string,
-    email: string,
-  ): Promise<void>;
   adminsDaEmpresa(empresaId: string): Promise<{ nome: string | null; email: string }[]>;
 }
 
@@ -254,28 +246,6 @@ export async function entrar(
   const novoHash =
     usuario.senhaAlgoritmo === "bcrypt" ? await deps.senhas.gerarHash(entrada.senha) : null;
   return abrirSessao(deps, usuario.id, origem, novoHash);
-}
-
-/**
- * Login pelo Google: só entra quem já é usuário (cadastro fechado). Na primeira vez liga a conta
- * Google ao usuário pelo e-mail verificado; depois, pelo `sub`. Devolve nulo se não tem acesso.
- */
-export async function entrarComGoogle(
-  deps: DependenciasAuth,
-  identidade: IdentidadeGoogle,
-  origem: Origem,
-): Promise<SessaoEmitida | null> {
-  if (!identidade.emailVerificado) return null;
-  const email = normalizarEmail(identidade.email);
-  const usuarioId = await deps.executar(CONTEXTO_VAZIO, async ({ auth }) => {
-    const ligado = await auth.usuarioPorIdentidade("google", identidade.sujeito);
-    if (ligado) return ligado;
-    const usuario = await auth.usuarioPorEmail(email);
-    if (!usuario) return null;
-    await auth.vincularIdentidade(usuario.id, "google", identidade.sujeito, email);
-    return usuario.id;
-  });
-  return usuarioId ? abrirSessao(deps, usuarioId, origem, null) : null;
 }
 
 type SituacaoDoRefresh = { tipo: "valida"; sessao: SessaoGravada } | { tipo: "invalida" };
