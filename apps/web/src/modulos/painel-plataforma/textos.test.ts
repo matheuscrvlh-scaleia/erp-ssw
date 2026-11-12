@@ -1,13 +1,7 @@
 import { type EmpresaNoPainel } from "@erp/shared/contratos/painel-plataforma";
 import { describe, expect, it } from "vitest";
 
-import {
-  haQuantoTempo,
-  resumoDosNiveis,
-  resumoDosStatus,
-  rotuloDoMes,
-  seloDaSsw,
-} from "./PaginaPainel";
+import { haQuantoTempo, resumoDosNiveis, resumoDosStatus, rotuloDoMes, seloDaSsw } from "./textos";
 
 const REF = "2026-11-12T15:00:00.000Z";
 
