@@ -5,10 +5,8 @@ import {
   lerConfiguracoesDaListagem,
   montarFiltroLista,
 } from "@erp/dominio/listagem/filtro";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type CodigoDoRecorte,
-  type contratosListagem,
   type FiltroListaValidado,
   type LinhaLista,
   type OrdemLista,
@@ -31,6 +29,21 @@ export interface Agregados {
   porCidade: { cidade: string; qtd: number }[];
   /** CT-e por dia de atraso (só atraso > 0); vazio quando não pedido. */
   porAtraso: { atraso: number; qtd: number }[];
+}
+
+/** Página da lista com o total e os gráficos, todos com o mesmo filtro. */
+export interface PaginaDaLista {
+  linhas: LinhaLista[];
+  total: number;
+  porCodigo: ContagemPorCodigo[];
+  porUnidade: Agregados["porUnidade"];
+  porCidade: Agregados["porCidade"];
+  porFaixa: ReturnType<typeof agruparPorFaixaDeAtraso>;
+}
+
+export interface PaginaDaExportacao {
+  linhas: LinhaLista[];
+  temMais: boolean;
 }
 
 export interface RepositorioListagem {
@@ -108,7 +121,7 @@ export async function listarCtrcs(
   ctx: ContextoListagem,
   entrada: EntradaListar,
   agora: Date,
-): Promise<SaidaDe<typeof contratosListagem.listar>> {
+): Promise<PaginaDaLista> {
   return db(async ({ ctrc, listagem }) => {
     const { filtro, catalogo } = await prepararFiltro(ctrc, ctx, entrada, agora);
     if (filtro === null) {
@@ -146,7 +159,7 @@ export async function exportarCtrcs(
   ctx: ContextoListagem,
   entrada: EntradaListar,
   agora: Date,
-): Promise<SaidaDe<typeof contratosListagem.exportar>> {
+): Promise<PaginaDaExportacao> {
   return db(async ({ ctrc, listagem }) => {
     const { filtro } = await prepararFiltro(ctrc, ctx, entrada, agora);
     if (filtro === null) return { linhas: [], temMais: false };
