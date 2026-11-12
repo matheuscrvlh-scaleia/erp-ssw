@@ -10,18 +10,21 @@ import {
   alterarFeriado,
   type ContextoCalendario,
   criarFeriado,
+  ESCOPO_GERAL,
   excluirFeriado,
   gerarNacionais,
+  listarFeriadosGerais,
   obterCalendario,
 } from "./casos-de-uso";
 
 /**
  * Ler: quem tem a tela; escrever: admin da empresa (ou Plataforma). Sempre com o módulo.
- * Gerar nacionais grava para todas as empresas: só a Plataforma (Q28 do dono).
+ * Feriados gerais (gerar nacionais e Plataforma › Configurações) valem para todas as empresas:
+ * só a Plataforma (Q28 do dono), sem depender dos módulos da empresa ativa.
  */
 const ler = [exigirModulo("historico"), exigirTela("calendario")];
 const escrever = [...ler, exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN)];
-const gerarParaTodas = [...ler, exigirAdminPlataforma];
+const gerais = [exigirAdminPlataforma];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoCalendario> {
   const { acesso, empresa } = await empresaDaRequisicao(request);
@@ -94,10 +97,66 @@ export const rotasCalendario: FastifyPluginCallbackZod<{ agora: () => Date }> = 
     c.gerarNacionais.caminho,
     {
       schema: { body: c.gerarNacionais.entrada, response: { 200: c.gerarNacionais.saida } },
-      preHandler: gerarParaTodas,
+      preHandler: gerais,
     },
     async (request) =>
       gerarNacionais(request.db, await atorDa(request), request.body.ano, request.body.anosAFrente),
+  );
+
+  app.get(
+    c.listarFeriadosGerais.caminho,
+    {
+      schema: {
+        querystring: c.listarFeriadosGerais.entrada,
+        response: { 200: c.listarFeriadosGerais.saida },
+      },
+      preHandler: gerais,
+    },
+    async (request) => listarFeriadosGerais(request.db, request.query.ano),
+  );
+
+  app.post(
+    c.criarFeriadoGeral.caminho,
+    {
+      schema: { body: c.criarFeriadoGeral.entrada, response: { 200: c.criarFeriadoGeral.saida } },
+      preHandler: gerais,
+    },
+    async (request) => criarFeriado(request.db, ESCOPO_GERAL, await atorDa(request), request.body),
+  );
+
+  app.put(
+    c.alterarFeriadoGeral.caminho,
+    {
+      schema: {
+        params: c.alterarFeriadoGeral.parametros,
+        body: c.alterarFeriadoGeral.entrada,
+        response: { 200: c.alterarFeriadoGeral.saida },
+      },
+      preHandler: gerais,
+    },
+    async (request) =>
+      alterarFeriado(
+        request.db,
+        ESCOPO_GERAL,
+        await atorDa(request),
+        request.params.id,
+        request.body,
+      ),
+  );
+
+  app.delete(
+    c.excluirFeriadoGeral.caminho,
+    {
+      schema: {
+        params: c.excluirFeriadoGeral.parametros,
+        response: { 200: c.excluirFeriadoGeral.saida },
+      },
+      preHandler: gerais,
+    },
+    async (request) => {
+      await excluirFeriado(request.db, ESCOPO_GERAL, await atorDa(request), request.params.id);
+      return { ok: true as const };
+    },
   );
   pronto();
 };

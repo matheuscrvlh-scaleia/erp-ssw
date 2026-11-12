@@ -263,6 +263,93 @@ describe("escrita de feriados", () => {
   });
 });
 
+describe("feriados gerais (Plataforma › Configurações)", () => {
+  const GERAL = { data: "2026-11-20", tipo: "nacional", descricao: "Consciência Negra" };
+
+  async function comoPlataforma() {
+    const plataforma = cenario.banco.criarUsuario({ email: "suporte@plataforma.com" });
+    cenario.banco.plataformaAdmins.add(plataforma.id);
+    return entrarComo(cenario, plataforma.id, empresaId);
+  }
+
+  it("403 para o admin da empresa, em leitura e escrita", async () => {
+    const headers = await comoPapel("admin");
+    const ler = await app.inject({ url: "/api/v1/calendario/feriados-gerais?ano=2026", headers });
+    expect(ler.statusCode).toBe(403);
+    const criar = await app.inject({
+      method: "POST",
+      url: "/api/v1/calendario/feriados-gerais",
+      headers,
+      payload: GERAL,
+    });
+    expect(criar.statusCode).toBe(403);
+    expect(cenario.banco.feriados).toEqual([]);
+  });
+
+  it("a Plataforma lista só os gerais e cria, altera e exclui com empresa nula; auditado", async () => {
+    const headers = await comoPlataforma();
+    const daEmpresa = await app.inject({
+      method: "POST",
+      url: "/api/v1/calendario/feriados",
+      headers,
+      payload: FERIADO,
+    });
+    expect(daEmpresa.statusCode).toBe(200);
+
+    const criado = await app.inject({
+      method: "POST",
+      url: "/api/v1/calendario/feriados-gerais",
+      headers,
+      payload: GERAL,
+    });
+    expect(criado.json()).toEqual({ inseridos: 1, atualizados: 0 });
+    const listar = () =>
+      app.inject({ url: "/api/v1/calendario/feriados-gerais?ano=2026", headers });
+    const lista = (await listar()).json<{ feriados: { id: string; descricao: string }[] }>();
+    expect(lista.feriados.map((f) => f.descricao)).toEqual(["Consciência Negra"]);
+    const id = lista.feriados[0]?.id ?? "";
+    expect(cenario.banco.feriados.find((f) => f.id === id)?.empresaId).toBeNull();
+
+    const alterado = await app.inject({
+      method: "PUT",
+      url: `/api/v1/calendario/feriados-gerais/${id}`,
+      headers,
+      payload: { ...GERAL, descricao: "Dia da Consciência Negra" },
+    });
+    expect(alterado.statusCode).toBe(200);
+    const apagado = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/calendario/feriados-gerais/${id}`,
+      headers,
+    });
+    expect(apagado.json()).toEqual({ ok: true });
+    expect((await listar()).json()).toEqual({ feriados: [] });
+    expect(cenario.banco.auditoria.filter((a) => a.empresaId === null).map((a) => a.acao)).toEqual([
+      "criar",
+      "alterar",
+      "excluir",
+    ]);
+  });
+
+  it("feriado da empresa não é alcançado pelas rotas dos gerais (404)", async () => {
+    const headers = await comoPlataforma();
+    await app.inject({
+      method: "POST",
+      url: "/api/v1/calendario/feriados",
+      headers,
+      payload: FERIADO,
+    });
+    const daEmpresa = cenario.banco.feriados[0]?.id ?? "";
+    const r = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/calendario/feriados-gerais/${daEmpresa}`,
+      headers,
+    });
+    expect(r.statusCode).toBe(404);
+    expect(cenario.banco.feriados).toHaveLength(1);
+  });
+});
+
 describe("erros de infraestrutura", () => {
   it("timeout de consulta vira 503 pedindo para filtrar mais", async () => {
     const headers = await comoPapel("operador");

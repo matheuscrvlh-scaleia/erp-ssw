@@ -75,6 +75,11 @@ const resultadoGravacao = z.object({
 
 const parametrosId = z.object({ id: z.uuid() });
 
+const novoFeriado = dadosDoFeriado.extend({
+  recorrente: z.boolean().default(false),
+  anosAFrente: z.number().int().min(0).max(10).default(5),
+});
+
 export const contratosCalendario = {
   obter: contrato({
     metodo: "GET",
@@ -95,10 +100,7 @@ export const contratosCalendario = {
   criarFeriado: contrato({
     metodo: "POST",
     caminho: "/api/v1/calendario/feriados",
-    entrada: dadosDoFeriado.extend({
-      recorrente: z.boolean().default(false),
-      anosAFrente: z.number().int().min(0).max(10).default(5),
-    }),
+    entrada: novoFeriado,
     saida: resultadoGravacao,
   }),
   alterarFeriado: contrato({
@@ -123,5 +125,31 @@ export const contratosCalendario = {
       existiam: z.number().int(),
       anos: z.array(z.number().int()),
     }),
+  }),
+  /** Plataforma › Configurações › Feriados gerais: só os de empresa nula (valem para todas). */
+  listarFeriadosGerais: contrato({
+    metodo: "GET",
+    caminho: "/api/v1/calendario/feriados-gerais",
+    entrada: z.object({ ano }),
+    saida: z.object({ feriados: z.array(feriado) }),
+  }),
+  criarFeriadoGeral: contrato({
+    metodo: "POST",
+    caminho: "/api/v1/calendario/feriados-gerais",
+    entrada: novoFeriado,
+    saida: resultadoGravacao,
+  }),
+  alterarFeriadoGeral: contrato({
+    metodo: "PUT",
+    caminho: "/api/v1/calendario/feriados-gerais/:id",
+    parametros: parametrosId,
+    entrada: dadosDoFeriado,
+    saida: resultadoGravacao,
+  }),
+  excluirFeriadoGeral: contrato({
+    metodo: "DELETE",
+    caminho: "/api/v1/calendario/feriados-gerais/:id",
+    parametros: parametrosId,
+    saida: z.object({ ok: z.literal(true) }),
   }),
 } as const;
