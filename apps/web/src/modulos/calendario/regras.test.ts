@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatarDiaCurto, montarGradeDoMes, porData, textoDaDistancia } from "./calendario";
+import { montarGradeDoMes, porData } from "./regras";
 
 describe("montarGradeDoMes", () => {
   it("42 dias começando no domingo, marcando os de fora do mês", () => {
@@ -23,14 +23,7 @@ describe("montarGradeDoMes", () => {
   });
 });
 
-describe("textos", () => {
-  it("dia curto e distância", () => {
-    expect(formatarDiaCurto("2026-11-15")).toBe("Dom, 15 de nov");
-    expect(textoDaDistancia(0)).toBe("hoje");
-    expect(textoDaDistancia(5)).toBe("em 5d");
-    expect(textoDaDistancia(-2)).toBe("há 2d");
-  });
-
+describe("porData", () => {
   it("agrupa por data", () => {
     const mapa = porData([
       { data: "2026-11-15", n: 1 },

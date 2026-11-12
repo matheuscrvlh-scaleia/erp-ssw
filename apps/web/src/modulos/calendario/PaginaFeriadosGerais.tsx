@@ -1,9 +1,8 @@
-import { contratosCalendario as c, type Feriado } from "@erp/shared/contratos/calendario";
+import { type Feriado } from "@erp/shared/contratos/calendario";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { EtiquetaDoTipo } from "@/componentes/comum/EtiquetaDoTipo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
@@ -14,11 +13,15 @@ import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
-import { chamar } from "@/lib/api";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { chaves as chavesDoHistorico } from "@/modulos/historico/api";
+import { useGravacao } from "@/hooks/use-gravacao";
 
-import { CHAVE_DO_CALENDARIO, consultaFeriadosGerais } from "./api";
+import {
+  consultaFeriadosGerais,
+  mutacaoAlterarFeriadoGeral,
+  mutacaoCriarFeriadoGeral,
+  mutacaoExcluirFeriadoGeral,
+  mutacaoGerarNacionais,
+} from "./api";
 
 /**
  * Plataforma › Configurações › Feriados gerais: os feriados sem empresa, que valem para todas.
@@ -35,47 +38,38 @@ export function PaginaFeriadosGerais() {
   const [modalAberto, setModalAberto] = useState(false);
   const consulta = useQuery(consultaFeriadosGerais(ano));
 
-  const executar = async (acao: () => Promise<string>) => {
-    try {
-      toast.success(await acao());
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: CHAVE_DO_CALENDARIO }),
-        queryClient.invalidateQueries({ queryKey: chavesDoHistorico.tudo }),
-      ]);
-      return true;
-    } catch (e) {
-      toast.error(mensagemAmigavel(e));
-      return false;
-    }
-  };
+  const gerar = useGravacao({
+    mutacao: mutacaoGerarNacionais(queryClient),
+    sucesso: (_, r) =>
+      `${String(r.inseridos)} feriado(s) gerado(s) · ${String(r.existiam)} já existiam`,
+  });
+  const apagar = useGravacao({
+    mutacao: mutacaoExcluirFeriadoGeral(queryClient),
+    sucesso: "Feriado excluído",
+  });
+  const alterar = useGravacao({
+    mutacao: mutacaoAlterarFeriadoGeral(queryClient),
+    sucesso: "Feriado atualizado",
+  });
+  const criar = useGravacao({
+    mutacao: mutacaoCriarFeriadoGeral(queryClient),
+    sucesso: (_, r) => `${String(r.inseridos)} feriado(s) inserido(s)`,
+  });
   const gerarNacionais = () => {
     const confirmou = window.confirm(
       `Vamos gerar os feriados nacionais de ${String(ano)} e dos próximos 4 anos para todas as empresas. Feriados já cadastrados serão mantidos. Continuar?`,
     );
     if (!confirmou) return;
-    void executar(async () => {
-      const r = await chamar(c.gerarNacionais, { entrada: { ano, anosAFrente: 4 } });
-      return `${String(r.inseridos)} feriado(s) gerado(s) · ${String(r.existiam)} já existiam`;
-    });
+    void gerar.gravar({ ano, anosAFrente: 4 });
   };
   const excluir = (f: Feriado) => {
     if (!window.confirm(`Excluir "${f.descricao}" de todas as empresas?`)) return;
-    void executar(async () => {
-      await chamar(c.excluirFeriadoGeral, { parametros: { id: f.id } });
-      return "Feriado excluído";
-    });
+    void apagar.gravar(f.id);
   };
   const gravar = ({ dados, recorrente }: FeriadoParaGravar) =>
-    executar(async () => {
-      if (editando) {
-        await chamar(c.alterarFeriadoGeral, { parametros: { id: editando.id }, entrada: dados });
-        return "Feriado atualizado";
-      }
-      const r = await chamar(c.criarFeriadoGeral, {
-        entrada: { ...dados, recorrente, anosAFrente: 5 },
-      });
-      return `${String(r.inseridos)} feriado(s) inserido(s)`;
-    });
+    editando
+      ? alterar.gravar({ id: editando.id, dados })
+      : criar.gravar({ ...dados, recorrente, anosAFrente: 5 });
   const abrir = (f: Feriado | null) => {
     setEditando(f);
     setModalAberto(true);

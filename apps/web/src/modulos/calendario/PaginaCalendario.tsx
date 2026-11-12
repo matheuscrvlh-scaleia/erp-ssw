@@ -1,9 +1,8 @@
-import { contratosCalendario as c, type Feriado } from "@erp/shared/contratos/calendario";
+import { type Feriado } from "@erp/shared/contratos/calendario";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarClock, CalendarDays, Flag, MapPin, Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
@@ -19,12 +18,20 @@ import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
-import { chamar } from "@/lib/api";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { useGravacao } from "@/hooks/use-gravacao";
 
-import { CHAVE_DO_CALENDARIO, consultaCalendario } from "./api";
-import { formatarDiaCurto, porData } from "./calendario";
-import { VisaoAno, VisaoLista, VisaoMes } from "./Visoes";
+import {
+  consultaCalendario,
+  mutacaoAlterarFeriado,
+  mutacaoCriarFeriado,
+  mutacaoExcluirFeriado,
+  mutacaoGerarNacionais,
+} from "./api";
+import { VisaoAno } from "./componentes/VisaoAno";
+import { VisaoLista } from "./componentes/VisaoLista";
+import { VisaoMes } from "./componentes/VisaoMes";
+import { porData } from "./regras";
+import { formatarDiaCurto } from "./textos";
 
 const VISOES = ["mes", "ano", "lista"] as const;
 type Visao = (typeof VISOES)[number];
@@ -58,51 +65,40 @@ export function PaginaCalendario() {
   const unidades = data?.unidades ?? [];
   const feriadosPorData = useMemo(() => porData(data?.feriados ?? []), [data]);
 
-  const atualizar = () => queryClient.invalidateQueries({ queryKey: CHAVE_DO_CALENDARIO });
+  const gerar = useGravacao({
+    mutacao: mutacaoGerarNacionais(queryClient),
+    sucesso: (_, r) => `${r.inseridos} feriado(s) gerado(s) · ${r.existiam} já existiam`,
+  });
+  const apagar = useGravacao({
+    mutacao: mutacaoExcluirFeriado(queryClient),
+    sucesso: "Feriado excluído",
+  });
+  const alterar = useGravacao({
+    mutacao: mutacaoAlterarFeriado(queryClient),
+    sucesso: "Feriado atualizado",
+  });
+  const criar = useGravacao({
+    mutacao: mutacaoCriarFeriado(queryClient),
+    sucesso: (_, r) => `${r.inseridos} feriado(s) inserido(s)`,
+  });
 
   const gerarNacionais = async () => {
     const confirmou = window.confirm(
       `Vamos gerar os feriados nacionais de ${ano} e dos próximos 4 anos. Feriados já cadastrados serão mantidos. Continuar?`,
     );
     if (!confirmou) return;
-    try {
-      const r = await chamar(c.gerarNacionais, { entrada: { ano, anosAFrente: 4 } });
-      toast.success(`${r.inseridos} feriado(s) gerado(s) · ${r.existiam} já existiam`);
-      await atualizar();
-    } catch (e) {
-      toast.error(mensagemAmigavel(e));
-    }
+    await gerar.gravar({ ano, anosAFrente: 4 });
   };
 
   const excluir = async (f: Feriado) => {
     if (!window.confirm(`Excluir "${f.descricao}" em ${f.data}?`)) return;
-    try {
-      await chamar(c.excluirFeriado, { parametros: { id: f.id } });
-      toast.success("Feriado excluído");
-      await atualizar();
-    } catch (e) {
-      toast.error(mensagemAmigavel(e));
-    }
+    await apagar.gravar(f.id);
   };
 
-  const gravar = async ({ dados, recorrente }: FeriadoParaGravar): Promise<boolean> => {
-    try {
-      if (editando) {
-        await chamar(c.alterarFeriado, { parametros: { id: editando.id }, entrada: dados });
-        toast.success("Feriado atualizado");
-      } else {
-        const r = await chamar(c.criarFeriado, {
-          entrada: { ...dados, recorrente, anosAFrente: 5 },
-        });
-        toast.success(`${r.inseridos} feriado(s) inserido(s)`);
-      }
-      await atualizar();
-      return true;
-    } catch (e) {
-      toast.error(mensagemAmigavel(e));
-      return false;
-    }
-  };
+  const gravar = ({ dados, recorrente }: FeriadoParaGravar): Promise<boolean> =>
+    editando
+      ? alterar.gravar({ id: editando.id, dados })
+      : criar.gravar({ ...dados, recorrente, anosAFrente: 5 });
 
   const abrirModal = (feriado: Feriado | null) => {
     setEditando(feriado);

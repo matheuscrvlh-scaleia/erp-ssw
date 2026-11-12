@@ -3,7 +3,7 @@ import { contratosHistorico as c, type DadosDaAnotacao } from "@erp/shared/contr
 import { mutationOptions, type QueryClient, queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
-import { CHAVE_DO_CALENDARIO } from "@/modulos/calendario/api";
+import { chaves as chavesDoCalendario } from "@/modulos/calendario/api";
 
 export const chaves = {
   tudo: ["historico"] as const,
@@ -47,7 +47,7 @@ export const mutacaoExcluirAnotacao = (cliente: QueryClient) =>
 const invalidarFeriados = (cliente: QueryClient) =>
   Promise.all([
     cliente.invalidateQueries({ queryKey: chaves.tudo }),
-    cliente.invalidateQueries({ queryKey: CHAVE_DO_CALENDARIO }),
+    cliente.invalidateQueries({ queryKey: chavesDoCalendario.tudo }),
   ]);
 
 type DadosDoFeriado = EntradaDe<typeof c.criarFeriado>;
