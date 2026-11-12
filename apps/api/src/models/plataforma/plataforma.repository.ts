@@ -167,25 +167,6 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         });
     },
 
-    vinculos: (empresaId) =>
-      tx
-        .select({
-          usuarioId: empresaUsuarios.usuarioId,
-          nome: usuarios.nome,
-          email: usuarios.email,
-          papel: empresaUsuarios.papel,
-          ativo: empresaUsuarios.ativo,
-          criadoEm: empresaUsuarios.criadoEm,
-          // Contexto de Plataforma: a RLS deixa ver os vínculos de todas as empresas.
-          totalEmpresas: sql<number>`(select count(*)::int from erp.empresa_usuarios outros
-            where outros.usuario_id = ${empresaUsuarios.usuarioId})`,
-          adminPlataforma: sql<boolean>`exists (select 1 from erp.plataforma_admins pa
-            where pa.usuario_id = ${empresaUsuarios.usuarioId})`,
-        })
-        .from(empresaUsuarios)
-        .innerJoin(usuarios, eq(usuarios.id, empresaUsuarios.usuarioId))
-        .where(eq(empresaUsuarios.empresaId, empresaId)),
-
     integracoes: async (empresaId) =>
       tx
         .select({

@@ -1,40 +1,29 @@
 import { moduloVigente } from "@erp/dominio/acesso";
-import { type NovoUsuario } from "@erp/shared/contratos/admin";
 import {
   contratosPlataforma as p,
-  type EmpresaCompleta,
   type IntegracaoDaEmpresa,
   type ModuloDaEmpresa,
   type ValorDeParametro,
-  type VinculoNaEmpresa,
 } from "@erp/shared/contratos/plataforma";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 import { formatarDataHora } from "@erp/shared/formatacao";
 import { INFO_DA_INTEGRACAO } from "@erp/shared/plataforma";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Circle, ExternalLink, KeyRound, ListChecks } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { ExternalLink, KeyRound } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
-import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { CAMPO, Campo, Escolha, useGravacao } from "@/modulos/admin/comum";
-import { ModalNovoUsuario } from "@/modulos/admin/usuarios/ModalNovoUsuario";
+import { CAMPO, Campo, useGravacao } from "@/modulos/admin/comum";
 
-import {
-  CHAVES_DA_PLATAFORMA,
-  consultaCargosDaEmpresa,
-  consultaIntegracoes,
-  consultaModulos,
-  consultaVinculos,
-} from "./api";
+import { CHAVES_DA_PLATAFORMA, consultaIntegracoes, consultaModulos } from "./api";
 
 /** Campo compacto das linhas de tabela (datas e observação dos módulos). */
 const PEQUENO = cn(CAMPO, "h-8");
@@ -218,118 +207,6 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
         )}
       </td>
     </tr>
-  );
-}
-
-// --- Usuários --------------------------------------------------------------------------------
-
-/** Vínculos da empresa editada; os cargos são os dela (Q29). */
-export function AbaUsuarios({ empresaId }: { empresaId: string }) {
-  const vinculos = useQuery(consultaVinculos(empresaId));
-  const cadastros = useQuery(consultaCargosDaEmpresa(empresaId));
-  const invalidar = [CHAVES_DA_PLATAFORMA.empresa(empresaId), CHAVES_DA_PLATAFORMA.empresas];
-  const salvar = useGravacao({
-    executar: (v: VinculoNaEmpresa) =>
-      chamar(p.salvarVinculo, {
-        parametros: { id: empresaId, usuarioId: v.usuarioId },
-        entrada: { papel: v.papel, ativo: v.ativo },
-      }),
-    sucesso: "Vínculo atualizado",
-    invalidar,
-  });
-  const convidar = useGravacao({
-    executar: (novo: NovoUsuario) =>
-      chamar(p.convidarUsuario, { parametros: { id: empresaId }, entrada: novo }),
-    sucesso: (novo, r) =>
-      r.jaExistia
-        ? "O e-mail já tinha conta: usuário vinculado à empresa"
-        : novo.modo === "convite"
-          ? "Convite enviado"
-          : "Usuário criado",
-    invalidar,
-  });
-
-  const cargos = (cadastros.data?.cargos ?? []).map((c) => ({ chave: c.chave, rotulo: c.rotulo }));
-
-  const colunas: ColunaTabela<VinculoNaEmpresa>[] = [
-    {
-      chave: "nome",
-      titulo: "Nome",
-      celula: (u) => (
-        <>
-          <div className="font-semibold">{u.nome ?? "—"}</div>
-          <div className="text-xs text-muted-foreground">{u.email}</div>
-          {(u.adminPlataforma || u.totalEmpresas > 1) && (
-            <div className="mt-1 flex gap-1">
-              {u.adminPlataforma && (
-                <SeloStatus tom="info" icone={KeyRound}>
-                  Plataforma
-                </SeloStatus>
-              )}
-              {u.totalEmpresas > 1 && (
-                <SeloStatus
-                  tom="neutro"
-                  semIcone
-                >{`${String(u.totalEmpresas)} empresas`}</SeloStatus>
-              )}
-            </div>
-          )}
-        </>
-      ),
-    },
-    {
-      chave: "papel",
-      titulo: "Cargo",
-      celula: (u) => (
-        <Escolha
-          rotulo={`Cargo de ${u.email}`}
-          className="h-8 w-[180px]"
-          vazio="Sem cargo"
-          opcoes={cargos.map((c) => ({ valor: c.chave, rotulo: c.rotulo }))}
-          valor={u.papel ?? ""}
-          disabled={salvar.gravando}
-          aoMudar={(papel) => void salvar.gravar({ ...u, papel: papel || null })}
-        />
-      ),
-    },
-    {
-      chave: "ativo",
-      titulo: "Ativo",
-      ordenavel: false,
-      celula: (u) => (
-        <Switch
-          checked={u.ativo}
-          disabled={salvar.gravando}
-          onCheckedChange={(ativo) => void salvar.gravar({ ...u, ativo })}
-          aria-label={`Vínculo ativo de ${u.email}`}
-        />
-      ),
-    },
-    { chave: "criadoEm", titulo: "Desde", formato: "datahora", classe: "text-muted-foreground" },
-  ];
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <p className="max-w-2xl text-[13px] text-muted-foreground">
-          O cargo vale por empresa e vem dos cargos desta empresa (o que cada um vê e faz é definido
-          em Usuários e cargos da empresa). E-mail que já tem conta só ganha o vínculo.
-        </p>
-        <ModalNovoUsuario cargos={cargos} aoGravar={convidar.gravar} />
-      </div>
-      <TabelaDados
-        colunas={colunas}
-        linhas={vinculos.data?.usuarios ?? []}
-        chaveDaLinha={(u) => u.usuarioId}
-        carregando={vinculos.isLoading || cadastros.isLoading}
-        erro={vinculos.error ?? cadastros.error}
-        aoTentarDeNovo={() => {
-          void vinculos.refetch();
-          void cadastros.refetch();
-        }}
-        mensagemVazia="Nenhum usuário vinculado ainda."
-      />
-    </div>
   );
 }
 
@@ -596,156 +473,5 @@ function CartaoDeIntegracao({
         />
       )}
     </Painel>
-  );
-}
-
-// --- Implantação -----------------------------------------------------------------------------
-
-interface ItemDaImplantacao {
-  titulo: string;
-  detalhe: string;
-  feito: boolean;
-}
-
-/** Checklist de implantação a partir do estado da empresa (mesmos dados das outras abas). */
-export function itensDaImplantacao(
-  empresa: Pick<EmpresaCompleta, "razaoSocial" | "cnpj" | "dominioSsw" | "status">,
-  modulos: readonly ModuloDaEmpresa[],
-  integracoes: readonly IntegracaoDaEmpresa[],
-  vinculos: readonly VinculoNaEmpresa[],
-  hoje: string,
-): ItemDaImplantacao[] {
-  const faltando = [
-    !empresa.razaoSocial && "razão social",
-    !empresa.cnpj && "CNPJ",
-    !empresa.dominioSsw && "domínio SSW",
-  ].filter((x): x is string => typeof x === "string");
-  const liberados = modulos.filter((m) => !m.essencial && moduloVigente(m, hoje));
-  const ligadas = integracoes.filter((i) => i.ativo);
-  const semSegredo = ligadas.filter(
-    (i) => INFO_DA_INTEGRACAO[i.tipo].segredo && !i.segredoDefinidoEm,
-  );
-  const daEmpresa = vinculos.filter((u) => u.ativo && !u.adminPlataforma);
-  const plural = (n: number) => (n === 1 ? "" : "s");
-  return [
-    {
-      titulo: "Dados da empresa",
-      detalhe: faltando.length ? `Falta: ${faltando.join(", ")}.` : "Completos.",
-      feito: faltando.length === 0,
-    },
-    {
-      titulo: "Módulos liberados",
-      detalhe: liberados.length
-        ? liberados.map((m) => m.nome).join(", ")
-        : "Nenhum módulo além dos essenciais.",
-      feito: liberados.length > 0,
-    },
-    {
-      titulo: "Integrações configuradas",
-      detalhe: ligadas.length
-        ? ligadas.map((i) => INFO_DA_INTEGRACAO[i.tipo].nome).join(", ")
-        : "Nenhuma integração ligada.",
-      feito: ligadas.length > 0,
-    },
-    {
-      titulo: "Senhas e tokens das integrações",
-      detalhe: semSegredo.length
-        ? `Falta: ${semSegredo.map((i) => INFO_DA_INTEGRACAO[i.tipo].segredo ?? i.tipo).join(", ")}.`
-        : "Todas as integrações ligadas têm o segredo gravado.",
-      feito: ligadas.length > 0 && semSegredo.length === 0,
-    },
-    {
-      titulo: "Usuários convidados",
-      detalhe: daEmpresa.length
-        ? `${String(daEmpresa.length)} usuário${plural(daEmpresa.length)} da empresa.`
-        : "Nenhum usuário da empresa (fora a equipe da Plataforma).",
-      feito: daEmpresa.length > 0,
-    },
-    {
-      titulo: "Empresa ativa",
-      detalhe:
-        empresa.status === "ativa"
-          ? "Em produção."
-          : "Mude o status para Ativa na aba Dados quando a implantação terminar.",
-      feito: empresa.status === "ativa",
-    },
-  ];
-}
-
-export function AbaImplantacao({ empresa }: { empresa: EmpresaCompleta }) {
-  const modulos = useQuery(consultaModulos(empresa.id));
-  const vinculos = useQuery(consultaVinculos(empresa.id));
-  const integracoes = useQuery(consultaIntegracoes(empresa.id));
-  if (!modulos.data || !vinculos.data || !integracoes.data) {
-    return (
-      <Carregando
-        consulta={{
-          isLoading: modulos.isLoading || vinculos.isLoading || integracoes.isLoading,
-          error: modulos.error ?? vinculos.error ?? integracoes.error,
-        }}
-      />
-    );
-  }
-  const itens = itensDaImplantacao(
-    empresa,
-    modulos.data.modulos,
-    integracoes.data.integracoes,
-    vinculos.data.usuarios,
-    hojeNoFuso(empresa.fuso),
-  );
-  const feitos = itens.filter((i) => i.feito).length;
-  return (
-    <Painel
-      className="max-w-[960px]"
-      rotulo="Implantação"
-      titulo={`${String(feitos)} de ${String(itens.length)} etapas concluídas`}
-      icone={ListChecks}
-    >
-      <div
-        className="mx-5 mt-4 h-1.5 overflow-hidden rounded-full bg-muted"
-        role="progressbar"
-        aria-label="Etapas concluídas"
-        aria-valuemin={0}
-        aria-valuemax={itens.length}
-        aria-valuenow={feitos}
-      >
-        <div
-          className="h-full rounded-full bg-primary transition-[width]"
-          style={{ width: `${String((feitos / itens.length) * 100)}%` }}
-        />
-      </div>
-      <ol className="divide-y divide-border px-1 py-2">
-        {itens.map((i) => (
-          <ItemDaLista key={i.titulo} feito={i.feito} titulo={i.titulo}>
-            {i.detalhe}
-          </ItemDaLista>
-        ))}
-      </ol>
-    </Painel>
-  );
-}
-
-function ItemDaLista({
-  feito,
-  titulo,
-  children,
-}: {
-  feito: boolean;
-  titulo: string;
-  children: ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-3 px-4 py-3">
-      {feito ? (
-        <CheckCircle2 className="mt-0.5 h-[18px] w-[18px] shrink-0 text-status-good" aria-hidden />
-      ) : (
-        <Circle className="mt-0.5 h-[18px] w-[18px] shrink-0 text-status-warn" aria-hidden />
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-semibold">{titulo}</div>
-        <div className="text-[12.5px] text-muted-foreground">{children}</div>
-      </div>
-      <SeloStatus tom={feito ? "sucesso" : "alerta"}>{feito ? "Feito" : "Pendente"}</SeloStatus>
-    </li>
   );
 }

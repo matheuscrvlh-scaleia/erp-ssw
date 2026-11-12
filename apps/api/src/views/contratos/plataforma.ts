@@ -12,7 +12,6 @@ import {
   chaveDeCadastro,
   emailDeUsuario,
   listaDePermissoes,
-  novoUsuario,
   parametroChave,
   rotuloDoCargo,
 } from "./admin";
@@ -103,18 +102,6 @@ const dataOuNulo = z
   .refine(ehDataIso, "Data inválida (use AAAA-MM-DD).")
   .nullable()
   .or(z.literal("").transform(() => null));
-
-export const vinculoNaEmpresa = z.object({
-  usuarioId: z.uuid(),
-  nome: z.string().nullable(),
-  email: z.string(),
-  papel: z.string().nullable(),
-  ativo: z.boolean(),
-  criadoEm: z.iso.datetime(),
-  totalEmpresas: z.number().int(),
-  adminPlataforma: z.boolean(),
-});
-export type VinculoNaEmpresa = z.infer<typeof vinculoNaEmpresa>;
 
 /** Parâmetro de integração: texto, número, booleano, nulo ou lista de textos. */
 export const valorDeParametro = z.union([
@@ -251,36 +238,6 @@ export const contratosPlataforma = {
       observacao: textoOpcional(300),
     }),
     saida: ok,
-  }),
-  listarUsuarios: contrato({
-    metodo: "GET",
-    caminho: "/api/v1/plataforma/empresas/:id/usuarios",
-    parametros: parametroEmpresa,
-    saida: z.object({ usuarios: z.array(vinculoNaEmpresa) }),
-  }),
-  convidarUsuario: contrato({
-    metodo: "POST",
-    caminho: "/api/v1/plataforma/empresas/:id/usuarios",
-    parametros: parametroEmpresa,
-    entrada: novoUsuario,
-    saida: z.object({ id: z.uuid(), jaExistia: z.boolean() }),
-  }),
-  salvarVinculo: contrato({
-    metodo: "PUT",
-    caminho: "/api/v1/plataforma/empresas/:id/usuarios/:usuarioId",
-    parametros: z.object({ id: z.uuid(), usuarioId: z.uuid() }),
-    entrada: z.object({
-      papel: z.string().trim().min(1).max(64).nullable(),
-      ativo: z.boolean(),
-    }),
-    saida: ok,
-  }),
-  /** Cargos da empresa editada (não da empresa ativa de quem opera — Q29). */
-  cargosDaEmpresa: contrato({
-    metodo: "GET",
-    caminho: "/api/v1/plataforma/empresas/:id/cargos",
-    parametros: parametroEmpresa,
-    saida: z.object({ cargos: z.array(cargo) }),
   }),
   listarIntegracoes: contrato({
     metodo: "GET",

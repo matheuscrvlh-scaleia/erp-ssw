@@ -21,7 +21,6 @@ import {
   type LucideIcon,
   PackageOpen,
   Plug,
-  Rocket,
   Scale,
   ScrollText,
   Settings,
@@ -129,45 +128,55 @@ export const HUB_CONFIGURACOES_DA_PLATAFORMA: Hub = {
 export const ABAS_DA_EMPRESA: readonly AbaDoHub[] = [
   { valor: "dados", rotulo: "Dados", requisito: "plataforma_empresas", icone: Building },
   { valor: "modulos", rotulo: "Módulos", requisito: "plataforma_empresas", icone: Boxes },
-  { valor: "usuarios", rotulo: "Usuários", requisito: "plataforma_empresas", icone: Users },
-  { valor: "integracoes", rotulo: "Integrações", requisito: "plataforma_empresas", icone: Plug },
+  // Integrações: os sistemas integrados à empresa e tudo o que opera neles.
+  {
+    valor: "integracoes",
+    rotulo: "Sistemas integrados",
+    grupo: "Integrações",
+    requisito: "plataforma_empresas",
+    icone: Plug,
+  },
   {
     valor: "ingestao",
     rotulo: "Ingestão SSW",
-    grupo: "Ingestão e importação",
+    grupo: "Integrações",
     requisito: "admin_ingestao",
     icone: Database,
   },
   {
     valor: "importacao-ssw",
     rotulo: "Importação SSW",
-    grupo: "Ingestão e importação",
+    grupo: "Integrações",
     requisito: "admin_importacao_ssw",
     icone: FileUp,
   },
   {
     valor: "xml-cte",
     rotulo: "Importar XML CT-e",
-    grupo: "Ingestão e importação",
+    grupo: "Integrações",
     requisito: "admin_xml_cte",
     icone: FileArchive,
   },
-  { valor: "ahgora", rotulo: "Ahgora", requisito: "admin_ahgora", icone: Clock },
   {
     valor: "diagnostico",
     rotulo: "Diagnóstico SSW",
+    grupo: "Integrações",
     requisito: "admin_ssw_diagnostico",
     icone: Stethoscope,
   },
-  { valor: "logs", rotulo: "Logs", requisito: "plataforma_empresas", icone: ScrollText },
-  { valor: "implantacao", rotulo: "Implantação", requisito: "plataforma_empresas", icone: Rocket },
+  {
+    valor: "logs",
+    rotulo: "Logs",
+    grupo: "Integrações",
+    requisito: "plataforma_logs",
+    icone: ScrollText,
+  },
 ];
 
 export const ABAS_NA_EMPRESA_ATIVA: readonly string[] = [
   "ingestao",
   "importacao-ssw",
   "xml-cte",
-  "ahgora",
   "diagnostico",
 ];
 
@@ -217,6 +226,8 @@ const PRINCIPAL: readonly ItemDoCatalogo[] = [
   tela("historico", "Histórico", Bookmark),
   tela("calendario", "Calendário", Calendar),
   tela("admin_bonificacao_entrega", "Bonificação de entrega", HandCoins),
+  // Só a equipe da Plataforma tem a permissão; a tela opera na empresa ativa.
+  tela("admin_ahgora", "Ahgora", Clock),
 ];
 
 const ADMINISTRACAO: readonly ItemDoCatalogo[] = [
@@ -255,9 +266,7 @@ export interface DestinoDaBusca extends ItemDoMenu {
 }
 
 /** Abas da empresa que só existem lá (as de ingestão também estão em Administração). */
-const ABAS_DA_EMPRESA_NA_BUSCA = ABAS_DA_EMPRESA.filter(
-  (a) => a.valor === "ahgora" || a.valor === "diagnostico",
-);
+const ABAS_DA_EMPRESA_NA_BUSCA = ABAS_DA_EMPRESA.filter((a) => a.valor === "diagnostico");
 
 /** Telas fora do menu que continuam com página própria (Usuários e cargos as reúne). */
 const FORA_DO_MENU: readonly ItemDoCatalogo[] = [

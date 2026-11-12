@@ -1,43 +1,8 @@
-import {
-  type IntegracaoDaEmpresa,
-  type ModuloDaEmpresa,
-  type VinculoNaEmpresa,
-} from "@erp/shared/contratos/plataforma";
 import { describe, expect, it } from "vitest";
 
 import { problemaDoLogo } from "./AbaDados";
-import { itensDaImplantacao, parametrosEditados } from "./AbasDaEmpresa";
+import { parametrosEditados } from "./AbasDaEmpresa";
 import { slugDoNome } from "./PaginaEmpresas";
-
-const HOJE = "2026-11-10";
-
-const modulo = (extra: Partial<ModuloDaEmpresa>): ModuloDaEmpresa => ({
-  chave: "ranking",
-  nome: "Ranking",
-  descricao: null,
-  essencial: false,
-  ordem: 1,
-  configurado: true,
-  ativo: true,
-  inicio: null,
-  fim: null,
-  observacao: null,
-  atualizadoEm: null,
-  ...extra,
-});
-
-const integracao = (extra: Partial<IntegracaoDaEmpresa>): IntegracaoDaEmpresa => ({
-  tipo: "ssw_bi2",
-  configurada: true,
-  ativo: true,
-  parametros: {},
-  segredoDefinidoEm: null,
-  ultimoTesteEm: null,
-  ultimoTesteOk: null,
-  ultimoTesteMsg: null,
-  atualizadoEm: null,
-  ...extra,
-});
 
 describe("Plataforma › empresas", () => {
   it("slug sugerido pelo nome", () => {
@@ -58,35 +23,5 @@ describe("Plataforma › empresas", () => {
         { host: " ftp.fr ", porta: "", cnpjs: "1, 2,,3" },
       ),
     ).toEqual({ host: "ftp.fr", origem: "env", cnpjs: ["1", "2", "3"] });
-  });
-
-  it("implantação: aponta o que falta, inclusive segredo de integração ligada", () => {
-    const vinculo: VinculoNaEmpresa = {
-      usuarioId: "00000000-0000-4000-8000-000000000001",
-      nome: "Ana",
-      email: "ana@fr.com.br",
-      papel: "admin",
-      ativo: true,
-      criadoEm: "2026-11-01T00:00:00.000Z",
-      totalEmpresas: 1,
-      adminPlataforma: true,
-    };
-    const itens = itensDaImplantacao(
-      { razaoSocial: null, cnpj: "1", dominioSsw: "FRT", status: "implantacao" },
-      [modulo({})],
-      [integracao({})],
-      [vinculo],
-      HOJE,
-    );
-    expect(itens.map((i) => [i.titulo, i.feito])).toEqual([
-      ["Dados da empresa", false],
-      ["Módulos liberados", true],
-      ["Integrações configuradas", true],
-      ["Senhas e tokens das integrações", false],
-      ["Usuários convidados", false],
-      ["Empresa ativa", false],
-    ]);
-    expect(itens[0]?.detalhe).toBe("Falta: razão social.");
-    expect(itens[3]?.detalhe).toBe("Falta: Token do BI2.");
   });
 });

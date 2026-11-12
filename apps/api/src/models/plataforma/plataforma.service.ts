@@ -33,7 +33,6 @@ import {
   PARAMETROS_DA_INTEGRACAO_PLATAFORMA,
   type ValorDeParametro,
   valorDeParametro,
-  type VinculoNaEmpresa,
 } from "@erp/shared/contratos/plataforma";
 import { hojeNoFuso } from "@erp/shared/datas";
 import {
@@ -52,11 +51,10 @@ import { type Correio } from "../../infra/correio";
 import { type Ator, type RepositorioAuditoria } from "../auditoria/auditoria.service";
 import { conflito, naoEncontrado } from "../erros";
 import { type Executor } from "../repositorios";
-import { registrarVinculo } from "../usuarios/usuarios.service";
 
 /*
- * Plataforma: cadastro das empresas (marca, módulos, integrações e segredos), vínculos de usuário
- * por empresa e a equipe da Plataforma. As rotas exigem admin da Plataforma; cada caso de uso
+ * Plataforma: cadastro das empresas (marca, módulos, integrações e segredos) e a equipe da
+ * Plataforma. As rotas exigem admin da Plataforma; cada caso de uso
  * recebe o executor já no contexto da empresa alvo (RLS) com a Plataforma ligada.
  * origem: src/features/plataforma/plataforma.functions.ts (sistema atual)
  */
@@ -107,8 +105,6 @@ export interface IntegracaoDaPlataformaGravada {
   segredoDefinidoEm: Date | null;
   atualizadoEm: Date;
 }
-
-export type VinculoGravadoNaEmpresa = Omit<VinculoNaEmpresa, "criadoEm"> & { criadoEm: Date };
 
 /** A empresa com os números da lista: usuários ativos, módulos liberados e integrações ativas. */
 export interface EmpresaListada extends EmpresaGravada {
@@ -193,8 +189,6 @@ export interface RepositorioPlataforma {
     dados: { ativo: boolean; inicio: string | null; fim: string | null; observacao: string | null },
     atualizadoPor: string,
   ): Promise<void>;
-  /** Vínculos da empresa, com quantas empresas cada pessoa tem e se é da Plataforma. */
-  vinculos(empresaId: string): Promise<VinculoGravadoNaEmpresa[]>;
   integracoes(empresaId: string): Promise<IntegracaoGravada[]>;
   gravarIntegracao(
     empresaId: string,
@@ -536,39 +530,6 @@ export async function salvarModulo(
       },
       depois: { modulo_key: modulo, ...dados },
     });
-  });
-}
-
-export async function listarVinculos(
-  db: Executor<"plataforma">,
-  id: string,
-): Promise<VinculoGravadoNaEmpresa[]> {
-  return db(async ({ plataforma }) => {
-    await empresaExistente(plataforma, id);
-    return plataforma.vinculos(id);
-  });
-}
-
-/**
- * Vínculo da pessoa com a empresa (cargo e ativo). O cargo tem de ser da empresa editada (Q29).
- * origem: salvarVinculoUsuario + plataforma_vincular_usuario (sistema atual)
- */
-export async function salvarVinculo(
-  db: Executor<"plataforma" | "usuarios" | "auditoria">,
-  ator: Ator,
-  id: string,
-  usuarioId: string,
-  dados: { papel: string | null; ativo: boolean },
-): Promise<void> {
-  await db(async ({ plataforma, usuarios, auditoria }) => {
-    await empresaExistente(plataforma, id);
-    if (!(await usuarios.conta(usuarioId))) throw naoEncontrado("Usuário não encontrado.");
-    if (dados.papel && !(await usuarios.existeCargo(id, dados.papel))) {
-      throw new ErroDeNegocio("ENTRADA_INVALIDA", `Cargo inexistente: ${dados.papel}`);
-    }
-    const antes = await usuarios.vinculo(id, usuarioId);
-    await usuarios.gravarVinculo(id, usuarioId, dados, ator.usuarioId);
-    await registrarVinculo(auditoria, ator, id, usuarioId, antes, dados);
   });
 }
 
