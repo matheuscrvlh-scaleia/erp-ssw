@@ -26,7 +26,6 @@ try {
       aplicada_em timestamptz not null default now()
     )`);
   const arquivos = (await readdir(PASTA)).filter((a) => a.endsWith(".sql")).sort();
-  await adotarControleDoDrizzle(arquivos);
   const { rows } = await cliente.query<{ nome: string }>("select nome from migracoes.aplicadas");
   const aplicadas = new Set(rows.map((r) => r.nome));
   for (const arquivo of arquivos.filter((a) => !aplicadas.has(a))) {
@@ -44,26 +43,4 @@ try {
   }
 } finally {
   await cliente.end();
-}
-
-/**
- * Transição: o banco migrado pelo drizzle-kit anotava as migrations em
- * `drizzle.migracoes_erp`, uma linha por arquivo, na ordem. Na primeira execução, as N primeiras
- * de `migracoes/` contam como aplicadas.
- */
-async function adotarControleDoDrizzle(arquivos: string[]): Promise<void> {
-  const { rows } = await cliente.query<{ ja: boolean; drizzle: string | null }>(
-    `select exists (select 1 from migracoes.aplicadas) as ja,
-            to_regclass('drizzle.migracoes_erp')::text as drizzle`,
-  );
-  if (rows[0]?.ja || !rows[0]?.drizzle) return;
-  const { rows: contagem } = await cliente.query<{ n: number }>(
-    "select count(*)::int as n from drizzle.migracoes_erp",
-  );
-  const feitas = arquivos.slice(0, contagem[0]?.n ?? 0);
-  await cliente.query(
-    "insert into migracoes.aplicadas (nome) select unnest($1::text[]) on conflict do nothing",
-    [feitas],
-  );
-  process.stdout.write(`adotadas do drizzle-kit: ${feitas.length}\n`);
 }
