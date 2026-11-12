@@ -108,7 +108,7 @@ const NENHUM = "__nenhum__";
 
 /**
  * Escolha única (`ui/select`) a partir de uma lista. `vazio` vira a opção de valor "" ("Todos os
- * níveis", "Sem departamento"); sem ele, valor "" mostra o `placeholder`.
+ * níveis", "Sem cargo"); sem ele, valor "" mostra o `placeholder`.
  */
 export function Escolha({
   valor,

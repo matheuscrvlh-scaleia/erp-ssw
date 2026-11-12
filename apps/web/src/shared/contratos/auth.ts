@@ -1,4 +1,4 @@
-import { SETORES } from "../acesso/papeis";
+import { PERMISSOES } from "../acesso/permissoes";
 import { TELAS } from "../acesso/telas";
 import { contrato } from "../contrato";
 import { z } from "../zod";
@@ -39,7 +39,9 @@ export const acesso = z.object({
   ativo: z.boolean(),
   papel: z.string().nullable(),
   papelRotulo: z.string().nullable(),
-  setor: z.enum(SETORES).nullable(),
+  /** Permissões efetivas (`tela.acao`): o front esconde o que não pode; a API confere de novo. */
+  permissoes: z.array(z.enum(PERMISSOES)),
+  /** Telas com "Ver" (menu e guarda de rota). */
   telas: z.array(z.enum(TELAS)),
   empresa: empresaAtiva.nullable(),
   empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })),

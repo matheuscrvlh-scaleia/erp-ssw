@@ -14,7 +14,10 @@ beforeEach(async () => {
   empresaId = empresa.id;
   cenario.banco.liberarModulo(empresaId, "historico");
   cenario.banco.definirCargo(empresaId, "admin", { rotulo: "Admin", telas: ["calendario"] });
-  cenario.banco.definirCargo(empresaId, "operador", { rotulo: "Operador", telas: ["calendario"] });
+  cenario.banco.definirCargo(empresaId, "operador", {
+    rotulo: "Operador",
+    permissoes: ["calendario.ver"],
+  });
   cenario.banco.definirCargo(empresaId, "rh", { rotulo: "RH", telas: ["performance"] });
 });
 afterEach(() => app.close());
@@ -119,7 +122,7 @@ describe("GET /api/v1/calendario", () => {
 });
 
 describe("escrita de feriados", () => {
-  it("403 para quem não é admin", async () => {
+  it("403 para quem só tem Ver no Calendário", async () => {
     const r = await app.inject({
       method: "POST",
       url: "/api/v1/calendario/feriados",

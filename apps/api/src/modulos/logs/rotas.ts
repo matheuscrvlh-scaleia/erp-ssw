@@ -2,12 +2,13 @@ import { contratosAuditoria as c } from "@erp/shared/contratos/auditoria";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao, executorDePlataforma } from "../../http/contexto";
-import { exigirAdminDaEmpresa, exigirAdminPlataforma, exigirTela } from "../../http/guardas";
+import { exigirAdminPlataforma, exigirPermissao } from "../../http/guardas";
 import { type ExecutorComContexto } from "../../repositorios";
 import { type EscopoDosLogs, listarAlteracoes, listarIntegracoes } from "./casos-de-uso";
 
 /** Admin › Logs: admin (ou Plataforma) na empresa ativa; só os registros dela (Q31). */
-const adminDaEmpresa = [exigirAdminDaEmpresa, exigirTela("admin_logs")];
+/** Logs da empresa: dado por regra ao admin da empresa e à Plataforma. */
+const adminDaEmpresa = exigirPermissao("admin_logs", "ver");
 
 export const rotasLogs: FastifyPluginCallbackZod<{ executar: ExecutorComContexto }> = (
   app,

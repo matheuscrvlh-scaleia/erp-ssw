@@ -57,7 +57,10 @@ beforeEach(async () => {
   empresaId = cenario.banco.criarEmpresa().id;
   cenario.banco.liberarModulo(empresaId, "ocorrencias");
   cenario.banco.definirCargo(empresaId, "admin", { rotulo: "Admin", telas: ["admin_codigos"] });
-  cenario.banco.definirCargo(empresaId, "gestor", { rotulo: "Gestor", telas: ["admin_codigos"] });
+  cenario.banco.definirCargo(empresaId, "gestor", {
+    rotulo: "Gestor",
+    permissoes: ["admin_codigos.ver"],
+  });
   const dados = cenario.banco.ocorrencias;
   dados.codigos.push(
     codigo({ codigo: 13, descricao: "Devolução", responsavel: "FR", penaliza: true }),
@@ -97,7 +100,7 @@ describe("Admin › Códigos", () => {
     });
   });
 
-  it("403 para escrever sem ser admin", async () => {
+  it("403 para escrever só com Ver", async () => {
     const r = await app.inject({
       method: "POST",
       url: "/api/v1/admin/codigos/lote",

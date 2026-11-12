@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { PaginaDeCadastro } from "@/modulos/admin/cadastros/PaginaDeCadastro";
-
+/** Departamento virou cargo: a URL antiga abre a aba Cargos de Usuários e cargos. */
 export const Route = createFileRoute("/_autenticado/admin/departamentos")({
-  component: () => <PaginaDeCadastro tipo="departamento" />,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/usuarios", search: { aba: "cargos" }, replace: true });
+  },
 });

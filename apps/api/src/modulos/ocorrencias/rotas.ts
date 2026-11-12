@@ -3,7 +3,7 @@ import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import {
   type ContextoOcorrencias,
   exportarLista,
@@ -14,7 +14,7 @@ import {
   obterPainel,
 } from "./casos-de-uso";
 
-const ler = [exigirModulo("ocorrencias"), exigirTela("ocorrencias")];
+const ler = [exigirModulo("ocorrencias"), exigirPermissao("ocorrencias", "ver")];
 
 export async function contextoDaEmpresa(request: FastifyRequest): Promise<ContextoOcorrencias> {
   const { empresa } = await empresaDaRequisicao(request);

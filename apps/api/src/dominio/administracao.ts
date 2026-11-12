@@ -1,12 +1,13 @@
 import {
+  ehAdminDaEmpresa,
   PAPEL_ADMIN,
   PAPEL_GESTOR,
   PAPEL_SUPER_ADMIN,
-  type Setor,
-  SETORES,
 } from "@erp/shared/acesso/papeis";
+import { ehPermissaoGravavel, type Permissao } from "@erp/shared/acesso/permissoes";
 import { CHAVE_COM_CARA_DE_SEGREDO, LOGO_MAXIMO_BYTES } from "@erp/shared/plataforma";
 
+import { type ExcecaoDePermissao } from "./acesso";
 import { ErroDeNegocio } from "./erros";
 
 /*
@@ -19,11 +20,51 @@ import { ErroDeNegocio } from "./erros";
 const proibido = (mensagem: string) => new ErroDeNegocio("SEM_PERMISSAO", mensagem);
 const invalido = (mensagem: string) => new ErroDeNegocio("ENTRADA_INVALIDA", mensagem);
 
-/** Departamento com o nome de um setor legado também grava o setor (fallback de telas). */
-export function setorLegado(departamento: string | null): Setor | null {
-  return (SETORES as readonly string[]).includes(departamento ?? "")
-    ? (departamento as Setor)
-    : null;
+/** Cargo Admin e Super Admin têm todas as permissões: não se editam e o cargo não sai. */
+export function cargoTemTudo(chave: string): boolean {
+  return ehAdminDaEmpresa(chave);
+}
+
+/** Permissões que um cargo grava: só as do catálogo da empresa (nada da Plataforma), sem repetir. */
+export function permissoesGravaveis(permissoes: readonly string[]): Permissao[] {
+  const invalidas = permissoes.filter((p) => !ehPermissaoGravavel(p));
+  if (invalidas.length > 0) {
+    throw invalido(`Estas permissões não podem ser dadas por cargo: ${invalidas.join(", ")}.`);
+  }
+  return [...new Set(permissoes.filter(ehPermissaoGravavel))];
+}
+
+/**
+ * Exceções de acesso de uma pessoa: só o admin da empresa (ou a Plataforma) ajusta, e ninguém
+ * ajusta as próprias (senão o admin tirava um "Não" de si mesmo sem ninguém ver).
+ * origem: set_member_permission_overrides (construgarden)
+ */
+export function exigirPodeAjustarExcecoes(entrada: {
+  quemPede: string;
+  alvo: string;
+  papelDeQuemPede: string | null;
+  plataforma: boolean;
+}): void {
+  if (!entrada.plataforma && !ehAdminDaEmpresa(entrada.papelDeQuemPede)) {
+    throw proibido("Só o administrador da empresa ajusta as permissões de um usuário.");
+  }
+  if (entrada.quemPede === entrada.alvo) {
+    throw proibido("Você não pode ajustar as suas próprias permissões.");
+  }
+}
+
+/** Exceções a gravar: permissões do catálogo da empresa, cada uma com um efeito só. */
+export function validarExcecoes(excecoes: readonly ExcecaoDePermissao[]): ExcecaoDePermissao[] {
+  permissoesGravaveis(excecoes.map((e) => e.permissao));
+  const porPermissao = new Map<string, ExcecaoDePermissao>();
+  for (const e of excecoes) {
+    const antes = porPermissao.get(e.permissao);
+    if (antes && antes.efeito !== e.efeito) {
+      throw invalido(`A permissão ${e.permissao} não pode ser concedida e negada ao mesmo tempo.`);
+    }
+    porPermissao.set(e.permissao, e);
+  }
+  return [...porPermissao.values()];
 }
 
 /** Quem é a pessoa cujo login (nome, e-mail, senha) se quer mudar, e quem pede. */
@@ -113,7 +154,7 @@ export function exigirPodeMudarAtivo(alvo: AlvoDoLogin): void {
   }
 }
 
-/** Cargos que toda empresa nova recebe; `super_admin` é protegido (telas e chave fixas). */
+/** Cargos que toda empresa nova recebe; `super_admin` é protegido (só muda o nome). */
 export const CARGOS_PADRAO: readonly { chave: string; rotulo: string; protegido: boolean }[] = [
   { chave: PAPEL_SUPER_ADMIN, rotulo: "Super Admin", protegido: true },
   { chave: PAPEL_ADMIN, rotulo: "Admin", protegido: false },
@@ -123,7 +164,7 @@ export const CARGOS_PADRAO: readonly { chave: string; rotulo: string; protegido:
 ];
 
 /**
- * Empresa que serve de modelo para a nova (códigos de ocorrência, configurações, telas dos
+ * Empresa que serve de modelo para a nova (códigos de ocorrência, configurações, permissões dos
  * cargos padrão): a mais antiga que não seja a própria.
  */
 export function escolherEmpresaModelo<E extends { id: string; criadoEm: Date }>(

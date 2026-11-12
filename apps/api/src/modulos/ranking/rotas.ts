@@ -1,11 +1,10 @@
 import { ehTempoEsgotado } from "@erp/db";
-import { PAPEL_ADMIN, PAPEL_GESTOR, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 import { contratosRanking as c } from "@erp/shared/contratos/ranking";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import { type ExecutorComContexto } from "../../repositorios";
 import {
@@ -33,11 +32,13 @@ import {
  * (admin, super_admin, gestor). Tudo exige o módulo Ranking.
  */
 const modulo = exigirModulo("ranking");
-const gestao = exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN, PAPEL_GESTOR);
-const lerRanking = [modulo, exigirTela("ranking")];
-const lerEquipes = [modulo, exigirTela("admin_equipes")];
-const gravarEquipes = [...lerEquipes, gestao];
-const gravarRegras = [...lerRanking, gestao];
+const lerRanking = [modulo, exigirPermissao("ranking", "ver")];
+const lerEquipes = [modulo, exigirPermissao("admin_equipes", "ver")];
+const editarEquipes = [modulo, exigirPermissao("admin_equipes", "editar")];
+const excluirDeEquipes = [modulo, exigirPermissao("admin_equipes", "excluir")];
+/** Regras de bonificação (Ranking › Regras) são da tela "Bonificação". */
+const editarRegras = [modulo, exigirPermissao("admin_bonificacao", "editar")];
+const excluirRegras = [modulo, exigirPermissao("admin_bonificacao", "excluir")];
 
 /** Link público: sem login, limitado por IP (cada IP abre no máximo 30 vezes por minuto). */
 const LIMITE_DO_LINK_PUBLICO = { max: 30, timeWindow: "1 minute" };
@@ -77,7 +78,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
     c.salvarEquipe.caminho,
     {
       schema: { body: c.salvarEquipe.entrada, response: { 200: c.salvarEquipe.saida } },
-      preHandler: gravarEquipes,
+      preHandler: editarEquipes,
     },
     async (request) =>
       salvarEquipe(request.db, await contextoDe(request), await atorDa(request), request.body),
@@ -91,7 +92,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
         body: c.incluirMembro.entrada,
         response: { 200: c.incluirMembro.saida },
       },
-      preHandler: gravarEquipes,
+      preHandler: editarEquipes,
     },
     async (request) => {
       await incluirMembro(
@@ -109,7 +110,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
     c.removerMembro.caminho,
     {
       schema: { params: c.removerMembro.parametros, response: { 200: c.removerMembro.saida } },
-      preHandler: gravarEquipes,
+      preHandler: excluirDeEquipes,
     },
     async (request) => {
       await removerMembro(
@@ -127,7 +128,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
     c.gerarLink.caminho,
     {
       schema: { params: c.gerarLink.parametros, response: { 200: c.gerarLink.saida } },
-      preHandler: gravarEquipes,
+      preHandler: editarEquipes,
     },
     async (request) =>
       gerarLink(request.db, await contextoDe(request), await atorDa(request), request.params.id),
@@ -137,7 +138,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
     c.revogarLink.caminho,
     {
       schema: { params: c.revogarLink.parametros, response: { 200: c.revogarLink.saida } },
-      preHandler: gravarEquipes,
+      preHandler: excluirDeEquipes,
     },
     async (request) => {
       await revogarLink(
@@ -166,7 +167,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
     c.atribuir.caminho,
     {
       schema: { body: c.atribuir.entrada, response: { 200: c.atribuir.saida } },
-      preHandler: gravarEquipes,
+      preHandler: editarEquipes,
     },
     async (request) =>
       atribuirEquipe(request.db, await contextoDe(request), await atorDa(request), request.body),
@@ -182,7 +183,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
     c.salvarRegra.caminho,
     {
       schema: { body: c.salvarRegra.entrada, response: { 200: c.salvarRegra.saida } },
-      preHandler: gravarRegras,
+      preHandler: editarRegras,
     },
     async (request) =>
       salvarRegra(request.db, await contextoDe(request), await atorDa(request), request.body),
@@ -192,7 +193,7 @@ export const rotasRanking: FastifyPluginCallbackZod<{
     c.excluirRegra.caminho,
     {
       schema: { params: c.excluirRegra.parametros, response: { 200: c.excluirRegra.saida } },
-      preHandler: gravarRegras,
+      preHandler: excluirRegras,
     },
     async (request) => {
       await excluirRegra(

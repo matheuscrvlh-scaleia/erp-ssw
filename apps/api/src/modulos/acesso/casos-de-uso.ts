@@ -1,7 +1,7 @@
 import {
   calcularAcesso,
   escolherEmpresaAtiva,
-  type Excecao,
+  type ExcecaoDePermissao,
   type LiberacaoDeModulo,
   modulosVigentes,
   papelNaEmpresa,
@@ -50,10 +50,9 @@ export interface RepositorioAcesso {
   familiaAtiva(familiaId: string, agora: Date): Promise<boolean>;
   empresa(empresaId: string): Promise<EmpresaGravada | null>;
   todasAsEmpresas(): Promise<{ id: string; nome: string }[]>;
-  /** Cargo da empresa (cada empresa tem os seus, Q30). */
-  cargo(empresaId: string, papel: string): Promise<{ rotulo: string; telas: string[] } | null>;
-  telasDoDepartamento(empresaId: string, departamento: string): Promise<string[]>;
-  excecoes(empresaId: string, usuarioId: string): Promise<Excecao[]>;
+  /** Cargo da empresa (cada empresa tem os seus, Q30) com as permissões gravadas (`tela.acao`). */
+  cargo(empresaId: string, papel: string): Promise<{ rotulo: string; permissoes: string[] } | null>;
+  excecoes(empresaId: string, usuarioId: string): Promise<ExcecaoDePermissao[]>;
   liberacoes(empresaId: string): Promise<LiberacaoDeModulo[]>;
 }
 
@@ -111,8 +110,8 @@ function paraEmpresaAtiva(deps: DependenciasAcesso, e: EmpresaGravada): EmpresaA
 }
 
 /**
- * Acesso completo da sessão (o que `/auth/me` devolve e o que os guards conferem): telas do
- * cargo/departamento/exceções, módulos vigentes, empresa ativa e as do seletor.
+ * Acesso completo da sessão (o que `/auth/me` devolve e o que os guards conferem): permissões do
+ * cargo e das exceções, telas, módulos vigentes, empresa ativa e as do seletor.
  * origem: calcularAcesso (src/features/auth/acesso.server.ts, sistema atual)
  */
 export async function carregarAcesso(
@@ -145,10 +144,6 @@ export async function carregarAcesso(
       const vinculo = vinculos.find((v) => v.empresaId === empresaId) ?? null;
       const papel = papelNaEmpresa({ vinculo, adminPlataforma, empresaId: empresa?.id ?? null });
       const cargo = empresa && papel ? await acesso.cargo(empresa.id, papel) : null;
-      const telasDoDepartamento =
-        empresa && vinculo?.departamento
-          ? await acesso.telasDoDepartamento(empresa.id, vinculo.departamento)
-          : [];
       const excecoes = empresa ? await acesso.excecoes(empresa.id, usuarioId) : [];
       const liberacoes = empresa ? await acesso.liberacoes(empresa.id) : [];
       const vigentes = empresa
@@ -160,8 +155,7 @@ export async function carregarAcesso(
         empresaId: empresa?.id ?? null,
         adminPlataforma,
         vinculo,
-        telasDoCargo: cargo?.telas ?? [],
-        telasDoDepartamento,
+        permissoesDoCargo: cargo?.permissoes ?? [],
         excecoes,
         catalogo: MODULOS,
         modulosVigentes: vigentes,
@@ -176,7 +170,7 @@ export async function carregarAcesso(
         ativo: resultado.ativo,
         papel: resultado.papel,
         papelRotulo: papel ? (cargo?.rotulo ?? papel) : null,
-        setor: resultado.setor,
+        permissoes: resultado.permissoes,
         telas: resultado.telas,
         empresa: empresa ? paraEmpresaAtiva(deps, empresa) : null,
         empresas: [...empresas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),

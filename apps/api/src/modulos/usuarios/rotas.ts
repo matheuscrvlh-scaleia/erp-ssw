@@ -3,21 +3,26 @@ import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao, executorDePlataforma } from "../../http/contexto";
-import { exigirAdminDaEmpresa, exigirTela } from "../../http/guardas";
+import { exigirAdminDaEmpresa, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import { type ExecutorComContexto } from "../../repositorios";
 import {
   alterarUsuario,
   type ContextoUsuarios,
   criarUsuario,
+  definirExcecoes,
   definirSenha,
   type DependenciasUsuarios,
   listarUsuarios,
   reenviarConvite,
 } from "./casos-de-uso";
 
-/** Admin › Usuários: admin da empresa ativa (ou Plataforma) com a tela. Sem módulo (essencial). */
-const admin = [exigirAdminDaEmpresa, exigirTela("admin_usuarios")];
+/**
+ * Usuários e cargos › Usuários: gerir acesso é do admin da empresa ativa (ou Plataforma), com a
+ * ação na tela. Sem módulo (essencial).
+ */
+const ler = [exigirAdminDaEmpresa, exigirPermissao("admin_usuarios", "ver")];
+const editar = [exigirAdminDaEmpresa, exigirPermissao("admin_usuarios", "editar")];
 
 export async function contextoDeUsuarios(request: FastifyRequest): Promise<ContextoUsuarios> {
   const { acesso, empresa } = await empresaDaRequisicao(request);
@@ -41,7 +46,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
 ) => {
   app.get(
     c.listarUsuarios.caminho,
-    { schema: { response: { 200: c.listarUsuarios.saida } }, onRequest: admin },
+    { schema: { response: { 200: c.listarUsuarios.saida } }, onRequest: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return { usuarios: await listarUsuarios(request.db, empresa.id) };
@@ -52,7 +57,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
     c.criarUsuario.caminho,
     {
       schema: { body: c.criarUsuario.entrada, response: { 200: c.criarUsuario.saida } },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) =>
       criarUsuario(
@@ -72,7 +77,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
         body: c.alterarUsuario.entrada,
         response: { 200: c.alterarUsuario.saida },
       },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) => {
       await alterarUsuario(
@@ -87,11 +92,33 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
     },
   );
 
+  app.put(
+    c.definirExcecoes.caminho,
+    {
+      schema: {
+        params: c.definirExcecoes.parametros,
+        body: c.definirExcecoes.entrada,
+        response: { 200: c.definirExcecoes.saida },
+      },
+      onRequest: editar,
+    },
+    async (request) => {
+      await definirExcecoes(
+        request.db,
+        await contextoDeUsuarios(request),
+        await atorDa(request),
+        request.params.id,
+        request.body.excecoes,
+      );
+      return { ok: true as const };
+    },
+  );
+
   app.post(
     c.reenviarConvite.caminho,
     {
       schema: { params: c.reenviarConvite.parametros, response: { 200: c.reenviarConvite.saida } },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) => {
       await reenviarConvite(
@@ -113,7 +140,7 @@ export const rotasUsuarios: FastifyPluginCallbackZod<OpcoesRotasUsuarios> = (
         body: c.definirSenha.entrada,
         response: { 200: c.definirSenha.saida },
       },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) => {
       await definirSenha(

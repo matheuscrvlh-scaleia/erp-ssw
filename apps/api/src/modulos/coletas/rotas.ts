@@ -1,10 +1,9 @@
-import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 import { contratosColetas as c } from "@erp/shared/contratos/coletas";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import {
   type ContextoColetas,
   exportarListaDeColetas,
@@ -15,9 +14,9 @@ import {
 } from "./casos-de-uso";
 
 /** Tela Coletas: todas as unidades da empresa para quem tem a tela (decisão de 05/11). */
-const ler = [exigirModulo("coletas"), exigirTela("coletas")];
+const ler = [exigirModulo("coletas"), exigirPermissao("coletas", "ver")];
 /** Importação manual do 050: admin da empresa, com o módulo. */
-const importar = [exigirModulo("coletas"), exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN)];
+const importar = [exigirModulo("coletas"), exigirPermissao("coletas", "editar")];
 
 /**
  * O 050 chega inteiro no corpo: até 30 milhões de caracteres ISO-8859-1, que em JSON (UTF-8)

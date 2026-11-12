@@ -1,16 +1,17 @@
+import { type ExcecaoDePermissao } from "@erp/dominio/acesso";
 import {
   type AlvoDoLogin,
+  exigirPodeAjustarExcecoes,
   exigirPodeAlterarLogin,
   exigirPodeMexerEmSuperAdmin,
   exigirPodeMudarAtivo,
-  setorLegado,
+  validarExcecoes,
 } from "@erp/dominio/administracao";
 import { mudancaParaAuditoria, type Registro } from "@erp/dominio/auditoria";
 import { ErroDeNegocio } from "@erp/dominio/erros";
-import { ehTelaGravavel } from "@erp/shared/acesso/editor-de-telas";
-import { type Setor } from "@erp/shared/acesso/papeis";
+import { ehPermissao } from "@erp/shared/acesso/permissoes";
 import {
-  type ExcecaoDeTela,
+  type ExcecaoDePermissaoGravada,
   type NovoUsuario,
   type UsuarioDaEmpresa,
 } from "@erp/shared/contratos/admin";
@@ -32,10 +33,9 @@ export interface ContaGravada {
   temSenha: boolean;
 }
 
+/** Vínculo com a empresa: o cargo (`papel`) e se está ativo. */
 export interface VinculoGravado {
   papel: string | null;
-  departamento: string | null;
-  setor: Setor | null;
   ativo: boolean;
 }
 
@@ -50,7 +50,8 @@ export interface UsuarioListado extends VinculoGravado {
 export interface RepositorioUsuarios {
   /** Vínculos da empresa (ativos ou não) com a conta, na ordem de criação da conta. */
   listar(empresaId: string): Promise<UsuarioListado[]>;
-  excecoes(empresaId: string): Promise<(ExcecaoDeTela & { usuarioId: string })[]>;
+  /** Exceções de permissão ("Sim"/"Não") dos usuários da empresa. */
+  excecoes(empresaId: string): Promise<(ExcecaoDePermissao & { usuarioId: string })[]>;
   contaPorEmail(email: string): Promise<ContaGravada | null>;
   conta(usuarioId: string): Promise<ContaGravada | null>;
   vinculo(empresaId: string, usuarioId: string): Promise<VinculoGravado | null>;
@@ -62,7 +63,6 @@ export interface RepositorioUsuarios {
     usuarioId: string,
   ): Promise<{ empresaId: string; papel: string | null }[]>;
   existeCargo(empresaId: string, chave: string): Promise<boolean>;
-  existeDepartamento(empresaId: string, chave: string): Promise<boolean>;
   criarConta(conta: {
     email: string;
     nome: string;
@@ -82,7 +82,12 @@ export interface RepositorioUsuarios {
   ): Promise<void>;
   /** A empresa vira a preferida do próximo login se a pessoa ainda não tem uma. */
   definirPreferidaSeVazia(usuarioId: string, empresaId: string): Promise<void>;
-  trocarExcecoes(empresaId: string, usuarioId: string, excecoes: ExcecaoDeTela[]): Promise<void>;
+  trocarExcecoes(
+    empresaId: string,
+    usuarioId: string,
+    excecoes: readonly ExcecaoDePermissao[],
+    criadoPor: string,
+  ): Promise<void>;
 }
 
 /** Validade do link de convite. */
@@ -110,28 +115,13 @@ type Global = Executor<"usuarios" | "acesso">;
 
 const naoPertence = () => naoEncontrado("Usuário não pertence à empresa ativa.");
 
-async function exigirCargoEDepartamento(
+async function exigirCargo(
   usuarios: RepositorioUsuarios,
   empresaId: string,
   papel: string | null,
-  departamento: string | null,
 ): Promise<void> {
   if (papel && !(await usuarios.existeCargo(empresaId, papel))) {
-    throw new ErroDeNegocio("ENTRADA_INVALIDA", "Role inexistente");
-  }
-  if (departamento && !(await usuarios.existeDepartamento(empresaId, departamento))) {
-    throw new ErroDeNegocio("ENTRADA_INVALIDA", "Departamento inexistente");
-  }
-}
-
-/** Tela da Plataforma ou concedida por regra não se dá por exceção. */
-function exigirExcecoesGravaveis(excecoes: readonly ExcecaoDeTela[]): void {
-  const invalidas = excecoes.filter((e) => !ehTelaGravavel(e.tela)).map((e) => e.tela);
-  if (invalidas.length > 0) {
-    throw new ErroDeNegocio(
-      "ENTRADA_INVALIDA",
-      `Estas telas não podem ser liberadas por exceção: ${invalidas.join(", ")}.`,
-    );
+    throw new ErroDeNegocio("ENTRADA_INVALIDA", "Cargo inexistente");
   }
 }
 
@@ -161,8 +151,13 @@ async function emitirConvite(
   return linkDeConvite(await deps.webUrl(), token);
 }
 
+/** Só as exceções de permissões do catálogo (uma tela que saiu do catálogo não aparece). */
+function paraContrato(e: ExcecaoDePermissao): ExcecaoDePermissaoGravada[] {
+  return ehPermissao(e.permissao) ? [{ permissao: e.permissao, efeito: e.efeito }] : [];
+}
+
 /**
- * Usuários da empresa com as exceções de tela. Ativo = conta ativa e vínculo ativo.
+ * Usuários da empresa com o cargo e as exceções de permissão. Ativo = conta ativa e vínculo ativo.
  * origem: listUsers (users.functions.ts, sistema atual)
  */
 export async function listarUsuarios(
@@ -178,21 +173,17 @@ export async function listarUsuarios(
       id: l.id,
       nome: l.nome,
       email: l.email,
-      setor: l.setor,
-      departamento: l.departamento,
       papel: l.papel,
       ativo: l.contaAtiva && l.ativo,
       temSenha: l.temSenha,
-      excecoes: excecoes
-        .filter((e) => e.usuarioId === l.id)
-        .map(({ tela, permitido }) => ({ tela, permitido })),
+      excecoes: excecoes.filter((e) => e.usuarioId === l.id).flatMap(paraContrato),
     }));
   });
 }
 
 /**
- * Conta nova na empresa, tudo numa transação (decisão Q36): conta, vínculo (empresa preferida),
- * exceções, convite e registro em Logs. O e-mail sai dentro da transação: se não sair, nada fica
+ * Conta nova na empresa, tudo numa transação (decisão Q36): conta, vínculo com o cargo (empresa
+ * preferida), convite e registro em Logs. Exceções de permissão vêm depois, no "Permissões". O e-mail sai dentro da transação: se não sair, nada fica
  * gravado. Convite: a pessoa cria a senha pelo link (Q33). Com senha: grava argon2id.
  * origem: criarUsuario (criar-usuario.server.ts, sistema atual)
  */
@@ -203,7 +194,6 @@ async function criarConta(
   ator: Ator,
   entrada: NovoUsuario,
 ): Promise<string> {
-  exigirExcecoesGravaveis(entrada.excecoes);
   exigirPodeMexerEmSuperAdmin({
     papelAntes: null,
     papelDepois: entrada.papel,
@@ -213,7 +203,7 @@ async function criarConta(
   const senhaHash = entrada.modo === "senha" ? await deps.senhas.gerarHash(entrada.senha) : null;
 
   return db(async ({ usuarios, auth, auditoria }) => {
-    await exigirCargoEDepartamento(usuarios, ctx.empresaId, entrada.papel, entrada.departamento);
+    await exigirCargo(usuarios, ctx.empresaId, entrada.papel);
     const id = await usuarios.criarConta({
       email: entrada.email,
       nome: entrada.nome,
@@ -223,15 +213,9 @@ async function criarConta(
     await usuarios.gravarVinculo(
       ctx.empresaId,
       id,
-      {
-        papel: entrada.papel,
-        departamento: entrada.departamento,
-        setor: setorLegado(entrada.departamento),
-        ativo: true,
-      },
+      { papel: entrada.papel, ativo: true },
       ator.usuarioId,
     );
-    await usuarios.trocarExcecoes(ctx.empresaId, id, entrada.excecoes);
     const convite = entrada.modo === "convite";
     await auditoria.registrar(ator, {
       empresaId: ctx.empresaId,
@@ -301,14 +285,9 @@ export async function convidarParaEmpresa(
     return { id: await criarConta(deps, db, ctx, ator, entrada), jaExistia: false };
   }
   await db(async ({ usuarios, auditoria }) => {
-    await exigirCargoEDepartamento(usuarios, ctx.empresaId, entrada.papel, entrada.departamento);
+    await exigirCargo(usuarios, ctx.empresaId, entrada.papel);
     const antes = await usuarios.vinculo(ctx.empresaId, existente.id);
-    const depois: VinculoGravado = {
-      papel: entrada.papel,
-      departamento: entrada.departamento,
-      setor: setorLegado(entrada.departamento),
-      ativo: true,
-    };
+    const depois: VinculoGravado = { papel: entrada.papel, ativo: true };
     await usuarios.gravarVinculo(ctx.empresaId, existente.id, depois, ator.usuarioId);
     await usuarios.definirPreferidaSeVazia(existente.id, ctx.empresaId);
     await registrarVinculo(auditoria, ator, ctx.empresaId, existente.id, antes, depois);
@@ -317,7 +296,7 @@ export async function convidarParaEmpresa(
 }
 
 function registroDoVinculo(v: VinculoGravado): Registro {
-  return { papel: v.papel, departamento_chave: v.departamento, setor: v.setor, ativo: v.ativo };
+  return { papel: v.papel, ativo: v.ativo };
 }
 
 export async function registrarVinculo(
@@ -363,13 +342,15 @@ async function alvoDoLogin(
   });
 }
 
-function excecoesComoTexto(excecoes: readonly ExcecaoDeTela[]): Registro {
-  return Object.fromEntries(excecoes.map((e) => [e.tela, e.permitido ? "libera" : "bloqueia"]));
+function excecoesComoTexto(excecoes: readonly ExcecaoDePermissao[]): Registro {
+  return Object.fromEntries(
+    excecoes.map((e) => [e.permissao, e.efeito === "concede" ? "Sim" : "Não"]),
+  );
 }
 
 /**
  * Edição pelo Admin: nome e e-mail só se a pessoa é só desta empresa (ou pela Plataforma); com um
- * vínculo só, a conta acompanha o ativo; o vínculo e as exceções são desta empresa.
+ * vínculo só, a conta acompanha o ativo; o vínculo (cargo) é desta empresa.
  * origem: updateUser (users.functions.ts, sistema atual)
  */
 export async function alterarUsuario(
@@ -382,19 +363,16 @@ export async function alterarUsuario(
     nome: string;
     email: string;
     papel: string;
-    departamento: string | null;
     ativo: boolean;
-    excecoes: ExcecaoDeTela[];
   },
 ): Promise<void> {
-  exigirExcecoesGravaveis(entrada.excecoes);
   const alvo = await alvoDoLogin(global, ctx, usuarioId);
 
   await db(async ({ usuarios, auditoria }) => {
     const conta = await usuarios.conta(usuarioId);
     const antes = await usuarios.vinculo(ctx.empresaId, usuarioId);
     if (!conta || !antes) throw naoPertence();
-    await exigirCargoEDepartamento(usuarios, ctx.empresaId, entrada.papel, entrada.departamento);
+    await exigirCargo(usuarios, ctx.empresaId, entrada.papel);
     exigirPodeMexerEmSuperAdmin({
       papelAntes: antes.papel,
       papelDepois: entrada.papel,
@@ -438,37 +416,52 @@ export async function alterarUsuario(
       }
     }
 
-    const depois: VinculoGravado = {
-      papel: entrada.papel,
-      departamento: entrada.departamento,
-      setor: setorLegado(entrada.departamento),
-      ativo: entrada.ativo,
-    };
+    const depois: VinculoGravado = { papel: entrada.papel, ativo: entrada.ativo };
     await usuarios.gravarVinculo(ctx.empresaId, usuarioId, depois, ator.usuarioId);
     await registrarVinculo(auditoria, ator, ctx.empresaId, usuarioId, antes, depois);
+  });
+}
 
-    const excecoesAntes = (await usuarios.excecoes(ctx.empresaId)).filter(
-      (e) => e.usuarioId === usuarioId,
-    );
-    await usuarios.trocarExcecoes(ctx.empresaId, usuarioId, entrada.excecoes);
-    const mudancaExcecoes = mudancaParaAuditoria({
+/**
+ * Exceções de permissão de uma pessoa ("Sim"/"Não"; sem linha = "Padrão", herda o cargo). Só o
+ * admin da empresa (ou a Plataforma) ajusta, ninguém ajusta as próprias, e fica em Logs.
+ * origem: set_member_permission_overrides (construgarden)
+ */
+export async function definirExcecoes(
+  db: Db,
+  ctx: ContextoUsuarios,
+  ator: Ator,
+  usuarioId: string,
+  pedidas: readonly ExcecaoDePermissao[],
+): Promise<void> {
+  exigirPodeAjustarExcecoes({
+    quemPede: ator.usuarioId,
+    alvo: usuarioId,
+    papelDeQuemPede: ctx.papel,
+    plataforma: ctx.plataforma,
+  });
+  const excecoes = validarExcecoes(pedidas);
+  await db(async ({ usuarios, auditoria }) => {
+    if (!(await usuarios.vinculo(ctx.empresaId, usuarioId))) throw naoPertence();
+    const antes = (await usuarios.excecoes(ctx.empresaId)).filter((e) => e.usuarioId === usuarioId);
+    await usuarios.trocarExcecoes(ctx.empresaId, usuarioId, excecoes, ator.usuarioId);
+    const mudanca = mudancaParaAuditoria({
       acao: "alterar",
-      antes: excecoesComoTexto(excecoesAntes),
+      antes: excecoesComoTexto(antes),
       depois: {
-        ...Object.fromEntries(excecoesAntes.map((e) => [e.tela, null])),
-        ...excecoesComoTexto(entrada.excecoes),
+        ...Object.fromEntries(antes.map((e) => [e.permissao, null])),
+        ...excecoesComoTexto(excecoes),
       },
     });
-    if (mudancaExcecoes) {
-      await auditoria.registrar(ator, {
-        empresaId: ctx.empresaId,
-        acao: "alterar",
-        entidade: "permissao_usuario",
-        entidadeId: usuarioId,
-        resumo: null,
-        ...mudancaExcecoes,
-      });
-    }
+    if (!mudanca) return;
+    await auditoria.registrar(ator, {
+      empresaId: ctx.empresaId,
+      acao: "alterar",
+      entidade: "permissao_usuario",
+      entidadeId: usuarioId,
+      resumo: null,
+      ...mudanca,
+    });
   });
 }
 

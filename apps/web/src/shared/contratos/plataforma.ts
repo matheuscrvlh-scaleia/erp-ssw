@@ -2,7 +2,7 @@ import { contrato } from "../contrato";
 import { ehDataIso } from "../datas";
 import { STATUS_EMPRESA, TIPOS_INTEGRACAO, TIPOS_INTEGRACAO_PLATAFORMA } from "../plataforma";
 import { z } from "../zod";
-import { cargo, departamentoDaEmpresa, emailDeUsuario, novoUsuario } from "./admin";
+import { cargo, emailDeUsuario, novoUsuario } from "./admin";
 
 /*
  * Plataforma (equipe Scale IA): empresas, marca, módulos, usuários por empresa, integrações e
@@ -95,7 +95,6 @@ export const vinculoNaEmpresa = z.object({
   nome: z.string().nullable(),
   email: z.string(),
   papel: z.string().nullable(),
-  departamento: z.string().nullable(),
   ativo: z.boolean(),
   criadoEm: z.iso.datetime(),
   totalEmpresas: z.number().int(),
@@ -134,6 +133,25 @@ export const adminDaPlataforma = z.object({
   criadoEm: z.iso.datetime(),
 });
 export type AdminDaPlataforma = z.infer<typeof adminDaPlataforma>;
+
+/** Plataforma › Usuários e cargos: cada pessoa com o cargo em cada empresa. */
+export const pessoaDaPlataforma = z.object({
+  id: z.uuid(),
+  nome: z.string().nullable(),
+  email: z.string(),
+  ativo: z.boolean(),
+  adminPlataforma: z.boolean(),
+  empresas: z.array(
+    z.object({
+      empresaId: z.uuid(),
+      empresaNome: z.string(),
+      papel: z.string().nullable(),
+      cargoRotulo: z.string().nullable(),
+      ativo: z.boolean(),
+    }),
+  ),
+});
+export type PessoaDaPlataforma = z.infer<typeof pessoaDaPlataforma>;
 
 const parametroTipo = z.object({ id: z.uuid(), tipo: z.enum(TIPOS_INTEGRACAO) });
 
@@ -251,20 +269,16 @@ export const contratosPlataforma = {
     parametros: z.object({ id: z.uuid(), usuarioId: z.uuid() }),
     entrada: z.object({
       papel: z.string().trim().min(1).max(64).nullable(),
-      departamento: z.string().trim().min(1).max(40).nullable(),
       ativo: z.boolean(),
     }),
     saida: ok,
   }),
-  /** Cargos e departamentos da empresa editada (não da empresa ativa de quem opera — Q29). */
-  cadastrosDaEmpresa: contrato({
+  /** Cargos da empresa editada (não da empresa ativa de quem opera — Q29). */
+  cargosDaEmpresa: contrato({
     metodo: "GET",
-    caminho: "/api/v1/plataforma/empresas/:id/cadastros",
+    caminho: "/api/v1/plataforma/empresas/:id/cargos",
     parametros: parametroEmpresa,
-    saida: z.object({
-      cargos: z.array(cargo),
-      departamentos: z.array(departamentoDaEmpresa),
-    }),
+    saida: z.object({ cargos: z.array(cargo) }),
   }),
   listarIntegracoes: contrato({
     metodo: "GET",
@@ -318,6 +332,11 @@ export const contratosPlataforma = {
     caminho: "/api/v1/plataforma/integracoes/email/teste",
     entrada: z.object({ para: emailDeUsuario }),
     saida: ok,
+  }),
+  listarPessoas: contrato({
+    metodo: "GET",
+    caminho: "/api/v1/plataforma/usuarios",
+    saida: z.object({ pessoas: z.array(pessoaDaPlataforma) }),
   }),
   listarAdmins: contrato({
     metodo: "GET",

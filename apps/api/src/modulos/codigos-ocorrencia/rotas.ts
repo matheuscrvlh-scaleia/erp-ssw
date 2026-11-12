@@ -1,10 +1,9 @@
-import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 import { contratosCodigosOcorrencia as c } from "@erp/shared/contratos/codigos-ocorrencia";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import {
   alterarEmLote,
@@ -19,8 +18,8 @@ import {
  * Ler: quem tem a tela; escrever e ver o histórico: admin da empresa (hoje um não-admin recebe
  * "ok" sem nada mudar; aqui recebe 403). Sempre com o módulo Ocorrências.
  */
-const ler = [exigirModulo("ocorrencias"), exigirTela("admin_codigos")];
-const escrever = [...ler, exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN)];
+const ler = [exigirModulo("ocorrencias"), exigirPermissao("admin_codigos", "ver")];
+const escrever = [exigirModulo("ocorrencias"), exigirPermissao("admin_codigos", "editar")];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoCodigos> {
   const { acesso, empresa } = await empresaDaRequisicao(request);

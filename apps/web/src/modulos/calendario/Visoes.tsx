@@ -270,6 +270,7 @@ export function VisaoLista({
   unidades,
   hoje,
   podeEditar,
+  podeExcluir,
   aoEditar,
   aoExcluir,
 }: {
@@ -277,6 +278,7 @@ export function VisaoLista({
   unidades: UnidadeDoCalendario[];
   hoje: string;
   podeEditar: boolean;
+  podeExcluir: boolean;
   aoEditar: (f: Feriado) => void;
   aoExcluir: (f: Feriado) => void;
 }) {
@@ -331,7 +333,7 @@ export function VisaoLista({
       ordenavel: false,
       celula: (f) => <UnidadesImpactadas impactadas={unidadesImpactadas(f, unidades)} />,
     },
-    ...(podeEditar
+    ...(podeExcluir
       ? [
           {
             chave: "acoes",

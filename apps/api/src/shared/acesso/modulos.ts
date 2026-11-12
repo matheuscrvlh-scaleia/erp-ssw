@@ -9,14 +9,8 @@ export const MODULOS = [
   {
     chave: "essencial",
     nome: "Essencial",
-    descricao: "Usuários, cargos, departamentos, configurações e logs.",
-    telas: [
-      "admin_usuarios",
-      "admin_roles",
-      "admin_departamentos",
-      "admin_configuracoes",
-      "admin_logs",
-    ],
+    descricao: "Usuários, cargos, configurações e logs.",
+    telas: ["admin_usuarios", "admin_roles", "admin_configuracoes", "admin_logs"],
     essencial: true,
     ordem: 0,
   },

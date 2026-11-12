@@ -1,6 +1,6 @@
 import { type Transacao } from "@erp/db";
-import { cargos, departamentos, empresaUsuarios, usuarios, usuarioTelas } from "@erp/db/schema";
-import { ehTela } from "@erp/shared/acesso/telas";
+import { cargos, empresaUsuarios, usuarioPermissoes, usuarios } from "@erp/db/schema";
+import { ehPermissao, partesDaPermissao } from "@erp/shared/acesso/permissoes";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 
 import { type ContaGravada, type RepositorioUsuarios } from "./casos-de-uso";
@@ -26,8 +26,6 @@ export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
           temSenha,
           contaAtiva: usuarios.ativo,
           papel: empresaUsuarios.papel,
-          departamento: empresaUsuarios.departamentoChave,
-          setor: empresaUsuarios.setor,
           ativo: empresaUsuarios.ativo,
         })
         .from(empresaUsuarios)
@@ -38,13 +36,18 @@ export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
     excecoes: async (empresaId) => {
       const linhas = await tx
         .select({
-          usuarioId: usuarioTelas.usuarioId,
-          tela: usuarioTelas.telaChave,
-          permitido: usuarioTelas.permitido,
+          usuarioId: usuarioPermissoes.usuarioId,
+          tela: usuarioPermissoes.telaChave,
+          acao: usuarioPermissoes.acao,
+          efeito: usuarioPermissoes.efeito,
         })
-        .from(usuarioTelas)
-        .where(eq(usuarioTelas.empresaId, empresaId));
-      return linhas.flatMap((l) => (ehTela(l.tela) ? [{ ...l, tela: l.tela }] : []));
+        .from(usuarioPermissoes)
+        .where(eq(usuarioPermissoes.empresaId, empresaId));
+      return linhas.map((l) => ({
+        usuarioId: l.usuarioId,
+        permissao: `${l.tela}.${l.acao}`,
+        efeito: l.efeito,
+      }));
     },
 
     contaPorEmail: async (email): Promise<ContaGravada | null> => {
@@ -67,8 +70,6 @@ export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
       const [linha] = await tx
         .select({
           papel: empresaUsuarios.papel,
-          departamento: empresaUsuarios.departamentoChave,
-          setor: empresaUsuarios.setor,
           ativo: empresaUsuarios.ativo,
         })
         .from(empresaUsuarios)
@@ -89,14 +90,6 @@ export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
         .select({ chave: cargos.chave })
         .from(cargos)
         .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, chave)));
-      return linhas.length > 0;
-    },
-
-    existeDepartamento: async (empresaId, chave) => {
-      const linhas = await tx
-        .select({ chave: departamentos.chave })
-        .from(departamentos)
-        .where(and(eq(departamentos.empresaId, empresaId), eq(departamentos.chave, chave)));
       return linhas.length > 0;
     },
 
@@ -123,12 +116,7 @@ export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
     },
 
     gravarVinculo: async (empresaId, usuarioId, vinculo, criadoPor) => {
-      const dados = {
-        papel: vinculo.papel,
-        departamentoChave: vinculo.departamento,
-        setor: vinculo.setor,
-        ativo: vinculo.ativo,
-      };
+      const dados = { papel: vinculo.papel, ativo: vinculo.ativo };
       await tx
         .insert(empresaUsuarios)
         .values({ empresaId, usuarioId, criadoPor, ...dados })
@@ -145,19 +133,21 @@ export function criarRepositorioUsuarios(tx: Transacao): RepositorioUsuarios {
         .where(and(eq(usuarios.id, usuarioId), isNull(usuarios.empresaPreferidaId)));
     },
 
-    trocarExcecoes: async (empresaId, usuarioId, excecoes) => {
+    trocarExcecoes: async (empresaId, usuarioId, excecoes, criadoPor) => {
       await tx
-        .delete(usuarioTelas)
-        .where(and(eq(usuarioTelas.empresaId, empresaId), eq(usuarioTelas.usuarioId, usuarioId)));
-      if (excecoes.length === 0) return;
-      await tx.insert(usuarioTelas).values(
-        excecoes.map((e) => ({
-          empresaId,
-          usuarioId,
-          telaChave: e.tela,
-          permitido: e.permitido,
-        })),
-      );
+        .delete(usuarioPermissoes)
+        .where(
+          and(
+            eq(usuarioPermissoes.empresaId, empresaId),
+            eq(usuarioPermissoes.usuarioId, usuarioId),
+          ),
+        );
+      const linhas = excecoes.flatMap((e) => {
+        if (!ehPermissao(e.permissao)) return [];
+        const { tela, acao } = partesDaPermissao(e.permissao);
+        return [{ empresaId, usuarioId, telaChave: tela, acao, efeito: e.efeito, criadoPor }];
+      });
+      if (linhas.length > 0) await tx.insert(usuarioPermissoes).values(linhas);
     },
   };
 }

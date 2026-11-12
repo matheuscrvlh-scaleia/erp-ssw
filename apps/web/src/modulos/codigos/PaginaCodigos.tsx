@@ -1,4 +1,3 @@
-import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
 import {
   type AcaoEmLote,
   ACOES_EM_LOTE,
@@ -13,6 +12,7 @@ import { AlertTriangle, Hourglass, Inbox, ListChecks, Plus, Sparkles, Target } f
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Alternador } from "@/componentes/comum/Alternador";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
@@ -130,7 +130,7 @@ export function PaginaCodigos() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const nomeCurto = acesso.empresa?.nomeCurto ?? "FR";
   const fuso = useFusoDaEmpresa();
-  const podeEditar = ehAdminDaEmpresa(acesso.papel);
+  const podeEditar = pode(acesso, "admin_codigos", "editar");
   const rotulos = rotulosDaLetra(nomeCurto);
   const queryClient = useQueryClient();
   const consulta = useQuery(consultaCodigos);

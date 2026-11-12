@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { type ContextoBanco } from "@erp/db";
 import { chaveDoFeriado } from "@erp/dominio/calendario";
-import { type Setor } from "@erp/shared/acesso/papeis";
+import { ACOES_DA_TELA, permissao } from "@erp/shared/acesso/permissoes";
+import { ehTela } from "@erp/shared/acesso/telas";
 import { type UnidadeDoCalendario } from "@erp/shared/contratos/calendario";
 
 import { type AlgoritmoSenha } from "../infra/senhas";
@@ -45,10 +46,20 @@ export interface VinculoFalso {
   empresaId: string;
   usuarioId: string;
   papel: string | null;
-  departamento: string | null;
-  setor: Setor | null;
   ativo: boolean;
   criadoEm: Date;
+}
+
+/** Cargo no banco falso: as permissões gravadas (`tela.acao`). */
+export interface CargoFalso {
+  rotulo: string;
+  permissoes: string[];
+  protegido?: boolean;
+}
+
+/** Cada tela com todas as ações dela (atalho dos testes: "o cargo tem a tela"). */
+export function tudoNasTelas(telas: readonly string[]): string[] {
+  return telas.flatMap((t) => (ehTela(t) ? ACOES_DA_TELA[t].map((a) => permissao(t, a)) : []));
 }
 
 interface SessaoFalsa extends NovaSessao {
@@ -100,9 +111,13 @@ export class BancoEmMemoria {
   plataformaAdmins = new Set<string>();
   empresas: EmpresaGravada[] = [];
   vinculos: VinculoFalso[] = [];
-  cargos = new Map<string, { rotulo: string; telas: string[]; protegido?: boolean }>();
-  departamentoTelas: { empresaId: string; departamento: string; tela: string }[] = [];
-  excecoes: { empresaId: string; usuarioId: string; tela: string; permitido: boolean }[] = [];
+  cargos = new Map<string, CargoFalso>();
+  excecoes: {
+    empresaId: string;
+    usuarioId: string;
+    permissao: string;
+    efeito: "concede" | "nega";
+  }[] = [];
   liberacoes: {
     empresaId: string;
     modulo: string;
@@ -151,9 +166,13 @@ export class BancoEmMemoria {
   definirCargo(
     empresaId: string,
     chave: string,
-    cargo: { rotulo: string; telas: string[]; protegido?: boolean },
+    cargo: { rotulo: string; telas?: string[]; permissoes?: string[]; protegido?: boolean },
   ) {
-    this.cargos.set(`${empresaId}:${chave}`, cargo);
+    const { telas = [], permissoes = [], ...resto } = cargo;
+    this.cargos.set(`${empresaId}:${chave}`, {
+      ...resto,
+      permissoes: [...permissoes, ...tudoNasTelas(telas)],
+    });
   }
 
   criarEmpresa(dados: Partial<EmpresaGravada> = {}): EmpresaGravada {
@@ -195,8 +214,6 @@ export class BancoEmMemoria {
       usuarioId,
       empresaId,
       papel: null,
-      departamento: null,
-      setor: null,
       ativo: true,
       criadoEm: new Date("2026-01-01"),
       ...dados,
@@ -245,19 +262,17 @@ export class BancoEmMemoria {
         empresa: (id) => Promise.resolve(this.empresas.find((e) => e.id === id) ?? null),
         todasAsEmpresas: () =>
           Promise.resolve(this.empresas.map((e) => ({ id: e.id, nome: e.nome }))),
-        cargo: (empresaId, papel) =>
-          Promise.resolve(this.cargos.get(`${empresaId}:${papel}`) ?? null),
-        telasDoDepartamento: (empresaId, departamento) =>
-          Promise.resolve(
-            this.departamentoTelas
-              .filter((d) => d.empresaId === empresaId && d.departamento === departamento)
-              .map((d) => d.tela),
-          ),
+        cargo: (empresaId, papel) => {
+          const cargo = this.cargos.get(`${empresaId}:${papel}`);
+          return Promise.resolve(
+            cargo ? { rotulo: cargo.rotulo, permissoes: cargo.permissoes } : null,
+          );
+        },
         excecoes: (empresaId, usuarioId) =>
           Promise.resolve(
             this.excecoes
               .filter((e) => e.empresaId === empresaId && e.usuarioId === usuarioId)
-              .map(({ tela, permitido }) => ({ tela, permitido })),
+              .map(({ permissao: p, efeito }) => ({ permissao: p, efeito })),
           ),
         liberacoes: (empresaId) =>
           Promise.resolve(this.liberacoes.filter((l) => l.empresaId === empresaId)),

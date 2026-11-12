@@ -6,7 +6,6 @@ import { chamar } from "@/lib/api";
 export const CHAVES = {
   usuarios: ["admin", "usuarios"],
   cargos: ["admin", "cargos"],
-  departamentos: ["admin", "departamentos"],
   configuracoes: ["admin", "configuracoes"],
   publicas: ["configuracoes-publicas"],
   prazos: ["admin", "prazos"],
@@ -21,11 +20,6 @@ export const consultaUsuarios = queryOptions({
 export const consultaCargos = queryOptions({
   queryKey: CHAVES.cargos,
   queryFn: () => chamar(c.listarCargos),
-});
-
-export const consultaDepartamentos = queryOptions({
-  queryKey: CHAVES.departamentos,
-  queryFn: () => chamar(c.listarDepartamentos),
 });
 
 export const consultaConfiguracoes = queryOptions({

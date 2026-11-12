@@ -1,6 +1,7 @@
 import { moduloLiberado } from "@erp/dominio/acesso";
 import { type ChaveModulo, nomeDoModulo } from "@erp/shared/acesso/modulos";
 import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
+import { type Acao, permissao } from "@erp/shared/acesso/permissoes";
 import { type Tela } from "@erp/shared/acesso/telas";
 import { type Acesso } from "@erp/shared/contratos/auth";
 import { type FastifyRequest } from "fastify";
@@ -32,18 +33,27 @@ export const exigirEmpresa: Guarda = async (request) => {
   await acessoComEmpresa(request);
 };
 
-export function exigirTela(tela: Tela): Guarda {
+const MENSAGEM_DA_ACAO: Record<Acao, string> = {
+  ver: "Seu nível de acesso não libera esta tela.",
+  editar: "Seu cargo não permite criar ou alterar nesta tela.",
+  excluir: "Seu cargo não permite excluir nesta tela.",
+};
+
+/**
+ * Permissão por ação na tela (`ver` para ler; `editar` para criar/alterar; `excluir`). Tela de
+ * módulo desligado responde com o aviso do módulo.
+ */
+export function exigirPermissao(tela: Tela, acao: Acao): Guarda {
   return async (request) => {
     const acesso = await acessoComEmpresa(request);
-    if (!acesso.telas.includes(tela)) {
-      const bloqueio = acesso.telasBloqueadas.find((b) => b.tela === tela);
-      if (bloqueio) throw moduloNaoLiberado([bloqueio.moduloNome]);
-      throw semPermissao("Seu nível de acesso não libera esta tela.");
-    }
+    if (acesso.permissoes.includes(permissao(tela, acao))) return;
+    const bloqueio = acesso.telasBloqueadas.find((b) => b.tela === tela);
+    if (bloqueio) throw moduloNaoLiberado([bloqueio.moduloNome]);
+    throw semPermissao(MENSAGEM_DA_ACAO[acao]);
   };
 }
 
-/** Passa com qualquer uma das telas (lista usada por mais de uma tela, ex.: cargos). */
+/** Passa com "Ver" em qualquer uma das telas (lista usada por mais de uma tela, ex.: cargos). */
 export function exigirUmaDasTelas(...telas: Tela[]): Guarda {
   return async (request) => {
     const acesso = await acessoComEmpresa(request);
@@ -58,14 +68,6 @@ export function exigirModulo(...chaves: ChaveModulo[]): Guarda {
   return async (request) => {
     const acesso = await acessoComEmpresa(request);
     if (!moduloLiberado(acesso, chaves)) throw moduloNaoLiberado(chaves.map(nomeDoModulo));
-  };
-}
-
-/** Papel na empresa ativa. Admin da Plataforma vale como `admin` (igual a `has_role` de hoje). */
-export function exigirPapel(...papeis: string[]): Guarda {
-  return async (request) => {
-    const acesso = await acessoComEmpresa(request);
-    if (!acesso.papel || !papeis.includes(acesso.papel)) throw semPermissao();
   };
 }
 

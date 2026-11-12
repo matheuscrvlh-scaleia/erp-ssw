@@ -1,10 +1,9 @@
-import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
 import { contratosBonificacaoEntrega as c } from "@erp/shared/contratos/bonificacao-entrega";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirPapel, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import { clienteDaEmpresa, type DependenciasAhgora } from "../ahgora/casos-de-uso";
 import {
@@ -17,12 +16,10 @@ import {
   registrarFalta,
 } from "./casos-de-uso";
 
-/** Tudo é do admin da empresa (gestor vê a tela com exceção, mas o servidor nega — igual a hoje). */
-const soAdmin = [
-  exigirModulo("ponto_bonificacao"),
-  exigirTela("admin_bonificacao_entrega"),
-  exigirPapel(PAPEL_ADMIN, PAPEL_SUPER_ADMIN),
-];
+const modulo = exigirModulo("ponto_bonificacao");
+const ler = [modulo, exigirPermissao("admin_bonificacao_entrega", "ver")];
+const editar = [modulo, exigirPermissao("admin_bonificacao_entrega", "editar")];
+const excluir = [modulo, exigirPermissao("admin_bonificacao_entrega", "excluir")];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoBonificacao> {
   const { empresa } = await empresaDaRequisicao(request);
@@ -34,21 +31,22 @@ export const rotasBonificacaoEntrega: FastifyPluginCallbackZod<{
 }> = (app, { ahgora }, pronto) => {
   app.get(
     c.unidades.caminho,
-    { schema: { response: { 200: c.unidades.saida } }, preHandler: soAdmin },
+    { schema: { response: { 200: c.unidades.saida } }, preHandler: ler },
     async (request) => listarUnidades(request.db, await contextoDe(request)),
   );
 
   app.get(
     c.parametros.caminho,
-    { schema: { response: { 200: c.parametros.saida } }, preHandler: soAdmin },
+    { schema: { response: { 200: c.parametros.saida } }, preHandler: ler },
     async (request) => listarParametros(request.db, await contextoDe(request)),
   );
 
+  // POST só pelo corpo do filtro: apurar calcula e não grava nada, então basta Ver.
   app.post(
     c.apurar.caminho,
     {
       schema: { body: c.apurar.entrada, response: { 200: c.apurar.saida } },
-      preHandler: soAdmin,
+      preHandler: ler,
     },
     async (request) => {
       const ctx = await contextoDe(request);
@@ -62,7 +60,7 @@ export const rotasBonificacaoEntrega: FastifyPluginCallbackZod<{
     c.faltas.caminho,
     {
       schema: { querystring: c.faltas.entrada, response: { 200: c.faltas.saida } },
-      preHandler: soAdmin,
+      preHandler: ler,
     },
     async (request) => listarFaltas(request.db, await contextoDe(request), request.query),
   );
@@ -71,7 +69,7 @@ export const rotasBonificacaoEntrega: FastifyPluginCallbackZod<{
     c.registrarFalta.caminho,
     {
       schema: { body: c.registrarFalta.entrada, response: { 200: c.registrarFalta.saida } },
-      preHandler: soAdmin,
+      preHandler: editar,
     },
     async (request) =>
       registrarFalta(request.db, await contextoDe(request), await atorDa(request), request.body),
@@ -81,7 +79,7 @@ export const rotasBonificacaoEntrega: FastifyPluginCallbackZod<{
     c.excluirFalta.caminho,
     {
       schema: { params: c.excluirFalta.parametros, response: { 200: c.excluirFalta.saida } },
-      preHandler: soAdmin,
+      preHandler: excluir,
     },
     async (request) => {
       await excluirFalta(

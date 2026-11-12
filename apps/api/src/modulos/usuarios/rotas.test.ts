@@ -14,8 +14,6 @@ const CONVITE = {
   email: " Nova.Pessoa@FR.com.br ",
   nome: "Nova Pessoa",
   papel: "operador",
-  departamento: null,
-  excecoes: [{ tela: "romaneio", permitido: true }],
 };
 
 describe("GET /api/v1/admin/usuarios", () => {
@@ -42,7 +40,7 @@ describe("GET /api/v1/admin/usuarios", () => {
 });
 
 describe("POST /api/v1/admin/usuarios (convite)", () => {
-  it("cria conta, vínculo e exceções, manda o link de uso único e registra em Logs", async () => {
+  it("cria conta e vínculo com o cargo, manda o link de uso único e registra em Logs", async () => {
     const { headers } = await t.comoPapel("admin");
     const r = await t.app.inject({
       method: "POST",
@@ -59,12 +57,7 @@ describe("POST /api/v1/admin/usuarios (convite)", () => {
       papel: "operador",
       ativo: true,
     });
-    expect(t.banco.excecoes).toContainEqual({
-      empresaId: t.empresaA.id,
-      usuarioId: id,
-      tela: "romaneio",
-      permitido: true,
-    });
+    expect(t.banco.excecoes).toEqual([]);
 
     const [email] = t.cenario.correio.enviados;
     expect(email?.para).toBe("nova.pessoa@fr.com.br");
@@ -146,7 +139,7 @@ describe("POST /api/v1/admin/usuarios (convite)", () => {
     expect(JSON.stringify(t.banco.auditoria)).not.toContain("senha-forte-1");
   });
 
-  it("recusa papel de outra empresa, tela da Plataforma por exceção e e-mail repetido", async () => {
+  it("recusa cargo de outra empresa e e-mail repetido", async () => {
     const { headers } = await t.comoPapel("admin");
     t.banco.definirCargo(t.empresaB.id, "so_da_b", { rotulo: "Só da B", telas: [] });
     const papelDeFora = await t.app.inject({
@@ -156,16 +149,8 @@ describe("POST /api/v1/admin/usuarios (convite)", () => {
       payload: { ...CONVITE, papel: "so_da_b" },
     });
     expect(papelDeFora.json()).toEqual({
-      erro: { codigo: "ENTRADA_INVALIDA", mensagem: "Role inexistente" },
+      erro: { codigo: "ENTRADA_INVALIDA", mensagem: "Cargo inexistente" },
     });
-
-    const telaDaPlataforma = await t.app.inject({
-      method: "POST",
-      url: "/api/v1/admin/usuarios",
-      headers,
-      payload: { ...CONVITE, excecoes: [{ tela: "plataforma_empresas", permitido: true }] },
-    });
-    expect(telaDaPlataforma.statusCode).toBe(422);
 
     t.banco.criarUsuario({ email: "nova.pessoa@fr.com.br" });
     const repetido = await t.app.inject({
@@ -202,9 +187,7 @@ describe("PUT /api/v1/admin/usuarios/:id", () => {
     nome: "Pessoa",
     email,
     papel: "operador",
-    departamento: null,
     ativo: true,
-    excecoes: [],
   });
 
   it("admin de uma empresa não altera usuário de outra (404, nada muda)", async () => {
@@ -287,7 +270,7 @@ describe("PUT /api/v1/admin/usuarios/:id", () => {
     expect(t.banco.vinculos.find((v) => v.usuarioId === chefe.id)?.ativo).toBe(false);
   });
 
-  it("altera papel, ativo e exceções da empresa e registra cada mudança", async () => {
+  it("troca o cargo e o ativo do vínculo e registra a mudança", async () => {
     const { headers } = await t.comoPapel("admin");
     const pessoa = t.banco.criarUsuario({ email: "p@fr.com.br", nome: "Pessoa" });
     t.banco.vincular(pessoa.id, t.empresaA.id, { papel: "operador" });
@@ -299,17 +282,116 @@ describe("PUT /api/v1/admin/usuarios/:id", () => {
         ...edicao("p@fr.com.br"),
         papel: "admin",
         ativo: false,
-        excecoes: [{ tela: "ocorrencias", permitido: false }],
       },
     });
     expect(r.statusCode).toBe(200);
     expect(pessoa.ativo).toBe(false);
-    const entidades = t.banco.auditoria.map((a) => a.entidade);
-    expect(entidades).toEqual(expect.arrayContaining(["usuario_empresa", "permissao_usuario"]));
     expect(t.banco.auditoria.find((a) => a.entidade === "usuario_empresa")).toMatchObject({
       antes: { papel: "operador", ativo: true },
       depois: { papel: "admin", ativo: false },
     });
+  });
+});
+
+describe("PUT /api/v1/admin/usuarios/:id/permissoes (exceções)", () => {
+  const url = (id: string) => `/api/v1/admin/usuarios/${id}/permissoes`;
+
+  it("grava Sim e Não, troca as anteriores e registra em Logs; vale no acesso da pessoa", async () => {
+    const { headers } = await t.comoPapel("admin");
+    const pessoa = await t.comoPapel("operador");
+    const r = await t.app.inject({
+      method: "PUT",
+      url: url(pessoa.usuario.id),
+      headers,
+      payload: {
+        excecoes: [
+          { permissao: "coletas.ver", efeito: "concede" },
+          { permissao: "performance.ver", efeito: "nega" },
+        ],
+      },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(t.banco.excecoes.map((e) => [e.permissao, e.efeito])).toEqual([
+      ["coletas.ver", "concede"],
+      ["performance.ver", "nega"],
+    ]);
+    expect(t.banco.auditoria.at(-1)).toMatchObject({
+      entidade: "permissao_usuario",
+      entidadeId: pessoa.usuario.id,
+      depois: { "coletas.ver": "Sim", "performance.ver": "Não" },
+    });
+    t.banco.liberarModulo(t.empresaA.id, "coletas");
+    t.banco.liberarModulo(t.empresaA.id, "performance");
+    const eu = await t.app.inject({ url: "/api/v1/auth/me", headers: pessoa.headers });
+    expect(eu.json<{ telas: string[] }>().telas).toEqual(["coletas"]);
+
+    await t.app.inject({
+      method: "PUT",
+      url: url(pessoa.usuario.id),
+      headers,
+      payload: { excecoes: [] },
+    });
+    expect(t.banco.excecoes).toEqual([]);
+  });
+
+  it("só admin ajusta, ninguém ajusta as próprias e Sim e Não juntos é recusado", async () => {
+    const admin = await t.comoPapel("admin");
+    const operador = await t.comoPapel("operador");
+    t.banco.definirCargo(t.empresaA.id, "operador", {
+      rotulo: "Operador",
+      telas: ["performance", "admin_usuarios"],
+    });
+    const peloOperador = await t.app.inject({
+      method: "PUT",
+      url: url(admin.usuario.id),
+      headers: operador.headers,
+      payload: { excecoes: [] },
+    });
+    expect(peloOperador.statusCode).toBe(403);
+    const asProprias = await t.app.inject({
+      method: "PUT",
+      url: url(admin.usuario.id),
+      headers: admin.headers,
+      payload: { excecoes: [{ permissao: "coletas.ver", efeito: "nega" }] },
+    });
+    expect(asProprias.json()).toEqual({
+      erro: {
+        codigo: "SEM_PERMISSAO",
+        mensagem: "Você não pode ajustar as suas próprias permissões.",
+      },
+    });
+    const conflitante = await t.app.inject({
+      method: "PUT",
+      url: url(operador.usuario.id),
+      headers: admin.headers,
+      payload: {
+        excecoes: [
+          { permissao: "coletas.ver", efeito: "concede" },
+          { permissao: "coletas.ver", efeito: "nega" },
+        ],
+      },
+    });
+    expect(conflitante.statusCode).toBe(422);
+    const daPlataforma = await t.app.inject({
+      method: "PUT",
+      url: url(operador.usuario.id),
+      headers: admin.headers,
+      payload: { excecoes: [{ permissao: "plataforma_empresas.ver", efeito: "concede" }] },
+    });
+    expect(daPlataforma.statusCode).toBe(422);
+    expect(t.banco.excecoes).toEqual([]);
+  });
+
+  it("404 para pessoa de outra empresa", async () => {
+    const { headers } = await t.comoPapel("admin");
+    const deFora = await t.comoPapel("operador", t.empresaB.id);
+    const r = await t.app.inject({
+      method: "PUT",
+      url: url(deFora.usuario.id),
+      headers,
+      payload: { excecoes: [{ permissao: "coletas.ver", efeito: "concede" }] },
+    });
+    expect(r.statusCode).toBe(404);
   });
 });
 

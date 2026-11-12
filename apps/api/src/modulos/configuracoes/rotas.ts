@@ -2,13 +2,14 @@ import { contratosAdmin as c, contratosConfiguracoes } from "@erp/shared/contrat
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirAdminDaEmpresa, exigirAutenticacao, exigirTela } from "../../http/guardas";
+import { exigirAutenticacao, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import { type CacheDeConfiguracoes } from "./cache";
 import { configuracoesPublicas, listarConfiguracoes, salvarConfiguracoes } from "./casos-de-uso";
 
 /** Admin › Configurações: admin com a tela, sem módulo (essencial). */
-const admin = [exigirAdminDaEmpresa, exigirTela("admin_configuracoes")];
+const ler = exigirPermissao("admin_configuracoes", "ver");
+const editar = exigirPermissao("admin_configuracoes", "editar");
 
 export const rotasConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDeConfiguracoes }> = (
   app,
@@ -17,7 +18,7 @@ export const rotasConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDeConfig
 ) => {
   app.get(
     c.listarConfiguracoes.caminho,
-    { schema: { response: { 200: c.listarConfiguracoes.saida } }, onRequest: admin },
+    { schema: { response: { 200: c.listarConfiguracoes.saida } }, onRequest: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
       return { configuracoes: await listarConfiguracoes(request.db, empresa.id) };
@@ -32,7 +33,7 @@ export const rotasConfiguracoes: FastifyPluginCallbackZod<{ cache: CacheDeConfig
         body: c.salvarConfiguracoes.entrada,
         response: { 200: c.salvarConfiguracoes.saida },
       },
-      onRequest: admin,
+      onRequest: editar,
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);

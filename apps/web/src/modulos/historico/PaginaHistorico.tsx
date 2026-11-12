@@ -23,6 +23,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Abas } from "@/componentes/comum/Abas";
 import { Alternador } from "@/componentes/comum/Alternador";
@@ -74,9 +75,10 @@ function diaPorExtenso(iso: string): string {
   }).format(new Date(`${iso}T00:00:00Z`));
 }
 
-/** "N" abre uma anotação nova (fora de campos de texto e sem Ctrl/Alt/Cmd). */
-function useAtalhoNovaAnotacao(abrir: () => void) {
+/** "N" abre uma anotação nova (só com Criar/Editar) (fora de campos de texto e sem Ctrl/Alt/Cmd). */
+function useAtalhoNovaAnotacao(abrir: () => void, ativo: boolean) {
   useEffect(() => {
+    if (!ativo) return;
     const aoTeclar = (e: KeyboardEvent) => {
       if (e.key !== "n" && e.key !== "N") return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -94,7 +96,7 @@ function useAtalhoNovaAnotacao(abrir: () => void) {
     return () => {
       window.removeEventListener("keydown", aoTeclar);
     };
-  }, [abrir]);
+  }, [abrir, ativo]);
 }
 
 function ItemDeAnotacao({ a, aoEditar }: { a: Anotacao; aoEditar: (() => void) | null }) {
@@ -338,6 +340,8 @@ export function PaginaHistorico() {
   const fuso = useFusoDaEmpresa();
   const hoje = hojeNoFuso(fuso);
   const admin = ehAdminDaEmpresa(acesso.papel);
+  const podeAnotar = pode(acesso, "historico", "editar");
+  const podeApagar = pode(acesso, "historico", "excluir");
   const { filtros: busca, definir, limpar } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = intervaloDoPeriodo(busca.periodo, hoje);
   const queryClient = useQueryClient();
@@ -361,9 +365,10 @@ export function PaginaHistorico() {
     setAbertura({});
     setModalAberto(true);
   });
-  useAtalhoNovaAnotacao(abrirNova);
+  useAtalhoNovaAnotacao(abrirNova, podeAnotar);
 
-  const editavel = (a: Anotacao) => podeAlterar(a, acesso.usuario.id, admin);
+  // Anotação de outra pessoa: só o admin (regra do domínio); e sempre com a ação do cargo.
+  const editavel = (a: Anotacao) => podeAnotar && podeAlterar(a, acesso.usuario.id, admin);
   const atualizar = () => queryClient.invalidateQueries({ queryKey: CHAVE_DO_HISTORICO });
 
   const gravar = async (dados: DadosDaAnotacao, id: string | null) => {
@@ -443,14 +448,16 @@ export function PaginaHistorico() {
             ]}
             linhas={linhasDaExportacao}
           />
-          <Button
-            size="sm"
-            onClick={() => {
-              abrir();
-            }}
-          >
-            <Plus aria-hidden /> Nova anotação
-          </Button>
+          {podeAnotar && (
+            <Button
+              size="sm"
+              onClick={() => {
+                abrir();
+              }}
+            >
+              <Plus aria-hidden /> Nova anotação
+            </Button>
+          )}
         </>
       }
       abas={
@@ -608,7 +615,7 @@ export function PaginaHistorico() {
               abrir({ editando: a });
             }}
             aoCriar={(dia) => {
-              abrir({ data: dia });
+              if (podeAnotar) abrir({ data: dia });
             }}
           />
         ) : dias.length === 0 ? (
@@ -642,7 +649,7 @@ export function PaginaHistorico() {
         abertura={abertura}
         hoje={hoje}
         unidades={d?.unidades ?? []}
-        podeExcluir={abertura.editando ? editavel(abertura.editando) : false}
+        podeExcluir={abertura.editando ? podeApagar && editavel(abertura.editando) : false}
         aoGravar={gravar}
         aoExcluir={excluir}
       />

@@ -1,4 +1,3 @@
-import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
 import {
   type LinhaDeColeta,
   type PainelDeColetas,
@@ -31,6 +30,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Alternador } from "@/componentes/comum/Alternador";
 import { Aviso } from "@/componentes/comum/Aviso";
@@ -307,7 +307,7 @@ function DetalheDaColeta({ coleta, fuso }: { coleta: LinhaDeColeta; fuso: string
 export function PaginaColetas() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const fuso = useFusoDaEmpresa();
-  const podeImportar = ehAdminDaEmpresa(acesso.papel);
+  const podeImportar = pode(acesso, "coletas", "editar");
   const { filtros: busca, definir, limpar, ativos } = useFiltrosNaUrl(esquemaDaBusca);
   const periodo = resolverPeriodo(busca.periodo, busca.de, busca.ate, hojeNoFuso(fuso), "30d");
   const filtros = filtrosDaBusca(busca, periodo);

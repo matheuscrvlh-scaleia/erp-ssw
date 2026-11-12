@@ -2,7 +2,7 @@ import { contratosIngestaoSsw as c } from "@erp/shared/contratos/ingestao-ssw";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirAdminPlataforma, exigirEmpresa, exigirTela } from "../../http/guardas";
+import { exigirAdminPlataforma, exigirEmpresa, exigirPermissao } from "../../http/guardas";
 import { atorDa } from "../../plugins/sessao";
 import {
   atualizacaoDosDados,
@@ -23,8 +23,10 @@ import {
  * Faixa de saúde: todo usuário com empresa. Ingestão SSW e Diagnóstico SSW: só a Plataforma, na
  * empresa ativa (decisão de 09/11: telas de integração são da Plataforma).
  */
-const ingestao = [exigirTela("admin_ingestao"), exigirAdminPlataforma];
-const diagnostico = [exigirTela("admin_ssw_diagnostico"), exigirAdminPlataforma];
+const ingestao = [exigirPermissao("admin_ingestao", "ver"), exigirAdminPlataforma];
+const editarIngestao = [exigirPermissao("admin_ingestao", "editar"), exigirAdminPlataforma];
+const diagnostico = [exigirPermissao("admin_ssw_diagnostico", "ver"), exigirAdminPlataforma];
+const reprocessar = [exigirPermissao("admin_ssw_diagnostico", "editar"), exigirAdminPlataforma];
 
 export const rotasIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasIngestaoSsw }> = (
   app,
@@ -56,7 +58,7 @@ export const rotasIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasInge
     c.rodarBi2.caminho,
     {
       schema: { body: c.rodarBi2.entrada, response: { 200: c.rodarBi2.saida } },
-      preHandler: ingestao,
+      preHandler: editarIngestao,
     },
     async (request) =>
       rodarBi2(request.db, deps, await atorDa(request), await empresa(request), request.body.data),
@@ -72,7 +74,7 @@ export const rotasIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasInge
     c.salvarCredenciais.caminho,
     {
       schema: { body: c.salvarCredenciais.entrada, response: { 200: c.salvarCredenciais.saida } },
-      preHandler: ingestao,
+      preHandler: editarIngestao,
     },
     async (request) =>
       salvarCredenciaisSsw(
@@ -86,7 +88,7 @@ export const rotasIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasInge
 
   app.post(
     c.testarConexao.caminho,
-    { schema: { response: { 200: c.testarConexao.saida } }, preHandler: ingestao },
+    { schema: { response: { 200: c.testarConexao.saida } }, preHandler: editarIngestao },
     async (request) => testarConexaoSsw(deps, await empresa(request)),
   );
 
@@ -103,7 +105,7 @@ export const rotasIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasInge
         params: c.reprocessarEvento.parametros,
         response: { 200: c.reprocessarEvento.saida },
       },
-      preHandler: ingestao,
+      preHandler: editarIngestao,
     },
     async (request) =>
       reprocessarEvento(
@@ -123,7 +125,7 @@ export const rotasIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasInge
 
   app.post(
     c.reprocessarTokenIncorreto.caminho,
-    { schema: { response: { 200: c.reprocessarTokenIncorreto.saida } }, preHandler: diagnostico },
+    { schema: { response: { 200: c.reprocessarTokenIncorreto.saida } }, preHandler: reprocessar },
     async (request) =>
       reprocessarTokenIncorreto(request.db, deps, await atorDa(request), await empresa(request)),
   );

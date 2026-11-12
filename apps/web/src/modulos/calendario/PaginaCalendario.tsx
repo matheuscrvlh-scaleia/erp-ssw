@@ -1,4 +1,3 @@
-import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
 import { contratosCalendario as c, type Feriado } from "@erp/shared/contratos/calendario";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -6,6 +5,7 @@ import { CalendarClock, CalendarDays, Flag, MapPin, Plus, Sparkles } from "lucid
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Abas } from "@/componentes/comum/Abas";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
@@ -40,8 +40,9 @@ export function PaginaCalendario() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
   const fuso = useFusoDaEmpresa();
   const hoje = hojeNoFuso(fuso);
-  // Escrita: admin da empresa (a Plataforma conta como admin). Nacionais: só a Plataforma (Q28).
-  const podeEditar = ehAdminDaEmpresa(acesso.papel);
+  // Escrita pela permissão do cargo (Criar/Editar, Excluir). Nacionais: só a Plataforma (Q28).
+  const podeEditar = pode(acesso, "calendario", "editar");
+  const podeExcluir = pode(acesso, "calendario", "excluir");
   const podeGerarNacionais = acesso.adminPlataforma;
   const queryClient = useQueryClient();
 
@@ -227,6 +228,7 @@ export function PaginaCalendario() {
           unidades={unidades}
           hoje={hoje}
           podeEditar={podeEditar}
+          podeExcluir={podeExcluir}
           aoEditar={abrirModal}
           aoExcluir={(f) => void excluir(f)}
         />

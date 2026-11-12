@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { type ContextoBanco } from "@erp/db";
 import { configuracoesVigentes } from "@erp/dominio/configuracoes";
-import { ehTela, type Tela } from "@erp/shared/acesso/telas";
+import { ehPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
 import { type OrigemIntegracao } from "@erp/shared/contratos/auditoria";
 import { type TipoIntegracao, type TipoIntegracaoPlataforma } from "@erp/shared/plataforma";
 
@@ -25,15 +25,6 @@ import { type BancoEmMemoria } from "./banco-em-memoria";
  * banco falso, não simula SQL; a RLS só é simulada onde o teste de segurança depende dela
  * (vínculos de uma pessoa em todas as empresas).
  */
-
-interface DepartamentoFalso {
-  empresaId: string;
-  chave: string;
-  rotulo: string;
-  descricao: string | null;
-  ativo: boolean;
-  protegido: boolean;
-}
 
 interface ConfiguracaoFalsa {
   empresaId: string;
@@ -62,7 +53,6 @@ export class EstadoDeAdministracao {
       "slug" | "razaoSocial" | "cnpj" | "dominioSsw" | "criadoEm" | "atualizadoEm"
     >
   >();
-  departamentos: DepartamentoFalso[] = [];
   configuracoes: ConfiguracaoFalsa[] = [];
   prazos: (RegraGravada & { empresaId: string })[] = [];
   ctes: {
@@ -96,13 +86,13 @@ export function criarRepositoriosDeAdministracao(
 } {
   const adm = banco.adm;
   const chaveCargo = (empresaId: string, chave: string) => `${empresaId}:${chave}`;
-  const telasValidas = (telas: readonly string[]): Tela[] => telas.filter(ehTela);
+  const permissoesValidas = (lista: readonly string[]): Permissao[] => lista.filter(ehPermissao);
   const cargosDaEmpresa = (empresaId: string) =>
     [...banco.cargos.entries()]
       .filter(([k]) => k.startsWith(`${empresaId}:`))
       .map(([k, c]) => ({ chave: k.slice(empresaId.length + 1), ...c }));
-  const usoNaEmpresa = (empresaId: string, campo: "papel" | "departamento", chave: string) =>
-    banco.vinculos.filter((v) => v.empresaId === empresaId && v[campo] === chave).length;
+  const usoNaEmpresa = (empresaId: string, chave: string) =>
+    banco.vinculos.filter((v) => v.empresaId === empresaId && v.papel === chave).length;
 
   function empresaGravada(id: string): EmpresaGravada | null {
     const base = banco.empresas.find((e) => e.id === id);
@@ -139,19 +129,15 @@ export function criarRepositoriosDeAdministracao(
               temSenha: u.senhaHash !== null,
               contaAtiva: u.ativo,
               papel: v.papel,
-              departamento: v.departamento,
-              setor: v.setor,
               ativo: v.ativo,
             };
           }),
       ),
     excecoes: (empresaId) =>
       Promise.resolve(
-        banco.excecoes.flatMap((e) =>
-          e.empresaId === empresaId && ehTela(e.tela)
-            ? [{ usuarioId: e.usuarioId, tela: e.tela, permitido: e.permitido }]
-            : [],
-        ),
+        banco.excecoes
+          .filter((e) => e.empresaId === empresaId)
+          .map(({ usuarioId, permissao, efeito }) => ({ usuarioId, permissao, efeito })),
       ),
     contaPorEmail: (email) => {
       const u = banco.usuarios.find((x) => x.email === email);
@@ -171,9 +157,7 @@ export function criarRepositoriosDeAdministracao(
     },
     vinculo: (empresaId, usuarioId) => {
       const v = banco.vinculos.find((x) => x.empresaId === empresaId && x.usuarioId === usuarioId);
-      return Promise.resolve(
-        v ? { papel: v.papel, departamento: v.departamento, setor: v.setor, ativo: v.ativo } : null,
-      );
+      return Promise.resolve(v ? { papel: v.papel, ativo: v.ativo } : null);
     },
     // RLS simulada: fora do contexto de Plataforma, só aparecem os vínculos da empresa da sessão.
     vinculosEmTodasAsEmpresas: (usuarioId) =>
@@ -185,10 +169,6 @@ export function criarRepositoriosDeAdministracao(
       ),
     existeCargo: (empresaId, chave) =>
       Promise.resolve(banco.cargos.has(chaveCargo(empresaId, chave))),
-    existeDepartamento: (empresaId, chave) =>
-      Promise.resolve(
-        adm.departamentos.some((d) => d.empresaId === empresaId && d.chave === chave),
-      ),
     criarConta: (conta) => {
       const u = banco.criarUsuario({
         email: conta.email,
@@ -220,7 +200,9 @@ export function criarRepositoriosDeAdministracao(
       banco.excecoes = banco.excecoes.filter(
         (e) => !(e.empresaId === empresaId && e.usuarioId === usuarioId),
       );
-      for (const e of excecoes) banco.excecoes.push({ empresaId, usuarioId, ...e });
+      for (const e of excecoes) {
+        banco.excecoes.push({ empresaId, usuarioId, permissao: e.permissao, efeito: e.efeito });
+      }
       return Promise.resolve();
     },
   };
@@ -232,8 +214,8 @@ export function criarRepositoriosDeAdministracao(
           chave: c.chave,
           rotulo: c.rotulo,
           protegido: c.protegido ?? false,
-          telas: telasValidas(c.telas),
-          usuarios: usoNaEmpresa(empresaId, "papel", c.chave),
+          permissoes: c.permissoes,
+          usuarios: usoNaEmpresa(empresaId, c.chave),
         })),
       ),
     cargo: (empresaId, chave) => {
@@ -244,13 +226,14 @@ export function criarRepositoriosDeAdministracao(
               chave,
               rotulo: c.rotulo,
               protegido: c.protegido ?? false,
-              telas: telasValidas(c.telas),
+              permissoes: c.permissoes,
+              usuarios: usoNaEmpresa(empresaId, chave),
             }
           : null,
       );
     },
-    criarCargo: (empresaId, cargo, telas) => {
-      banco.definirCargo(empresaId, cargo.chave, { ...cargo, telas: [...telas] });
+    criarCargo: (empresaId, cargo, permissoes) => {
+      banco.definirCargo(empresaId, cargo.chave, { ...cargo, permissoes: [...permissoes] });
       return Promise.resolve();
     },
     alterarCargo: (empresaId, chave, rotulo) => {
@@ -258,77 +241,15 @@ export function criarRepositoriosDeAdministracao(
       if (c) c.rotulo = rotulo;
       return Promise.resolve();
     },
-    trocarTelasDoCargo: (empresaId, chave, telas) => {
+    trocarPermissoes: (empresaId, chave, permissoes) => {
       const c = banco.cargos.get(chaveCargo(empresaId, chave));
-      if (c) c.telas = [...telas];
+      if (c) c.permissoes = [...permissoes];
       return Promise.resolve();
     },
     excluirCargo: (empresaId, chave) => {
       banco.cargos.delete(chaveCargo(empresaId, chave));
       return Promise.resolve();
     },
-    departamentos: (empresaId) =>
-      Promise.resolve(
-        adm.departamentos
-          .filter((d) => d.empresaId === empresaId)
-          .map((d) => ({
-            chave: d.chave,
-            rotulo: d.rotulo,
-            descricao: d.descricao,
-            ativo: d.ativo,
-            protegido: d.protegido,
-            telas: telasValidas(
-              banco.departamentoTelas
-                .filter((t) => t.empresaId === empresaId && t.departamento === d.chave)
-                .map((t) => t.tela),
-            ),
-            usuarios: usoNaEmpresa(empresaId, "departamento", d.chave),
-          })),
-      ),
-    departamento: (empresaId, chave) => {
-      const d = adm.departamentos.find((x) => x.empresaId === empresaId && x.chave === chave);
-      return Promise.resolve(
-        d
-          ? {
-              chave: d.chave,
-              rotulo: d.rotulo,
-              descricao: d.descricao,
-              ativo: d.ativo,
-              protegido: d.protegido,
-              telas: telasValidas(
-                banco.departamentoTelas
-                  .filter((t) => t.empresaId === empresaId && t.departamento === chave)
-                  .map((t) => t.tela),
-              ),
-            }
-          : null,
-      );
-    },
-    criarDepartamento: async (empresaId, d, telas) => {
-      adm.departamentos.push({ empresaId, ...d });
-      await cadastros.trocarTelasDoDepartamento(empresaId, d.chave, telas);
-    },
-    alterarDepartamento: (empresaId, chave, dados) => {
-      const d = adm.departamentos.find((x) => x.empresaId === empresaId && x.chave === chave);
-      if (d) Object.assign(d, dados);
-      return Promise.resolve();
-    },
-    trocarTelasDoDepartamento: (empresaId, chave, telas) => {
-      banco.departamentoTelas = banco.departamentoTelas.filter(
-        (t) => !(t.empresaId === empresaId && t.departamento === chave),
-      );
-      for (const tela of telas)
-        banco.departamentoTelas.push({ empresaId, departamento: chave, tela });
-      return Promise.resolve();
-    },
-    excluirDepartamento: (empresaId, chave) => {
-      adm.departamentos = adm.departamentos.filter(
-        (d) => !(d.empresaId === empresaId && d.chave === chave),
-      );
-      return Promise.resolve();
-    },
-    usuariosCom: (empresaId, campo, chave) =>
-      Promise.resolve(usoNaEmpresa(empresaId, campo, chave)),
   };
 
   const configuracoes: RepositorioConfiguracoes = {
@@ -581,7 +502,6 @@ export function criarRepositoriosDeAdministracao(
               nome: u.nome,
               email: u.email,
               papel: v.papel,
-              departamento: v.departamento,
               ativo: v.ativo,
               criadoEm: v.criadoEm,
               totalEmpresas: banco.vinculos.filter((x) => x.usuarioId === u.id).length,
@@ -647,8 +567,8 @@ export function criarRepositoriosDeAdministracao(
         configuracoes: adm.configuracoes
           .filter((c) => c.empresaId === modeloId)
           .map(({ chave, valor, descricao, grupo }) => ({ chave, valor, descricao, grupo })),
-        telasDosCargos: new Map(
-          cargosDaEmpresa(modeloId).map((c) => [c.chave, telasValidas(c.telas)]),
+        permissoesDosCargos: new Map(
+          cargosDaEmpresa(modeloId).map((c) => [c.chave, permissoesValidas(c.permissoes)]),
         ),
       }),
     copiarParaEmpresa: (empresaId, copia) => {
@@ -670,6 +590,28 @@ export function criarRepositoriosDeAdministracao(
             email: u.email,
             criadoEm: adm.adminsDesde.get(id) ?? agoraFixo(),
           };
+        }),
+      ),
+    contas: () =>
+      Promise.resolve(
+        banco.usuarios.map((u) => ({ id: u.id, nome: u.nome, email: u.email, ativo: u.ativo })),
+      ),
+    vinculosDeTodas: () =>
+      Promise.resolve(
+        banco.vinculos.flatMap((v) => {
+          const empresa = banco.empresas.find((e) => e.id === v.empresaId);
+          if (!empresa) return [];
+          const cargo = v.papel ? banco.cargos.get(chaveCargo(v.empresaId, v.papel)) : undefined;
+          return [
+            {
+              usuarioId: v.usuarioId,
+              empresaId: v.empresaId,
+              empresaNome: empresa.nome,
+              papel: v.papel,
+              cargoRotulo: cargo?.rotulo ?? null,
+              ativo: v.ativo,
+            },
+          ];
         }),
       ),
     travarAdmins: () => Promise.resolve(banco.plataformaAdmins.size),

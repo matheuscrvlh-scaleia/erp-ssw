@@ -6,7 +6,6 @@ import {
   Bookmark,
   Boxes,
   Building,
-  Building2,
   Calendar,
   CalendarDays,
   Clock,
@@ -263,11 +262,6 @@ const ABAS_DA_EMPRESA_NA_BUSCA = ABAS_DA_EMPRESA.filter(
 /** Telas fora do menu que continuam com página própria (Usuários e cargos as reúne). */
 const FORA_DO_MENU: readonly ItemDoCatalogo[] = [
   tela("admin_roles", ROTULO_DA_TELA.admin_roles.replace(/^Admin · /, ""), ShieldCheck),
-  tela(
-    "admin_departamentos",
-    ROTULO_DA_TELA.admin_departamentos.replace(/^Admin · /, ""),
-    Building2,
-  ),
 ];
 
 /**

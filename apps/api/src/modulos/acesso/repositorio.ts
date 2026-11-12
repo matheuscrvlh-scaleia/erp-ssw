@@ -1,15 +1,14 @@
 import { type Transacao } from "@erp/db";
 import {
+  cargoPermissoes,
   cargos,
-  cargoTelas,
-  departamentoTelas,
   empresaModulos,
   empresas,
   empresaUsuarios,
   plataformaAdmins,
   sessoes,
+  usuarioPermissoes,
   usuarios,
-  usuarioTelas,
 } from "@erp/db/schema";
 import { and, asc, eq, gt, isNull } from "drizzle-orm";
 
@@ -46,8 +45,6 @@ export function criarRepositorioAcesso(tx: Transacao): RepositorioAcesso {
           empresaNome: empresas.nome,
           empresaStatus: empresas.status,
           papel: empresaUsuarios.papel,
-          departamento: empresaUsuarios.departamentoChave,
-          setor: empresaUsuarios.setor,
           ativo: empresaUsuarios.ativo,
           criadoEm: empresaUsuarios.criadoEm,
         })
@@ -100,31 +97,31 @@ export function criarRepositorioAcesso(tx: Transacao): RepositorioAcesso {
         .from(cargos)
         .where(and(eq(cargos.empresaId, empresaId), eq(cargos.chave, papel)));
       if (!linha) return null;
-      const telas = await tx
-        .select({ tela: cargoTelas.telaChave })
-        .from(cargoTelas)
-        .where(and(eq(cargoTelas.empresaId, empresaId), eq(cargoTelas.cargoChave, papel)));
-      return { rotulo: linha.rotulo, telas: telas.map((t) => t.tela) };
+      const permissoes = await tx
+        .select({ tela: cargoPermissoes.telaChave, acao: cargoPermissoes.acao })
+        .from(cargoPermissoes)
+        .where(
+          and(eq(cargoPermissoes.empresaId, empresaId), eq(cargoPermissoes.cargoChave, papel)),
+        );
+      return { rotulo: linha.rotulo, permissoes: permissoes.map((p) => `${p.tela}.${p.acao}`) };
     },
 
-    telasDoDepartamento: async (empresaId, departamento) => {
+    excecoes: async (empresaId, usuarioId) => {
       const linhas = await tx
-        .select({ tela: departamentoTelas.telaChave })
-        .from(departamentoTelas)
+        .select({
+          tela: usuarioPermissoes.telaChave,
+          acao: usuarioPermissoes.acao,
+          efeito: usuarioPermissoes.efeito,
+        })
+        .from(usuarioPermissoes)
         .where(
           and(
-            eq(departamentoTelas.empresaId, empresaId),
-            eq(departamentoTelas.departamentoChave, departamento),
+            eq(usuarioPermissoes.empresaId, empresaId),
+            eq(usuarioPermissoes.usuarioId, usuarioId),
           ),
         );
-      return linhas.map((l) => l.tela);
+      return linhas.map((l) => ({ permissao: `${l.tela}.${l.acao}`, efeito: l.efeito }));
     },
-
-    excecoes: (empresaId, usuarioId) =>
-      tx
-        .select({ tela: usuarioTelas.telaChave, permitido: usuarioTelas.permitido })
-        .from(usuarioTelas)
-        .where(and(eq(usuarioTelas.empresaId, empresaId), eq(usuarioTelas.usuarioId, usuarioId))),
 
     liberacoes: (empresaId) =>
       tx

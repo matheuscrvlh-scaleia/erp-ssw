@@ -3,7 +3,7 @@ import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../../http/contexto";
-import { exigirModulo, exigirTela } from "../../http/guardas";
+import { exigirModulo, exigirPermissao } from "../../http/guardas";
 import {
   type ContextoRomaneio,
   exportarLista,
@@ -25,7 +25,7 @@ import {
 } from "./casos-de-uso";
 
 /** Só leitura: quem tem a tela, com o módulo liberado. Placa em Performance: `romaneio_placa`. */
-const ler = [exigirModulo("romaneio"), exigirTela("romaneio")];
+const ler = [exigirModulo("romaneio"), exigirPermissao("romaneio", "ver")];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoRomaneio> {
   const { acesso, empresa } = await empresaDaRequisicao(request);
