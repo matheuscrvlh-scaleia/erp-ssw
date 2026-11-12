@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Toaster } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SecaoPrevistos } from "./Previstos";
+import { SecaoPrevistos } from "./SecaoPrevistos";
 
 afterEach(cleanup);
 

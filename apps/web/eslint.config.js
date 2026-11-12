@@ -31,7 +31,6 @@ const CHAMAM_FORA_DO_API = [
   "src/modulos/historico/**", // atalho: sai na migração do módulo historico
   "src/modulos/ingestao/**", // atalho: sai na migração do módulo ingestao
   "src/modulos/ingestao-ssw/**", // atalho: sai na migração do módulo ingestao-ssw
-  "src/modulos/performance/**", // atalho: sai na migração do módulo performance
   "src/modulos/plataforma/**", // atalho: sai na migração do módulo plataforma
   "src/modulos/ranking/**", // atalho: sai na migração do módulo ranking
 ];

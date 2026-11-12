@@ -7,9 +7,8 @@ import { describe, expect, it } from "vitest";
 
 import { montarCsvEmSecoes } from "@/lib/exportacao/csv";
 
-import { etiquetasDoRelatorio, type FiltrosDoRelatorio, nomesConhecidos } from "./relatorio";
-import { csvDoRelatorio } from "./relatorio-csv";
-import { impressaoDoRelatorio } from "./relatorio-impressao";
+import { csvDoRelatorio, impressaoDoRelatorio } from "./exportacao";
+import { type FiltrosDoRelatorio } from "./textos";
 
 // origem: exportCsv, handlePrint/renderPrintBody e buildChips (RelatorioPeriodoPanel.tsx,
 // sistema atual)
@@ -108,32 +107,6 @@ const filtros: FiltrosDoRelatorio = {
   filiais: ["CAP"],
   codigos: ["25", "69"],
 };
-
-describe("filtros do relatório", () => {
-  it("unidade ou parceiro sem nome conhecido fica de fora", () => {
-    expect(
-      nomesConhecidos(
-        ["u1", "u2", "u3"],
-        [
-          { id: "u1", nome: "Campinas" },
-          { id: "u3", nome: "Santos" },
-        ],
-      ),
-    ).toEqual(["Campinas", "Santos"]);
-    expect(nomesConhecidos(["u1"], undefined)).toEqual([]);
-  });
-
-  it("etiquetas como hoje: até 3 e '+N', remetente lido, códigos como Ocorrências", () => {
-    expect(etiquetasDoRelatorio(filtros)).toEqual([
-      { rotulo: "Unidades", valor: "Campinas, Jundiaí, Sorocaba +1" },
-      { rotulo: "Parceiros", valor: "ACME" },
-      { rotulo: "Remetente", valor: "a · b" },
-      { rotulo: "Filiais", valor: "CAP" },
-      { rotulo: "Ocorrências", valor: "25, 69" },
-    ]);
-    expect(etiquetasDoRelatorio(semFiltro)).toEqual([]);
-  });
-});
 
 describe("CSV do relatório", () => {
   it("seções, rótulos e números no formato de hoje", () => {

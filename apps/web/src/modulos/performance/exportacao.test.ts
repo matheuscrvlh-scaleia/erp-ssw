@@ -7,7 +7,8 @@ import { describe, expect, it } from "vitest";
 
 import { type AbaExcel } from "@/lib/exportacao";
 
-import { excelDoRelatorio, type FiltrosDoRelatorio, notasDosFiltros } from "./relatorio";
+import { abaSlaPorUnidade, excelDoRelatorio, notasDosFiltros } from "./exportacao";
+import { type FiltrosDoRelatorio } from "./textos";
 
 // origem dos rótulos e da ordem: exportRelatorioXlsx (relatorio-semanal-export.ts, sistema atual)
 
@@ -286,5 +287,86 @@ describe("notas de filtro da aba Resumo", () => {
       "• Filiais: CAP",
       "• Códigos: 13, 25",
     ]);
+  });
+});
+
+describe("aba SLA por unidade do Excel", () => {
+  const unidade = (sigla: string, slaOperacionalPct: number | null) => ({
+    sigla,
+    cidade: sigla === "CAP" ? "Campinas" : null,
+    uf: sigla === "CAP" ? "SP" : null,
+    total: 100,
+    entregues: 80,
+    producaoPct: 80,
+    slaOperacionalPct,
+    slaPontualidadePct: 92.25,
+  });
+  const base = {
+    porUnidade: [unidade("CAP", 96), unidade("SOR", 91), unidade("RIB", 89), unidade("BAU", null)],
+    comparativo: null,
+    limites: { slaMetaPct: 95, taxaRetornoMetaPct: 3 },
+  } as unknown as RelatorioPeriodo;
+
+  it("colunas de hoje e status pelo SLA de Pontualidade contra a meta", () => {
+    const aba = abaSlaPorUnidade(base);
+    expect(aba.nome).toBe("SLA por unidade");
+    expect(aba.titulo).toBe("SLA por unidade");
+    expect(aba.colunas.map((c) => c.titulo)).toEqual([
+      "Unidade",
+      "Cidade/UF",
+      "Emitidos",
+      "Entregues",
+      "% Produção",
+      "SLA de Pontualidade",
+      "SLA Operacional",
+      "Status",
+    ]);
+    expect(aba.linhas[0]).toMatchObject({
+      unidade: "CAP",
+      cidadeUf: "Campinas/SP",
+      emitidos: 100,
+      entregues: 80,
+      producao: "80,0%",
+      slaPont: "96,0%",
+      slaOp: "92,3%",
+      status: "Verde",
+    });
+    expect(aba.linhas.map((l) => (l as { status: string }).status)).toEqual([
+      "Verde",
+      "Amarelo",
+      "Vermelho",
+      "—",
+    ]);
+    expect(aba.linhas[3]).toMatchObject({ cidadeUf: "", slaPont: "—" });
+  });
+
+  it("comparativo: pares P/C, vazio onde a unidade não teve movimento, Status (P)", () => {
+    const aba = abaSlaPorUnidade({
+      ...base,
+      comparativo: { porUnidade: [{ ...unidade("CAP", 90), total: 70 }] },
+    } as unknown as RelatorioPeriodo);
+    expect(aba.colunas.map((c) => c.titulo)).toEqual([
+      "Unidade",
+      "Cidade/UF",
+      "Emitidos (P)",
+      "Emitidos (C)",
+      "Entregues (P)",
+      "Entregues (C)",
+      "% Produção (P)",
+      "% Produção (C)",
+      "SLA Pont. (P)",
+      "SLA Pont. (C)",
+      "SLA Op. (P)",
+      "SLA Op. (C)",
+      "Status (P)",
+    ]);
+    expect(aba.linhas[0]).toMatchObject({
+      emitidos: 100,
+      emitidosC: 70,
+      slaPont: "96,0%",
+      slaPontC: "90,0%",
+      status: "Verde",
+    });
+    expect(aba.linhas[1]).toMatchObject({ emitidosC: "", slaPontC: "", slaOpC: "" });
   });
 });

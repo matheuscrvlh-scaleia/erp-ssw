@@ -2,6 +2,7 @@ import { type Status, statusDoSla } from "@erp/dominio/performance/tela";
 import { type UnidadeResumo } from "@erp/shared/contratos/performance";
 import { formatarPercentual } from "@erp/shared/formatacao";
 import { ArrowDown, ArrowUp, Building2 } from "lucide-react";
+import { type KeyboardEvent } from "react";
 
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { ExportMenu } from "@/componentes/comum/ExportMenu";
@@ -9,8 +10,7 @@ import { Painel } from "@/componentes/comum/Painel";
 import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 import { cn } from "@/lib/utils";
 
-import { corDoStatus } from "./cores";
-import { clicavel } from "./Kpis";
+import { corDoStatus } from "../textos";
 
 type LinhaDaUnidade = UnidadeResumo & {
   slaOp: number | null;
@@ -20,6 +20,25 @@ type LinhaDaUnidade = UnidadeResumo & {
 const TOM_DO_STATUS: Record<Status, Tom> = { bom: "sucesso", alerta: "alerta", ruim: "erro" };
 
 const CABECALHO = "label-xs";
+
+/** Props de um bloco clicável por mouse e teclado (Enter/Espaço). */
+function clicavel(acao: (() => void) | undefined, pararPropagacao = false) {
+  if (!acao) return {};
+  return {
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: (e: { stopPropagation: () => void }) => {
+      if (pararPropagacao) e.stopPropagation();
+      acao();
+    },
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      if (pararPropagacao) e.stopPropagation();
+      acao();
+    },
+  };
+}
 
 /** "Performance por unidade": ordenada pelo SLA Op.; clique abre os CT-e da unidade. */
 export function TabelaDeUnidades({
