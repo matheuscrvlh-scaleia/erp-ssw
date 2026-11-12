@@ -48,6 +48,17 @@ describe("decidirAcesso (guarda de rota, regras/05 §1.9)", () => {
   });
 });
 
+describe("Usuários e cargos", () => {
+  it("abre com a tela Cargos mesmo sem a de Usuários", () => {
+    const acesso = { ...base, telas: ["admin_roles" as const] };
+    expect(decidirAcesso(acesso, "/admin/usuarios")).toEqual({ tipo: "liberado" });
+    expect(decidirAcesso({ ...base, telas: ["calendario"] }, "/admin/usuarios")).toEqual({
+      tipo: "redirecionar",
+      para: "/calendario",
+    });
+  });
+});
+
 describe("destinoSeguro", () => {
   it("só aceita caminho interno", () => {
     expect(destinoSeguro("/calendario?ano=2026")).toBe("/calendario?ano=2026");

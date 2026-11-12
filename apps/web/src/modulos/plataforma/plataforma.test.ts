@@ -66,7 +66,6 @@ describe("Plataforma › empresas", () => {
       nome: "Ana",
       email: "ana@fr.com.br",
       papel: "admin",
-      departamento: null,
       ativo: true,
       criadoEm: "2026-11-01T00:00:00.000Z",
       totalEmpresas: 1,

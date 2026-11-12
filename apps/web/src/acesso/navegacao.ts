@@ -4,7 +4,6 @@ import {
   BarChart3,
   Bookmark,
   Building,
-  Building2,
   Calendar,
   CalendarDays,
   Clock,
@@ -46,7 +45,6 @@ const ICONE_DA_TELA: Record<Tela, LucideIcon> = {
   ranking_novo: Medal,
   admin_usuarios: Users,
   admin_roles: ShieldCheck,
-  admin_departamentos: Building2,
   admin_codigos: Settings,
   admin_ingestao: Database,
   admin_importacao_ssw: FileUp,
@@ -83,7 +81,6 @@ const ORDEM_PRINCIPAL: readonly Tela[] = [
 const ORDEM_ADMIN: readonly Tela[] = [
   "admin_usuarios",
   "admin_roles",
-  "admin_departamentos",
   "admin_codigos",
   "admin_configuracoes",
   "admin_historico",

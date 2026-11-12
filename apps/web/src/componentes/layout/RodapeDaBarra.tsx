@@ -1,4 +1,3 @@
-import { ROTULO_DO_SETOR } from "@erp/shared/acesso/papeis";
 import { type Acesso } from "@erp/shared/contratos/auth";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Bell, BellOff, LogOut, Moon, Sun } from "lucide-react";
@@ -27,7 +26,8 @@ export function RodapeDaBarra({
   const avisos = useAvisos(acesso);
   const { nome, email } = acesso.usuario;
   const iniciais = iniciaisDe(nome ?? email);
-  const setor = acesso.setor ? ROTULO_DO_SETOR[acesso.setor] : "Sem setor";
+  // Setor legado virou cargo: a dica mostra o cargo na empresa ativa.
+  const cargo = acesso.papelRotulo ?? "Sem cargo";
   const escuro = tema === "escuro";
   const IconeTema = escuro ? Moon : Sun;
   const trocarTema = () => {
@@ -48,7 +48,7 @@ export function RodapeDaBarra({
         </button>
         <SinoDeAvisos avisos={avisos} />
         <span
-          title={`${nome ?? email} · ${setor}`}
+          title={`${nome ?? email} · ${cargo}`}
           className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary/20 text-[11px] font-bold text-sidebar-primary"
         >
           {iniciais}
@@ -91,7 +91,7 @@ export function RodapeDaBarra({
         >
           {iniciais}
         </span>
-        <div className="min-w-0 flex-1" title={setor}>
+        <div className="min-w-0 flex-1" title={cargo}>
           <div className="truncate text-[13.5px] font-bold text-white">{nome ?? "—"}</div>
           <div className="truncate text-[12px] text-muted-foreground">{email}</div>
         </div>

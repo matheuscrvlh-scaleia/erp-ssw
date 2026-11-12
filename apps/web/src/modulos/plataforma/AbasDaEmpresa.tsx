@@ -30,7 +30,7 @@ import { ModalNovoUsuario } from "@/modulos/admin/usuarios/ModalNovoUsuario";
 
 import {
   CHAVES_DA_PLATAFORMA,
-  consultaCadastros,
+  consultaCargosDaEmpresa,
   consultaIntegracoes,
   consultaModulos,
   consultaVinculos,
@@ -223,16 +223,16 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
 
 // --- Usuários --------------------------------------------------------------------------------
 
-/** Vínculos da empresa editada; papéis e departamentos são os dela (Q29). */
+/** Vínculos da empresa editada; os cargos são os dela (Q29). */
 export function AbaUsuarios({ empresaId }: { empresaId: string }) {
   const vinculos = useQuery(consultaVinculos(empresaId));
-  const cadastros = useQuery(consultaCadastros(empresaId));
+  const cadastros = useQuery(consultaCargosDaEmpresa(empresaId));
   const invalidar = [CHAVES_DA_PLATAFORMA.empresa(empresaId), CHAVES_DA_PLATAFORMA.empresas];
   const salvar = useGravacao({
     executar: (v: VinculoNaEmpresa) =>
       chamar(p.salvarVinculo, {
         parametros: { id: empresaId, usuarioId: v.usuarioId },
-        entrada: { papel: v.papel, departamento: v.departamento, ativo: v.ativo },
+        entrada: { papel: v.papel, ativo: v.ativo },
       }),
     sucesso: "Vínculo atualizado",
     invalidar,
@@ -250,9 +250,6 @@ export function AbaUsuarios({ empresaId }: { empresaId: string }) {
   });
 
   const cargos = (cadastros.data?.cargos ?? []).map((c) => ({ chave: c.chave, rotulo: c.rotulo }));
-  const departamentos = (cadastros.data?.departamentos ?? [])
-    .filter((d) => d.ativo)
-    .map((d) => ({ chave: d.chave, rotulo: d.rotulo }));
 
   const colunas: ColunaTabela<VinculoNaEmpresa>[] = [
     {
@@ -282,33 +279,16 @@ export function AbaUsuarios({ empresaId }: { empresaId: string }) {
     },
     {
       chave: "papel",
-      titulo: "Papel",
+      titulo: "Cargo",
       celula: (u) => (
         <Escolha
-          rotulo={`Papel de ${u.email}`}
-          className="h-8 w-[160px]"
-          vazio="Sem papel"
+          rotulo={`Cargo de ${u.email}`}
+          className="h-8 w-[180px]"
+          vazio="Sem cargo"
           opcoes={cargos.map((c) => ({ valor: c.chave, rotulo: c.rotulo }))}
           valor={u.papel ?? ""}
           disabled={salvar.gravando}
           aoMudar={(papel) => void salvar.gravar({ ...u, papel: papel || null })}
-        />
-      ),
-    },
-    {
-      chave: "departamento",
-      titulo: "Departamento",
-      celula: (u) => (
-        <Escolha
-          rotulo={`Departamento de ${u.email}`}
-          className="h-8 w-[170px]"
-          vazio="Sem departamento"
-          opcoes={departamentos.map((d) => ({ valor: d.chave, rotulo: d.rotulo }))}
-          valor={u.departamento ?? ""}
-          disabled={salvar.gravando}
-          aoMudar={(departamento) =>
-            void salvar.gravar({ ...u, departamento: departamento || null })
-          }
         />
       ),
     },
@@ -332,14 +312,10 @@ export function AbaUsuarios({ empresaId }: { empresaId: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <p className="max-w-2xl text-[13px] text-muted-foreground">
-          Papel e departamento valem por empresa e vêm dos cadastros desta empresa. E-mail que já
-          tem conta só ganha o vínculo.
+          O cargo vale por empresa e vem dos cargos desta empresa (o que cada um vê e faz é definido
+          em Usuários e cargos da empresa). E-mail que já tem conta só ganha o vínculo.
         </p>
-        <ModalNovoUsuario
-          cargos={cargos}
-          departamentos={departamentos}
-          aoGravar={convidar.gravar}
-        />
+        <ModalNovoUsuario cargos={cargos} aoGravar={convidar.gravar} />
       </div>
       <TabelaDados
         colunas={colunas}

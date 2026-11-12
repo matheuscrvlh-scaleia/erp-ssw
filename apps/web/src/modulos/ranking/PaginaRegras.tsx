@@ -6,7 +6,7 @@ import {
 } from "@erp/shared/contratos/ranking";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { formatarMoeda } from "@erp/shared/formatacao";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -21,6 +21,8 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { pode } from "@/acesso/permissao";
+import { consultaAcesso } from "@/acesso/sessao";
 import { ModalDetalhe } from "@/componentes/comum/Detalhe";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
@@ -62,6 +64,9 @@ export function PaginaRegras() {
   const hoje = hojeNoFuso(useFusoDaEmpresa());
   const [editando, setEditando] = useState<Rascunho | null>(null);
   const regras = useQuery(consultaRegras);
+  const { data: acesso } = useSuspenseQuery(consultaAcesso);
+  const podeEditar = pode(acesso, "admin_bonificacao", "editar");
+  const podeExcluir = pode(acesso, "admin_bonificacao", "excluir");
 
   const salvar = useMutation({
     mutationFn: (d: Rascunho) => {
@@ -116,14 +121,16 @@ export function PaginaRegras() {
               <ArrowLeft aria-hidden /> Voltar
             </Link>
           </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditando(rascunhoVazio(hoje));
-            }}
-          >
-            <Plus aria-hidden /> Nova regra
-          </Button>
+          {podeEditar && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditando(rascunhoVazio(hoje));
+              }}
+            >
+              <Plus aria-hidden /> Nova regra
+            </Button>
+          )}
         </>
       }
     >
@@ -142,7 +149,7 @@ export function PaginaRegras() {
           <EstadoVazio
             icone={ListChecks}
             mensagem="Nenhuma regra cadastrada ainda."
-            detalhe="Crie a primeira em “Nova regra”."
+            detalhe={podeEditar ? "Crie a primeira em “Nova regra”." : undefined}
           />
         </Painel>
       ) : (
@@ -171,46 +178,52 @@ export function PaginaRegras() {
                     >
                       <Sparkles aria-hidden /> Simular
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      aria-label="Editar regra"
-                      title="Editar regra"
-                      onClick={() => {
-                        setEditando(rascunhoDaRegra(r));
-                      }}
-                    >
-                      <Edit aria-hidden />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      aria-label="Copiar regra"
-                      title="Copiar regra"
-                      onClick={() => {
-                        setEditando({
-                          ...rascunhoDaRegra(r),
-                          id: undefined,
-                          nome: `${r.nome} (cópia)`,
-                        });
-                      }}
-                    >
-                      <Copy aria-hidden />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-status-bad-fg hover:text-status-bad-fg"
-                      aria-label="Remover regra"
-                      title="Remover regra"
-                      onClick={() => {
-                        if (window.confirm("Remover regra?")) excluir.mutate(r.id);
-                      }}
-                    >
-                      <Trash2 aria-hidden />
-                    </Button>
+                    {podeEditar && (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label="Editar regra"
+                          title="Editar regra"
+                          onClick={() => {
+                            setEditando(rascunhoDaRegra(r));
+                          }}
+                        >
+                          <Edit aria-hidden />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label="Copiar regra"
+                          title="Copiar regra"
+                          onClick={() => {
+                            setEditando({
+                              ...rascunhoDaRegra(r),
+                              id: undefined,
+                              nome: `${r.nome} (cópia)`,
+                            });
+                          }}
+                        >
+                          <Copy aria-hidden />
+                        </Button>
+                      </>
+                    )}
+                    {podeExcluir && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-status-bad-fg hover:text-status-bad-fg"
+                        aria-label="Remover regra"
+                        title="Remover regra"
+                        onClick={() => {
+                          if (window.confirm("Remover regra?")) excluir.mutate(r.id);
+                        }}
+                      >
+                        <Trash2 aria-hidden />
+                      </Button>
+                    )}
                   </>
                 }
                 classeDoCorpo="space-y-3 px-5 py-4"

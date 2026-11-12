@@ -125,14 +125,15 @@ export function PaginaLogsDaPlataforma() {
   );
 }
 
-export function PaginaAdministradores() {
+/** Equipe da Plataforma (aba de Plataforma › Usuários e cargos). */
+export function ListaDeAdministradores() {
   const consulta = useQuery(consultaAdmins);
   const [email, setEmail] = useState("");
   const admins = consulta.data?.admins ?? [];
   const adicionar = useGravacao({
     executar: (novo: string) => chamar(p.adicionarAdmin, { entrada: { email: novo } }),
     sucesso: "Administrador adicionado",
-    invalidar: [CHAVES_DA_PLATAFORMA.admins],
+    invalidar: [CHAVES_DA_PLATAFORMA.admins, CHAVES_DA_PLATAFORMA.pessoas],
     aoConcluir: () => {
       setEmail("");
     },
@@ -140,7 +141,7 @@ export function PaginaAdministradores() {
   const remover = useGravacao({
     executar: (usuarioId: string) => chamar(p.removerAdmin, { parametros: { usuarioId } }),
     sucesso: "Administrador removido",
-    invalidar: [CHAVES_DA_PLATAFORMA.admins],
+    invalidar: [CHAVES_DA_PLATAFORMA.admins, CHAVES_DA_PLATAFORMA.pessoas],
   });
 
   const colunas: ColunaTabela<AdminDaPlataforma>[] = [
@@ -175,44 +176,38 @@ export function PaginaAdministradores() {
   ];
 
   return (
-    <Pagina
-      largura="estreita"
-      titulo="Administradores"
-      descricao="Equipe da Plataforma: vê e administra todas as empresas, as integrações e os logs."
-    >
-      <TabelaDados
-        colunas={colunas}
-        linhas={admins}
-        chaveDaLinha={(a) => a.usuarioId}
-        carregando={consulta.isLoading}
-        erro={consulta.error}
-        aoTentarDeNovo={() => void consulta.refetch()}
-        mensagemVazia="Nenhum administrador."
-        acoes={
-          <form
-            className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (email.trim()) void adicionar.gravar(email);
+    <TabelaDados
+      colunas={colunas}
+      linhas={admins}
+      chaveDaLinha={(a) => a.usuarioId}
+      carregando={consulta.isLoading}
+      erro={consulta.error}
+      aoTentarDeNovo={() => void consulta.refetch()}
+      mensagemVazia="Nenhum administrador."
+      acoes={
+        <form
+          className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (email.trim()) void adicionar.gravar(email);
+          }}
+        >
+          <input
+            type="email"
+            aria-label="E-mail do novo administrador"
+            placeholder="E-mail de um usuário já cadastrado"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
             }}
-          >
-            <input
-              type="email"
-              aria-label="E-mail do novo administrador"
-              placeholder="E-mail de um usuário já cadastrado"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-              }}
-              className={`${CAMPO} w-full sm:w-80`}
-            />
-            <Button size="sm" type="submit" className="h-9" disabled={adicionar.gravando}>
-              <UserPlus aria-hidden />
-              Adicionar
-            </Button>
-          </form>
-        }
-      />
-    </Pagina>
+            className={`${CAMPO} w-full sm:w-80`}
+          />
+          <Button size="sm" type="submit" className="h-9" disabled={adicionar.gravando}>
+            <UserPlus aria-hidden />
+            Adicionar
+          </Button>
+        </form>
+      }
+    />
   );
 }

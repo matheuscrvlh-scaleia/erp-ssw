@@ -9,6 +9,7 @@ import { CalendarX, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { usePermissao } from "@/acesso/permissao";
 import {
   CLASSE_CABECALHO,
   CLASSE_LINHA,
@@ -44,6 +45,8 @@ type TipoDeFalta = (typeof TIPOS_DE_FALTA)[number];
  * o bônus do último dia bonificado antes dela; a apuração é refeita ao registrar ou excluir.
  */
 export function QuadroDeFaltas({ mes }: { mes: string }) {
+  const podeRegistrar = usePermissao("admin_bonificacao_entrega", "editar");
+  const podeExcluir = usePermissao("admin_bonificacao_entrega", "excluir");
   const qc = useQueryClient();
   const { inicio, fim } = periodoDoMes(mes);
   const faltas = useQuery(consultaFaltas(inicio, fim));
@@ -94,81 +97,83 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
       descricao="Uma falta zera o bônus do último dia bonificado antes dela. Use o nome como aparece no romaneio."
       icone={CalendarX}
     >
-      <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_1fr_auto]">
-        <div className="space-y-1.5">
-          <Label htmlFor="falta-nome" className="text-xs">
-            Colaborador
-          </Label>
-          <Input
-            id="falta-nome"
-            className="text-[13px]"
-            value={nome}
-            onChange={(e) => {
-              setNome(e.target.value);
-            }}
-          />
+      {podeRegistrar && (
+        <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_1fr_auto]">
+          <div className="space-y-1.5">
+            <Label htmlFor="falta-nome" className="text-xs">
+              Colaborador
+            </Label>
+            <Input
+              id="falta-nome"
+              className="text-[13px]"
+              value={nome}
+              onChange={(e) => {
+                setNome(e.target.value);
+              }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="falta-data" className="text-xs">
+              Dia
+            </Label>
+            <Input
+              id="falta-data"
+              type="date"
+              className="text-[13px] tabular-nums"
+              value={data}
+              onChange={(e) => {
+                setData(e.target.value);
+              }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="falta-tipo" className="text-xs">
+              Tipo
+            </Label>
+            <Select
+              value={tipo}
+              onValueChange={(v) => {
+                const escolhido = TIPOS_DE_FALTA.find((t) => t === v);
+                if (escolhido) setTipo(escolhido);
+              }}
+            >
+              <SelectTrigger id="falta-tipo" className="text-[13px] lg:w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPOS_DE_FALTA.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {ROTULO_DO_TIPO_DE_FALTA[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="falta-observacao" className="text-xs">
+              Observação
+            </Label>
+            <Input
+              id="falta-observacao"
+              className="text-[13px]"
+              value={observacao}
+              onChange={(e) => {
+                setObservacao(e.target.value);
+              }}
+            />
+          </div>
+          <div className="flex items-end">
+            <Button
+              disabled={nome.trim().length < 3 || !data || registrar.isPending}
+              onClick={() => {
+                registrar.mutate();
+              }}
+            >
+              <Plus aria-hidden /> Registrar
+            </Button>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="falta-data" className="text-xs">
-            Dia
-          </Label>
-          <Input
-            id="falta-data"
-            type="date"
-            className="text-[13px] tabular-nums"
-            value={data}
-            onChange={(e) => {
-              setData(e.target.value);
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="falta-tipo" className="text-xs">
-            Tipo
-          </Label>
-          <Select
-            value={tipo}
-            onValueChange={(v) => {
-              const escolhido = TIPOS_DE_FALTA.find((t) => t === v);
-              if (escolhido) setTipo(escolhido);
-            }}
-          >
-            <SelectTrigger id="falta-tipo" className="text-[13px] lg:w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TIPOS_DE_FALTA.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {ROTULO_DO_TIPO_DE_FALTA[t]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="falta-observacao" className="text-xs">
-            Observação
-          </Label>
-          <Input
-            id="falta-observacao"
-            className="text-[13px]"
-            value={observacao}
-            onChange={(e) => {
-              setObservacao(e.target.value);
-            }}
-          />
-        </div>
-        <div className="flex items-end">
-          <Button
-            disabled={nome.trim().length < 3 || !data || registrar.isPending}
-            onClick={() => {
-              registrar.mutate();
-            }}
-          >
-            <Plus aria-hidden /> Registrar
-          </Button>
-        </div>
-      </div>
+      )}
 
       <div className="rolagem-fina relative overflow-x-auto rounded-b-xl">
         <table className={CLASSE_TABELA}>
@@ -207,20 +212,22 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
                 <td className={CLASSE_TD}>{ROTULO_DO_TIPO_DE_FALTA[f.tipo]}</td>
                 <td className={cn(CLASSE_TD, "text-muted-foreground")}>{f.observacao ?? "—"}</td>
                 <td className={cn(CLASSE_TD, "py-1 text-right")}>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-status-bad-fg hover:text-status-bad-fg"
-                    aria-label={`Excluir falta de ${f.colaboradorNome}`}
-                    title={`Excluir falta de ${f.colaboradorNome}`}
-                    onClick={() => {
-                      if (window.confirm(`Excluir a falta de ${f.colaboradorNome}?`)) {
-                        excluir.mutate(f.id);
-                      }
-                    }}
-                  >
-                    <Trash2 aria-hidden />
-                  </Button>
+                  {podeExcluir && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-status-bad-fg hover:text-status-bad-fg"
+                      aria-label={`Excluir falta de ${f.colaboradorNome}`}
+                      title={`Excluir falta de ${f.colaboradorNome}`}
+                      onClick={() => {
+                        if (window.confirm(`Excluir a falta de ${f.colaboradorNome}?`)) {
+                          excluir.mutate(f.id);
+                        }
+                      }}
+                    >
+                      <Trash2 aria-hidden />
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

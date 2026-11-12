@@ -1,4 +1,3 @@
-import { ehAdminDaEmpresa, PAPEL_GESTOR } from "@erp/shared/acesso/papeis";
 import { contratosRanking as c, type Equipe } from "@erp/shared/contratos/ranking";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -6,6 +5,7 @@ import { AlertTriangle, Copy, Link2, Plus, Trash2, UsersRound } from "lucide-rea
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import {
   CLASSE_CABECALHO,
@@ -55,8 +55,8 @@ function copiar(texto: string, aviso: string) {
 /** origem: routes/_authenticated/admin.equipes.tsx (sistema atual) */
 export function PaginaEquipes() {
   const { data: acesso } = useSuspenseQuery(consultaAcesso);
-  const podeGravar =
-    ehAdminDaEmpresa(acesso.papel) || acesso.papel === PAPEL_GESTOR || acesso.adminPlataforma;
+  const podeGravar = pode(acesso, "admin_equipes", "editar");
+  const podeRemover = pode(acesso, "admin_equipes", "excluir");
   const qc = useQueryClient();
   const equipes = useQuery(consultaEquipes);
   const data = equipes.data;
@@ -211,7 +211,7 @@ export function PaginaEquipes() {
                         {m.papel === "motorista" ? "Motorista" : `Ajudante ${m.posicao ?? "-"}`}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[13px]">{m.nome}</span>
-                      {podeGravar && (
+                      {podeRemover && (
                         <Button
                           size="icon"
                           variant="ghost"

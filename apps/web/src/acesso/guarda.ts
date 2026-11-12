@@ -1,5 +1,5 @@
 import { destinoInterno } from "@erp/shared/acesso/destino";
-import { CAMINHO_DA_TELA, telaDoCaminho } from "@erp/shared/acesso/telas";
+import { CAMINHO_DA_TELA, type Tela, telaDoCaminho } from "@erp/shared/acesso/telas";
 import { type Acesso } from "@erp/shared/contratos/auth";
 
 type DecisaoDaGuarda =
@@ -8,6 +8,9 @@ type DecisaoDaGuarda =
   | { tipo: "redirecionar"; para: string };
 
 const LIBERADO: DecisaoDaGuarda = { tipo: "liberado" };
+
+/** Telas que também abrem a página de outra: Usuários e cargos tem a aba Cargos. */
+const TAMBEM_ABREM: Partial<Record<Tela, readonly Tela[]>> = { admin_usuarios: ["admin_roles"] };
 
 /**
  * Guarda de rota do front (docs/regras/05 §1.9). Caminho sem tela (ex.: `/`) fica liberado; tela
@@ -22,6 +25,7 @@ export function decidirAcesso(
   if (!acesso.ativo) return { tipo: "redirecionar", para: "/sem-acesso" };
   const tela = telaDoCaminho(caminho);
   if (!tela || acesso.telas.includes(tela)) return LIBERADO;
+  if (TAMBEM_ABREM[tela]?.some((t) => acesso.telas.includes(t))) return LIBERADO;
   const bloqueio = acesso.telasBloqueadas.find((b) => b.tela === tela);
   if (bloqueio) return { tipo: "modulo_desligado", moduloNome: bloqueio.moduloNome };
   const primeira = acesso.telas[0];

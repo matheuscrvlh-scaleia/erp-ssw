@@ -1,4 +1,3 @@
-import { ROTULO_DA_TELA } from "@erp/shared/acesso/telas";
 import { type EntradaDe } from "@erp/shared/contrato";
 import { type contratosAdmin, type UsuarioDaEmpresa } from "@erp/shared/contratos/admin";
 import { ArrowRight, Check, Copy, KeyRound, Pencil, RefreshCw } from "lucide-react";
@@ -16,19 +15,17 @@ import {
 import { Switch } from "@/componentes/ui/switch";
 
 import { BotaoDoCampo, CAMPO, Campo, CampoDeSenha, Escolha } from "../comum";
-import { EditorDeExcecoes } from "../EditorDeTelas";
-import {
-  listaDasExcecoes,
-  mapaDasExcecoes,
-  type MapaDeExcecoes,
-  type Troca,
-  trocasDeExcecao,
-} from "../telas";
 import { type Opcao } from "./ModalNovoUsuario";
 
 export type AlteracaoDeUsuario = EntradaDe<typeof contratosAdmin.alterarUsuario>;
 
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface Troca {
+  rotulo: string;
+  antes: string;
+  depois: string;
+}
 
 /** Senha forte gerada no navegador (16 caracteres, sem os ambíguos 0/O/1/l/I). */
 export function gerarSenha(): string {
@@ -41,7 +38,6 @@ function estadoInicial(u: UsuarioDaEmpresa) {
   return {
     nome: u.nome ?? "",
     email: u.email,
-    departamento: u.departamento ?? "",
     papel: u.papel ?? "operador",
     ativo: u.ativo,
   };
@@ -51,7 +47,7 @@ function estadoInicial(u: UsuarioDaEmpresa) {
 function trocasGerais(
   u: UsuarioDaEmpresa,
   e: ReturnType<typeof estadoInicial>,
-  rotulos: { cargo: (c: string) => string; departamento: (d: string) => string },
+  rotuloDoCargo: (c: string) => string,
 ): Troca[] {
   const trocas: Troca[] = [];
   const comparar = (rotulo: string, antes: string, depois: string) => {
@@ -59,12 +55,7 @@ function trocasGerais(
   };
   comparar("Nome", u.nome ?? "", e.nome.trim());
   comparar("E-mail", u.email, e.email.trim().toLowerCase());
-  comparar(
-    "Departamento",
-    u.departamento ? rotulos.departamento(u.departamento) : "",
-    e.departamento ? rotulos.departamento(e.departamento) : "",
-  );
-  comparar("Nível", u.papel ? rotulos.cargo(u.papel) : "", rotulos.cargo(e.papel));
+  comparar("Cargo", u.papel ? rotuloDoCargo(u.papel) : "", rotuloDoCargo(e.papel));
   comparar("Status", u.ativo ? "Ativo" : "Inativo", e.ativo ? "Ativo" : "Inativo");
   return trocas;
 }
@@ -72,20 +63,17 @@ function trocasGerais(
 export function ModalEditarUsuario({
   usuario,
   cargos,
-  departamentos,
   aoGravar,
   aoDefinirSenha,
 }: {
   usuario: UsuarioDaEmpresa;
   cargos: readonly Opcao[];
-  departamentos: readonly Opcao[];
   aoGravar: (dados: AlteracaoDeUsuario) => Promise<boolean>;
   aoDefinirSenha: (senha: string) => Promise<boolean>;
 }) {
   const [aberto, setAberto] = useState(false);
   const [revisando, setRevisando] = useState(false);
   const [campos, setCampos] = useState(() => estadoInicial(usuario));
-  const [excecoes, setExcecoes] = useState<MapaDeExcecoes>(() => mapaDasExcecoes(usuario.excecoes));
   const [novaSenha, setNovaSenha] = useState("");
   const [copiado, setCopiado] = useState(false);
   const [gravando, setGravando] = useState(false);
@@ -98,23 +86,16 @@ export function ModalEditarUsuario({
     setRevisando(false);
     if (abrir) {
       setCampos(estadoInicial(usuario));
-      setExcecoes(mapaDasExcecoes(usuario.excecoes));
       setNovaSenha("");
     }
   };
 
-  const rotuloDe = (lista: readonly Opcao[]) => (chave: string) =>
-    lista.find((o) => o.chave === chave)?.rotulo ?? chave;
-  const gerais = trocasGerais(usuario, campos, {
-    cargo: rotuloDe(cargos),
-    departamento: rotuloDe(departamentos),
-  });
-  const porCategoria = trocasDeExcecao(
-    mapaDasExcecoes(usuario.excecoes),
-    excecoes,
-    (t) => ROTULO_DA_TELA[t],
+  const gerais = trocasGerais(
+    usuario,
+    campos,
+    (chave) => cargos.find((o) => o.chave === chave)?.rotulo ?? chave,
   );
-  const mudouAlgo = gerais.length > 0 || porCategoria.length > 0;
+  const mudouAlgo = gerais.length > 0;
   const emailValido = EMAIL_VALIDO.test(campos.email.trim());
   const dadosValidos = campos.nome.trim().length > 0 && emailValido;
 
@@ -124,9 +105,7 @@ export function ModalEditarUsuario({
       nome: campos.nome.trim(),
       email: campos.email.trim(),
       papel: campos.papel,
-      departamento: campos.departamento || null,
       ativo: campos.ativo,
-      excecoes: listaDasExcecoes(excecoes),
     });
     setGravando(false);
     if (gravou) abrirOuFechar(false);
@@ -182,30 +161,6 @@ export function ModalEditarUsuario({
                 </div>
               </div>
             )}
-            {porCategoria.length > 0 ? (
-              <div className="space-y-2">
-                <div className="label-xs">Permissões por categoria</div>
-                {porCategoria.map((c) => (
-                  <div key={c.chave} className="rounded-lg border border-border px-3 py-2">
-                    <div className="mb-1 flex items-center justify-between">
-                      <div className="text-[13px] font-semibold">{c.rotulo}</div>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {c.trocas.length} alteraç{c.trocas.length === 1 ? "ão" : "ões"}
-                      </span>
-                    </div>
-                    {c.trocas.map((t) => (
-                      <LinhaDeTroca key={t.tela} troca={t} />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              gerais.length === 0 && (
-                <p className="text-[13px] text-muted-foreground">
-                  Nenhuma alteração nas permissões.
-                </p>
-              )
-            )}
             <DialogFooter>
               <Button
                 variant="outline"
@@ -247,17 +202,7 @@ export function ModalEditarUsuario({
                   }}
                 />
               </Campo>
-              <Campo rotulo="Departamento">
-                <Escolha
-                  vazio="Sem departamento"
-                  opcoes={departamentos.map((d) => ({ valor: d.chave, rotulo: d.rotulo }))}
-                  valor={campos.departamento}
-                  aoMudar={(departamento) => {
-                    mudar({ departamento });
-                  }}
-                />
-              </Campo>
-              <Campo rotulo="Nível">
+              <Campo rotulo="Cargo">
                 <Escolha
                   opcoes={cargos.map((c) => ({ valor: c.chave, rotulo: c.rotulo }))}
                   valor={campos.papel}
@@ -318,13 +263,6 @@ export function ModalEditarUsuario({
                     {gravando ? "Definindo..." : "Definir nova senha"}
                   </Button>
                 </div>
-              </div>
-              <div className="space-y-2 border-t border-border pt-4">
-                <span className="label-xs">Telas (override)</span>
-                <p className="text-xs text-muted-foreground">
-                  Vazio = padrão do role/setor. Marcar libera, desmarcar bloqueia.
-                </p>
-                <EditorDeExcecoes excecoes={excecoes} aoMudar={setExcecoes} />
               </div>
             </div>
             <DialogFooter>
