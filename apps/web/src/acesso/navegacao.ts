@@ -17,6 +17,7 @@ import {
   FileUp,
   HandCoins,
   History,
+  LayoutDashboard,
   type LucideIcon,
   Medal,
   PackageOpen,
@@ -60,6 +61,7 @@ const ICONE_DA_TELA: Record<Tela, LucideIcon> = {
   romaneio_placa: Eye,
   admin_logs: History,
   admin_ssw_diagnostico: Stethoscope,
+  plataforma_painel: LayoutDashboard,
   plataforma_empresas: Building,
   plataforma_logs: ScrollText,
   plataforma_admins: UserCog,
@@ -93,6 +95,7 @@ const ORDEM_ADMIN: readonly Tela[] = [
 ];
 
 const ORDEM_PLATAFORMA: readonly Tela[] = [
+  "plataforma_painel",
   "plataforma_empresas",
   "plataforma_logs",
   "plataforma_admins",
