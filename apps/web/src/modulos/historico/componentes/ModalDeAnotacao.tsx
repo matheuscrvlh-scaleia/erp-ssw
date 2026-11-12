@@ -12,7 +12,7 @@ import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
 import { cn } from "@/lib/utils";
 
-import { COR_DO_TIPO, ICONE_DO_TIPO } from "./tipos";
+import { COR_DO_TIPO, ICONE_DO_TIPO } from "../textos";
 
 /** Campo nativo (data, unidade, texto) com o mesmo desenho do `Input`. */
 const CAMPO =

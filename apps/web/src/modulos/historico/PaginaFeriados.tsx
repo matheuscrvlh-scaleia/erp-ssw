@@ -1,10 +1,9 @@
 import { type Feriado, UFS } from "@erp/shared/contratos/calendario";
-import { contratosHistorico as c, type FeriadoDoHistorico } from "@erp/shared/contratos/historico";
+import { type FeriadoDoHistorico } from "@erp/shared/contratos/historico";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { Aviso } from "@/componentes/comum/Aviso";
 import { EtiquetaDoTipo } from "@/componentes/comum/EtiquetaDoTipo";
@@ -17,11 +16,15 @@ import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
-import { chamar } from "@/lib/api";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { CHAVE_DO_CALENDARIO } from "@/modulos/calendario/api";
+import { useGravacao } from "@/hooks/use-gravacao";
 
-import { CHAVE_DO_HISTORICO, consultaFeriados } from "./api";
+import {
+  consultaFeriados,
+  mutacaoAlterarFeriado,
+  mutacaoCriarFeriado,
+  mutacaoExcluirFeriado,
+  mutacaoImportarNacionais,
+} from "./api";
 
 type Tipo = "" | "nacional" | "municipal";
 
@@ -45,42 +48,29 @@ export function PaginaFeriados() {
     (f) => (tipo === "" || f.tipo === tipo) && (uf === "" || f.uf === uf),
   );
 
-  const atualizar = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: CHAVE_DO_HISTORICO }),
-      queryClient.invalidateQueries({ queryKey: CHAVE_DO_CALENDARIO }),
-    ]);
-  const executar = async (acao: () => Promise<string>) => {
-    try {
-      toast.success(await acao());
-      await atualizar();
-      return true;
-    } catch (e) {
-      toast.error(mensagemAmigavel(e));
-      return false;
-    }
-  };
-  const importarNacionais = () =>
-    executar(async () => {
-      const r = await chamar(c.importarNacionais, { entrada: { ano } });
-      return `${String(r.inseridos)} feriado(s) nacional(is) inseridos`;
-    });
+  const importar = useGravacao({
+    mutacao: mutacaoImportarNacionais(queryClient),
+    sucesso: (_ano, r) => `${String(r.inseridos)} feriado(s) nacional(is) inseridos`,
+  });
+  const apagar = useGravacao({
+    mutacao: mutacaoExcluirFeriado(queryClient),
+    sucesso: "Feriado excluído",
+  });
+  const alterar = useGravacao({
+    mutacao: mutacaoAlterarFeriado(queryClient),
+    sucesso: "Feriado atualizado",
+  });
+  const criar = useGravacao({
+    mutacao: mutacaoCriarFeriado(queryClient),
+    sucesso: "Feriado cadastrado",
+  });
+  const importarNacionais = () => importar.gravar(ano);
   const excluir = (f: FeriadoDoHistorico) => {
     if (!window.confirm(`Excluir "${f.descricao}"?`)) return;
-    void executar(async () => {
-      await chamar(c.excluirFeriado, { parametros: { id: f.id } });
-      return "Feriado excluído";
-    });
+    void apagar.gravar(f.id);
   };
   const gravar = ({ dados }: FeriadoParaGravar) =>
-    executar(async () => {
-      if (editando) {
-        await chamar(c.alterarFeriado, { parametros: { id: editando.id }, entrada: dados });
-        return "Feriado atualizado";
-      }
-      await chamar(c.criarFeriado, { entrada: dados });
-      return "Feriado cadastrado";
-    });
+    editando ? alterar.gravar({ id: editando.id, dados }) : criar.gravar(dados);
   const abrir = (f: Feriado | null) => {
     setEditando(f);
     setModalAberto(true);

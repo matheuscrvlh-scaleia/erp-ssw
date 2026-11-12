@@ -16,7 +16,7 @@ import { Button } from "@/componentes/ui/button";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { CHAVE_DO_HISTORICO } from "@/modulos/historico/api";
+import { chaves as chavesDoHistorico } from "@/modulos/historico/api";
 
 import { CHAVE_DO_CALENDARIO, consultaFeriadosGerais } from "./api";
 
@@ -40,7 +40,7 @@ export function PaginaFeriadosGerais() {
       toast.success(await acao());
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: CHAVE_DO_CALENDARIO }),
-        queryClient.invalidateQueries({ queryKey: CHAVE_DO_HISTORICO }),
+        queryClient.invalidateQueries({ queryKey: chavesDoHistorico.tudo }),
       ]);
       return true;
     } catch (e) {
