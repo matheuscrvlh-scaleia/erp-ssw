@@ -4,12 +4,11 @@
  * sempre à vista; o resto em "Mais filtros"; e a faixa "Filtrando por".
  */
 import { SEM_TIPO } from "@erp/dominio/romaneio/hoje";
-import { type CampoData, type FiltrosRomaneio } from "@erp/shared/contratos/romaneio";
+import { type FiltrosRomaneio } from "@erp/shared/contratos/romaneio";
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 import { formatarData } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
 
 import { Alternador } from "@/componentes/comum/Alternador";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
@@ -20,25 +19,15 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
-import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
-import { GatilhoFiltro } from "@/componentes/comum/GatilhoFiltro";
 import { InfoTip } from "@/componentes/comum/InfoTip";
 import { type Intervalo } from "@/componentes/comum/periodo";
 import { Button } from "@/componentes/ui/button";
-import { Calendar } from "@/componentes/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
-import { dataDoCalendario, isoDoCalendario } from "@/lib/dia-do-calendario";
 
-import { consultaOpcoes, consultaPerformanceAjudantes } from "./api";
-import { baseAtual, type BuscaRomaneio, codigosDaBusca, comSingular, veTodos } from "./busca";
-import { CampoAdiado, SeletorDaLista } from "./componentes";
-
-const BASES_DATA: readonly { valor: CampoData; rotulo: string }[] = [
-  { valor: "emissao", rotulo: "Emissão" },
-  { valor: "saida", rotulo: "Saída para entrega" },
-];
-
-const CHAVE_MAIS_FILTROS = "romaneio:mais-filtros";
+import { consultaOpcoes } from "../api";
+import { type BuscaRomaneio, codigosDaBusca, comSingular, veTodos } from "../busca";
+import { baseAtual, BASES_DATA } from "../textos";
+import { useMaisFiltros } from "../use-mais-filtros";
+import { MaisFiltros } from "./MaisFiltros";
 
 interface PropsDaBarra {
   busca: BuscaRomaneio;
@@ -47,90 +36,7 @@ interface PropsDaBarra {
   filtros: FiltrosRomaneio;
 }
 
-/** Data prevista de entrega (um dia só). */
-function FiltroPrevisao({ valor, aoMudar }: { valor: string; aoMudar: (v: string) => void }) {
-  const [aberto, setAberto] = useState(false);
-  return (
-    <Popover open={aberto} onOpenChange={setAberto}>
-      <PopoverTrigger asChild>
-        <GatilhoFiltro
-          ativo={Boolean(valor)}
-          rotulo="Data prevista"
-          aoLimpar={() => {
-            aoMudar("");
-          }}
-        >
-          <CalendarDays className="h-4 w-4 text-muted-foreground" aria-hidden />
-          {valor ? `Data prevista · ${formatarData(valor)}` : "Data prevista"}
-        </GatilhoFiltro>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={valor ? dataDoCalendario(valor) : undefined}
-          onSelect={(d) => {
-            if (!d) return;
-            aoMudar(isoDoCalendario(d));
-            setAberto(false);
-          }}
-          autoFocus
-          className="pointer-events-auto p-3"
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-/** Ajudantes do período (as opções são os nomes da própria aba, sem o filtro de ajudante). */
-function FiltroAjudante({
-  filtros,
-  selecionados,
-  aoMudar,
-}: {
-  filtros: FiltrosRomaneio;
-  selecionados: readonly string[];
-  aoMudar: (v: string[]) => void;
-}) {
-  const semAjudante: FiltrosRomaneio = { ...filtros };
-  delete semAjudante.ajudantes;
-  const q = useQuery(consultaPerformanceAjudantes(semAjudante));
-  const nomes = q.data
-    ? [...new Set(q.data.map((r) => r.nome))].sort((a, b) => a.localeCompare(b, "pt-BR"))
-    : undefined;
-  return (
-    <FiltroMultiplo
-      rotulo="Ajudante"
-      opcoes={nomes?.map((valor) => ({ valor }))}
-      selecionados={selecionados}
-      aoMudar={aoMudar}
-      textoVazio="todos"
-    />
-  );
-}
-
-/** "Mais filtros" aberto ou fechado: preferência do navegador (começa fechado). */
-function useMaisFiltros() {
-  const [aberto, setAberto] = useState(() => {
-    try {
-      return window.localStorage.getItem(CHAVE_MAIS_FILTROS) === "1";
-    } catch {
-      return false;
-    }
-  });
-  const alternar = () => {
-    setAberto((atual) => {
-      try {
-        window.localStorage.setItem(CHAVE_MAIS_FILTROS, atual ? "0" : "1");
-      } catch {
-        // sem armazenamento: vale só nesta visita
-      }
-      return !atual;
-    });
-  };
-  return { aberto, alternar };
-}
-
-export function BarraDeFiltros({ busca: b, definir, intervalo, filtros }: PropsDaBarra) {
+export function FiltrosGerais({ busca: b, definir, intervalo, filtros }: PropsDaBarra) {
   const escopo = { campo: b.ver, inicio: intervalo.inicio, fim: intervalo.fim };
   const placas = comSingular(b.placas, b.placa);
   const motoristas = comSingular(b.motoristas, b.motorista);
@@ -373,140 +279,19 @@ export function BarraDeFiltros({ busca: b, definir, intervalo, filtros }: PropsD
           {maisFiltros.aberto ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
         </Button>
         {maisFiltros.aberto && (
-          <>
-            <span className="basis-full" aria-hidden />
-            <FiltroMultiplo
-              rotulo="Local. atual"
-              opcoes={opcoes?.locaisAtuais.map((valor) => ({ valor }))}
-              selecionados={b.unidadeAtual}
-              aoMudar={(unidadeAtual) => {
-                mudar({ unidadeAtual });
-              }}
-              monoespacado
-            />
-            <FiltroTexto
-              rotulo="Remetente"
-              valor={b.remetente}
-              aoMudar={(remetente) => {
-                mudar({ remetente });
-              }}
-            />
-            <FiltroTexto
-              rotulo="Destino"
-              valor={b.destino}
-              aoMudar={(destino) => {
-                mudar({ destino });
-              }}
-            />
-            <FiltroMultiplo
-              rotulo="Código"
-              opcoes={opcoes?.codigos.map((c) => ({
-                valor: String(c.codigo),
-                rotulo: `#${c.codigo}`,
-                detalhe: c.descricao,
-              }))}
-              selecionados={codigos}
-              aoMudar={(v) => {
-                mudar({ codigos: v, codigo: "" });
-              }}
-              resumo={(sel) =>
-                sel.length === 1 && sel[0] !== undefined
-                  ? `#${sel[0]} ${descricaoDoCodigo.get(sel[0]) ?? ""}`.trim()
-                  : `${sel.length} códigos`
-              }
-              textoVazio="todos"
-            />
-            <FiltroMultiplo
-              rotulo="Tipo documento"
-              opcoes={
-                opcoes && [
-                  ...opcoes.tipos.map((valor) => ({ valor })),
-                  { valor: SEM_TIPO, rotulo: "sem tipo" },
-                ]
-              }
-              selecionados={b.tipos}
-              aoMudar={(tipos) => {
-                mudar({ tipos });
-              }}
-              textoVazio="todos"
-            />
-            <FiltroPrevisao
-              valor={b.previsao}
-              aoMudar={(previsao) => {
-                mudar({ previsao });
-              }}
-            />
-            <InfoTip
-              className="self-center"
-              texto="Mostra só os CTRC com previsão de entrega neste dia. O prazo vem do SSW; CTRC sem prazo calculado não aparecem."
-            />
-            <FiltroMultiplo
-              rotulo="Placa"
-              opcoes={opcoesDePlaca?.map((valor) => ({ valor }))}
-              selecionados={placas}
-              aoMudar={(v) => {
-                mudar({ placas: v, placa: "" });
-              }}
-              monoespacado
-              textoVazio="todas"
-            />
-            {b.tab !== "ajudantes" && (
-              <FiltroMultiplo
-                rotulo="Motorista"
-                opcoes={opcoesDeMotorista?.map((valor) => ({ valor }))}
-                selecionados={motoristas}
-                aoMudar={(v) => {
-                  mudar({ motoristas: v, motorista: "" });
-                }}
-                textoVazio="todos"
-              />
-            )}
-            {b.tab === "ajudantes" && (
-              <FiltroAjudante
-                filtros={filtros}
-                selecionados={ajudantes}
-                aoMudar={(v) => {
-                  mudar({ ajudantes: v, ajudante: "" });
-                }}
-              />
-            )}
-            <InfoTip
-              className="self-center"
-              texto="Filtros independentes de veículo e de motorista, com múltipla seleção. As listas são encadeadas: ao escolher placas, aparecem só os motoristas que rodaram nelas (e vice-versa). Quando a entrega não foi registrada pelo aplicativo do motorista, a carga aparece sem placa e sem motorista."
-            />
-            <SeletorDaLista
-              rotulo="Status"
-              valor={b.status}
-              aoMudar={(status) => {
-                mudar({ status });
-              }}
-              opcoes={[
-                { valor: "todos", rotulo: "Todos" },
-                { valor: "andamento", rotulo: "Só em andamento (sem entregues e baixados)" },
-              ]}
-              resumo={b.status === "andamento" ? "Só em andamento" : "Todos"}
-            />
-            <InfoTip
-              className="self-center"
-              texto="“Todos” mostra o período inteiro na tabela; “Só em andamento” esconde as cargas já entregues e as baixadas sem entrega (devolução, cancelamento…). Os cards acima continuam mostrando o total do período."
-            />
-            <CampoAdiado
-              valor={b.ctrc}
-              aoMudar={(ctrc) => {
-                mudar({ ctrc });
-              }}
-              placeholder="CTRC..."
-              className="w-[160px]"
-            />
-            <CampoAdiado
-              valor={b.nf}
-              aoMudar={(nf) => {
-                mudar({ nf });
-              }}
-              placeholder="Nota fiscal..."
-              className="w-[160px]"
-            />
-          </>
+          <MaisFiltros
+            busca={b}
+            mudar={mudar}
+            filtros={filtros}
+            opcoes={opcoes}
+            opcoesDePlaca={opcoesDePlaca}
+            opcoesDeMotorista={opcoesDeMotorista}
+            placas={placas}
+            motoristas={motoristas}
+            ajudantes={ajudantes}
+            codigos={codigos}
+            descricaoDoCodigo={descricaoDoCodigo}
+          />
         )}
       </FiltrosAvancados>
       <FiltrandoPor etiquetas={etiquetas} />

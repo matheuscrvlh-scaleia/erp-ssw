@@ -23,12 +23,9 @@ import {
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { Painel } from "@/componentes/comum/Painel";
 
-import {
-  AlternarCardsSecundarios,
-  type ChaveDaFaixa,
-  FaixasDePrazo,
-  GradeDeIndicadores,
-} from "./componentes";
+import { AlternarCardsSecundarios } from "./AlternarCardsSecundarios";
+import { type ChaveDaFaixa, FaixasDePrazo } from "./FaixasDePrazo";
+import { GradeDeIndicadores } from "./GradeDeIndicadores";
 
 export interface PropsCardsDoPeriodo {
   totais: TotaisDoTopo | undefined;

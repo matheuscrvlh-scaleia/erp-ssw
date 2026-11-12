@@ -4,7 +4,6 @@
  */
 import {
   AGRUPAMENTOS,
-  type CampoData,
   CAMPOS_DATA,
   type FiltrosRomaneio,
   ORDENS,
@@ -147,44 +146,6 @@ export function recorteEfetivo(b: Pick<BuscaRomaneio, "verTodos" | "ver" | "reco
   return veTodos(b) ? "todos" : "romaneados";
 }
 
-/** Texto da base de data escolhida (seletor "Contar as cargas pela" e dica do período). */
-export function baseAtual(ver: CampoData): { curto: string; ajuda: string; texto: string } {
-  switch (ver) {
-    case "saida":
-      return {
-        curto: "por data de saída para entrega",
-        ajuda: "dia em que o CTRC saiu no romaneio",
-        texto:
-          "O período filtra pelo dia em que o CTRC saiu para entrega no romaneio, em todas as abas desta tela.",
-      };
-    case "conclusao":
-      return {
-        curto: "por data de conclusão",
-        ajuda: "dia em que a carga foi concluída",
-        texto:
-          "O período filtra pelo dia da conclusão da carga (entrega ou outro encerramento), em todas as abas desta tela.",
-      };
-    case "embarque":
-      return {
-        curto: "por data de embarque",
-        ajuda: "data de embarque",
-        texto: "O período filtra pela data de embarque.",
-      };
-    case "prevista":
-      return {
-        curto: "por data prevista",
-        ajuda: "data prevista de entrega",
-        texto: "O período filtra pela data prevista de entrega.",
-      };
-    case "emissao":
-      return {
-        curto: "por data de emissão",
-        ajuda: "data de emissão do CT-e",
-        texto: "O período filtra pela data de emissão do CT-e, em todas as abas desta tela.",
-      };
-  }
-}
-
 /** Clique num card/linha das abas: abre a lista da aba Total com esse recorte. */
 export interface Abertura {
   recorte?: Recorte;
@@ -192,6 +153,12 @@ export interface Abertura {
   codigos?: number[];
   placa?: string;
   motorista?: string;
+}
+
+/** Props das abas e blocos que abrem a lista da aba Total. */
+export interface PropsDaAba {
+  filtros: FiltrosRomaneio;
+  aoAbrir: (a: Abertura) => void;
 }
 
 export function buscaDaAbertura(a: Abertura): Partial<BuscaRomaneio> {
@@ -206,23 +173,6 @@ export function buscaDaAbertura(a: Abertura): Partial<BuscaRomaneio> {
     page: 1,
   };
 }
-
-export const ROTULO_RECORTE: Record<Recorte, string> = {
-  todos: "Todos",
-  entregues: "Entregues",
-  em_rota: "Em rota de entrega",
-  devolvido: "Baixado sem entrega",
-  travado: "Travado em ocorrência",
-  parado: "Parado, sem saída para entrega",
-  romaneados: "Somente romaneados (saíram para entrega)",
-  otif: "CTRC com problema no percurso",
-  prejuizo: "CTRC com prejuízo",
-  em_rota_vencida: "Em rota · prazo vencido",
-  em_rota_hoje: "Em rota · vence hoje",
-  em_rota_futuro: "Em rota · vencimento futuro",
-  em_rota_sem_prev: "Em rota · sem prazo definido",
-  tde_romaneado: "TDE romaneado (em rota ou entregue)",
-};
 
 /** Opções do select "Situação" da lista — mesma ordem dos cards e chips do topo. */
 export const RECORTES_DA_LISTA: readonly Recorte[] = [
@@ -240,13 +190,3 @@ export const RECORTES_DA_LISTA: readonly Recorte[] = [
   "em_rota_sem_prev",
   "tde_romaneado",
 ];
-
-export const ROTULO_EM_ROTA_AGORA = { todos: "Todos", sim: "Sim", nao: "Não" } as const;
-
-export const ROTULO_AGRUPAMENTO = {
-  none: "Nenhum",
-  parceiro: "Parceiro",
-  unidade: "Unidade",
-  cidade: "Cidade de destino",
-  setor: "Setor de entrega",
-} as const;

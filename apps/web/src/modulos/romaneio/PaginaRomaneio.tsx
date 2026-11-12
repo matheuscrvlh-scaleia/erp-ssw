@@ -20,16 +20,7 @@ import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { cn } from "@/lib/utils";
 
-import { AbaHoje, FILTROS_DA_HOJE_VAZIOS, FiltrosDaHoje, type FiltrosHoje } from "./AbaHoje";
-import {
-  AbaPerformanceAjudante,
-  AbaPerformanceMotorista,
-  AbaPerformanceRomaneio,
-  AbaPrejuizo,
-  AbaRomaneioEntrega,
-} from "./AbasDesempenho";
-import { CHAVE_DO_ROMANEIO, consultaTotais } from "./api";
-import { BarraDeFiltros } from "./BarraDeFiltros";
+import { chaves, consultaTotais } from "./api";
 import {
   type Aba,
   ABAS,
@@ -37,13 +28,22 @@ import {
   buscaDaAbertura,
   esquemaRomaneio,
   filtrosDaBarra,
-  ROTULO_RECORTE,
   veTodos,
 } from "./busca";
-import { CardsDoPeriodo, type PropsCardsDoPeriodo } from "./CardsDoPeriodo";
-import { useCardsSecundarios } from "./componentes";
-import { Distribuicao } from "./Distribuicao";
-import { ListaTotal } from "./ListaTotal";
+import { AbaHoje } from "./componentes/AbaHoje";
+import { AbaPerformanceAjudante } from "./componentes/AbaPerformanceAjudante";
+import { AbaPerformanceMotorista } from "./componentes/AbaPerformanceMotorista";
+import { AbaPerformanceRomaneio } from "./componentes/AbaPerformanceRomaneio";
+import { AbaPrejuizo } from "./componentes/AbaPrejuizo";
+import { AbaRomaneioEntrega } from "./componentes/AbaRomaneioEntrega";
+import { CardsDoPeriodo, type PropsCardsDoPeriodo } from "./componentes/CardsDoPeriodo";
+import { Distribuicao } from "./componentes/Distribuicao";
+import { FiltrosDaHoje } from "./componentes/FiltrosDaHoje";
+import { FiltrosGerais } from "./componentes/FiltrosGerais";
+import { ListaTotal } from "./componentes/ListaTotal";
+import { FILTROS_DA_HOJE_VAZIOS, type FiltrosHoje } from "./regras";
+import { ROTULO_RECORTE } from "./textos";
+import { useCardsSecundarios } from "./use-cards-secundarios";
 
 const ROTULO_ABA: Record<Aba, string> = {
   hoje: "Hoje",
@@ -84,7 +84,7 @@ export function PaginaRomaneio() {
   const podeVerPlaca = acesso.telas.includes("romaneio_placa");
   const { filtros: b, definir } = useFiltrosNaUrl(esquemaRomaneio);
   const queryClient = useQueryClient();
-  const atualizando = useIsFetching({ queryKey: CHAVE_DO_ROMANEIO }) > 0;
+  const atualizando = useIsFetching({ queryKey: chaves.tudo }) > 0;
   const cardsSecundarios = useCardsSecundarios();
   const listaRef = useRef<HTMLDivElement>(null);
   // Filtros da aba Hoje: só da visita à aba (não vão para a URL) e zeram ao sair dela.
@@ -150,7 +150,7 @@ export function PaginaRomaneio() {
           size="sm"
           variant="ghost"
           disabled={atualizando}
-          onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DO_ROMANEIO })}
+          onClick={() => void queryClient.invalidateQueries({ queryKey: chaves.tudo })}
         >
           <RefreshCw className={cn(atualizando && "motion-safe:animate-spin")} aria-hidden />
           Atualizar
@@ -172,7 +172,7 @@ export function PaginaRomaneio() {
           // A aba Hoje não usa a barra geral: só unidade e tipo de documento, do dia.
           <FiltrosDaHoje fuso={fuso} filtros={filtrosHoje} aoMudar={setFiltrosHoje} />
         ) : (
-          <BarraDeFiltros busca={b} definir={definir} intervalo={intervalo} filtros={filtros} />
+          <FiltrosGerais busca={b} definir={definir} intervalo={intervalo} filtros={filtros} />
         )
       }
     >
