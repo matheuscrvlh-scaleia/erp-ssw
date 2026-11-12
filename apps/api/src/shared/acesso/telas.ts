@@ -1,6 +1,6 @@
 /**
- * Catálogo de telas (chaves de permissão). As chaves e as URLs são as do sistema atual: cargo,
- * departamento e exceções gravados hoje continuam valendo sem tradução.
+ * Catálogo de telas. As chaves e as URLs são as do sistema atual; cada tela tem as suas ações
+ * (`permissoes.ts`). `admin_departamentos` saiu: departamento virou cargo (Cargos = `admin_roles`).
  * origem: src/lib/permissions.ts (sistema atual)
  */
 export const TELAS = [
@@ -17,7 +17,6 @@ export const TELAS = [
   "admin_usuarios",
   "admin_codigos",
   "admin_roles",
-  "admin_departamentos",
   "admin_ingestao",
   "admin_importacao_ssw",
   "admin_historico",
@@ -42,7 +41,7 @@ export function ehTela(valor: string): valor is Tela {
   return (TELAS as readonly string[]).includes(valor);
 }
 
-/** Telas só da equipe da Plataforma: nunca vêm de cargo, departamento ou exceção. */
+/** Telas só da equipe da Plataforma: nunca vêm de cargo ou exceção. */
 export const TELAS_SO_PLATAFORMA: readonly Tela[] = [
   "plataforma_empresas",
   "plataforma_logs",
@@ -65,7 +64,6 @@ export const TELAS_ADMIN: readonly Tela[] = [
   "admin_usuarios",
   "admin_codigos",
   "admin_roles",
-  "admin_departamentos",
   "admin_ingestao",
   "admin_importacao_ssw",
   "admin_historico",
@@ -103,7 +101,6 @@ export const CAMINHO_DA_TELA: Record<Tela, string> = {
   admin_usuarios: "/admin/usuarios",
   admin_codigos: "/admin/codigos",
   admin_roles: "/admin/roles",
-  admin_departamentos: "/admin/departamentos",
   admin_ingestao: "/admin/ingestao",
   admin_importacao_ssw: "/admin/importacao-ssw",
   admin_historico: "/historico/feriados",
@@ -136,7 +133,6 @@ export const ROTULO_DA_TELA: Record<Tela, string> = {
   admin_usuarios: "Admin · Usuários",
   admin_codigos: "Admin · Códigos",
   admin_roles: "Admin · Roles",
-  admin_departamentos: "Admin · Departamentos",
   admin_ingestao: "Admin · Ingestão SSW",
   admin_importacao_ssw: "Admin · Importação SSW",
   admin_historico: "Admin · Feriados",

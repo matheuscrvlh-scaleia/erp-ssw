@@ -1,12 +1,12 @@
-import { SETORES } from "../acesso/papeis";
-import { TELAS } from "../acesso/telas";
+import { EFEITOS, PERMISSOES } from "../acesso/permissoes";
 import { contrato } from "../contrato";
 import { z } from "../zod";
 import { SENHA_MINIMO } from "./auth";
 
 /*
- * Admin da empresa ativa: usuários (convite, edição, senha), cargos, departamentos,
- * configurações e prazos configurados. Tudo exige admin (ou Plataforma) na empresa ativa.
+ * Admin da empresa ativa: usuários e cargos (convite, edição, senha, permissões do cargo e
+ * exceções por usuário), configurações e prazos configurados. Cada rota confere a permissão da
+ * tela (`tela.acao`); usuários e cargos também exigem admin (ou Plataforma) na empresa ativa.
  * origem: src/features/admin/** (sistema atual)
  */
 
@@ -32,13 +32,16 @@ const chaveDeCadastro = z
   .max(40)
   .regex(/^[a-z0-9_]+$/, "Use apenas minúsculas, números e _");
 
+/** Cargo do usuário (chave do cargo da empresa). */
 const papel = z.string().trim().min(1).max(64);
-const departamento = z.string().trim().min(1).max(40).nullable();
 const nomeDePessoa = z.string().trim().min(1).max(120);
 
-export const excecaoDeTela = z.object({ tela: z.enum(TELAS), permitido: z.boolean() });
-export type ExcecaoDeTela = z.infer<typeof excecaoDeTela>;
-const excecoes = z.array(excecaoDeTela).max(TELAS.length);
+const permissao = z.enum(PERMISSOES);
+const listaDePermissoes = z.array(permissao).max(PERMISSOES.length);
+
+/** Exceção por usuário: "Sim" (concede) ou "Não" (nega); sem linha = "Padrão" (herda o cargo). */
+export const excecaoDePermissao = z.object({ permissao, efeito: z.enum(EFEITOS) });
+export type ExcecaoDePermissaoGravada = z.infer<typeof excecaoDePermissao>;
 
 export const MODOS_DE_CRIACAO = ["convite", "senha"] as const;
 
@@ -49,16 +52,12 @@ export const novoUsuario = z.discriminatedUnion("modo", [
     email: emailDeUsuario,
     nome: nomeDePessoa,
     papel,
-    departamento: departamento.default(null),
-    excecoes: excecoes.default([]),
   }),
   z.object({
     modo: z.literal("senha"),
     email: emailDeUsuario,
     nome: nomeDePessoa,
     papel,
-    departamento: departamento.default(null),
-    excecoes: excecoes.default([]),
     senha: senhaDefinidaPorAdmin,
   }),
 ]);
@@ -68,39 +67,31 @@ export const usuarioDaEmpresa = z.object({
   id: z.uuid(),
   nome: z.string().nullable(),
   email: z.string(),
-  setor: z.enum(SETORES).nullable(),
-  departamento: z.string().nullable(),
   papel: z.string().nullable(),
   ativo: z.boolean(),
   /** Já criou a senha (convite aceito ou conta com senha). */
   temSenha: z.boolean(),
-  excecoes: z.array(excecaoDeTela),
+  excecoes: z.array(excecaoDePermissao),
 });
 export type UsuarioDaEmpresa = z.infer<typeof usuarioDaEmpresa>;
 
 const parametroUsuario = z.object({ id: z.uuid() });
 
+/**
+ * Cargo = grupo de usuários com permissões. `temTudo`: Admin e Super Admin, com o catálogo inteiro
+ * (as permissões não se editam). `protegido`: só muda o nome.
+ */
 export const cargo = z.object({
   chave: z.string(),
   rotulo: z.string(),
   protegido: z.boolean(),
-  telas: z.array(z.enum(TELAS)),
+  temTudo: z.boolean(),
+  permissoes: z.array(permissao),
   usuarios: z.number().int(),
 });
 export type Cargo = z.infer<typeof cargo>;
 
-export const departamentoDaEmpresa = z.object({
-  chave: z.string(),
-  rotulo: z.string(),
-  descricao: z.string().nullable(),
-  ativo: z.boolean(),
-  protegido: z.boolean(),
-  telas: z.array(z.enum(TELAS)),
-  usuarios: z.number().int(),
-});
-export type DepartamentoDaEmpresa = z.infer<typeof departamentoDaEmpresa>;
-
-const telasDoCadastro = z.array(z.enum(TELAS)).max(TELAS.length);
+const rotuloDoCargo = z.string().trim().min(1).max(60);
 const parametroChave = z.object({ chave: z.string().min(1).max(64) });
 
 export const GRUPOS_DE_CONFIGURACAO = [
@@ -180,10 +171,15 @@ export const contratosAdmin = {
       nome: nomeDePessoa,
       email: emailDeUsuario,
       papel,
-      departamento,
       ativo: z.boolean(),
-      excecoes,
     }),
+    saida: ok,
+  }),
+  definirExcecoes: contrato({
+    metodo: "PUT",
+    caminho: "/api/v1/admin/usuarios/:id/permissoes",
+    parametros: parametroUsuario,
+    entrada: z.object({ excecoes: z.array(excecaoDePermissao).max(PERMISSOES.length) }),
     saida: ok,
   }),
   reenviarConvite: contrato({
@@ -210,56 +206,22 @@ export const contratosAdmin = {
     caminho: "/api/v1/admin/cargos",
     entrada: z.object({
       chave: chaveDeCadastro,
-      rotulo: z.string().trim().min(1).max(60),
-      telas: telasDoCadastro,
+      rotulo: rotuloDoCargo,
+      permissoes: listaDePermissoes,
     }),
     saida: ok,
   }),
+  /** Nome e permissões (Admin e Super Admin: só o nome). */
   alterarCargo: contrato({
     metodo: "PUT",
     caminho: "/api/v1/admin/cargos/:chave",
     parametros: parametroChave,
-    entrada: z.object({ rotulo: z.string().trim().min(1).max(60), telas: telasDoCadastro }),
+    entrada: z.object({ rotulo: rotuloDoCargo, permissoes: listaDePermissoes }),
     saida: ok,
   }),
   excluirCargo: contrato({
     metodo: "DELETE",
     caminho: "/api/v1/admin/cargos/:chave",
-    parametros: parametroChave,
-    saida: ok,
-  }),
-
-  listarDepartamentos: contrato({
-    metodo: "GET",
-    caminho: "/api/v1/admin/departamentos",
-    saida: z.object({ departamentos: z.array(departamentoDaEmpresa) }),
-  }),
-  criarDepartamento: contrato({
-    metodo: "POST",
-    caminho: "/api/v1/admin/departamentos",
-    entrada: z.object({
-      chave: chaveDeCadastro,
-      rotulo: z.string().trim().min(1).max(60),
-      descricao: textoOpcional(300),
-      telas: telasDoCadastro,
-    }),
-    saida: ok,
-  }),
-  alterarDepartamento: contrato({
-    metodo: "PUT",
-    caminho: "/api/v1/admin/departamentos/:chave",
-    parametros: parametroChave,
-    entrada: z.object({
-      rotulo: z.string().trim().min(1).max(60),
-      descricao: textoOpcional(300),
-      ativo: z.boolean(),
-      telas: telasDoCadastro,
-    }),
-    saida: ok,
-  }),
-  excluirDepartamento: contrato({
-    metodo: "DELETE",
-    caminho: "/api/v1/admin/departamentos/:chave",
     parametros: parametroChave,
     saida: ok,
   }),

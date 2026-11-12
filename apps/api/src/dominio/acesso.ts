@@ -1,122 +1,105 @@
 import { type ModuloCatalogo } from "@erp/shared/acesso/modulos";
-import { ehAdminDaEmpresa, PAPEL_ADMIN, PAPEL_GESTOR, type Setor } from "@erp/shared/acesso/papeis";
+import { ehAdminDaEmpresa, PAPEL_ADMIN, PAPEL_GESTOR } from "@erp/shared/acesso/papeis";
 import {
-  ehTela,
+  ACOES_DA_TELA,
+  type Efeito,
+  ehPermissao,
+  ehPermissaoGravavel,
+  partesDaPermissao,
+  type Permissao,
+  permissao,
+  PERMISSOES,
+  PERMISSOES_GRAVAVEIS,
+  telasComVer,
+} from "@erp/shared/acesso/permissoes";
+import {
   type Tela,
-  TELAS,
   TELAS_ADMIN,
   TELAS_ADMIN_PARA_GESTOR,
   TELAS_POR_REGRA,
   TELAS_SO_PLATAFORMA,
 } from "@erp/shared/acesso/telas";
 
-/** Fallback do setor legado: só vale quando cargo e departamento não dão nenhuma tela. */
-const TELAS_DO_SETOR: Record<Setor, readonly Tela[]> = {
-  diretoria: [
-    "performance",
-    "romaneio",
-    "ocorrencias",
-    "comprovantes",
-    "coletas",
-    "prazo_parceiro",
-    "historico",
-    "calendario",
-    "ranking",
-    "ranking_novo",
-  ],
-  monitoramento: [
-    "performance",
-    "romaneio",
-    "ocorrencias",
-    "comprovantes",
-    "coletas",
-    "prazo_parceiro",
-    "historico",
-    "calendario",
-    "ranking",
-    "ranking_novo",
-  ],
-  expedicao: [
-    "performance",
-    "romaneio",
-    "ocorrencias",
-    "comprovantes",
-    "coletas",
-    "prazo_parceiro",
-    "historico",
-    "calendario",
-    "ranking",
-    "ranking_novo",
-  ],
-  agendamento: [
-    "performance",
-    "romaneio",
-    "ocorrencias",
-    "prazo_parceiro",
-    "historico",
-    "calendario",
-  ],
-  rh: ["performance", "historico", "calendario"],
-};
-
-export interface Excecao {
-  tela: string;
-  permitido: boolean;
+export interface ExcecaoDePermissao {
+  permissao: string;
+  efeito: Efeito;
 }
 
-function emOrdemDoCatalogo(telas: ReadonlySet<Tela>): Tela[] {
-  return TELAS.filter((t) => telas.has(t));
+function emOrdemDoCatalogo(permissoes: ReadonlySet<string>): Permissao[] {
+  return PERMISSOES.filter((p) => permissoes.has(p));
 }
 
-function excecaoPodeValer(tela: Tela, papel: string | null): boolean {
+/**
+ * Concessão individual ("Sim") de tela administrativa só vale para quem já é admin, ou para gestor
+ * nas telas liberáveis a ele. Sem esta regra um operador ganharia o Admin por exceção.
+ * origem: computeScreens (src/lib/permissions.ts, sistema atual)
+ */
+export function concessaoPodeValer(tela: Tela, papel: string | null): boolean {
   if (!TELAS_ADMIN.includes(tela)) return true;
-  // Tela administrativa só muda por exceção para quem já é admin (ou gestor, nas liberáveis).
   return (
     ehAdminDaEmpresa(papel) || (papel === PAPEL_GESTOR && TELAS_ADMIN_PARA_GESTOR.includes(tela))
   );
 }
 
 /**
- * Telas do cargo ∪ telas do departamento (com fallback do setor legado), depois as exceções do
- * usuário, que adicionam ou tiram.
- * origem: computeScreens (src/lib/permissions.ts, sistema atual)
+ * Permissões do cargo: Admin e Super Admin têm o catálogo da empresa inteiro (não se edita); os
+ * demais, as gravadas no cargo (as fora do catálogo ou da Plataforma não valem).
  */
-export function calcularTelas(entrada: {
-  telasDoCargo: readonly string[];
-  telasDoDepartamento: readonly string[];
-  setor: Setor | null;
-  excecoes: readonly Excecao[];
-  papel: string | null;
-}): Tela[] {
-  const telas = new Set<Tela>();
-  for (const t of [...entrada.telasDoCargo, ...entrada.telasDoDepartamento]) {
-    if (ehTela(t)) telas.add(t);
+export function permissoesDoCargo(papel: string | null, gravadas: readonly string[]): Permissao[] {
+  if (ehAdminDaEmpresa(papel)) return [...PERMISSOES_GRAVAVEIS];
+  return emOrdemDoCatalogo(new Set(gravadas.filter(ehPermissaoGravavel)));
+}
+
+/** Sem "Ver" a tela não tem as outras ações (não dá para editar o que não se vê). */
+function tirarAcoesSemVer(permissoes: Set<string>): void {
+  for (const p of [...permissoes]) {
+    if (ehPermissao(p) && !permissoes.has(permissao(partesDaPermissao(p).tela, "ver"))) {
+      permissoes.delete(p);
+    }
   }
-  if (telas.size === 0 && entrada.setor) {
-    for (const t of TELAS_DO_SETOR[entrada.setor]) telas.add(t);
-  }
-  for (const { tela, permitido } of entrada.excecoes) {
-    if (!ehTela(tela) || !excecaoPodeValer(tela, entrada.papel)) continue;
-    if (permitido) telas.add(tela);
-    else telas.delete(tela);
-  }
-  return emOrdemDoCatalogo(telas);
 }
 
 /**
- * Telas da Plataforma só para quem é admin da plataforma (nunca por cargo ou exceção) e Logs da
- * empresa para o admin da empresa.
+ * Permissões efetivas = (cargo ∪ concessões) − negações. Um "Não" vale até para o Admin; um "Sim"
+ * de tela administrativa só vale nos casos de `concessaoPodeValer`.
+ * origem: effectivePermissions (construgarden, src/lib/permissionOverrides.ts)
+ */
+export function calcularPermissoes(entrada: {
+  papel: string | null;
+  doCargo: readonly string[];
+  excecoes: readonly ExcecaoDePermissao[];
+}): Permissao[] {
+  const efetivas = new Set<string>(permissoesDoCargo(entrada.papel, entrada.doCargo));
+  for (const { permissao: p, efeito } of entrada.excecoes) {
+    if (efeito !== "concede" || !ehPermissaoGravavel(p)) continue;
+    if (concessaoPodeValer(partesDaPermissao(p).tela, entrada.papel)) efetivas.add(p);
+  }
+  for (const { permissao: p, efeito } of entrada.excecoes) {
+    if (efeito === "nega") efetivas.delete(p);
+  }
+  tirarAcoesSemVer(efetivas);
+  return emOrdemDoCatalogo(efetivas);
+}
+
+function todasAsAcoes(telas: readonly Tela[]): Permissao[] {
+  return telas.flatMap((t) => ACOES_DA_TELA[t].map((a) => permissao(t, a)));
+}
+
+/**
+ * Telas da Plataforma só para quem é admin da plataforma (nunca por cargo ou exceção), com todas
+ * as ações; Logs da empresa para o admin da empresa.
  * origem: aplicarTelasMultiempresa (src/lib/permissions.ts, sistema atual)
  */
-export function aplicarTelasDaPlataforma(
-  telas: readonly Tela[],
+export function aplicarPermissoesDaPlataforma(
+  permissoes: readonly Permissao[],
   opcoes: { adminPlataforma: boolean; papel: string | null },
-): Tela[] {
-  const resultado = new Set(
-    telas.filter((t) => !TELAS_SO_PLATAFORMA.includes(t) && !TELAS_POR_REGRA.includes(t)),
-  );
-  if (ehAdminDaEmpresa(opcoes.papel) || opcoes.adminPlataforma) resultado.add("admin_logs");
-  if (opcoes.adminPlataforma) for (const t of TELAS_SO_PLATAFORMA) resultado.add(t);
+): Permissao[] {
+  const daRegra = new Set<string>(todasAsAcoes([...TELAS_SO_PLATAFORMA, ...TELAS_POR_REGRA]));
+  const resultado = new Set<string>(permissoes.filter((p) => !daRegra.has(p)));
+  if (ehAdminDaEmpresa(opcoes.papel) || opcoes.adminPlataforma) {
+    for (const p of todasAsAcoes(TELAS_POR_REGRA)) resultado.add(p);
+  }
+  if (opcoes.adminPlataforma) for (const p of todasAsAcoes(TELAS_SO_PLATAFORMA)) resultado.add(p);
   return emOrdemDoCatalogo(resultado);
 }
 
@@ -127,28 +110,30 @@ interface TelaBloqueada {
 }
 
 /**
- * Tira as telas cujos módulos estão todos desligados para a empresa. Tela em mais de um módulo
- * fica se qualquer um valer; tela sem módulo (Plataforma) não é afetada; admin da plataforma vê
- * tudo. As tiradas voltam em `bloqueadas` para a rota mostrar o aviso em vez de redirecionar.
+ * Tira as telas (com todas as ações) cujos módulos estão todos desligados para a empresa. Tela em
+ * mais de um módulo fica se qualquer um valer; tela sem módulo (Plataforma) não é afetada; admin
+ * da plataforma vê tudo. As tiradas voltam em `bloqueadas` para a rota mostrar o aviso em vez de
+ * redirecionar.
  * origem: aplicarModulos (src/lib/modulos.ts, sistema atual)
  */
 export function aplicarModulos(
-  telas: readonly Tela[],
+  permissoes: readonly Permissao[],
   catalogo: readonly ModuloCatalogo[],
   liberados: readonly string[],
   adminPlataforma: boolean,
-): { telas: Tela[]; bloqueadas: TelaBloqueada[] } {
-  if (adminPlataforma) return { telas: [...telas], bloqueadas: [] };
+): { permissoes: Permissao[]; bloqueadas: TelaBloqueada[] } {
+  if (adminPlataforma) return { permissoes: [...permissoes], bloqueadas: [] };
   const vale = new Set([...liberados, ...catalogo.filter((m) => m.essencial).map((m) => m.chave)]);
-  const ficam: Tela[] = [];
   const bloqueadas: TelaBloqueada[] = [];
-  for (const tela of telas) {
+  for (const tela of telasComVer(permissoes)) {
     const modulos = catalogo.filter((m) => m.telas.includes(tela));
     const primeiro = modulos[0];
-    if (!primeiro || modulos.some((m) => vale.has(m.chave))) ficam.push(tela);
-    else bloqueadas.push({ tela, modulo: primeiro.chave, moduloNome: primeiro.nome });
+    if (primeiro && !modulos.some((m) => vale.has(m.chave))) {
+      bloqueadas.push({ tela, modulo: primeiro.chave, moduloNome: primeiro.nome });
+    }
   }
-  return { telas: ficam, bloqueadas };
+  const fora = new Set<string>(todasAsAcoes(bloqueadas.map((b) => b.tela)));
+  return { permissoes: permissoes.filter((p) => !fora.has(p)), bloqueadas };
 }
 
 export interface LiberacaoDeModulo {
@@ -197,8 +182,6 @@ export function moduloLiberado(
 
 export interface VinculoComEmpresa {
   papel: string | null;
-  departamento: string | null;
-  setor: Setor | null;
   ativo: boolean;
 }
 
@@ -207,9 +190,9 @@ export interface EntradaDoAcesso {
   empresaId: string | null;
   adminPlataforma: boolean;
   vinculo: VinculoComEmpresa | null;
-  telasDoCargo: readonly string[];
-  telasDoDepartamento: readonly string[];
-  excecoes: readonly Excecao[];
+  /** Permissões gravadas no cargo do usuário (o cargo Admin ignora: tem tudo). */
+  permissoesDoCargo: readonly string[];
+  excecoes: readonly ExcecaoDePermissao[];
   catalogo: readonly ModuloCatalogo[];
   modulosVigentes: readonly string[];
 }
@@ -217,7 +200,8 @@ export interface EntradaDoAcesso {
 interface ResultadoDoAcesso {
   ativo: boolean;
   papel: string | null;
-  setor: Setor | null;
+  permissoes: Permissao[];
+  /** Telas com "Ver" (menu e guarda de rota). */
   telas: Tela[];
   telasBloqueadas: TelaBloqueada[];
 }
@@ -236,33 +220,27 @@ export function papelNaEmpresa(entrada: {
 }
 
 /**
- * Acesso final do usuário na empresa ativa.
+ * Acesso final do usuário na empresa ativa: permissões do cargo e das exceções, regras da
+ * Plataforma e módulos liberados.
  * origem: calcularAcesso (src/features/auth/acesso.server.ts, sistema atual)
  */
 export function calcularAcesso(entrada: EntradaDoAcesso): ResultadoDoAcesso {
   const papel = papelNaEmpresa(entrada);
-  const setor = entrada.vinculo?.setor ?? null;
   const semEmpresa = !entrada.adminPlataforma && entrada.empresaId === null;
   const ativo = entrada.usuarioAtivo && entrada.vinculo?.ativo !== false && !semEmpresa;
-  if (!ativo) return { ativo, papel, setor, telas: [], telasBloqueadas: [] };
+  if (!ativo) return { ativo, papel, permissoes: [], telas: [], telasBloqueadas: [] };
 
-  const doCargo = aplicarTelasDaPlataforma(
-    calcularTelas({
-      telasDoCargo: entrada.telasDoCargo,
-      telasDoDepartamento: entrada.telasDoDepartamento,
-      setor,
-      excecoes: entrada.excecoes,
-      papel,
-    }),
+  const doCargo = aplicarPermissoesDaPlataforma(
+    calcularPermissoes({ papel, doCargo: entrada.permissoesDoCargo, excecoes: entrada.excecoes }),
     { adminPlataforma: entrada.adminPlataforma, papel },
   );
-  const { telas, bloqueadas } = aplicarModulos(
+  const { permissoes, bloqueadas } = aplicarModulos(
     doCargo,
     entrada.catalogo,
     entrada.modulosVigentes,
     entrada.adminPlataforma,
   );
-  return { ativo, papel, setor, telas, telasBloqueadas: bloqueadas };
+  return { ativo, papel, permissoes, telas: telasComVer(permissoes), telasBloqueadas: bloqueadas };
 }
 
 interface VinculoParaEscolha {

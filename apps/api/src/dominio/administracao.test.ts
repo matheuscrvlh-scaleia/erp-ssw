@@ -3,13 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   type AlvoDoLogin,
   caminhoDoLogo,
+  cargoTemTudo,
   escolherEmpresaModelo,
+  exigirPodeAjustarExcecoes,
   exigirPodeAlterarLogin,
   exigirPodeMexerEmSuperAdmin,
   exigirPodeMudarAtivo,
   exigirPodeRemoverAdminPlataforma,
+  permissoesGravaveis,
   podeAlterarLogin,
-  setorLegado,
+  validarExcecoes,
   validarLogo,
   validarParametrosDeIntegracao,
   validarVigencia,
@@ -132,11 +135,51 @@ describe("desativar ou reativar", () => {
   });
 });
 
-describe("cadastros", () => {
-  it("setor legado só quando o departamento tem o nome de um setor", () => {
-    expect(setorLegado("expedicao")).toBe("expedicao");
-    expect(setorLegado("financeiro")).toBeNull();
-    expect(setorLegado(null)).toBeNull();
+describe("cargos e exceções", () => {
+  it("Admin e Super Admin têm tudo; os outros cargos não", () => {
+    expect(cargoTemTudo("admin")).toBe(true);
+    expect(cargoTemTudo("super_admin")).toBe(true);
+    expect(cargoTemTudo("gestor")).toBe(false);
+  });
+
+  it("cargo grava só permissões da empresa, sem repetir", () => {
+    expect(permissoesGravaveis(["calendario.ver", "calendario.ver", "ranking.ver"])).toEqual([
+      "calendario.ver",
+      "ranking.ver",
+    ]);
+    expect(() => permissoesGravaveis(["plataforma_empresas.ver"])).toThrow(/não podem/);
+    expect(() => permissoesGravaveis(["admin_logs.ver"])).toThrow(/não podem/);
+  });
+
+  it("exceção: uma permissão não é concedida e negada ao mesmo tempo", () => {
+    expect(
+      validarExcecoes([
+        { permissao: "coletas.ver", efeito: "concede" },
+        { permissao: "coletas.ver", efeito: "concede" },
+      ]),
+    ).toEqual([{ permissao: "coletas.ver", efeito: "concede" }]);
+    expect(() =>
+      validarExcecoes([
+        { permissao: "coletas.ver", efeito: "concede" },
+        { permissao: "coletas.ver", efeito: "nega" },
+      ]),
+    ).toThrow(/ao mesmo tempo/);
+  });
+
+  it("só admin (ou a Plataforma) ajusta exceções, e nunca as próprias", () => {
+    const pedido = { quemPede: "a", alvo: "b", papelDeQuemPede: "admin", plataforma: false };
+    expect(() => {
+      exigirPodeAjustarExcecoes(pedido);
+    }).not.toThrow();
+    expect(() => {
+      exigirPodeAjustarExcecoes({ ...pedido, papelDeQuemPede: "gestor" });
+    }).toThrow(/administrador/);
+    expect(() => {
+      exigirPodeAjustarExcecoes({ ...pedido, papelDeQuemPede: null, plataforma: true });
+    }).not.toThrow();
+    expect(() => {
+      exigirPodeAjustarExcecoes({ ...pedido, alvo: "a", plataforma: true });
+    }).toThrow(/próprias/);
   });
 
   it("empresa modelo = a mais antiga que não é a nova", () => {
