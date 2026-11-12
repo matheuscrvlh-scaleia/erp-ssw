@@ -194,7 +194,7 @@ export function PaginaOcorrencias() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => void navegar({ href: "/admin/codigos" })}
+              onClick={() => void navegar({ href: "/admin/configuracoes?aba=codigos" })}
             >
               Classificar agora
               <ArrowRight aria-hidden />

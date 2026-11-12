@@ -424,7 +424,7 @@ export function PaginaHistorico() {
         <>
           {acesso.telas.includes("admin_historico") && (
             <Button asChild size="sm" variant="outline">
-              <Link to="/historico/feriados">
+              <Link to="/admin/configuracoes" search={{ aba: "feriados" }}>
                 <CalendarDays aria-hidden /> Feriados
               </Link>
             </Button>

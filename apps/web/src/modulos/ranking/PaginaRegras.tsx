@@ -112,7 +112,12 @@ export function PaginaRegras() {
       acoes={
         <>
           <Button asChild size="sm" variant="ghost">
-            <Link to="/admin/equipes" aria-label="Voltar para Equipes" title="Voltar para Equipes">
+            <Link
+              to="/admin/configuracoes"
+              search={{ aba: "equipes" }}
+              aria-label="Voltar para Equipes"
+              title="Voltar para Equipes"
+            >
               <ArrowLeft aria-hidden /> Voltar
             </Link>
           </Button>

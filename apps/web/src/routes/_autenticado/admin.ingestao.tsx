@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { PaginaIngestao } from "@/modulos/ingestao-ssw/PaginaIngestao";
-
+/** Endereço antigo: a tela virou a aba "ingestao" de Administração › Configurações. */
 export const Route = createFileRoute("/_autenticado/admin/ingestao")({
-  component: PaginaIngestao,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/configuracoes", search: { aba: "ingestao" } });
+  },
 });

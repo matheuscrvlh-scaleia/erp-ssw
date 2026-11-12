@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { PaginaIntegracoesDaPlataforma } from "@/modulos/plataforma/IntegracoesDaPlataforma";
-
+/** Endereço antigo: a tela virou a aba "integracoes" de Plataforma › Configurações. */
 export const Route = createFileRoute("/_autenticado/plataforma/integracoes")({
-  component: PaginaIntegracoesDaPlataforma,
+  beforeLoad: () => {
+    throw redirect({ to: "/plataforma/configuracoes", search: { aba: "integracoes" } });
+  },
 });

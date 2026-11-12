@@ -30,7 +30,7 @@ export function PaginaEquipeDetalhe({
       largura="estreita"
       acoes={
         <Button asChild size="sm" variant="ghost">
-          <Link to="/admin/equipes">
+          <Link to="/admin/configuracoes" search={{ aba: "equipes" }}>
             <ArrowLeft aria-hidden /> Voltar
           </Link>
         </Button>

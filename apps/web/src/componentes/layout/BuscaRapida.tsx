@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { CornerDownLeft, FileSearch, Moon, Search, Sun } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { montarMenu } from "@/acesso/navegacao";
+import { montarBusca } from "@/acesso/navegacao";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
 import { useAbrirCte } from "@/hooks/use-abrir-cte";
 import { definirTema, useTema } from "@/lib/tema";
@@ -66,22 +66,19 @@ export function BuscaRapida({
   };
 
   const todas = useMemo<Opcao[]>(() => {
-    const menu = montarMenu(acesso.telas);
-    const telas = (grupo: string, itens: typeof menu.principal) =>
-      itens.map((i) => {
-        const Icone = i.icone;
-        return {
-          id: i.caminho,
-          grupo,
-          rotulo: i.rotulo,
-          icone: <Icone className="h-4 w-4" aria-hidden />,
-          executar: () => void navigate({ to: i.caminho }),
-        };
-      });
+    const telas = montarBusca(acesso).map((d) => {
+      const Icone = d.icone;
+      const href = d.aba ? `${d.caminho}?aba=${d.aba}` : d.caminho;
+      return {
+        id: href,
+        grupo: d.grupo,
+        rotulo: d.rotulo,
+        icone: <Icone className="h-4 w-4" aria-hidden />,
+        executar: () => void navigate({ href }),
+      };
+    });
     return [
-      ...telas("Telas", menu.principal),
-      ...telas("Admin", menu.admin),
-      ...telas("Plataforma", menu.plataforma),
+      ...telas,
       {
         id: "tema",
         grupo: "Preferências",
@@ -97,7 +94,7 @@ export function BuscaRapida({
         },
       },
     ];
-  }, [acesso.telas, navigate, tema]);
+  }, [acesso, navigate, tema]);
 
   const termo = texto.trim();
   const opcoes = useMemo(() => {

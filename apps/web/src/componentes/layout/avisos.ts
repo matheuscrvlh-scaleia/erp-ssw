@@ -1,4 +1,4 @@
-import { CAMINHO_DA_TELA } from "@erp/shared/acesso/telas";
+import { type Tela } from "@erp/shared/acesso/telas";
 import { type Acesso } from "@erp/shared/contratos/auth";
 import { type MotivoDaSaude } from "@erp/shared/contratos/ingestao-ssw";
 import { formatarDataHora } from "@erp/shared/formatacao";
@@ -13,7 +13,7 @@ export interface Aviso {
   titulo: string;
   detalhe: string;
   /** Tela que resolve (só aparece o link se o usuário tiver acesso a ela). */
-  link?: { para: string; rotulo: string } | undefined;
+  link?: { para: string; aba?: string; rotulo: string } | undefined;
 }
 
 const DETALHE_DA_SAUDE: Record<Exclude<MotivoDaSaude, "ok">, string> = {
@@ -38,7 +38,9 @@ export function useAvisos(acesso: Acesso): Aviso[] {
     ...consultaAtualizacaoDosDados(empresa?.id ?? ""),
     enabled: empresa !== null,
   });
-  const pode = (caminho: string) => acesso.telas.some((t) => CAMINHO_DA_TELA[t] === caminho);
+  // As três telas que resolvem são abas de Administração › Configurações.
+  const configuracoes = (tela: Tela, aba: string, rotulo: string) =>
+    acesso.telas.includes(tela) ? { para: "/admin/configuracoes", aba, rotulo } : undefined;
 
   const avisos: Aviso[] = [];
   const s = saude.data;
@@ -48,9 +50,7 @@ export function useAvisos(acesso: Acesso): Aviso[] {
       gravidade: "critico",
       titulo: `Integração SSW indisponível — ${DETALHE_DA_SAUDE[s.motivo]}`,
       detalhe: "Os dados exibidos podem estar desatualizados até que a conexão seja restabelecida.",
-      link: pode("/admin/ingestao")
-        ? { para: "/admin/ingestao", rotulo: "Abrir configuração" }
-        : undefined,
+      link: configuracoes("admin_ingestao", "ingestao", "Abrir configuração"),
     });
   }
   const a = atualizacao.data;
@@ -60,9 +60,7 @@ export function useAvisos(acesso: Acesso): Aviso[] {
       gravidade: "alerta",
       titulo: "Dados sem atualização recente",
       detalhe: `Última importação do SSW em ${formatarDataHora(a.atualizadoEm, empresa?.fuso)}.`,
-      link: pode("/admin/importacao-ssw")
-        ? { para: "/admin/importacao-ssw", rotulo: "Ver importação" }
-        : undefined,
+      link: configuracoes("admin_importacao_ssw", "importacao-ssw", "Ver importação"),
     });
   }
   if (a?.xmlAguardando && a.xmlAguardando.pendentes > 0) {
@@ -74,7 +72,7 @@ export function useAvisos(acesso: Acesso): Aviso[] {
       detalhe:
         "Recebidos por FTP e ainda sem o documento no BI2. A fila é reprocessada sozinha e expira em 5 dias." +
         (expirados > 0 ? ` ${inteiro.format(expirados)} já expiraram sem casar.` : ""),
-      link: pode("/admin/xml-cte") ? { para: "/admin/xml-cte", rotulo: "Abrir fila" } : undefined,
+      link: configuracoes("admin_xml_cte", "xml-cte", "Abrir fila"),
     });
   }
   return avisos;

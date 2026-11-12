@@ -2,8 +2,7 @@ import { type Feriado, UFS } from "@erp/shared/contratos/calendario";
 import { contratosHistorico as c, type FeriadoDoHistorico } from "@erp/shared/contratos/historico";
 import { hojeNoFuso } from "@erp/shared/datas";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -27,8 +26,9 @@ import { CHAVE_DO_HISTORICO, consultaFeriados } from "./api";
 type Tipo = "" | "nacional" | "municipal";
 
 /**
- * Histórico › Feriados (admin da empresa). Mesmas regras do Calendário; feriado nacional sem
- * empresa vale para todas e só a Plataforma altera (Q28): aqui aparece sem os botões.
+ * Administração › Configurações › Feriados (admin da empresa). Mesmas regras do Calendário;
+ * feriado geral (sem empresa) vale para todas e só a Plataforma altera, em Plataforma ›
+ * Configurações (Q28): aqui aparece sem os botões.
  */
 export function PaginaFeriados() {
   const fuso = useFusoDaEmpresa();
@@ -143,13 +143,9 @@ export function PaginaFeriados() {
   return (
     <Pagina
       titulo="Feriados"
+      descricao="Os feriados da empresa. Os gerais valem para todas as empresas e são mantidos pela Plataforma."
       acoes={
         <>
-          <Button asChild size="sm" variant="ghost">
-            <Link to="/historico">
-              <ArrowLeft aria-hidden /> Voltar ao histórico
-            </Link>
-          </Button>
           <Button variant="outline" size="sm" onClick={() => void importarNacionais()}>
             <Download aria-hidden /> Importar nacionais {ano}
           </Button>

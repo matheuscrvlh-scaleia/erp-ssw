@@ -293,7 +293,7 @@ export function PaginaCodigos() {
     filtros.ordem !== FILTROS_INICIAIS.ordem;
   return (
     <Pagina
-      titulo="Códigos de ocorrência"
+      titulo="Códigos de ocorrências"
       descricao="Configure quem penaliza cada código — espelho da tela 405 do SSW."
       acoes={
         podeEditar && (

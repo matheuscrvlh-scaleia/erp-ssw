@@ -28,7 +28,9 @@ export function FaixaSaudeSsw({ empresaId }: { empresaId: string }) {
       titulo={`Integração SSW indisponível — ${DETALHE[data.motivo]}.`}
       acao={
         <Button asChild size="sm" variant="outline">
-          <Link to="/admin/ingestao">Abrir configuração</Link>
+          <Link to="/admin/configuracoes" search={{ aba: "ingestao" }}>
+            Abrir configuração
+          </Link>
         </Button>
       }
     >

@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { PaginaFeriados } from "@/modulos/historico/PaginaFeriados";
-
+/** Endereço antigo: a tela virou a aba "feriados" de Administração › Configurações. */
 export const Route = createFileRoute("/_autenticado/historico_/feriados")({
-  component: PaginaFeriados,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/configuracoes", search: { aba: "feriados" } });
+  },
 });

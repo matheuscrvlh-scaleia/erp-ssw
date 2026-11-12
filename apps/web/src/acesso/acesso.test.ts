@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { decidirAcesso, destinoSeguro } from "./guarda";
 import { contraste, paletaDaMarca, tituloComEmpresa } from "./marca";
-import { montarMenu } from "./navegacao";
+import { montarBusca, montarMenu } from "./navegacao";
 
-const base = { ativo: true, telas: [], telasBloqueadas: [] };
+const base = { ativo: true, telas: [], telasBloqueadas: [], adminPlataforma: false };
 
 describe("decidirAcesso (guarda de rota, regras/05 §1.9)", () => {
   it("tela liberada e caminho sem tela passam", () => {
@@ -46,6 +46,25 @@ describe("decidirAcesso (guarda de rota, regras/05 §1.9)", () => {
       para: "/sem-acesso",
     });
   });
+
+  it("tela com abas abre com pelo menos uma aba, mesmo sem a tela do caminho", () => {
+    const soCodigos = { ...base, telas: ["admin_codigos" as const] };
+    expect(decidirAcesso(soCodigos, "/admin/configuracoes")).toEqual({ tipo: "liberado" });
+    expect(decidirAcesso({ ...base, telas: ["romaneio"] }, "/admin/configuracoes")).toEqual({
+      tipo: "redirecionar",
+      para: "/romaneio",
+    });
+  });
+
+  it("Plataforma › Configurações: só o admin da Plataforma (Feriados gerais não tem tela)", () => {
+    expect(decidirAcesso({ ...base, adminPlataforma: true }, "/plataforma/configuracoes")).toEqual({
+      tipo: "liberado",
+    });
+    expect(decidirAcesso({ ...base, telas: ["romaneio"] }, "/plataforma/configuracoes")).toEqual({
+      tipo: "redirecionar",
+      para: "/romaneio",
+    });
+  });
 });
 
 describe("destinoSeguro", () => {
@@ -61,21 +80,64 @@ describe("destinoSeguro", () => {
 });
 
 describe("montarMenu", () => {
-  it("separa as seções, tira o prefixo e não repete caminho (ranking/ranking_novo)", () => {
-    const menu = montarMenu([
-      "ranking_novo",
-      "ranking",
-      "calendario",
-      "admin_usuarios",
-      "plataforma_empresas",
-      "romaneio_placa",
-    ]);
+  it("separa as seções e não repete caminho (ranking/ranking_novo)", () => {
+    const menu = montarMenu({
+      adminPlataforma: false,
+      telas: [
+        "ranking_novo",
+        "ranking",
+        "calendario",
+        "admin_bonificacao_entrega",
+        "admin_usuarios",
+        "plataforma_empresas",
+        "romaneio_placa",
+      ],
+    });
     expect(menu.principal.map((i) => [i.caminho, i.rotulo])).toEqual([
       ["/ranking", "Ranking"],
       ["/calendario", "Calendário"],
+      ["/admin/bonificacao-entrega", "Bonificação de entrega"],
     ]);
-    expect(menu.admin.map((i) => i.rotulo)).toEqual(["Usuários"]);
+    expect(menu.administracao.map((i) => i.rotulo)).toEqual(["Usuários e cargos"]);
     expect(menu.plataforma.map((i) => i.caminho)).toEqual(["/plataforma/empresas"]);
+  });
+
+  it("Configurações aparece com qualquer aba; as telas que viraram abas saem do menu", () => {
+    const menu = montarMenu({ adminPlataforma: false, telas: ["admin_equipes", "admin_logs"] });
+    expect(menu.administracao.map((i) => [i.caminho, i.rotulo])).toEqual([
+      ["/admin/configuracoes", "Configurações"],
+      ["/admin/logs", "Logs"],
+    ]);
+  });
+
+  it("Plataforma: Empresas, Usuários e cargos, Configurações e Logs", () => {
+    const menu = montarMenu({
+      adminPlataforma: true,
+      telas: ["plataforma_empresas", "plataforma_admins", "plataforma_logs", "admin_ahgora"],
+    });
+    expect(menu.plataforma.map((i) => [i.caminho, i.rotulo])).toEqual([
+      ["/plataforma/empresas", "Empresas"],
+      ["/plataforma/administradores", "Usuários e cargos"],
+      ["/plataforma/configuracoes", "Configurações"],
+      ["/plataforma/logs", "Logs"],
+    ]);
+  });
+});
+
+describe("montarBusca", () => {
+  it("acha as abas dos hubs pelo caminho novo e as abas da empresa ativa", () => {
+    const busca = montarBusca({
+      adminPlataforma: true,
+      telas: ["admin_codigos", "admin_ssw_diagnostico"],
+      empresa: { id: "e1", nome: "FR" },
+    });
+    expect(busca.map((d) => [d.rotulo, d.caminho, d.aba])).toEqual([
+      ["Configurações", "/admin/configuracoes", undefined],
+      ["Códigos de ocorrências", "/admin/configuracoes", "codigos"],
+      ["Configurações", "/plataforma/configuracoes", undefined],
+      ["Feriados gerais", "/plataforma/configuracoes", "feriados-gerais"],
+      ["Diagnóstico SSW", "/plataforma/empresas/e1", "diagnostico"],
+    ]);
   });
 });
 

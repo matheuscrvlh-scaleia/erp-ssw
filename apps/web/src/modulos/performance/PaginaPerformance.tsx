@@ -503,7 +503,7 @@ export function PaginaPerformance() {
           tom="alerta"
           acao={
             <Button asChild size="sm" variant="outline">
-              <a href="/admin/codigos">
+              <a href="/admin/configuracoes?aba=codigos">
                 Classificar agora <ArrowRight aria-hidden />
               </a>
             </Button>

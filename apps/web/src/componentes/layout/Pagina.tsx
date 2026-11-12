@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -25,21 +25,49 @@ interface PaginaProps {
 }
 
 /**
+ * Cabeçalho de uma tela com abas (hub): a página de cada aba continua sendo um `<Pagina>` inteiro,
+ * mas o título e as abas vêm do hub; a descrição, as ações e os filtros, da aba aberta.
+ */
+interface CabecalhoDoHub {
+  titulo: ReactNode;
+  abas: ReactNode;
+  /** Escolha dentro da aba (ex.: as três de Importações), numa faixa logo abaixo do cabeçalho. */
+  subAbas?: ReactNode;
+  acoes?: ReactNode;
+  meta?: ReactNode;
+}
+
+const ContextoDoHub = createContext<CabecalhoDoHub | null>(null);
+
+export function ProvedorDoHub({
+  cabecalho,
+  children,
+}: {
+  cabecalho: CabecalhoDoHub;
+  children: ReactNode;
+}) {
+  return <ContextoDoHub.Provider value={cabecalho}>{children}</ContextoDoHub.Provider>;
+}
+
+/**
  * Molde de toda tela logada (docs/design/guia.md §Página): cabeçalho com título, contexto e
  * ações; barra de filtros fixa logo abaixo; conteúdo com o mesmo espaçamento em todas as telas.
  */
-export function Pagina({
-  titulo,
-  descricao,
-  meta,
-  acoes,
-  filtros,
-  abas,
-  largura = "normal",
-  className,
-  children,
-}: PaginaProps) {
-  const limite = largura === "estreita" ? "max-w-[960px]" : "max-w-[1600px]";
+export function Pagina({ largura = "normal", className, children, ...props }: PaginaProps) {
+  const hub = useContext(ContextoDoHub);
+  // No hub o cabeçalho não muda de largura ao trocar de aba; a aba estreita estreita só o conteúdo.
+  const limite = largura === "estreita" && !hub ? "max-w-[960px]" : "max-w-[1600px]";
+  const { titulo, descricao, meta, acoes, filtros, abas } = hub
+    ? {
+        ...props,
+        titulo: hub.titulo,
+        abas: hub.abas,
+        acoes: juntar(hub.acoes, props.acoes),
+        meta: juntar(hub.meta, props.meta),
+      }
+    : props;
+  // As abas da própria página, dentro de um hub, descem para a faixa (o cabeçalho tem as do hub).
+  const faixa = hub && juntar(hub.subAbas, props.abas);
   return (
     <>
       <header className="border-b border-border bg-card">
@@ -70,6 +98,18 @@ export function Pagina({
           {abas && <div className="-mb-px w-full pt-1">{abas}</div>}
         </div>
       </header>
+      {faixa && (
+        <div className="border-b border-border bg-card">
+          <div
+            className={cn(
+              "mx-auto flex w-full flex-wrap items-end gap-3 px-4 py-3 md:px-8",
+              limite,
+            )}
+          >
+            {faixa}
+          </div>
+        </div>
+      )}
       {filtros && (
         <div className="z-20 border-b border-border bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75 md:sticky md:top-0">
           <div className={cn("mx-auto w-full space-y-2 px-4 py-3 md:px-8", limite)}>{filtros}</div>
@@ -82,8 +122,23 @@ export function Pagina({
           className,
         )}
       >
-        {children}
+        {hub && largura === "estreita" ? (
+          <div className="max-w-[912px] space-y-5 md:space-y-6">{children}</div>
+        ) : (
+          children
+        )}
       </div>
+    </>
+  );
+}
+
+function juntar(a: ReactNode, b: ReactNode): ReactNode {
+  if (!a) return b;
+  if (!b) return a;
+  return (
+    <>
+      {a}
+      {b}
     </>
   );
 }
