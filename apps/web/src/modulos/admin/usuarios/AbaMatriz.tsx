@@ -97,8 +97,13 @@ export function MatrizDeCargos({
             <tr>
               <th className={CLASSE_TH}>{textos.coluna}</th>
               {cargos.map((c) => (
-                <th key={c.chave} className={`${CLASSE_TH} text-center`}>
-                  {c.rotulo}
+                <th key={c.chave} className={`${CLASSE_TH} w-36 text-center`}>
+                  <span className="block">{c.rotulo}</span>
+                  {c.temTudo && (
+                    <span className="mt-0.5 block text-[11px] font-normal normal-case tracking-normal text-muted-foreground">
+                      acesso total
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>
@@ -117,25 +122,27 @@ export function MatrizDeCargos({
                     {colunas.map(({ cargo, conjunto }) => {
                       const semTela = !cargo.temTudo && faltaATela(conjunto, linha);
                       return (
-                        <td key={cargo.chave} className={`${CLASSE_TD} text-center`}>
-                          <Checkbox
-                            aria-label={`${cargo.rotulo}: ${linha.rotulo}`}
-                            title={
-                              cargo.temTudo
-                                ? "Este cargo tem tudo"
-                                : semTela
-                                  ? "Libere a tela na Matriz de acessos"
-                                  : undefined
-                            }
-                            checked={
-                              cargo.temTudo ||
-                              (!semTela && temAcao(conjunto, linha.tela, linha.acao))
-                            }
-                            disabled={cargo.temTudo || semTela || !podeEditar || alterar.gravando}
-                            onCheckedChange={(v) => {
-                              alternar(cargo, conjunto, linha, v === true);
-                            }}
-                          />
+                        <td key={cargo.chave} className={`${CLASSE_TD} w-36`}>
+                          <div className="flex justify-center">
+                            <Checkbox
+                              aria-label={`${cargo.rotulo}: ${linha.rotulo}`}
+                              title={
+                                cargo.temTudo
+                                  ? "Este cargo tem tudo"
+                                  : semTela
+                                    ? "Libere a tela na Matriz de acessos"
+                                    : undefined
+                              }
+                              checked={
+                                cargo.temTudo ||
+                                (!semTela && temAcao(conjunto, linha.tela, linha.acao))
+                              }
+                              disabled={cargo.temTudo || semTela || !podeEditar || alterar.gravando}
+                              onCheckedChange={(v) => {
+                                alternar(cargo, conjunto, linha, v === true);
+                              }}
+                            />
+                          </div>
                         </td>
                       );
                     })}
