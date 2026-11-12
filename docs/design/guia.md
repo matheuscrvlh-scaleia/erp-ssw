@@ -14,7 +14,7 @@ permissões. Nada é removido; tudo é reorganizado para ficar mais fácil de us
   para qualquer cor. Variáveis cruas: `--marca`, `--marca-fg`, `--marca-texto`, `--marca-clara`,
   `--lateral`, `--lateral-destaque`. **As telas não usam essas cruas**, usam os tokens abaixo.
 - Tema claro/escuro: chave no rodapé da barra lateral e na busca rápida (`src/lib/tema.ts`,
-  classe `.dark` no `<html>`; sem escolha, segue o sistema).
+  classe `.dark` no `<html>`; sempre começa no claro, a troca vale enquanto a aba estiver aberta).
 - **Proibido nas telas:** hex solto (`#212a63`, `text-[#...]`), cores da paleta do Tailwind
   (`amber-*`, `emerald-*`, `red-*`, `slate-*`, `gray-*`, `blue-*`, `white`/`black` para fundo ou
   texto). Exceção: exportação/impressão (`lib/exportacao`, `relatorio-impressao.ts`), que gera

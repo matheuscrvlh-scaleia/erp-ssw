@@ -1,24 +1,20 @@
 import { useSyncExternalStore } from "react";
 
-/** Tema do painel. Escolha por navegador (conveniência); sem escolha, segue o sistema. */
+/**
+ * Tema do painel. O sistema sempre começa no claro; a troca para o escuro vale enquanto a aba
+ * estiver aberta (sessionStorage), então sobrevive a recarregar a página mas não a reabrir.
+ */
 export type Tema = "claro" | "escuro";
 
 const CHAVE = "painel:tema";
 const ouvintes = new Set<() => void>();
 
-function lerEscolha(): Tema | null {
+function temaDaSessao(): Tema {
   try {
-    const valor = window.localStorage.getItem(CHAVE);
-    return valor === "claro" || valor === "escuro" ? valor : null;
+    return window.sessionStorage.getItem(CHAVE) === "escuro" ? "escuro" : "claro";
   } catch {
-    return null;
+    return "claro";
   }
-}
-
-function temaAtual(): Tema {
-  const escolha = lerEscolha();
-  if (escolha) return escolha;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";
 }
 
 function aplicar(tema: Tema): void {
@@ -27,17 +23,12 @@ function aplicar(tema: Tema): void {
 
 /** Chamado no main.tsx antes de montar a tela (sem piscar o tema errado). */
 export function aplicarTemaSalvo(): void {
-  aplicar(temaAtual());
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (lerEscolha()) return;
-    aplicar(temaAtual());
-    for (const avisar of ouvintes) avisar();
-  });
+  aplicar(temaDaSessao());
 }
 
 export function definirTema(tema: Tema): void {
   try {
-    window.localStorage.setItem(CHAVE, tema);
+    window.sessionStorage.setItem(CHAVE, tema);
   } catch {
     // sem storage: vale só até recarregar
   }

@@ -6,7 +6,7 @@ import { IlustracaoLogistica } from "./IlustracaoLogistica";
 
 /**
  * Moldura das telas fora do painel (login, nova senha, convite), no desenho de
- * mockups/login.png: cartão largo com a ilustração à esquerda e o formulário à direita. A cor é a
+ * mockups/login.png, em tela cheia: ilustração à esquerda e o formulário à direita. A cor é a
  * da última empresa usada neste navegador (antes do login não se sabe a empresa).
  */
 export function CartaoDeEntrada({
@@ -26,15 +26,15 @@ export function CartaoDeEntrada({
   useEffect(() => aplicarPaleta(ultimaCorDaMarca()), []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary p-0 sm:p-6 lg:p-10">
-      <div className="grid min-h-screen w-full max-w-[1120px] overflow-hidden bg-card shadow-flutuante sm:min-h-[620px] sm:rounded-2xl lg:grid-cols-[1.35fr_1fr]">
-        <div
-          aria-hidden
-          className="relative hidden items-center justify-center overflow-hidden bg-gradient-to-br from-superficie to-muted p-8 lg:flex"
-        >
-          <IlustracaoLogistica className="h-auto w-full max-w-[640px]" />
-        </div>
-        <div className="flex flex-col bg-card/80 px-6 py-10 backdrop-blur sm:px-12 lg:border-l lg:border-border">
+    <div className="grid min-h-screen w-full bg-card lg:grid-cols-[1.35fr_1fr]">
+      <div
+        aria-hidden
+        className="relative hidden items-center justify-center overflow-hidden bg-gradient-to-br from-superficie to-muted p-10 lg:flex"
+      >
+        <IlustracaoLogistica className="h-auto w-full max-w-[760px]" />
+      </div>
+      <div className="flex justify-center px-6 py-10 sm:px-12 lg:border-l lg:border-border">
+        <div className="flex w-full max-w-[440px] flex-col">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-[12px] font-bold text-primary-foreground">
               BI
