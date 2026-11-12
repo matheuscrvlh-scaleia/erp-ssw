@@ -19,24 +19,14 @@ import {
   rankingDoPrazo,
   totaisDoPrazo,
 } from "@erp/dominio/prazo-parceiro/prazo-parceiro";
-import { type EntradaDe, type SaidaDe } from "@erp/shared/contrato";
 import {
-  type contratosPrazoParceiro,
   type FiltroDaLista,
   type FiltrosPrazo,
   LIMITE_EXPORTACAO_PRAZO,
   LIMITE_NASCIDOS_DETALHE,
-  type LinhaPrazo,
 } from "@erp/shared/contratos/prazo-parceiro";
 
 import { type Executor } from "../repositorios";
-
-type Saida<K extends keyof typeof contratosPrazoParceiro> = SaidaDe<
-  (typeof contratosPrazoParceiro)[K]
->;
-type Entrada<K extends keyof typeof contratosPrazoParceiro> = EntradaDe<
-  (typeof contratosPrazoParceiro)[K]
->;
 
 // ---------------------------------------------------------------------------------------------
 // Porta do repositório
@@ -118,7 +108,12 @@ function consultaDe(
 }
 
 /** Meta e alerta do SLA da empresa, em fração (configuração em %; padrão 95/90). */
-async function slaDa(repo: RepositorioPrazoParceiro) {
+interface Sla {
+  meta: number;
+  alerta: number;
+}
+
+async function slaDa(repo: RepositorioPrazoParceiro): Promise<Sla> {
   const config = await repo.configuracoes(["sla_meta_pct", "sla_alerta_amarelo_pct"]);
   const fracao = (chave: string, padrao: number) => {
     const n = Number(config.get(chave));
@@ -133,7 +128,7 @@ const TOTAIS_VAZIOS = totaisDoPrazo([]);
 // Casos de uso
 
 /** Cards, comparação com o período anterior e ranking. origem: calcular_prazo_parceiro */
-export async function obterVisaoGeral(db: Db, f: FiltrosPrazo): Promise<Saida<"visaoGeral">> {
+export async function obterVisaoGeral(db: Db, f: FiltrosPrazo) {
   return db(async ({ prazoParceiro: repo }) => {
     const [proprias, cadastros, sla] = await Promise.all([
       repo.filiaisProprias(),
@@ -161,8 +156,15 @@ export async function obterVisaoGeral(db: Db, f: FiltrosPrazo): Promise<Saida<"v
   });
 }
 
-/** Opções dos filtros: unidades e parceiros ativos, por nome; tipos de documento do período. */
-export async function obterOpcoes(db: Db, periodo: Entrada<"opcoes">): Promise<Saida<"opcoes">> {
+export interface OpcoesDoPrazo {
+  tipos: string[];
+  unidades: { id: string; nome: string }[];
+  /** Só os ativos. */
+  parceiros: CadastroDeParceiro[];
+}
+
+/** Opções dos filtros: unidades e parceiros ativos; tipos de documento do período. */
+export async function obterOpcoes(db: Db, periodo: Periodo): Promise<OpcoesDoPrazo> {
   return db(async ({ prazoParceiro: repo }) => {
     const consulta = consultaDe(periodo, await repo.filiaisProprias());
     const [unidades, parceiros, tipos] = await Promise.all([
@@ -170,35 +172,31 @@ export async function obterOpcoes(db: Db, periodo: Entrada<"opcoes">): Promise<S
       repo.parceiros(),
       consulta ? repo.tiposDeDocumento(consulta) : Promise.resolve([]),
     ]);
-    return {
-      tipos,
-      unidades,
-      parceiros: parceiros
-        .filter((p) => p.ativo)
-        .map(({ id, nome }) => ({ id, nome }))
-        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
-    };
+    return { tipos, unidades, parceiros: parceiros.filter((p) => p.ativo) };
   });
 }
 
-function linhaDaLista(c: FatoDoPrazo): LinhaPrazo {
-  return {
-    id: c.id,
-    sigla: c.sigla,
-    numero: c.numero,
-    parceiroNome: c.parceiroNome,
-    dataEmissao: c.dataEmissao,
-    dataEmbarque: c.dataEmbarque,
-    dataPrevista: c.dataPrevista,
-    prazoPadraoData: c.prazoPadraoData,
-    diasAbaixoDoPadrao: diasAbaixoDoPadrao(c),
-    nasceuAtrasado: nasceuAtrasado(c),
-    prazoOrigem: c.prazoOrigem,
-    statusAtual: c.statusAtual,
-    setor: c.setor,
-    unidadeNome: c.unidadeNome,
-  };
+/** CT-e com a comparação do prazo dele com o padrão. */
+export interface CteDoPrazo extends FatoDoPrazo {
+  diasAbaixoDoPadrao: number | null;
+  nasceuAtrasado: boolean;
 }
+
+export interface ListaDoPrazo {
+  linhas: CteDoPrazo[];
+  total: number;
+}
+
+export interface ExportacaoDoPrazo {
+  linhas: CteDoPrazo[];
+  truncada: boolean;
+}
+
+const comPrazo = (c: FatoDoPrazo): CteDoPrazo => ({
+  ...c,
+  diasAbaixoDoPadrao: diasAbaixoDoPadrao(c),
+  nasceuAtrasado: nasceuAtrasado(c),
+});
 
 /**
  * Lista do rodapé: mesmo universo dos cards (Q13), filtrada, ordenada e paginada no banco (Q04).
@@ -207,7 +205,7 @@ function linhaDaLista(c: FatoDoPrazo): LinhaPrazo {
 export async function obterLista(
   db: Db,
   e: { filtros: FiltrosPrazo; filtro: FiltroDaLista; pagina: number; tamanho: number },
-): Promise<Saida<"lista">> {
+): Promise<ListaDoPrazo> {
   return db(async ({ prazoParceiro: repo }) => {
     const consulta = consultaDe(e.filtros, await repo.filiaisProprias());
     if (!consulta) return { linhas: [], total: 0 };
@@ -215,7 +213,7 @@ export async function obterLista(
       repo.lista(consulta, e.filtro, { inicio: (e.pagina - 1) * e.tamanho, quantos: e.tamanho }),
       repo.contarLista(consulta, e.filtro),
     ]);
-    return { linhas: linhas.map(linhaDaLista), total };
+    return { linhas: linhas.map(comPrazo), total };
   });
 }
 
@@ -223,7 +221,7 @@ export async function obterLista(
 export async function exportarLista(
   db: Db,
   e: { filtros: FiltrosPrazo; filtro: FiltroDaLista },
-): Promise<Saida<"exportar">> {
+): Promise<ExportacaoDoPrazo> {
   return db(async ({ prazoParceiro: repo }) => {
     const consulta = consultaDe(e.filtros, await repo.filiaisProprias());
     if (!consulta) return { linhas: [], truncada: false };
@@ -232,7 +230,7 @@ export async function exportarLista(
       quantos: LIMITE_EXPORTACAO_PRAZO + 1,
     });
     return {
-      linhas: linhas.slice(0, LIMITE_EXPORTACAO_PRAZO).map(linhaDaLista),
+      linhas: linhas.slice(0, LIMITE_EXPORTACAO_PRAZO).map(comPrazo),
       truncada: linhas.length > LIMITE_EXPORTACAO_PRAZO,
     };
   });
@@ -260,7 +258,20 @@ function alvoDoDetalhe(id: string, cadastros: readonly CadastroDeParceiro[]) {
  * Detalhe do parceiro: os CT-e da linha do ranking (Q08), resumo, histograma e nascidos em
  * atraso (emissão mais recente primeiro, até 500). origem: calcular_prazo_parceiro_detalhe
  */
-export async function obterDetalhe(db: Db, id: string, f: FiltrosPrazo): Promise<Saida<"detalhe">> {
+export interface DetalheDoParceiro {
+  parceiro: { nome: string; prazoAcordoHoras: number | null };
+  resumo: ReturnType<typeof totaisDoPrazo>;
+  histograma: ReturnType<typeof histogramaDeAtraso>;
+  /** Nascidos em atraso, emissão mais recente primeiro. */
+  nascidos: CteDoPrazo[];
+  sla: Sla;
+}
+
+export async function obterDetalhe(
+  db: Db,
+  id: string,
+  f: FiltrosPrazo,
+): Promise<DetalheDoParceiro> {
   return db(async ({ prazoParceiro: repo }) => {
     const [proprias, cadastros, sla] = await Promise.all([
       repo.filiaisProprias(),
@@ -285,21 +296,7 @@ export async function obterDetalhe(db: Db, id: string, f: FiltrosPrazo): Promise
       },
       resumo: totaisDoPrazo(itens),
       histograma: histogramaDeAtraso(itens),
-      nascidos: nascidos.map((c) => ({
-        id: c.id,
-        sigla: c.sigla,
-        numero: c.numero,
-        dataEmbarque: c.dataEmbarque,
-        dataEmissao: c.dataEmissao,
-        dataPrevista: c.dataPrevista,
-        prazoPadraoData: c.prazoPadraoData,
-        diasAbaixoDoPadrao: diasAbaixoDoPadrao(c),
-        statusAtual: c.statusAtual,
-        setor: c.setor,
-        unidadeNome: c.unidadeNome,
-        cidadeDestino: c.cidadeDestino,
-        ufDestino: c.ufDestino,
-      })),
+      nascidos: nascidos.map(comPrazo),
       sla,
     };
   });
