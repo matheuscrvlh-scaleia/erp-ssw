@@ -1,8 +1,5 @@
--- DDL complementar do schema de domínio: o que o Drizzle não expressa.
---
--- Entra como migration customizada (`drizzle-kit generate --custom --name dominio_complementar`)
--- logo depois da migration gerada do domínio. Só índice e parâmetro de armazenamento: nenhuma
--- função, gatilho, view ou extensão.
+-- DDL complementar do schema de domínio, logo depois da migration do domínio. Só índice e
+-- parâmetro de armazenamento: nenhuma função, gatilho, view ou extensão.
 
 -- 1. Armazenamento das tabelas quentes (o sistema atual usa os mesmos valores).
 --    fillfactor 85: os UPDATEs frequentes de `ctes` (ingestão a cada 30 min) cabem na mesma página
@@ -13,17 +10,17 @@ ALTER TABLE erp.ctes SET (
   autovacuum_vacuum_scale_factor = 0.02,
   autovacuum_analyze_scale_factor = 0.02,
   autovacuum_vacuum_cost_delay = 0
-);--> statement-breakpoint
+);
 ALTER TABLE erp.ocorrencias SET (
   fillfactor = 85,
   autovacuum_vacuum_scale_factor = 0.02,
   autovacuum_analyze_scale_factor = 0.02,
   autovacuum_vacuum_cost_delay = 0
-);--> statement-breakpoint
+);
 ALTER TABLE erp.ingestao_linhas SET (
   autovacuum_vacuum_scale_factor = 0.05,
   autovacuum_analyze_scale_factor = 0.05
-);--> statement-breakpoint
+);
 
 -- 2. Índices de cobertura das agregações pesadas.
 
@@ -39,7 +36,7 @@ CREATE INDEX ctes_universo_emissao_cobre_idx
     no_prazo, responsabilidade_cliente, atraso_dias, tipo_documento, tipo_documento_455,
     valor_frete, peso, volumes
   )
-  WHERE NOT fora_universo;--> statement-breakpoint
+  WHERE NOT fora_universo;
 
 -- Painel de Ocorrências por período da ocorrência: contagens por código, penalizantes e
 -- responsável sem ir à tabela de 1,5 mi de linhas.

@@ -9,9 +9,8 @@ configurações, auditoria) são da fundação e não estão aqui.
 Arquivos de apoio:
 
 - `de-para.md`: mapa `public.<tabela>.<coluna>` → `erp.<tabela>.<coluna>` para o migrador.
-- `ddl-dominio-previa.sql`: prévia do DDL do schema de domínio, feita para revisão (histórica; o
-  DDL que vale está em `apps/api/migracoes/`).
-- `ddl-complementar.sql`: índices com INCLUDE e `fillfactor`, que a prévia não trazia.
+- O DDL que vale está em `apps/api/migracoes/`; os índices com INCLUDE e o `fillfactor`, em
+  `0001_dominio_complementar.sql`.
 
 ## Princípios
 
@@ -223,7 +222,7 @@ Dado de negócio (`ctes`, `ocorrencias`, projeções, cadastros) não tem reten�
 
 Todos começam por `empresa_id` (RLS + multiempresa; a empresa é sempre o primeiro filtro).
 
-- **`ctes_universo_emissao_cobre_idx`** (`ddl-complementar.sql`): `(empresa_id, data_emissao,
+- **`ctes_universo_emissao_cobre_idx`** (`0001_dominio_complementar.sql`): `(empresa_id, data_emissao,
 filial_efetiva) INCLUDE (...) WHERE NOT fora_universo`. É a consulta-base de Performance,
   Listagem, Ocorrências, Ranking e Romaneio: período de emissão dentro do universo. A filial
   efetiva na chave resolve o "filial própria" no índice; o INCLUDE cobre as colunas das
@@ -242,7 +241,7 @@ filial_efetiva) INCLUDE (...) WHERE NOT fora_universo`. É a consulta-base de Pe
   **`ctes_numero_idx`**: busca pelo número sem sigla (caixa de busca e URL `/ctrc/<numero>`).
 - **`ocorrencias_cte_codigo_data_uq`**: dedupe do evento e acesso "ocorrências do CT-e" /
   "CT-e tem código X" (substitui 6 índices parciais por código do sistema atual).
-- **`ocorrencias_data_cobre_idx`** (`ddl-complementar.sql`) e **`ocorrencias_codigo_data_idx`**:
+- **`ocorrencias_data_cobre_idx`** (`0001_dominio_complementar.sql`) e **`ocorrencias_codigo_data_idx`**:
   painel de Ocorrências por período da ocorrência, com e sem código.
 - Projeções: `(empresa_id, data_saida)` e `(empresa_id, placa|motorista_normalizado, data_saida)`
   em `romaneio_viagens_cte` (período e filtros do Romaneio).

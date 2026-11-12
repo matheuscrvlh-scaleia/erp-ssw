@@ -214,6 +214,6 @@ plano_usuario AS (
   RETURNING 1
 )
 INSERT INTO "erp"."usuario_permissoes" ("empresa_id", "usuario_id", "tela_chave", "acao", "efeito")
-SELECT empresa_id, usuario_id, tela_chave, acao, efeito FROM plano_usuario;--> statement-breakpoint
+SELECT empresa_id, usuario_id, tela_chave, acao, efeito FROM plano_usuario;
 -- Departamentos saiu do catálogo de telas (o vínculo com o módulo Essencial sai junto).
 DELETE FROM "erp"."telas" WHERE "chave" = 'admin_departamentos';

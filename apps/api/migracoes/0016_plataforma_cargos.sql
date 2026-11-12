@@ -7,7 +7,7 @@ CREATE TABLE "erp"."plataforma_cargo_permissoes" (
 	CONSTRAINT "plataforma_cargo_permissoes_cargo_chave_tela_chave_acao_pk" PRIMARY KEY("cargo_chave","tela_chave","acao"),
 	CONSTRAINT "plataforma_cargo_permissoes_acao_valida" CHECK ("erp"."plataforma_cargo_permissoes"."acao" in ('ver', 'editar', 'excluir'))
 );
---> statement-breakpoint
+
 CREATE TABLE "erp"."plataforma_cargos" (
 	"chave" text PRIMARY KEY NOT NULL,
 	"rotulo" text NOT NULL,
@@ -15,10 +15,10 @@ CREATE TABLE "erp"."plataforma_cargos" (
 	"criado_em" timestamp with time zone DEFAULT now() NOT NULL,
 	"atualizado_em" timestamp with time zone DEFAULT now() NOT NULL
 );
---> statement-breakpoint
-INSERT INTO "erp"."plataforma_cargos" ("chave", "rotulo", "protegido") VALUES ('super_admin', 'Super Admin', true);--> statement-breakpoint
-ALTER TABLE "erp"."plataforma_admins" ADD COLUMN "cargo" text DEFAULT 'super_admin' NOT NULL;--> statement-breakpoint
-ALTER TABLE "erp"."plataforma_cargo_permissoes" ADD CONSTRAINT "plataforma_cargo_permissoes_cargo_chave_plataforma_cargos_chave_fk" FOREIGN KEY ("cargo_chave") REFERENCES "erp"."plataforma_cargos"("chave") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-ALTER TABLE "erp"."plataforma_cargo_permissoes" ADD CONSTRAINT "plataforma_cargo_permissoes_tela_chave_telas_chave_fk" FOREIGN KEY ("tela_chave") REFERENCES "erp"."telas"("chave") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "erp"."plataforma_admins" ADD CONSTRAINT "plataforma_admins_cargo_plataforma_cargos_chave_fk" FOREIGN KEY ("cargo") REFERENCES "erp"."plataforma_cargos"("chave") ON DELETE no action ON UPDATE cascade;--> statement-breakpoint
+
+INSERT INTO "erp"."plataforma_cargos" ("chave", "rotulo", "protegido") VALUES ('super_admin', 'Super Admin', true);
+ALTER TABLE "erp"."plataforma_admins" ADD COLUMN "cargo" text DEFAULT 'super_admin' NOT NULL;
+ALTER TABLE "erp"."plataforma_cargo_permissoes" ADD CONSTRAINT "plataforma_cargo_permissoes_cargo_chave_plataforma_cargos_chave_fk" FOREIGN KEY ("cargo_chave") REFERENCES "erp"."plataforma_cargos"("chave") ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE "erp"."plataforma_cargo_permissoes" ADD CONSTRAINT "plataforma_cargo_permissoes_tela_chave_telas_chave_fk" FOREIGN KEY ("tela_chave") REFERENCES "erp"."telas"("chave") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "erp"."plataforma_admins" ADD CONSTRAINT "plataforma_admins_cargo_plataforma_cargos_chave_fk" FOREIGN KEY ("cargo") REFERENCES "erp"."plataforma_cargos"("chave") ON DELETE no action ON UPDATE cascade;
 CREATE INDEX "plataforma_admins_cargo_idx" ON "erp"."plataforma_admins" USING btree ("cargo");

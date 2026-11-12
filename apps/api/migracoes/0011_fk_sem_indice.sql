@@ -1,2 +1,2 @@
-CREATE INDEX "ingestao_linhas_arquivo_idx" ON "erp"."ingestao_linhas" USING btree ("arquivo_id") WHERE "erp"."ingestao_linhas"."arquivo_id" is not null;--> statement-breakpoint
+CREATE INDEX "ingestao_linhas_arquivo_idx" ON "erp"."ingestao_linhas" USING btree ("arquivo_id") WHERE "erp"."ingestao_linhas"."arquivo_id" is not null;
 CREATE INDEX "ssw_webhook_eventos_cte_idx" ON "erp"."ssw_webhook_eventos" USING btree ("cte_id") WHERE "erp"."ssw_webhook_eventos"."cte_id" is not null;
