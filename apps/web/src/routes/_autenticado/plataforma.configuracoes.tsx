@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { HUB_CONFIGURACOES_DA_PLATAFORMA } from "@/acesso/navegacao";
 import { buscaDoHub, HubDeAbas, useAbasDoHub } from "@/componentes/layout/HubDeAbas";
 import { PaginaFeriadosGerais } from "@/modulos/calendario/PaginaFeriadosGerais";
-import { PaginaIntegracoesDaPlataforma } from "@/modulos/plataforma/IntegracoesDaPlataforma";
+import { PaginaIntegracoesDaPlataforma } from "@/modulos/plataforma/PaginaIntegracoesDaPlataforma";
 
 /** Plataforma › Configurações: integrações gerais e feriados que valem para todas as empresas. */
 export const Route = createFileRoute("/_autenticado/plataforma/configuracoes")({

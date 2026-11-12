@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { problemaDoLogo } from "./AbaDados";
-import { parametrosEditados } from "./AbasDaEmpresa";
-import { slugDoNome } from "./PaginaEmpresas";
+import { parametrosEditados, problemaDoLogo, slugDoNome } from "./regras";
 
 describe("Plataforma › empresas", () => {
   it("slug sugerido pelo nome", () => {

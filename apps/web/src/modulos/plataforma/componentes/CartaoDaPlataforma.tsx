@@ -1,23 +1,23 @@
-import {
-  contratosPlataforma as p,
-  type IntegracaoDaPlataforma,
-} from "@erp/shared/contratos/plataforma";
+import { type IntegracaoDaPlataforma } from "@erp/shared/contratos/plataforma";
 import { INFO_DA_INTEGRACAO_PLATAFORMA } from "@erp/shared/plataforma";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Globe, type LucideIcon, Mail, Send, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { CAMPO } from "@/componentes/comum/CamposDeFormulario";
-import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
-import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
-import { Skeleton } from "@/componentes/ui/skeleton";
 import { useGravacao } from "@/hooks/use-gravacao";
-import { chamar } from "@/lib/api";
 
-import { CampoDeSegredo, CampoDoParametro, parametrosEditados, paraTexto } from "./AbasDaEmpresa";
-import { CHAVES_DA_PLATAFORMA, consultaIntegracoesDaPlataforma } from "./api";
+import {
+  mutacaoDefinirSegredoDaPlataforma,
+  mutacaoSalvarIntegracaoDaPlataforma,
+  mutacaoTestarEmailDaPlataforma,
+} from "../api";
+import { parametrosEditados } from "../regras";
+import { paraTexto } from "../textos";
+import { CampoDeSegredo } from "./CampoDeSegredo";
+import { CampoDoParametro } from "./CampoDoParametro";
 
 const ICONE_DA_INTEGRACAO: Record<IntegracaoDaPlataforma["tipo"], LucideIcon> = {
   dominio: Globe,
@@ -25,38 +25,8 @@ const ICONE_DA_INTEGRACAO: Record<IntegracaoDaPlataforma["tipo"], LucideIcon> = 
   worker_ssw: Server,
 };
 
-/**
- * Plataforma › Configurações › Integrações: domínio, e-mail (Resend) e worker-ssw, iguais para
- * todas as empresas.
- */
-export function PaginaIntegracoesDaPlataforma() {
-  const consulta = useQuery(consultaIntegracoesDaPlataforma);
-  return (
-    <Pagina
-      titulo="Integrações"
-      descricao="Configurações da Plataforma que valem para todas as empresas. Senhas e chaves ficam cifradas; salvar vale em segundos, sem reiniciar o sistema."
-    >
-      {consulta.isLoading && (
-        <div role="status" aria-label="Carregando…" className="grid gap-4 lg:grid-cols-2">
-          <Skeleton className="h-56 rounded-2xl bg-muted" />
-          <Skeleton className="h-56 rounded-2xl bg-muted" />
-        </div>
-      )}
-      {consulta.error && (
-        <Painel>
-          <MensagemErro erro={consulta.error} aoTentarDeNovo={() => void consulta.refetch()} />
-        </Painel>
-      )}
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        {consulta.data?.integracoes.map((i) => (
-          <CartaoDaPlataforma key={i.tipo} integracao={i} />
-        ))}
-      </div>
-    </Pagina>
-  );
-}
-
-function CartaoDaPlataforma({ integracao }: { integracao: IntegracaoDaPlataforma }) {
+/** Uma integração da Plataforma: parâmetros, segredo e, no e-mail, o envio de teste. */
+export function CartaoDaPlataforma({ integracao }: { integracao: IntegracaoDaPlataforma }) {
   const info = INFO_DA_INTEGRACAO_PLATAFORMA[integracao.tipo];
   const [valores, setValores] = useState<Record<string, string>>({});
   const [paraTeste, setParaTeste] = useState("");
@@ -68,29 +38,18 @@ function CartaoDaPlataforma({ integracao }: { integracao: IntegracaoDaPlataforma
     );
   }, [integracao, info]);
 
-  const invalidar = [CHAVES_DA_PLATAFORMA.integracoes];
+  const cliente = useQueryClient();
   const salvar = useGravacao({
-    executar: () =>
-      chamar(p.salvarIntegracaoDaPlataforma, {
-        parametros: { tipo: integracao.tipo },
-        entrada: { parametros: parametrosEditados(integracao.parametros, info.campos, valores) },
-      }),
+    mutacao: mutacaoSalvarIntegracaoDaPlataforma(cliente, integracao.tipo),
     sucesso: `${info.nome} salvo`,
-    invalidar,
   });
   const gravarSegredo = useGravacao({
-    executar: (valor: string) =>
-      chamar(p.definirSegredoDaPlataforma, {
-        parametros: { tipo: integracao.tipo },
-        entrada: { segredo: valor },
-      }),
+    mutacao: mutacaoDefinirSegredoDaPlataforma(cliente, integracao.tipo),
     sucesso: (valor) => `${info.segredo ?? "Segredo"} ${valor ? "atualizado" : "removido"}`,
-    invalidar,
   });
   const testar = useGravacao({
-    executar: (para: string) => chamar(p.testarEmailDaPlataforma, { entrada: { para } }),
+    mutacao: mutacaoTestarEmailDaPlataforma(),
     sucesso: (para) => `E-mail de teste enviado para ${para}`,
-    invalidar: [],
   });
 
   return (
@@ -104,7 +63,9 @@ function CartaoDaPlataforma({ integracao }: { integracao: IntegracaoDaPlataforma
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          void salvar.gravar(undefined);
+          void salvar.gravar({
+            parametros: parametrosEditados(integracao.parametros, info.campos, valores),
+          });
         }}
       >
         {info.campos.map((c) => (

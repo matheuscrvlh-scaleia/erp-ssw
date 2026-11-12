@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   ABAS_DA_PLATAFORMA,
   PaginaUsuariosDaPlataforma,
-} from "@/modulos/plataforma/UsuariosDaPlataforma";
+} from "@/modulos/admin/PaginaUsuariosDaPlataforma";
 
 const busca = z.object({ aba: z.enum(ABAS_DA_PLATAFORMA).optional().catch(undefined) });
 
