@@ -1,19 +1,26 @@
 import { type Acesso } from "@erp/shared/contratos/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronsUpDown,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+} from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { type ItemDoMenu, montarMenu } from "@/acesso/navegacao";
 import { trocarEmpresa } from "@/acesso/sessao";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/componentes/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/componentes/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -92,15 +99,7 @@ export function BarraLateral({
     <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="gap-3 px-3 pt-4 pb-2">
         <div className="flex items-center gap-2.5">
-          <Logo acesso={acesso} />
-          {!recolhida && (
-            <span className="flex min-w-0 flex-1 flex-col leading-tight">
-              <span className="truncate text-[15px] font-bold text-white">
-                {acesso.empresa?.nome ?? "Painel BI"}
-              </span>
-              <span className="truncate text-[11px] text-muted-foreground">Painel Logístico</span>
-            </span>
-          )}
+          <TituloDaEmpresa acesso={acesso} recolhida={recolhida} />
           {!isMobile && !recolhida && (
             <button
               type="button"
@@ -136,7 +135,6 @@ export function BarraLateral({
                 {ATALHO}
               </kbd>
             </button>
-            <SeletorDeEmpresa acesso={acesso} />
           </>
         )}
       </SidebarHeader>
@@ -301,12 +299,32 @@ function SecaoRecolhivel({
   );
 }
 
-/** Seletor de empresa: só para a Plataforma ou para quem tem mais de uma empresa. */
-function SeletorDeEmpresa({ acesso }: { acesso: Acesso }) {
+/**
+ * Logo e nome da empresa ativa no topo da barra. Para quem pode trocar (equipe da Plataforma ou
+ * quem tem mais de uma empresa) o título abre a lista de empresas, como no Copiloto RH.
+ */
+function TituloDaEmpresa({ acesso, recolhida }: { acesso: Acesso; recolhida: boolean }) {
   const queryClient = useQueryClient();
   const [trocando, setTrocando] = useState(false);
+  const podeTrocar = acesso.adminPlataforma || acesso.empresas.length > 1;
+  const nome = acesso.empresa?.nome ?? "Painel BI";
 
-  if (!acesso.adminPlataforma && acesso.empresas.length <= 1) return null;
+  const titulo = (
+    <>
+      <Logo acesso={acesso} />
+      {!recolhida && (
+        <span className="flex min-w-0 flex-1 flex-col text-left leading-tight">
+          <span className="truncate text-[15px] font-bold text-white">{nome}</span>
+          <span className="truncate text-[11px] text-muted-foreground">Painel Logístico</span>
+        </span>
+      )}
+      {podeTrocar && !recolhida && (
+        <ChevronsUpDown className="h-4 w-4 shrink-0 text-sidebar-foreground" aria-hidden />
+      )}
+    </>
+  );
+
+  if (!podeTrocar) return <div className="flex min-w-0 flex-1 items-center gap-2.5">{titulo}</div>;
 
   const aoTrocar = async (empresaId: string) => {
     if (empresaId === acesso.empresa?.id) return;
@@ -320,24 +338,40 @@ function SeletorDeEmpresa({ acesso }: { acesso: Acesso }) {
   };
 
   return (
-    <Select
-      value={acesso.empresa?.id ?? ""}
-      onValueChange={(id) => void aoTrocar(id)}
-      disabled={trocando}
-    >
-      <SelectTrigger
-        className="h-9 border-sidebar-border bg-campo text-[13px] text-white"
-        aria-label="Empresa ativa"
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={trocando}
+        title={`${nome} — trocar de empresa`}
+        aria-label={`Empresa ativa: ${nome}. Trocar de empresa`}
+        className="-m-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1 transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:opacity-60"
       >
-        <SelectValue placeholder="Escolha a empresa" />
-      </SelectTrigger>
-      <SelectContent>
-        {acesso.empresas.map((e) => (
-          <SelectItem key={e.id} value={e.id} className="text-[13px]">
-            {e.nome}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        {titulo}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="rolagem-fina max-h-[60vh] w-64">
+        <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground">
+          Empresas
+        </DropdownMenuLabel>
+        {acesso.empresas.map((e) => {
+          const atual = e.id === acesso.empresa?.id;
+          return (
+            <DropdownMenuItem
+              key={e.id}
+              onSelect={() => void aoTrocar(e.id)}
+              className="gap-2 text-[13px]"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-[10px] font-bold text-muted-foreground">
+                {e.nome.slice(0, 2).toUpperCase()}
+              </span>
+              <span className={cn("min-w-0 flex-1 truncate", atual && "font-semibold")}>
+                {e.nome}
+              </span>
+              {atual && (
+                <Check className="h-4 w-4 shrink-0 text-primary" aria-label="Empresa ativa" />
+              )}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
