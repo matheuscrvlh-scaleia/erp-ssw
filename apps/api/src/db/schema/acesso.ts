@@ -1,8 +1,9 @@
-import { SETORES } from "@erp/shared/acesso/papeis";
+import { ACOES, EFEITOS } from "@erp/shared/acesso/permissoes";
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  check,
   foreignKey,
   index,
   primaryKey,
@@ -24,9 +25,9 @@ import { usuarios } from "./identidade";
 import { empresas, telas } from "./plataforma";
 
 /**
- * Cargos (papéis) por empresa: cada empresa edita os seus (decisão Q30 do dono). As chaves
- * `super_admin`, `admin` e `gestor` têm significado fixo no código; a empresa nova recebe os
- * cargos padrão quando é criada.
+ * Cargos por empresa = grupos de usuários com permissões (cada empresa edita os seus, Q30). As
+ * chaves `super_admin`, `admin` e `gestor` têm significado fixo no código; a empresa nova recebe
+ * os cargos padrão quando é criada. Departamento virou cargo.
  */
 export const cargos = erp.table(
   "cargos",
@@ -46,72 +47,8 @@ export const cargos = erp.table(
   ],
 );
 
-export const cargoTelas = erp.table(
-  "cargo_telas",
-  {
-    empresaId: uuid("empresa_id").notNull(),
-    cargoChave: text("cargo_chave").notNull(),
-    telaChave: text("tela_chave")
-      .notNull()
-      .references(() => telas.chave, { onDelete: "cascade" }),
-  },
-  (t) => [
-    primaryKey({ columns: [t.empresaId, t.cargoChave, t.telaChave] }),
-    foreignKey({
-      name: "cargo_telas_cargo_fk",
-      columns: [t.empresaId, t.cargoChave],
-      foreignColumns: [cargos.empresaId, cargos.chave],
-    })
-      .onDelete("cascade")
-      .onUpdate("cascade"),
-    ...politicasDeEmpresaComPlataforma("cargo_telas", t.empresaId),
-  ],
-);
-
-export const departamentos = erp.table(
-  "departamentos",
-  {
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresas.id, { onDelete: "cascade" }),
-    chave: text("chave").notNull(),
-    rotulo: text("rotulo").notNull(),
-    descricao: text("descricao"),
-    ativo: boolean("ativo").notNull().default(true),
-    protegido: boolean("protegido").notNull().default(false),
-    criadoEm: criadoEm(),
-    atualizadoEm: atualizadoEm(),
-  },
-  (t) => [
-    primaryKey({ columns: [t.empresaId, t.chave] }),
-    ...politicasDeEmpresaComPlataforma("departamentos", t.empresaId),
-  ],
-);
-
-export const departamentoTelas = erp.table(
-  "departamento_telas",
-  {
-    empresaId: uuid("empresa_id").notNull(),
-    departamentoChave: text("departamento_chave").notNull(),
-    telaChave: text("tela_chave")
-      .notNull()
-      .references(() => telas.chave, { onDelete: "cascade" }),
-  },
-  (t) => [
-    primaryKey({ columns: [t.empresaId, t.departamentoChave, t.telaChave] }),
-    foreignKey({
-      name: "departamento_telas_departamento_fk",
-      columns: [t.empresaId, t.departamentoChave],
-      foreignColumns: [departamentos.empresaId, departamentos.chave],
-    })
-      .onDelete("cascade")
-      .onUpdate("cascade"),
-    ...politicasDeEmpresaComPlataforma("departamento_telas", t.empresaId),
-  ],
-);
-
 /**
- * Vínculo usuário × empresa: papel, departamento, setor legado e unidade valem por empresa.
+ * Vínculo usuário × empresa: o cargo (`papel`) e a unidade valem por empresa.
  * `unidade_id` é o escopo de dados por unidade (Q26: uma regra só, desligada até existir a tela
  * que o grava; hoje todos veem tudo da própria empresa).
  */
@@ -125,8 +62,6 @@ export const empresaUsuarios = erp.table(
       .notNull()
       .references(() => usuarios.id, { onDelete: "cascade" }),
     papel: text("papel"),
-    departamentoChave: text("departamento_chave"),
-    setor: text("setor", { enum: SETORES }),
     unidadeId: uuid("unidade_id").references((): AnyPgColumn => unidades.id, {
       onDelete: "set null",
     }),
@@ -142,11 +77,6 @@ export const empresaUsuarios = erp.table(
       columns: [t.empresaId, t.papel],
       foreignColumns: [cargos.empresaId, cargos.chave],
     }).onUpdate("cascade"),
-    foreignKey({
-      name: "empresa_usuarios_departamento_fk",
-      columns: [t.empresaId, t.departamentoChave],
-      foreignColumns: [departamentos.empresaId, departamentos.chave],
-    }).onUpdate("cascade"),
     // O usuário lê os próprios vínculos em qualquer empresa (seletor de empresa).
     ...politicas("empresa_usuarios", {
       select: sql`(${daEmpresaOuPlataforma(t.empresaId)} or ${t.usuarioId} = ${usuarioDaSessao})`,
@@ -157,24 +87,61 @@ export const empresaUsuarios = erp.table(
   ],
 );
 
-/** Exceção individual por empresa: adiciona (`permitido`) ou tira uma tela do usuário. */
-export const usuarioTelas = erp.table(
-  "usuario_telas",
+/**
+ * Permissões do cargo: ação (`ver`, `editar`, `excluir`) por tela. Admin e Super Admin têm o
+ * catálogo inteiro pelo código e não gravam linhas aqui.
+ */
+export const cargoPermissoes = erp.table(
+  "cargo_permissoes",
   {
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresas.id, { onDelete: "cascade" }),
-    usuarioId: uuid("usuario_id")
-      .notNull()
-      .references(() => usuarios.id, { onDelete: "cascade" }),
+    empresaId: uuid("empresa_id").notNull(),
+    cargoChave: text("cargo_chave").notNull(),
     telaChave: text("tela_chave")
       .notNull()
       .references(() => telas.chave, { onDelete: "cascade" }),
-    permitido: boolean("permitido").notNull().default(true),
-    criadoEm: criadoEm(),
+    acao: text("acao", { enum: ACOES }).notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.empresaId, t.usuarioId, t.telaChave] }),
-    ...politicasDeEmpresaComPlataforma("usuario_telas", t.empresaId),
+    primaryKey({ columns: [t.empresaId, t.cargoChave, t.telaChave, t.acao] }),
+    foreignKey({
+      name: "cargo_permissoes_cargo_fk",
+      columns: [t.empresaId, t.cargoChave],
+      foreignColumns: [cargos.empresaId, cargos.chave],
+    })
+      .onDelete("cascade")
+      .onUpdate("cascade"),
+    check("cargo_permissoes_acao_valida", sql`${t.acao} in ('ver', 'editar', 'excluir')`),
+    ...politicasDeEmpresaComPlataforma("cargo_permissoes", t.empresaId),
+  ],
+);
+
+/**
+ * Exceção por usuário na empresa: "Sim" (`concede`) dá a permissão mesmo sem o cargo, "Não"
+ * (`nega`) tira mesmo com o cargo; sem linha = "Padrão". Sai junto com o vínculo.
+ */
+export const usuarioPermissoes = erp.table(
+  "usuario_permissoes",
+  {
+    empresaId: uuid("empresa_id").notNull(),
+    usuarioId: uuid("usuario_id").notNull(),
+    telaChave: text("tela_chave")
+      .notNull()
+      .references(() => telas.chave, { onDelete: "cascade" }),
+    acao: text("acao", { enum: ACOES }).notNull(),
+    efeito: text("efeito", { enum: EFEITOS }).notNull(),
+    criadoEm: criadoEm(),
+    criadoPor: uuid("criado_por").references(() => usuarios.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.empresaId, t.usuarioId, t.telaChave, t.acao] }),
+    foreignKey({
+      name: "usuario_permissoes_vinculo_fk",
+      columns: [t.empresaId, t.usuarioId],
+      foreignColumns: [empresaUsuarios.empresaId, empresaUsuarios.usuarioId],
+    }).onDelete("cascade"),
+    index("usuario_permissoes_criado_por_idx").on(t.criadoPor),
+    check("usuario_permissoes_acao_valida", sql`${t.acao} in ('ver', 'editar', 'excluir')`),
+    check("usuario_permissoes_efeito_valido", sql`${t.efeito} in ('concede', 'nega')`),
+    ...politicasDeEmpresaComPlataforma("usuario_permissoes", t.empresaId),
   ],
 );

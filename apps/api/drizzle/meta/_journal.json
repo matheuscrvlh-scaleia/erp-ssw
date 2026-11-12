@@ -92,6 +92,27 @@
       "when": 1794422035175,
       "tag": "0012_plataforma_integracoes",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794491002543,
+      "tag": "0013_permissoes_por_acao",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794491059468,
+      "tag": "0014_migrar_acesso_para_permissoes",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794491205681,
+      "tag": "0015_remover_departamentos_e_telas",
+      "breakpoints": true
     }
   ]
 }
