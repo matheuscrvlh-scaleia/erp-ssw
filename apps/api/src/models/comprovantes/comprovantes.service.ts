@@ -10,15 +10,12 @@ import {
   termoCtrc,
   termoNf,
 } from "@erp/dominio/ocorrencias/busca";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type contratosComprovantes,
   type FiltrosDeComprovantes,
-  type LinhaDeComprovante,
+  type PainelDeComprovantes,
   type StatusDeComprovante,
-  TIPO_NAO_INFORMADO,
 } from "@erp/shared/contratos/comprovantes";
-import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/ocorrencias";
 import { type z } from "@erp/shared/zod";
 
 import { consultaAmplaDemais } from "../erros";
@@ -72,6 +69,12 @@ export interface ComprovanteDaLista {
   digitalizado: boolean;
 }
 
+/** Uma página da lista e o total da lista inteira. */
+export interface ListaDeComprovantes {
+  linhas: ComprovanteDaLista[];
+  total: number;
+}
+
 export interface RepositorioComprovantes {
   /** CT-e entregues no período (dia da entrega em São Paulo), com os filtros. */
   entregues(filtro: FiltroDeEntregues, limite: number): Promise<CteEntregue[]>;
@@ -85,7 +88,7 @@ export interface RepositorioComprovantes {
     filtro: FiltroDeEntregues,
     pedido: PedidoDaLista,
     pagina: { limite: number; deslocamento: number },
-  ): Promise<{ linhas: ComprovanteDaLista[]; total: number }>;
+  ): Promise<ListaDeComprovantes>;
 }
 
 type Db = Executor<"comprovantes">;
@@ -126,7 +129,7 @@ export async function obterPainelDeComprovantes(
   db: Db,
   empresaId: string,
   entrada: FiltrosDeComprovantes,
-): Promise<SaidaDe<typeof contratosComprovantes.painel>> {
+): Promise<PainelDeComprovantes> {
   return db(async ({ comprovantes }) =>
     calcularPainelDeComprovantes(
       await comprovantesDoPeriodo(comprovantes, empresaId, entrada),
@@ -139,25 +142,6 @@ async function diasCobertos(repo: RepositorioComprovantes, empresaId: string) {
   return (await repo.arquivos930Importados(empresaId))
     .map(diaCobertoPeloArquivo)
     .filter((d) => d !== null);
-}
-
-function paraALinha(c: ComprovanteDaLista): LinhaDeComprovante {
-  return {
-    id: c.id,
-    numeroCtrc: c.numero,
-    siglaCtrc: c.sigla,
-    numeroNf: c.numeroNf,
-    dataEntrega: c.dataEntrega.toISOString(),
-    dataEmissao: c.dataEmissao,
-    unidade: c.unidade,
-    setor: c.setor,
-    pagadorNome: c.pagadorNome,
-    remetente: c.remetente,
-    destinatario: c.destinatario,
-    cidadeDestino: c.cidadeDestino,
-    tipoDocumento: c.tipoEfetivo === SEM_TIPO_DOCUMENTO ? TIPO_NAO_INFORMADO : c.tipoEfetivo,
-    digitalizado: c.digitalizado,
-  };
 }
 
 type EntradaDaLista = z.output<typeof contratosComprovantes.exportar.entrada>;
@@ -187,14 +171,13 @@ export async function obterListaDeComprovantes(
   db: Db,
   empresaId: string,
   entrada: z.output<typeof contratosComprovantes.lista.entrada>,
-): Promise<SaidaDe<typeof contratosComprovantes.lista>> {
-  return db(async ({ comprovantes }) => {
-    const { linhas, total } = await lerLista(comprovantes, empresaId, entrada, {
+): Promise<ListaDeComprovantes> {
+  return db(({ comprovantes }) =>
+    lerLista(comprovantes, empresaId, entrada, {
       limite: entrada.tamanho,
       deslocamento: (entrada.pagina - 1) * entrada.tamanho,
-    });
-    return { total, linhas: linhas.map(paraALinha) };
-  });
+    }),
+  );
 }
 
 /** Lista inteira de um card, numa leitura só, na ordem da tela (exportação). */
@@ -202,13 +185,13 @@ export async function exportarListaDeComprovantes(
   db: Db,
   empresaId: string,
   entrada: EntradaDaLista,
-): Promise<SaidaDe<typeof contratosComprovantes.exportar>> {
+): Promise<ComprovanteDaLista[]> {
   return db(async ({ comprovantes }) => {
     const { linhas } = await lerLista(comprovantes, empresaId, entrada, {
       limite: LIMITE_DE_LINHAS + 1,
       deslocamento: 0,
     });
     if (linhas.length > LIMITE_DE_LINHAS) throw consultaAmplaDemais();
-    return { linhas: linhas.map(paraALinha) };
+    return linhas;
   });
 }

@@ -8,6 +8,10 @@ import {
   obterListaDeComprovantes,
   obterPainelDeComprovantes,
 } from "../models/comprovantes/comprovantes.service";
+import {
+  apresentarExportacaoDeComprovantes,
+  apresentarListaDeComprovantes,
+} from "../views/comprovantes.view";
 
 /** Comprovantes: só leitura; sem restrição por unidade do usuário (Q26 do dono). */
 const ler = [exigirModulo("comprovantes"), exigirPermissao("comprovantes", "ver")];
@@ -27,7 +31,9 @@ export const controladorComprovantes: FastifyPluginCallbackZod = (app, _opcoes, 
     { schema: { body: c.lista.entrada, response: { 200: c.lista.saida } }, preHandler: ler },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return obterListaDeComprovantes(request.db, empresa.id, request.body);
+      return apresentarListaDeComprovantes(
+        await obterListaDeComprovantes(request.db, empresa.id, request.body),
+      );
     },
   );
 
@@ -39,7 +45,9 @@ export const controladorComprovantes: FastifyPluginCallbackZod = (app, _opcoes, 
     },
     async (request) => {
       const { empresa } = await empresaDaRequisicao(request);
-      return exportarListaDeComprovantes(request.db, empresa.id, request.body);
+      return apresentarExportacaoDeComprovantes(
+        await exportarListaDeComprovantes(request.db, empresa.id, request.body),
+      );
     },
   );
   pronto();
