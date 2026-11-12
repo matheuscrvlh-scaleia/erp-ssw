@@ -16,13 +16,14 @@ import {
 import { calcularPainel, type CteDoPainel } from "@erp/dominio/ocorrencias/painel";
 import { type Periodo, periodoDoMesAnterior } from "@erp/dominio/ocorrencias/periodo";
 import { situacaoDoCte } from "@erp/dominio/ocorrencias/situacao";
-import { type SaidaDe } from "@erp/shared/contrato";
 import {
   type CampoData,
+  type CodigoDoCard,
   type contratosOcorrencias,
   type FiltrosDeCte,
   type LinhaDeOcorrencia,
   type OrdemDaLista,
+  type PainelDeOcorrencias,
   type Recortes,
 } from "@erp/shared/contratos/ocorrencias";
 import { hojeNoFuso } from "@erp/shared/datas";
@@ -95,6 +96,32 @@ export interface PedidoDaLista {
   direcao: "asc" | "desc";
 }
 
+/** Uma página da lista detalhada e o total da lista inteira. */
+export interface ListaDeOcorrencias {
+  linhas: LinhaDeOcorrencia[];
+  total: number;
+}
+
+export interface UnidadeAtiva {
+  id: string;
+  nome: string;
+  cidade: string | null;
+  uf: string | null;
+}
+
+export interface PagadorDoPeriodo {
+  cnpj: string;
+  cnpjFormatado: string;
+  nome: string | null;
+}
+
+/** Opções dos seletores; código fora do catálogo vem sem descrição. */
+export interface OpcoesDeOcorrencias {
+  unidades: UnidadeAtiva[];
+  pagadores: PagadorDoPeriodo[];
+  codigos: { codigo: number; descricao: string | null }[];
+}
+
 export interface RepositorioOcorrencias {
   catalogo(empresaId: string): Promise<CodigoDoCatalogo[]>;
   /** Valor da configuração da empresa (ou da Plataforma); nulo se não houver. */
@@ -111,16 +138,14 @@ export interface RepositorioOcorrencias {
     filtro: FiltroDeCtes,
     pedido: PedidoDaLista,
     pagina: { limite: number; deslocamento: number },
-  ): Promise<{ linhas: LinhaDeOcorrencia[]; total: number }>;
+  ): Promise<ListaDeOcorrencias>;
   conferentes(empresaId: string, limite: number): Promise<string[]>;
-  unidadesAtivas(
-    empresaId: string,
-  ): Promise<{ id: string; nome: string; cidade: string | null; uf: string | null }[]>;
+  unidadesAtivas(empresaId: string): Promise<UnidadeAtiva[]>;
   pagadores(
     empresaId: string,
     filtro: { inicio: string; fim: string; unidades: string[]; filiais: string[] },
     limite: number,
-  ): Promise<{ cnpj: string; cnpjFormatado: string; nome: string | null }[]>;
+  ): Promise<PagadorDoPeriodo[]>;
 }
 
 export interface ContextoOcorrencias {
@@ -217,7 +242,7 @@ export async function obterPainel(
   ctx: ContextoOcorrencias,
   entrada: z.output<typeof contratosOcorrencias.painel.entrada>,
   agora: Date,
-): Promise<SaidaDe<typeof contratosOcorrencias.painel>> {
+): Promise<PainelDeOcorrencias> {
   const atual = { inicio: entrada.inicio, fim: entrada.fim };
   const anterior = periodoDoMesAnterior(atual);
   const hoje = hojeNoFuso(ctx.fuso, agora);
@@ -288,7 +313,7 @@ export async function obterLista(
   ctx: ContextoOcorrencias,
   entrada: z.output<typeof contratosOcorrencias.lista.entrada>,
   agora: Date,
-): Promise<SaidaDe<typeof contratosOcorrencias.lista>> {
+): Promise<ListaDeOcorrencias> {
   return db(({ ocorrencias }) =>
     lerLista(ocorrencias, ctx, entrada, agora, {
       limite: entrada.tamanho,
@@ -303,13 +328,13 @@ export async function exportarLista(
   ctx: ContextoOcorrencias,
   entrada: EntradaDaLista,
   agora: Date,
-): Promise<SaidaDe<typeof contratosOcorrencias.exportar>> {
+): Promise<LinhaDeOcorrencia[]> {
   return db(async ({ ocorrencias }) => {
     const { linhas } = await lerLista(ocorrencias, ctx, entrada, agora, {
       limite: LIMITE_DE_LINHAS + 1,
       deslocamento: 0,
     });
-    return { linhas: comTeto(linhas) };
+    return comTeto(linhas);
   });
 }
 
@@ -322,7 +347,7 @@ export async function obterCodigosDoCard(
   ctx: ContextoOcorrencias,
   entrada: z.output<typeof contratosOcorrencias.codigosDoCard.entrada>,
   agora: Date,
-): Promise<SaidaDe<typeof contratosOcorrencias.codigosDoCard>> {
+): Promise<CodigoDoCard[]> {
   const hoje = hojeNoFuso(ctx.fuso, agora);
   return db(async ({ ocorrencias }) => {
     const cat = await catalogoDaTela(ocorrencias, ctx.empresaId);
@@ -341,7 +366,7 @@ export async function obterCodigosDoCard(
       const cte = ctes.get(o.cteId);
       return cte ? [{ ...o, cteEmAtraso: cte.situacao.emAtraso }] : [];
     });
-    return { codigos: codigosDoCard(eventos, cat.porCodigo, entrada.card) };
+    return codigosDoCard(eventos, cat.porCodigo, entrada.card);
   });
 }
 
@@ -355,20 +380,16 @@ export async function obterOpcoes(
   db: Db,
   ctx: ContextoOcorrencias,
   entrada: z.output<typeof contratosOcorrencias.opcoes.entrada>,
-): Promise<SaidaDe<typeof contratosOcorrencias.opcoes>> {
+): Promise<OpcoesDeOcorrencias> {
   return db(async ({ ocorrencias }) => {
     const cat = await catalogoDaTela(ocorrencias, ctx.empresaId);
     const pagadores = await ocorrencias.pagadores(ctx.empresaId, entrada, LIMITE_DE_PAGADORES);
     return {
       unidades: await ocorrencias.unidadesAtivas(ctx.empresaId),
-      parceiros: pagadores.map((p) => ({
-        id: p.cnpj,
-        nome: p.nome ?? p.cnpjFormatado,
-        cnpjFormatado: p.cnpjFormatado,
-      })),
+      pagadores,
       codigos: cat.codigosTela.map((codigo) => ({
         codigo,
-        descricao: cat.porCodigo.get(codigo)?.descricao ?? `Código ${codigo}`,
+        descricao: cat.porCodigo.get(codigo)?.descricao ?? null,
       })),
     };
   });
@@ -377,11 +398,6 @@ export async function obterOpcoes(
 const LIMITE_DE_CONFERENTES = 1000;
 
 /** origem: ocorrencias_conferentes_opcoes (sistema atual) */
-export async function listarConferentes(
-  db: Db,
-  ctx: ContextoOcorrencias,
-): Promise<SaidaDe<typeof contratosOcorrencias.conferentes>> {
-  return db(async ({ ocorrencias }) => ({
-    conferentes: await ocorrencias.conferentes(ctx.empresaId, LIMITE_DE_CONFERENTES),
-  }));
+export async function listarConferentes(db: Db, ctx: ContextoOcorrencias): Promise<string[]> {
+  return db(({ ocorrencias }) => ocorrencias.conferentes(ctx.empresaId, LIMITE_DE_CONFERENTES));
 }

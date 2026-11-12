@@ -9,8 +9,11 @@ import {
   type RegistroDeAuditoria,
   RESPONSAVEL_DA_LETRA,
 } from "@erp/dominio/ocorrencias/codigos-admin";
-import { type SaidaDe } from "@erp/shared/contrato";
-import { type contratosCodigosOcorrencia } from "@erp/shared/contratos/codigos-ocorrencia";
+import {
+  type AlteracaoDoCodigo,
+  type contratosCodigosOcorrencia,
+  type EstatisticasDoCatalogo,
+} from "@erp/shared/contratos/codigos-ocorrencia";
 import { JOB_PROPAGAR_CLASSIFICACAO, JOB_RECALCULAR_CTES_DO_CODIGO } from "@erp/shared/jobs";
 import { type z } from "@erp/shared/zod";
 
@@ -24,6 +27,16 @@ export interface CodigoGravado extends ClassificacaoDoCodigo {
   processoSsw: string | null;
   atualizadoEm: Date;
   atualizadoPorNome: string | null;
+}
+
+export interface CodigoComFrequencia extends CodigoGravado {
+  /** Ocorrências do código nos últimos 30 dias. */
+  frequencia30d: number;
+}
+
+export interface CatalogoDeCodigos {
+  codigos: CodigoComFrequencia[];
+  estatisticas: EstatisticasDoCatalogo;
 }
 
 export interface RepositorioCodigosOcorrencia {
@@ -65,7 +78,7 @@ export async function listarCodigos(
   db: Executor<"codigosOcorrencia">,
   ctx: ContextoCodigos,
   agora: Date,
-): Promise<SaidaDe<typeof contratosCodigosOcorrencia.listar>> {
+): Promise<CatalogoDeCodigos> {
   return db(async ({ codigosOcorrencia }) => {
     const catalogo = await codigosOcorrencia.listar(ctx.empresaId);
     const frequencia = await codigosOcorrencia.ocorrenciasPorCodigo(
@@ -73,11 +86,7 @@ export async function listarCodigos(
       new Date(agora.getTime() - TRINTA_DIAS_MS),
     );
     return {
-      codigos: catalogo.map((c) => ({
-        ...c,
-        atualizadoEm: c.atualizadoEm.toISOString(),
-        frequencia30d: frequencia.get(c.codigo) ?? 0,
-      })),
+      codigos: catalogo.map((c) => ({ ...c, frequencia30d: frequencia.get(c.codigo) ?? 0 })),
       estatisticas: estatisticasDoCatalogo(catalogo, frequencia),
     };
   });
@@ -88,10 +97,10 @@ export async function historicoDoCodigoNaEmpresa(
   db: Executor<"codigosOcorrencia">,
   ctx: ContextoCodigos,
   codigo: number,
-): Promise<SaidaDe<typeof contratosCodigosOcorrencia.historico>> {
-  return db(async ({ codigosOcorrencia }) => ({
-    alteracoes: historicoDoCodigo(await codigosOcorrencia.historico(ctx.empresaId, codigo, 200)),
-  }));
+): Promise<AlteracaoDoCodigo[]> {
+  return db(async ({ codigosOcorrencia }) =>
+    historicoDoCodigo(await codigosOcorrencia.historico(ctx.empresaId, codigo, 200)),
+  );
 }
 
 export interface DependenciasCodigos {

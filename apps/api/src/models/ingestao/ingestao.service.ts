@@ -4,8 +4,11 @@
  * vêm do banco; as ações e o estado do FTP passam pelo HTTP interno dele, com a auditoria gravada
  * antes de chamar. Quem grava e decide é o worker-ssw. Spec 06 §3.13 e §5.
  */
-import { type SaidaDe } from "@erp/shared/contrato";
-import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
+import {
+  type ArquivoXml,
+  type contratosIngestao as c,
+  type SincronizacaoDoFtp,
+} from "@erp/shared/contratos/ingestao";
 import {
   cicloDescartado,
   cicloRetomado,
@@ -18,10 +21,11 @@ import {
   relatorioImportado,
   resultadoDaAplicacao,
   resultadoDoXml,
+  type SituacaoDoFtp,
   situacaoDoFtp,
 } from "@erp/shared/contratos/worker-ssw";
 import { JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
-import { type z } from "@erp/shared/zod";
+import { z } from "@erp/shared/zod";
 
 import {
   type ClienteWorkerSsw,
@@ -74,30 +78,60 @@ export interface AplicacaoLida {
   finalizadoEm: Date | null;
 }
 
-export type SincronizacaoLida = Omit<
-  SaidaDe<typeof c.ftp>["historico"][number],
-  "executadoEm" | "finalizadoEm"
-> & { executadoEm: Date; finalizadoEm: Date | null };
-
-export type ArquivoXmlLido = Omit<SaidaDe<typeof c.arquivosXml>["arquivos"][number], "criadoEm"> & {
-  criadoEm: Date;
+export type SincronizacaoLida = Omit<SincronizacaoDoFtp, "executadoEm" | "finalizadoEm"> & {
+  executadoEm: Date;
+  finalizadoEm: Date | null;
 };
+
+export type ArquivoXmlLido = Omit<ArquivoXml, "criadoEm"> & { criadoEm: Date };
+
+export interface RelatorioEsperado {
+  relatorio: string;
+  porUnidade: boolean;
+  unidadesEsperadas: string[];
+  obrigatorioNoCiclo: boolean;
+  ativo: boolean;
+}
+
+export interface EstatisticasDosOrfaos {
+  pendentes: number;
+  expirados: number;
+  casados: number;
+  maisAntigo: Date | null;
+}
+
+export interface FilaDeAplicacao {
+  pendentes: number;
+  rodando: boolean;
+}
+
+export interface PipelineDaIngestao {
+  ciclos: CicloLido[];
+  arquivos: ArquivoLido[];
+  esperados: RelatorioEsperado[];
+  fila: FilaDeAplicacao;
+}
+
+export interface FtpDaIngestao {
+  situacao: SituacaoDoFtp;
+  historico: SincronizacaoLida[];
+}
+
+export interface ArquivosXmlDaIngestao {
+  arquivos: ArquivoXmlLido[];
+  orfaos: EstatisticasDosOrfaos;
+}
 
 export interface RepositorioIngestao {
   ultimosCiclos(empresaId: string, limite: number): Promise<CicloLido[]>;
   ultimosArquivos(empresaId: string, limite: number): Promise<ArquivoLido[]>;
-  relatoriosEsperados(empresaId: string): Promise<SaidaDe<typeof c.pipeline>["esperados"]>;
+  relatoriosEsperados(empresaId: string): Promise<RelatorioEsperado[]>;
   ultimasAplicacoes(empresaId: string, limite: number): Promise<AplicacaoLida[]>;
   /** `ftp_sync_ativo` da empresa (ou o global); ausente = ligado. Só sem o worker-ssw. */
   ftpAtivo(empresaId: string): Promise<boolean>;
   ultimasSincronizacoes(empresaId: string, limite: number): Promise<SincronizacaoLida[]>;
   ultimosArquivosXml(empresaId: string, limite: number): Promise<ArquivoXmlLido[]>;
-  estatisticasDosOrfaos(empresaId: string): Promise<{
-    pendentes: number;
-    expirados: number;
-    casados: number;
-    maisAntigo: Date | null;
-  }>;
+  estatisticasDosOrfaos(empresaId: string): Promise<EstatisticasDosOrfaos>;
 }
 
 export interface DependenciasIngestao {
@@ -107,14 +141,19 @@ export interface DependenciasIngestao {
 
 type Db = Executor<"ingestao" | "auditoria">;
 
-const iso = (d: Date | null) => (d ? d.toISOString() : null);
-
 /** Horário do FTP em português (Q37: o de produção, igual para todas as empresas). */
 const CRON_DO_FTP = JOBS_DE_INGESTAO.find((j) => j.job === "sincronizar-ftp")?.cron ?? "";
 const DESCRICAO_DA_AGENDA = `A cada minuto, exceto :00 e :30 (${CRON_DO_FTP} UTC)`;
 
 /** Espera do "reprocessar órfãos": o teto do HTTP interno. */
 const PRAZO_DOS_ORFAOS_MS = 60_000;
+
+/** Resultado do job "reprocessar-xml-orfaos" no worker-ssw (o contrato interno não o declara). */
+const resultadoDosOrfaos = z.object({
+  expirados: z.number().int(),
+  tentados: z.number().int(),
+  casados: z.number().int(),
+});
 
 type Registro = Omit<EventoDeAuditoria, "empresaId" | "antes">;
 
@@ -141,7 +180,7 @@ async function auditarEPedir<T extends z.ZodType>(
 async function filaDeAplicacao(
   deps: DependenciasIngestao,
   empresaId: string,
-): Promise<{ pendentes: number; rodando: boolean }> {
+): Promise<FilaDeAplicacao> {
   if (deps.workerSsw === null) return { pendentes: 0, rodando: false };
   try {
     const { jobs, aplicacao } = await deps.workerSsw.situacao(empresaId);
@@ -162,44 +201,17 @@ export async function lerPipeline(
   db: Db,
   deps: DependenciasIngestao,
   empresaId: string,
-): Promise<SaidaDe<typeof c.pipeline>> {
+): Promise<PipelineDaIngestao> {
   const dados = await db(async ({ ingestao }) => ({
     ciclos: await ingestao.ultimosCiclos(empresaId, 10),
     arquivos: await ingestao.ultimosArquivos(empresaId, 25),
     esperados: await ingestao.relatoriosEsperados(empresaId),
   }));
-  const fila = await filaDeAplicacao(deps, empresaId);
-  return {
-    ciclos: dados.ciclos.map((x) => ({
-      ...x,
-      primeiroArquivoEm: x.primeiroArquivoEm.toISOString(),
-      ultimoArquivoEm: x.ultimoArquivoEm.toISOString(),
-      fechadoEm: iso(x.fechadoEm),
-      aplicadoEm: iso(x.aplicadoEm),
-    })),
-    arquivos: dados.arquivos.map((a) => ({
-      ...a,
-      vistoEm: a.vistoEm.toISOString(),
-      importadoEm: iso(a.importadoEm),
-    })),
-    esperados: dados.esperados,
-    filaPendente: fila.pendentes,
-    aplicacaoRodando: fila.rodando,
-  };
+  return { ...dados, fila: await filaDeAplicacao(deps, empresaId) };
 }
 
-export async function lerAplicacoes(
-  db: Db,
-  empresaId: string,
-): Promise<SaidaDe<typeof c.aplicacoes>> {
-  const lista = await db(({ ingestao }) => ingestao.ultimasAplicacoes(empresaId, 20));
-  return {
-    aplicacoes: lista.map((a) => ({
-      ...a,
-      iniciadoEm: a.iniciadoEm.toISOString(),
-      finalizadoEm: iso(a.finalizadoEm),
-    })),
-  };
+export async function lerAplicacoes(db: Db, empresaId: string): Promise<AplicacaoLida[]> {
+  return db(({ ingestao }) => ingestao.ultimasAplicacoes(empresaId, 20));
 }
 
 export function retomarCiclo(
@@ -208,7 +220,7 @@ export function retomarCiclo(
   ator: Ator,
   empresaId: string,
   chave: string,
-): Promise<SaidaDe<typeof c.retomarCiclo>> {
+): Promise<z.output<typeof cicloRetomado>> {
   return auditarEPedir(
     db,
     deps,
@@ -235,7 +247,7 @@ export function descartarCiclo(
   empresaId: string,
   chave: string,
   motivo: string,
-): Promise<SaidaDe<typeof c.descartarCiclo>> {
+): Promise<z.output<typeof cicloDescartado>> {
   return auditarEPedir(
     db,
     deps,
@@ -261,7 +273,7 @@ export function importarRelatorio(
   ator: Ator,
   empresaId: string,
   entrada: z.output<typeof c.importarRelatorio.entrada>,
-): Promise<SaidaDe<typeof c.importarRelatorio>> {
+): Promise<z.output<typeof relatorioImportado>> {
   const corpo = pedidoDeRelatorio.parse({
     relatorio: entrada.relatorio,
     nomeArquivo: entrada.nome,
@@ -293,7 +305,7 @@ export function aplicar(
   ator: Ator,
   empresaId: string,
   entrada: z.output<typeof c.aplicar.entrada>,
-): Promise<SaidaDe<typeof c.aplicar>> {
+): Promise<z.output<typeof resultadoDaAplicacao>> {
   const { dryRun, limite, offset } = entrada;
   return auditarEPedir(
     db,
@@ -333,25 +345,18 @@ export async function lerFtp(
   db: Db,
   deps: DependenciasIngestao,
   empresaId: string,
-): Promise<SaidaDe<typeof c.ftp>> {
+): Promise<FtpDaIngestao> {
   const { ativo, historico } = await db(async ({ ingestao }) => ({
     ativo: await ingestao.ftpAtivo(empresaId),
     historico: await ingestao.ultimasSincronizacoes(empresaId, 10),
   }));
-  const situacao = await situacaoDoFtpNoWorker(deps, empresaId);
-  return {
-    ...(situacao ?? {
-      ativo,
-      agenda: DESCRICAO_DA_AGENDA,
-      travaAtiva: false,
-      progresso: null,
-    }),
-    historico: historico.map((h) => ({
-      ...h,
-      executadoEm: h.executadoEm.toISOString(),
-      finalizadoEm: iso(h.finalizadoEm),
-    })),
+  const situacao = (await situacaoDoFtpNoWorker(deps, empresaId)) ?? {
+    ativo,
+    agenda: DESCRICAO_DA_AGENDA,
+    travaAtiva: false,
+    progresso: null,
   };
+  return { situacao, historico };
 }
 
 /**
@@ -433,18 +438,11 @@ export async function liberarTravaFtp(
 
 // --- XML CT-e -----------------------------------------------------------------------------------
 
-export async function lerArquivosXml(
-  db: Db,
-  empresaId: string,
-): Promise<SaidaDe<typeof c.arquivosXml>> {
-  const { arquivos, orfaos } = await db(async ({ ingestao }) => ({
+export async function lerArquivosXml(db: Db, empresaId: string): Promise<ArquivosXmlDaIngestao> {
+  return db(async ({ ingestao }) => ({
     arquivos: await ingestao.ultimosArquivosXml(empresaId, 50),
     orfaos: await ingestao.estatisticasDosOrfaos(empresaId),
   }));
-  return {
-    arquivos: arquivos.map((a) => ({ ...a, criadoEm: a.criadoEm.toISOString() })),
-    orfaos: { ...orfaos, maisAntigo: iso(orfaos.maisAntigo) },
-  };
 }
 
 /** XML ou zip enviado pela tela, em base64 (com ou sem o prefixo `data:`). */
@@ -454,7 +452,7 @@ export function importarXml(
   ator: Ator,
   empresaId: string,
   entrada: z.output<typeof c.importarXml.entrada>,
-): Promise<SaidaDe<typeof c.importarXml>> {
+): Promise<z.output<typeof resultadoDoXml>> {
   return auditarEPedir(
     db,
     deps,
@@ -481,7 +479,7 @@ export async function reprocessarOrfaos(
   deps: DependenciasIngestao,
   ator: Ator,
   empresaId: string,
-): Promise<SaidaDe<typeof c.reprocessarOrfaos>> {
+): Promise<z.output<typeof resultadoDosOrfaos>> {
   const workerSsw = exigirWorkerSsw(deps.workerSsw);
   await db(({ auditoria }) =>
     auditoria.registrar(ator, {
@@ -512,7 +510,7 @@ export async function reprocessarOrfaos(
       "O reprocessamento ainda está rodando. Recarregue em instantes para ver o resultado.",
     );
   }
-  const lido = c.reprocessarOrfaos.saida.safeParse(fim.resultado);
+  const lido = resultadoDosOrfaos.safeParse(fim.resultado);
   if (!lido.success)
     throw conflito("O reprocessamento devolveu uma resposta inesperada. Tente de novo.");
   return lido.data;

@@ -8,16 +8,18 @@
 import { createHash } from "node:crypto";
 
 import { contextoDoSegredo, type SegredoCifrado } from "@erp/db/segredos";
-import { saudeDaIntegracaoSsw, TTL_DO_TOKEN_MS } from "@erp/dominio/ingestao/ssw-api";
-import { type EntradaDe, type SaidaDe } from "@erp/shared/contrato";
+import {
+  type SaudeDaIntegracaoSsw,
+  saudeDaIntegracaoSsw,
+  TTL_DO_TOKEN_MS,
+} from "@erp/dominio/ingestao/ssw-api";
+import { type EntradaDe } from "@erp/shared/contrato";
 import {
   type ContagemWebhook,
   type contratosIngestaoSsw,
-  type EventoWebhook,
   type ResultadoDoTesteSsw,
   resultadoDoTesteSsw,
   type SincronizacaoBi2,
-  sincronizacaoBi2,
   type StatusDoJob,
 } from "@erp/shared/contratos/ingestao-ssw";
 import { type IntegracaoDaIngestao, JOBS_DE_INGESTAO } from "@erp/shared/ingestao";
@@ -59,6 +61,60 @@ export interface EventoLido {
 export interface SincronizacaoLida extends Omit<SincronizacaoBi2, "iniciadoEm" | "finalizadoEm"> {
   iniciadoEm: Date;
   finalizadoEm: Date | null;
+}
+
+/** Saúde da SSW API com o instante do token em ISO (a faixa e o Painel da Plataforma). */
+export type SaudeSsw = Omit<SaudeDaIntegracaoSsw, "tokenAtualizadoEm"> & {
+  tokenAtualizadoEm: string | null;
+};
+
+export interface AtualizacaoDosDados {
+  atualizadoEm: Date | null;
+  /** Só para a Plataforma; nulo para os demais. */
+  xmlAguardando: { pendentes: number; expirados: number } | null;
+}
+
+export interface RodadaDoBi2 {
+  enfileirado: boolean;
+  /** O job não terminou a tempo. */
+  pendente: boolean;
+  resultado: SincronizacaoLida | null;
+}
+
+export interface CredenciaisDaSsw {
+  ativo: boolean;
+  dominio: string;
+  usuario: string;
+  cnpjEdi: string;
+  temSenha: boolean;
+  tokenStatus: "valido" | "expirado" | "ausente";
+  tokenAtualizadoEm: Date | null;
+  tokenExpiraEm: Date | null;
+  ttlHoras: number;
+  atualizadoEm: Date | null;
+  ultimaVerificacao: { em: Date; ok: boolean; mensagem: string | null } | null;
+}
+
+export interface EventosDoWebhook {
+  ultimaAtividade: Date | null;
+  eventos: EventoLido[];
+}
+
+export interface DiagnosticoDaSsw {
+  /** `false` = worker-ssw não configurado ou fora. */
+  filasDisponiveis: boolean;
+  jobs: StatusDoJob[];
+  sincronizacoes: SincronizacaoLida[];
+  webhook: {
+    ultimaAtividade: Date | null;
+    ultimas24h: ContagemWebhook;
+    ultimos7d: ContagemWebhook;
+  };
+  orfaos: {
+    webhookSemVinculo7d: number;
+    recentes: EventoLido[];
+    xmlPendentes: number;
+  };
 }
 
 export interface RepositorioIngestaoSsw {
@@ -146,7 +202,7 @@ export function saudeDaIntegracao(
   integracao: IntegracaoLida | null,
   tokenGeradoEm: Date | null,
   agora: Date,
-): SaidaDe<typeof contratosIngestaoSsw.saude> {
+): SaudeSsw {
   const p = integracao?.parametros ?? {};
   const s = saudeDaIntegracaoSsw({
     ativa: integracao?.ativo ?? false,
@@ -162,7 +218,7 @@ export async function saudeSsw(
   db: Db,
   deps: DependenciasIngestaoSsw,
   empresaId: string,
-): Promise<SaidaDe<typeof contratosIngestaoSsw.saude>> {
+): Promise<SaudeSsw> {
   const integracao = await db(({ ingestaoSsw }) => ingestaoSsw.integracao(empresaId, "ssw_api"));
   const tokenGeradoEm = integracao?.ativo ? await tokenSswGeradoEm(deps, empresaId) : null;
   return saudeDaIntegracao(integracao, tokenGeradoEm, deps.agora());
@@ -175,26 +231,18 @@ export async function saudeSsw(
 export async function atualizacaoDosDados(
   db: Db,
   plataforma: boolean,
-): Promise<SaidaDe<typeof contratosIngestaoSsw.atualizacao>> {
+): Promise<AtualizacaoDosDados> {
   return db(async ({ ingestaoSsw }) => ({
-    atualizadoEm: iso(await ingestaoSsw.ultimaAplicacao()),
+    atualizadoEm: await ingestaoSsw.ultimaAplicacao(),
     xmlAguardando: plataforma ? await ingestaoSsw.xmlOrfaos() : null,
   }));
 }
 
 // --- BI2 0017 ---------------------------------------------------------------------------------
 
-const paraSaida = (s: SincronizacaoLida): SincronizacaoBi2 => ({
-  ...s,
-  iniciadoEm: s.iniciadoEm.toISOString(),
-  finalizadoEm: iso(s.finalizadoEm),
-});
-
-export async function statusBi2(db: Db): Promise<SaidaDe<typeof contratosIngestaoSsw.bi2Status>> {
-  const recentes = (await db(({ ingestaoSsw }) => ingestaoSsw.sincronizacoesBi2("17", 10))).map(
-    paraSaida,
-  );
-  return { ultima: recentes[0] ?? null, recentes };
+/** Últimas sincronizações do BI2 0017, da mais recente para a mais antiga. */
+export async function statusBi2(db: Db): Promise<SincronizacaoLida[]> {
+  return db(({ ingestaoSsw }) => ingestaoSsw.sincronizacoesBi2("17", 10));
 }
 
 /** "Rodar data específica": a execução manual vai para a mesma fila (uma por vez com a do agendador). */
@@ -204,7 +252,7 @@ export async function rodarBi2(
   ator: Ator,
   empresaId: string,
   data: string,
-): Promise<SaidaDe<typeof contratosIngestaoSsw.rodarBi2>> {
+): Promise<RodadaDoBi2> {
   const workerSsw = exigirWorkerSsw(deps.workerSsw);
   await db(({ auditoria }) =>
     auditoria.registrar(ator, {
@@ -226,11 +274,7 @@ export async function rodarBi2(
   if (fim.estado === "falhou") throw conflito(`O BI2 0017 falhou: ${fim.erro ?? "erro"}`);
   if (fim.estado !== "concluida") return { enfileirado: true, pendente: true, resultado: null };
   const ultima = (await db(({ ingestaoSsw }) => ingestaoSsw.sincronizacoesBi2("17", 1)))[0];
-  return {
-    enfileirado: true,
-    pendente: false,
-    resultado: ultima ? sincronizacaoBi2.parse(paraSaida(ultima)) : null,
-  };
+  return { enfileirado: true, pendente: false, resultado: ultima ?? null };
 }
 
 // --- Credenciais da SSW API -------------------------------------------------------------------
@@ -239,7 +283,7 @@ export async function credenciaisSsw(
   db: Db,
   deps: DependenciasIngestaoSsw,
   empresaId: string,
-): Promise<SaidaDe<typeof contratosIngestaoSsw.credenciais>> {
+): Promise<CredenciaisDaSsw> {
   const integracao = await db(({ ingestaoSsw }) => ingestaoSsw.integracao(empresaId, "ssw_api"));
   const p = integracao?.parametros ?? {};
   const geradoEm = await tokenSswGeradoEm(deps, empresaId);
@@ -253,14 +297,14 @@ export async function credenciaisSsw(
     cnpjEdi: texto(p, "cnpj_edi"),
     temSenha: integracao?.temSegredo ?? false,
     tokenStatus,
-    tokenAtualizadoEm: iso(geradoEm),
-    tokenExpiraEm: iso(expiraEm),
+    tokenAtualizadoEm: geradoEm,
+    tokenExpiraEm: expiraEm,
     ttlHoras: TTL_DO_TOKEN_MS / 3_600_000,
-    atualizadoEm: iso(integracao?.atualizadoEm ?? null),
+    atualizadoEm: integracao?.atualizadoEm ?? null,
     ultimaVerificacao:
       integracao?.ultimoTesteEm && integracao.ultimoTesteOk !== null
         ? {
-            em: integracao.ultimoTesteEm.toISOString(),
+            em: integracao.ultimoTesteEm,
             ok: integracao.ultimoTesteOk,
             mensagem: integracao.ultimoTesteMsg,
           }
@@ -383,17 +427,10 @@ export async function testarConexaoSsw(
 
 // --- Webhook ----------------------------------------------------------------------------------
 
-const paraEvento = ({ tokenSha256: _resumos, ...e }: EventoLido): EventoWebhook => ({
-  ...e,
-  recebidoEm: e.recebidoEm.toISOString(),
-});
-
-export async function eventosWebhook(
-  db: Db,
-): Promise<SaidaDe<typeof contratosIngestaoSsw.eventosWebhook>> {
+export async function eventosWebhook(db: Db): Promise<EventosDoWebhook> {
   return db(async ({ ingestaoSsw }) => ({
-    ultimaAtividade: iso(await ingestaoSsw.ultimaAtividadeWebhook()),
-    eventos: (await ingestaoSsw.eventosWebhook(50)).map(paraEvento),
+    ultimaAtividade: await ingestaoSsw.ultimaAtividadeWebhook(),
+    eventos: await ingestaoSsw.eventosWebhook(50),
   }));
 }
 
@@ -536,7 +573,7 @@ export async function diagnosticoSsw(
   db: Db,
   deps: DependenciasIngestaoSsw,
   empresaId: string,
-): Promise<SaidaDe<typeof contratosIngestaoSsw.diagnostico>> {
+): Promise<DiagnosticoDaSsw> {
   const agora = deps.agora().getTime();
   const dados = await db(async ({ ingestaoSsw }) => {
     const ligadas = new Map<string, boolean>();
@@ -581,19 +618,15 @@ export async function diagnosticoSsw(
   return {
     filasDisponiveis: situacao !== null,
     jobs,
-    sincronizacoes: dados.sincronizacoes.map(paraSaida),
+    sincronizacoes: dados.sincronizacoes,
     webhook: {
-      ultimaAtividade: iso(dados.ultimaAtividade),
+      ultimaAtividade: dados.ultimaAtividade,
       ultimas24h: dados.ultimas24h,
       ultimos7d: dados.ultimos7d,
     },
     orfaos: {
       webhookSemVinculo7d: dados.semVinculo.total,
-      recentes: dados.semVinculo.recentes.map((e) => ({
-        id: e.id,
-        recebidoEm: e.recebidoEm.toISOString(),
-        numero: e.numeroCte,
-      })),
+      recentes: dados.semVinculo.recentes,
       xmlPendentes: dados.xml.pendentes,
     },
   };
