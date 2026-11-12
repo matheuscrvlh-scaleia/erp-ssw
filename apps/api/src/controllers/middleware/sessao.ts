@@ -27,8 +27,8 @@ interface OpcoesSessao extends DependenciasAcesso {
 }
 
 /**
- * Acesso da sessão guardado por 30 s no processo. Montá-lo custa ~16 idas ao banco em sequência e
- * cada tela dispara várias chamadas juntas (que agora esperam a mesma carga). Toda escrita que deu
+ * Acesso da sessão guardado por 30 s no processo. Montá-lo custa duas rodadas de leituras no banco
+ * e cada tela dispara várias chamadas juntas (que agora esperam a mesma carga). Toda escrita que deu
  * certo limpa o cache: logout, revogação e mudança de permissão valem na hora; o que mudar fora da
  * API vale em até 30 s.
  */

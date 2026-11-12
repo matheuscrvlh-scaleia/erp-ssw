@@ -28,7 +28,7 @@ export function CartaoDeEntrada({
   useLayoutEffect(forcarTemaClaro, []);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden font-entrada">
+    <div className="relative min-h-screen w-full overflow-hidden">
       <PisoIsometrico className="absolute inset-0 h-full w-full" />
       <div className="relative grid min-h-screen lg:grid-cols-[1.35fr_1fr]">
         <div aria-hidden className="hidden items-center justify-center p-10 lg:flex">

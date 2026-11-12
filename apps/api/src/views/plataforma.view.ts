@@ -9,7 +9,6 @@ import {
   type EstadoDaIntegracao,
   type EstadoDaIntegracaoDaPlataforma,
   type ModuloLiberado,
-  type VinculoGravadoNaEmpresa,
 } from "../models/plataforma/plataforma.service";
 
 type Saida<E extends keyof typeof contratosPlataforma> = SaidaDe<(typeof contratosPlataforma)[E]>;
@@ -63,16 +62,6 @@ export function apresentarModulos(modulos: readonly ModuloLiberado[]): Saida<"li
     modulos: [...modulos]
       .sort((a, b) => a.ordem - b.ordem)
       .map((m) => ({ ...m, atualizadoEm: iso(m.atualizadoEm) })),
-  };
-}
-
-export function apresentarVinculos(
-  vinculos: readonly VinculoGravadoNaEmpresa[],
-): Saida<"listarUsuarios"> {
-  return {
-    usuarios: [...vinculos]
-      .sort(porNome)
-      .map((v) => ({ ...v, criadoEm: v.criadoEm.toISOString() })),
   };
 }
 

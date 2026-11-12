@@ -76,6 +76,11 @@ export function conectarBanco(config: ConfigBanco): ConexaoBanco {
     application_name: config.nomeAplicacao,
     // Teto também fora das transações com contexto (ex.: readiness).
     statement_timeout: config.timeoutConsultaMs,
+    // Conexão nova com o banco custa ~0,5 s (TLS + autenticação no pooler). O padrão do pg fecha a
+    // conexão parada há 10 s, e aí o primeiro pedido depois de uma pausa (quase sempre o login)
+    // pagava isso. Parada por até 10 min ela continua aberta, e o keepalive a mantém de pé.
+    idleTimeoutMillis: 10 * 60_000,
+    keepAlive: true,
   });
   const banco: Banco = {
     transacao: async (fn) => {

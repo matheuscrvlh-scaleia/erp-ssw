@@ -29,12 +29,6 @@ const consultaDaEmpresa = <S>(id: string, aba: string, buscar: () => Promise<S>)
 export const consultaModulos = (id: string) =>
   consultaDaEmpresa(id, "modulos", () => chamar(p.listarModulos, { parametros: { id } }));
 
-export const consultaVinculos = (id: string) =>
-  consultaDaEmpresa(id, "usuarios", () => chamar(p.listarUsuarios, { parametros: { id } }));
-
-export const consultaCargosDaEmpresa = (id: string) =>
-  consultaDaEmpresa(id, "cargos", () => chamar(p.cargosDaEmpresa, { parametros: { id } }));
-
 export const consultaIntegracoes = (id: string) =>
   consultaDaEmpresa(id, "integracoes", () => chamar(p.listarIntegracoes, { parametros: { id } }));
 

@@ -22,17 +22,18 @@ import {
   type GravacoesDeCargo,
   useAbaCargos,
 } from "@/modulos/admin/usuarios/AbaCargos";
-import { MatrizDePermissoes } from "@/modulos/admin/usuarios/AbaMatriz";
+import { MatrizDeCargos } from "@/modulos/admin/usuarios/AbaMatriz";
 
 import { CHAVES_DA_PLATAFORMA, consultaAdmins, consultaCargosDaPlataforma } from "./api";
 
-export const ABAS_DA_PLATAFORMA = ["usuarios", "cargos", "matriz"] as const;
+export const ABAS_DA_PLATAFORMA = ["usuarios", "cargos", "acessos", "permissoes"] as const;
 export type AbaDaPlataforma = (typeof ABAS_DA_PLATAFORMA)[number];
 
 const ABAS: readonly { valor: AbaDaPlataforma; rotulo: string }[] = [
   { valor: "usuarios", rotulo: "Usuários" },
   { valor: "cargos", rotulo: "Cargos" },
-  { valor: "matriz", rotulo: "Matriz de permissões" },
+  { valor: "acessos", rotulo: "Matriz de acessos" },
+  { valor: "permissoes", rotulo: "Matriz de permissões" },
 ];
 
 /** Mudar o cargo muda o acesso de quem está nele (inclusive o de quem edita). */
@@ -110,7 +111,12 @@ export function PaginaUsuariosDaPlataforma({
       ) : aba === "cargos" ? (
         abaCargos.conteudo
       ) : (
-        <MatrizDePermissoes {...consultaDosCargos} podeEditar={podeEditar} catalogo={catalogo} />
+        <MatrizDeCargos
+          matriz={aba}
+          {...consultaDosCargos}
+          podeEditar={podeEditar}
+          catalogo={catalogo}
+        />
       )}
     </Pagina>
   );

@@ -9,22 +9,23 @@ import { Pagina } from "@/componentes/layout/Pagina";
 
 import { consultaCargos } from "../api";
 import { AVISO_TEM_TUDO_DA_EMPRESA, useAbaCargos, useGravacoesDeCargo } from "./AbaCargos";
-import { MatrizDePermissoes } from "./AbaMatriz";
+import { MatrizDeCargos } from "./AbaMatriz";
 import { useAbaUsuarios } from "./AbaUsuarios";
 
-export const ABAS_DE_USUARIOS = ["usuarios", "cargos", "matriz"] as const;
+export const ABAS_DE_USUARIOS = ["usuarios", "cargos", "acessos", "permissoes"] as const;
 export type AbaDeUsuarios = (typeof ABAS_DE_USUARIOS)[number];
 
 const ABAS: readonly { valor: AbaDeUsuarios; rotulo: string }[] = [
   { valor: "usuarios", rotulo: "Usuários" },
   { valor: "cargos", rotulo: "Cargos" },
-  { valor: "matriz", rotulo: "Matriz de permissões" },
+  { valor: "acessos", rotulo: "Matriz de acessos" },
+  { valor: "permissoes", rotulo: "Matriz de permissões" },
 ];
 
 /**
  * Administração › Usuários e cargos: o cargo é o grupo de usuários com permissões por ação; a
  * pessoa pode ter exceções (Sim/Não). Gerir acesso é do admin da empresa; cada ação ainda segue
- * a permissão da tela (Usuários = `admin_usuarios`, Cargos e Matriz = `admin_roles`).
+ * a permissão da tela (Usuários = `admin_usuarios`, Cargos e as duas matrizes = `admin_roles`).
  */
 export function PaginaUsuariosECargos({
   aba,
@@ -86,7 +87,8 @@ export function PaginaUsuariosECargos({
       ) : atual === "cargos" ? (
         abaCargos.conteudo
       ) : (
-        <MatrizDePermissoes
+        <MatrizDeCargos
+          matriz={atual}
           {...consultaDosCargos}
           podeEditar={podeEditarCargos}
           catalogo={catalogo}

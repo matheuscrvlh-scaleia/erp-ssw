@@ -15,7 +15,6 @@ import {
   type IntegracaoGravada,
   type LiberacaoGravada,
   type RepositorioPlataforma,
-  type VinculoGravadoNaEmpresa,
 } from "./plataforma.service";
 
 type Retorno<K extends keyof RepositorioPlataforma> = Awaited<ReturnType<RepositorioPlataforma[K]>>;
@@ -156,22 +155,6 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
             observacao = excluded.observacao, atualizado_por = excluded.atualizado_por,
             atualizado_em = excluded.atualizado_em`);
     },
-
-    vinculos: async (empresaId) =>
-      comInstantes<VinculoGravadoNaEmpresa>(
-        await tx.consultar(sql`
-          select eu.usuario_id as "usuarioId", u.nome, u.email, eu.papel, eu.ativo,
-                 eu.criado_em as "criadoEm",
-                 -- Contexto de Plataforma: a RLS deixa ver os vínculos de todas as empresas.
-                 (select count(*)::int from erp.empresa_usuarios outros
-                   where outros.usuario_id = eu.usuario_id) as "totalEmpresas",
-                 exists (select 1 from erp.plataforma_admins pa
-                   where pa.usuario_id = eu.usuario_id) as "adminPlataforma"
-          from erp.empresa_usuarios eu
-          join erp.usuarios u on u.id = eu.usuario_id
-          where eu.empresa_id = ${empresaId}`),
-        ["criadoEm"],
-      ),
 
     integracoes: async (empresaId) =>
       comInstantes<IntegracaoGravada>(

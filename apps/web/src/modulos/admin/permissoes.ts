@@ -7,8 +7,9 @@ import {
   ehPermissao,
   type Permissao,
   permissao,
+  ROTULO_DA_ACAO,
 } from "@erp/shared/acesso/permissoes";
-import { type Tela } from "@erp/shared/acesso/telas";
+import { PERMISSOES_DE_RECURSO, ROTULO_DA_TELA, type Tela } from "@erp/shared/acesso/telas";
 import { type ExcecaoDePermissaoGravada } from "@erp/shared/contratos/admin";
 
 /*
@@ -54,24 +55,34 @@ export function alternarAcao(
   return proximo;
 }
 
-/**
- * Célula da matriz: liga Ver e Criar/Editar; desligar tira tudo da tela. Excluir só no editor do
- * cargo, para um clique na matriz nunca liberar exclusão.
- */
-export function alternarNaMatriz(
-  conjunto: ReadonlySet<Permissao>,
-  tela: Tela,
-  ligar: boolean,
-): Set<Permissao> {
-  if (!ligar) return alternarAcao(conjunto, tela, "ver", false);
-  return ACOES_DA_TELA[tela].includes("editar")
-    ? alternarAcao(conjunto, tela, "editar", true)
-    : alternarAcao(conjunto, tela, "ver", true);
+/** As duas matrizes de Usuários e cargos, com os cargos lado a lado. */
+export type Matriz = "acessos" | "permissoes";
+
+/** Uma linha de matriz: a permissão (tela + ação) que a célula liga e desliga no cargo. */
+export interface LinhaDaMatriz {
+  tela: Tela;
+  acao: Acao;
+  rotulo: string;
 }
 
-/** A célula da matriz está marcada quando o cargo vê a tela. */
-export function marcadoNaMatriz(conjunto: ReadonlySet<string>, tela: Tela): boolean {
-  return temAcao(conjunto, tela, "ver");
+/**
+ * Linhas de uma tela em cada matriz. Acessos: a própria tela (aparece no menu e abre). Permissões:
+ * um evento por linha (Criar/Editar, Excluir) e os recursos, que não são tela.
+ * origem: telaLines e processLines (construgarden, src/lib/matrizes.ts)
+ */
+export function linhasDaTela(matriz: Matriz, tela: Tela): LinhaDaMatriz[] {
+  const propria: LinhaDaMatriz = { tela, acao: "ver", rotulo: ROTULO_DA_TELA[tela] };
+  const recurso = PERMISSOES_DE_RECURSO.includes(tela);
+  if (matriz === "acessos") return recurso ? [] : [propria];
+  if (recurso) return [propria];
+  return ACOES_DA_TELA[tela]
+    .filter((acao) => acao !== "ver")
+    .map((acao) => ({ tela, acao, rotulo: `${ROTULO_DA_TELA[tela]} · ${ROTULO_DA_ACAO[acao]}` }));
+}
+
+/** Evento de uma tela que o cargo não abre: libera-se a tela antes, na Matriz de acessos. */
+export function faltaATela(conjunto: ReadonlySet<string>, linha: LinhaDaMatriz): boolean {
+  return linha.acao !== "ver" && !temAcao(conjunto, linha.tela, "ver");
 }
 
 /** Exceção por permissão: "Sim" (concede) ou "Não" (nega); ausente = "Padrão". */
