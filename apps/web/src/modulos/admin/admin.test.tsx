@@ -1,17 +1,20 @@
+import { CATEGORIAS_DE_TELA, type Permissao } from "@erp/shared/acesso/permissoes";
 import { type UsuarioDaEmpresa } from "@erp/shared/contratos/admin";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   alternarAcao,
-  alternarNaMatriz,
   definirExcecao,
+  linhasDaTela,
   listaDasExcecoes,
   mapaDasExcecoes,
+  type Matriz,
   permissoesEfetivas,
   resumoDoAcesso,
 } from "./permissoes";
 import { chaveDoNome } from "./usuarios/AbaCargos";
+import { MatrizDeCargos } from "./usuarios/AbaMatriz";
 import { gerarSenha, ModalEditarUsuario } from "./usuarios/ModalEditarUsuario";
 import { ModalNovoUsuario } from "./usuarios/ModalNovoUsuario";
 
@@ -45,12 +48,17 @@ describe("permissões por ação", () => {
     expect(alternarAcao(comExcluir, "calendario", "ver", false).size).toBe(0);
   });
 
-  it("matriz liga Ver e Criar/Editar, nunca Excluir; tela só de leitura liga só o Ver", () => {
-    expect([...alternarNaMatriz(new Set(), "historico", true)].sort()).toEqual([
-      "historico.editar",
-      "historico.ver",
+  it("acessos tem uma linha por tela; permissões, uma por evento e os recursos", () => {
+    expect(linhasDaTela("acessos", "historico")).toEqual([
+      { tela: "historico", acao: "ver", rotulo: "Histórico" },
     ]);
-    expect([...alternarNaMatriz(new Set(), "romaneio", true)]).toEqual(["romaneio.ver"]);
+    expect(linhasDaTela("permissoes", "historico").map((l) => l.rotulo)).toEqual([
+      "Histórico · Criar/Editar",
+      "Histórico · Excluir",
+    ]);
+    expect(linhasDaTela("permissoes", "romaneio")).toEqual([]);
+    expect(linhasDaTela("acessos", "romaneio_placa")).toEqual([]);
+    expect(linhasDaTela("permissoes", "romaneio_placa").map((l) => l.acao)).toEqual(["ver"]);
   });
 
   it("Ranking grava as duas chaves e a volta não duplica", () => {
@@ -93,6 +101,63 @@ describe("permissões por ação", () => {
     const senha = gerarSenha();
     expect(senha).toHaveLength(16);
     expect(senha).not.toMatch(/[0O1lI]/);
+  });
+});
+
+describe("MatrizDeCargos", () => {
+  const montar = (matriz: Matriz, permissoes: Permissao[]) => {
+    const gravar = vi.fn(() => Promise.resolve(true));
+    const gravacao = { gravar, gravando: false };
+    render(
+      <MatrizDeCargos
+        matriz={matriz}
+        cargos={[
+          {
+            chave: "operador",
+            rotulo: "Operador",
+            protegido: false,
+            temTudo: false,
+            permissoes,
+            usuarios: 0,
+          },
+        ]}
+        carregando={false}
+        erro={null}
+        aoTentarDeNovo={() => undefined}
+        podeEditar
+        catalogo={{
+          categorias: CATEGORIAS_DE_TELA,
+          avisoTemTudo: "",
+          gravacoes: { criar: gravacao, alterar: gravacao, excluir: gravacao },
+        }}
+      />,
+    );
+    return gravar;
+  };
+
+  it("acessos: marcar a tela libera só o Ver, sem os eventos dela", () => {
+    const gravar = montar("acessos", []);
+    expect(screen.queryByLabelText("Operador: Coletas · Criar/Editar")).toBeNull();
+    fireEvent.click(screen.getByLabelText("Operador: Coletas"));
+    expect(gravar).toHaveBeenCalledWith({
+      chave: "operador",
+      rotulo: "Operador",
+      permissoes: ["coletas.ver"],
+    });
+  });
+
+  it("permissões: evento fica travado sem a tela e liga só a sua linha com ela", () => {
+    const gravar = montar("permissoes", ["historico.ver"]);
+    expect(screen.queryByLabelText("Operador: Histórico")).toBeNull();
+    const semTela = screen.getByLabelText("Operador: Coletas · Criar/Editar");
+    expect(semTela.hasAttribute("disabled")).toBe(true);
+    expect(semTela.getAttribute("title")).toBe("Libere a tela na Matriz de acessos");
+    fireEvent.click(screen.getByLabelText("Operador: Histórico · Excluir"));
+    expect(gravar).toHaveBeenCalledWith({
+      chave: "operador",
+      rotulo: "Operador",
+      permissoes: ["historico.ver", "historico.excluir"],
+    });
   });
 });
 

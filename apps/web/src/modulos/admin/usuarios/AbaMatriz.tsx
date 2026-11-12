@@ -1,5 +1,4 @@
 import { type Permissao } from "@erp/shared/acesso/permissoes";
-import { ROTULO_DA_TELA, type Tela } from "@erp/shared/acesso/telas";
 import { type Cargo } from "@erp/shared/contratos/admin";
 import { Fragment } from "react";
 
@@ -16,15 +15,38 @@ import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { Checkbox } from "@/componentes/ui/checkbox";
 
-import { alternarNaMatriz, marcadoNaMatriz } from "../permissoes";
+import {
+  alternarAcao,
+  faltaATela,
+  type LinhaDaMatriz,
+  linhasDaTela,
+  type Matriz,
+  temAcao,
+} from "../permissoes";
 import { type CatalogoDeCargos } from "./AbaCargos";
 
+const TEXTOS: Record<Matriz, { titulo: string; coluna: string; descricao: string }> = {
+  acessos: {
+    titulo: "Matriz de acessos",
+    coluna: "Tela",
+    descricao:
+      "Cada linha é uma tela: marcada, ela aparece no menu e abre para o cargo. Desmarcar tira também as permissões da tela. O que se faz dentro dela fica na Matriz de permissões.",
+  },
+  permissoes: {
+    titulo: "Matriz de permissões",
+    coluna: "Evento",
+    descricao:
+      "Cada linha libera um evento dentro de uma tela. A tela precisa estar liberada na Matriz de acessos.",
+  },
+};
+
 /**
- * Matriz de permissões: linhas = telas, colunas = cargos. A célula liga Ver e Criar/Editar;
- * Excluir só no editor do cargo, para um clique aqui nunca liberar exclusão.
- * origem: PermissionMatrixDialog (construgarden)
+ * As duas matrizes dos cargos: linhas = telas (acessos) ou eventos (permissões), colunas = cargos.
+ * Cada célula liga e desliga só a sua linha; evento de tela que o cargo não abre fica travado.
+ * origem: PermissionMatrix (construgarden, src/pages/construgarden/Configuracoes.tsx)
  */
-export function MatrizDePermissoes({
+export function MatrizDeCargos({
+  matriz,
   cargos,
   carregando,
   erro,
@@ -32,6 +54,7 @@ export function MatrizDePermissoes({
   podeEditar,
   catalogo,
 }: {
+  matriz: Matriz;
   cargos: readonly Cargo[];
   carregando: boolean;
   erro: unknown;
@@ -40,20 +63,26 @@ export function MatrizDePermissoes({
   catalogo: CatalogoDeCargos;
 }) {
   const { alterar } = catalogo.gravacoes;
+  const textos = TEXTOS[matriz];
+  const categorias = catalogo.categorias
+    .map((c) => ({ ...c, linhas: c.telas.flatMap((tela) => linhasDaTela(matriz, tela)) }))
+    .filter((c) => c.linhas.length > 0);
+  const colunas = cargos.map((cargo) => ({ cargo, conjunto: new Set(cargo.permissoes) }));
 
-  const alternar = (cargo: Cargo, tela: Tela, ligar: boolean) => {
-    const permissoes: Permissao[] = [...alternarNaMatriz(new Set(cargo.permissoes), tela, ligar)];
+  const alternar = (
+    cargo: Cargo,
+    conjunto: ReadonlySet<Permissao>,
+    linha: LinhaDaMatriz,
+    ligar: boolean,
+  ) => {
+    const permissoes = [...alternarAcao(conjunto, linha.tela, linha.acao, ligar)];
     void alterar.gravar({ chave: cargo.chave, rotulo: cargo.rotulo, permissoes });
   };
 
   if (erro) return <MensagemErro erro={erro} aoTentarDeNovo={aoTentarDeNovo} />;
 
   return (
-    <Painel
-      titulo="Matriz de permissões"
-      descricao="Marcar libera Ver e Criar/Editar; desmarcar tira a tela do cargo. Excluir só no editor do cargo (aba Cargos)."
-      classeDoCorpo="overflow-x-auto"
-    >
+    <Painel titulo={textos.titulo} descricao={textos.descricao} classeDoCorpo="overflow-x-auto">
       {carregando ? (
         <table className={CLASSE_TABELA}>
           <tbody>
@@ -66,7 +95,7 @@ export function MatrizDePermissoes({
         <table className={CLASSE_TABELA}>
           <thead className={CLASSE_CABECALHO}>
             <tr>
-              <th className={CLASSE_TH}>Tela</th>
+              <th className={CLASSE_TH}>{textos.coluna}</th>
               {cargos.map((c) => (
                 <th key={c.chave} className={`${CLASSE_TH} text-center`}>
                   {c.rotulo}
@@ -75,29 +104,41 @@ export function MatrizDePermissoes({
             </tr>
           </thead>
           <tbody>
-            {catalogo.categorias.map((categoria) => (
+            {categorias.map((categoria) => (
               <Fragment key={categoria.chave}>
                 <tr className="border-b border-border bg-muted/40">
                   <td colSpan={cargos.length + 1} className={`${CLASSE_TD} label-xs`}>
                     {categoria.rotulo}
                   </td>
                 </tr>
-                {categoria.telas.map((tela) => (
-                  <tr key={tela} className={CLASSE_LINHA}>
-                    <td className={CLASSE_TD}>{ROTULO_DA_TELA[tela]}</td>
-                    {cargos.map((c) => (
-                      <td key={c.chave} className={`${CLASSE_TD} text-center`}>
-                        <Checkbox
-                          aria-label={`${c.rotulo}: ${ROTULO_DA_TELA[tela]}`}
-                          title={c.temTudo ? "Este cargo tem tudo" : undefined}
-                          checked={c.temTudo || marcadoNaMatriz(new Set(c.permissoes), tela)}
-                          disabled={c.temTudo || !podeEditar || alterar.gravando}
-                          onCheckedChange={(v) => {
-                            alternar(c, tela, v === true);
-                          }}
-                        />
-                      </td>
-                    ))}
+                {categoria.linhas.map((linha) => (
+                  <tr key={`${linha.tela}.${linha.acao}`} className={CLASSE_LINHA}>
+                    <td className={CLASSE_TD}>{linha.rotulo}</td>
+                    {colunas.map(({ cargo, conjunto }) => {
+                      const semTela = !cargo.temTudo && faltaATela(conjunto, linha);
+                      return (
+                        <td key={cargo.chave} className={`${CLASSE_TD} text-center`}>
+                          <Checkbox
+                            aria-label={`${cargo.rotulo}: ${linha.rotulo}`}
+                            title={
+                              cargo.temTudo
+                                ? "Este cargo tem tudo"
+                                : semTela
+                                  ? "Libere a tela na Matriz de acessos"
+                                  : undefined
+                            }
+                            checked={
+                              cargo.temTudo ||
+                              (!semTela && temAcao(conjunto, linha.tela, linha.acao))
+                            }
+                            disabled={cargo.temTudo || semTela || !podeEditar || alterar.gravando}
+                            onCheckedChange={(v) => {
+                              alternar(cargo, conjunto, linha, v === true);
+                            }}
+                          />
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </Fragment>
