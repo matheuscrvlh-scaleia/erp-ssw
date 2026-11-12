@@ -10,17 +10,22 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
 
-/** Toda a Listagem fica sob esta chave ("Atualizar" invalida tudo). */
-export const CHAVE_DA_LISTAGEM = ["listagem"] as const;
-
 export interface Ordenacao {
   ordem: OrdemLista;
   direcao: "asc" | "desc";
 }
 
+/** Toda a Listagem fica sob `chaves.tudo` ("Atualizar" invalida tudo). */
+export const chaves = {
+  tudo: ["listagem"] as const,
+  lista: (filtro: FiltroListaEntrada, ordenacao: Ordenacao, pagina: number) =>
+    [...chaves.tudo, "lista", filtro, ordenacao, pagina] as const,
+  codigos: (filtro: FiltroListaEntrada) => [...chaves.tudo, "codigos", filtro] as const,
+};
+
 export const consultaLista = (filtro: FiltroListaEntrada, ordenacao: Ordenacao, pagina: number) =>
   queryOptions({
-    queryKey: [...CHAVE_DA_LISTAGEM, "lista", filtro, ordenacao, pagina],
+    queryKey: chaves.lista(filtro, ordenacao, pagina),
     queryFn: () =>
       chamar(c.listar, {
         entrada: { ...filtro, ...ordenacao, pagina, tamanho: ITENS_POR_PAGINA },
@@ -31,7 +36,7 @@ export const consultaLista = (filtro: FiltroListaEntrada, ordenacao: Ordenacao, 
 export const consultaCodigosDoRecorte = (filtro: FiltroListaEntrada) => {
   const semCodigos = { ...filtro, codigos: undefined };
   return queryOptions({
-    queryKey: [...CHAVE_DA_LISTAGEM, "codigos", semCodigos],
+    queryKey: chaves.codigos(semCodigos),
     queryFn: () => chamar(c.codigos, { entrada: semCodigos }),
     staleTime: 60_000,
   });

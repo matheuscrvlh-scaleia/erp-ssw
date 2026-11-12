@@ -6,22 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popove
 import { useSelecaoAdiada } from "@/hooks/use-selecao-adiada";
 import { ItemMarcavel } from "@/modulos/filtros/componentes";
 
-/**
- * Próxima seleção do seletor Recorte: "CT-e emitidos" é o recorte sem condição — marcá-lo
- * desmarca os outros, e desmarcar tudo volta para ele. Ordem sempre a da lista.
- */
-export function alternarRecorte(
-  marcados: readonly TipoRecorte[],
-  recorte: TipoRecorte,
-): TipoRecorte[] {
-  if (recorte === "emitidos") return ["emitidos"];
-  const proximos = new Set(marcados);
-  proximos.delete("emitidos");
-  if (proximos.has(recorte)) proximos.delete(recorte);
-  else proximos.add(recorte);
-  const lista = TIPOS_RECORTE.filter((t) => proximos.has(t));
-  return lista.length > 0 ? lista : ["emitidos"];
-}
+import { alternarRecorte } from "../regras";
 
 /**
  * Seletor "Recorte", de múltipla escolha: o CT-e entra se cair em qualquer recorte marcado.

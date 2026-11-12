@@ -10,8 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
 
-import { type Ordenacao } from "./api";
-import { selo } from "./textos";
+import { type Ordenacao } from "../api";
+import { selo } from "../textos";
 
 type Tom = "ruim_forte" | "ruim" | "atencao" | "bom";
 

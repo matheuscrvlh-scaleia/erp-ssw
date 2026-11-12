@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { rotulosDosRecortes } from "./busca";
+import { rotulosDosRecortes } from "../busca";
 import { SeletorDeRecorte } from "./SeletorDeRecorte";
 
 afterEach(cleanup);

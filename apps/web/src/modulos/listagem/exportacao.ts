@@ -7,6 +7,9 @@ import { type LinhaLista } from "@erp/shared/contratos/listagem";
 
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 
+import { type BuscaDaLista } from "./busca";
+import { nomesDasUnidades } from "./textos";
+
 export interface LinhaExportada {
   nf: number | null;
   ctrc: string;
@@ -105,4 +108,23 @@ export function linhaExportada(l: LinhaLista): LinhaExportada {
 /** `listagem-ctrcs-atrasados+sem_movimento-2026-11-01-a-2026-11-10` (o kit acrescenta a data). */
 export function nomeDoArquivo(recortes: readonly string[], inicio: string, fim: string): string {
   return `listagem-ctrcs-${recortes.join("+")}-${inicio}-a-${fim}`;
+}
+
+/** Subtítulo do arquivo: o período e os filtros preenchidos, separados por " · ". */
+export function subtituloDaExportacao(
+  busca: BuscaDaLista,
+  periodo: { inicio: string; fim: string },
+): string {
+  return [
+    `Período: ${periodo.inicio} → ${periodo.fim}`,
+    busca.unidades.length ? `Unidades: ${nomesDasUnidades(busca.unidades).join(", ")}` : null,
+    busca.parceiros.length ? `Parceiros: ${busca.parceiros.length}` : null,
+    busca.codigos.length ? `Códigos: ${busca.codigos.join(", ")}` : null,
+    busca.filiais.length ? `Filiais: ${busca.filiais.join(", ")}` : null,
+    busca.remetente ? `Remetente: ${busca.remetente}` : null,
+    busca.destino ? `Destino: ${busca.destino}` : null,
+    busca.cidade ? `Cidade: ${busca.cidade}` : null,
+  ]
+    .filter((p) => p !== null)
+    .join(" · ");
 }

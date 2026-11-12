@@ -1,9 +1,4 @@
-import { codigoEmAbertoNoRecorte } from "@erp/dominio/listagem/faixas";
-import {
-  type CodigoDoRecorte,
-  type FiltroListaEntrada,
-  type TipoRecorte,
-} from "@erp/shared/contratos/listagem";
+import { type FiltroListaEntrada } from "@erp/shared/contratos/listagem";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
@@ -15,10 +10,8 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 import { AvisoDaLista, ItemMarcavel } from "@/modulos/filtros/componentes";
 
-import { consultaCodigosDoRecorte } from "./api";
-
-const GRUPOS_DE_OCORRENCIA = ["aberto", "cliente", "empresa", "penaliza"] as const;
-type GrupoDeOcorrencia = (typeof GRUPOS_DE_OCORRENCIA)[number];
+import { consultaCodigosDoRecorte } from "../api";
+import { codigosDoGrupo, type GrupoDeOcorrencia, GRUPOS_DE_OCORRENCIA } from "../regras";
 
 const ROTULO_DO_GRUPO: Record<GrupoDeOcorrencia, string> = {
   aberto: "Em aberto",
@@ -34,27 +27,6 @@ const TIPO_CURTO: Record<string, string> = {
   BAIXA: "baixa",
   ENTREGA: "entrega",
 };
-
-/**
- * Códigos do recorte (com CT-e) que formam o atalho. "Em aberto" de "Saíram para entrega com
- * prazo vencido" usa a lista de finalizadores própria.
- */
-export function codigosDoGrupo(
-  grupo: GrupoDeOcorrencia,
-  codigos: readonly CodigoDoRecorte[],
-  recorte: TipoRecorte,
-): number[] {
-  const entra = (c: CodigoDoRecorte) => {
-    if (grupo === "aberto") return codigoEmAbertoNoRecorte(recorte, c);
-    if (grupo === "cliente") return c.tipo === "PENDENCIA_CLIENTE";
-    if (grupo === "empresa") return c.tipo === "PENDENCIA_TRANSPORTADORA";
-    return c.penaliza;
-  };
-  return codigos
-    .filter((c) => c.qtd > 0 && entra(c))
-    .map((c) => c.codigo)
-    .sort((a, b) => a - b);
-}
 
 /**
  * Seletor "Ocorrência": códigos de ocorrência efetiva do recorte atual, com a quantidade de
