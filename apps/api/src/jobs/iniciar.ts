@@ -11,11 +11,11 @@ import { type Redis } from "ioredis";
 
 import { type FilaDeJobs } from "../infra/fila";
 import { agendamentosDesejados, sincronizarAgendamentos } from "./agendamentos";
-import { limparSessoes } from "./manutencao/limpar-sessoes";
-import { criarJobRecifrarSegredos, NOME_DO_JOB_RECIFRAR } from "./manutencao/recifrar";
-import { recalcularPrazos } from "./prazos/job";
+import { limparSessoes } from "./limpar-sessoes.job";
 import { criarProcessador } from "./processador";
-import { propagarClassificacao, recalcularCtesDoCodigo } from "./recalculo/job";
+import { recalcularPrazos } from "./recalcular-prazos.job";
+import { propagarClassificacao, recalcularCtesDoCodigo } from "./recalculo.job";
+import { criarJobRecifrarSegredos, NOME_DO_JOB_RECIFRAR } from "./recifrar-segredos.job";
 import {
   type DefinicaoDeJob,
   type ExecutorDosJobs,

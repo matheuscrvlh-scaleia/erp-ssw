@@ -14,7 +14,7 @@ import {
 } from "@erp/dominio/nucleo";
 import { CATALOGO_FR, cte } from "@erp/dominio/testes/nucleo";
 
-import { type ExecutorDosJobs, type RepositoriosDosJobs } from "../registro";
+import { type ExecutorDosJobs, type RepositoriosDosJobs } from "../jobs/registro";
 
 export const EMPRESA = "0b9a2c3e-1d4f-4a5b-8c6d-7e8f9a0b1c2d";
 

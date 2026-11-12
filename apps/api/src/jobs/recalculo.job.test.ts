@@ -3,9 +3,9 @@ import { CATALOGO_FR, ocorrencia } from "@erp/dominio/testes/nucleo";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
 
-import { criarProcessador } from "../processador";
-import { BancoFalso, cteGravado, EMPRESA } from "../testes/banco-falso";
-import { recalcularCtesDoCodigo } from "./job";
+import { BancoFalso, cteGravado, EMPRESA } from "../testes/banco-falso-dos-jobs";
+import { criarProcessador } from "./processador";
+import { recalcularCtesDoCodigo } from "./recalculo.job";
 
 const log = pino({ level: "silent" });
 

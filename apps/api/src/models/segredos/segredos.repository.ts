@@ -3,7 +3,7 @@ import { empresaIntegracoes, plataformaIntegracoes } from "@erp/db/schema";
 import { TIPOS_INTEGRACAO_PLATAFORMA } from "@erp/shared/plataforma";
 import { and, eq, isNotNull, ne, or } from "drizzle-orm";
 
-import { type RepositorioSegredos } from "./recifrar";
+import { type RepositorioSegredos } from "./segredos.service";
 
 const segredoDe = (cifrado: string | null, versaoChave: number | null) =>
   cifrado === null || versaoChave === null ? null : { cifrado, versaoChave };

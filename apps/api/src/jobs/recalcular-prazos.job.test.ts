@@ -5,10 +5,14 @@ import { type RegraDePrazo } from "@erp/dominio/nucleo";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
 
-import { criarProcessador } from "../processador";
-import { type ExecutorDosJobs, type RepositoriosDosJobs } from "../registro";
-import { BancoFalso } from "../testes/banco-falso";
-import { type CteDoRecalculo, type NovaPrevisao, novasPrevisoes, recalcularPrazos } from "./job";
+import {
+  type CteDoRecalculo,
+  type NovaPrevisao,
+} from "../models/prazos/recalculo-de-prazos.service";
+import { BancoFalso } from "../testes/banco-falso-dos-jobs";
+import { criarProcessador } from "./processador";
+import { recalcularPrazos } from "./recalcular-prazos.job";
+import { type ExecutorDosJobs, type RepositoriosDosJobs } from "./registro";
 
 const EMPRESA = randomUUID();
 
@@ -39,31 +43,6 @@ function cte(dados: Partial<CteDoRecalculo>): CteDoRecalculo {
     ...dados,
   };
 }
-
-describe("novasPrevisoes", () => {
-  it("aplica a regra e devolve a previsão do SSW quando a regra sai; não mexe no que já está certo", () => {
-    const comRegra = cte({ parceiroCnpj: "X" });
-    const orfao = cte({ prazoFonte: "regra_unidade", dataPrevistaEntrega: "2026-11-06" });
-    const certo = cte({});
-    const novas = novasPrevisoes([comRegra, orfao, certo], [regraParceiro], new Map());
-    expect(novas).toEqual([
-      expect.objectContaining({
-        cteId: comRegra.id,
-        dataPrevistaEntrega: "2026-11-09",
-        prazoFonte: "regra_parceiro",
-        previsaoSswData: "2026-11-09",
-        troca: null,
-      }),
-      expect.objectContaining({
-        cteId: orfao.id,
-        dataPrevistaEntrega: "2026-11-09",
-        prazoFonte: "ssw_038",
-        dataBasePrazo: null,
-        troca: { dataAnterior: "2026-11-06", dataNova: "2026-11-09", fonte: "ssw_038" },
-      }),
-    ]);
-  });
-});
 
 describe("job recalcular-prazos-configurados", () => {
   it("roda no contexto da empresa, em lotes, até acabar", async () => {

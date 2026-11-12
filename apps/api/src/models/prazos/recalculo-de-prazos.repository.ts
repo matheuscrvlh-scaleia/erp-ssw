@@ -3,7 +3,7 @@ import { ctePrazoHistorico, ctes, ocorrencias, prazosConfigurados } from "@erp/d
 import { CODIGO_CHEGADA_NA_UNIDADE, type OcorrenciaDoCte } from "@erp/dominio/nucleo";
 import { and, asc, eq, gt, inArray, or, type SQL } from "drizzle-orm";
 
-import { FONTES_DE_REGRA, type RepositorioPrazosDoJob } from "./job";
+import { FONTES_DE_REGRA, type RepositorioPrazosDoJob } from "./recalculo-de-prazos.service";
 
 export function criarRepositorioPrazosDoJob(tx: Transacao): RepositorioPrazosDoJob {
   return {

@@ -11,15 +11,15 @@ import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador"
 import { criarServicoDeSenhas } from "./infra/senhas";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
 import { criarFilasDosJobs, ligarWorkersDosJobs, pedirRecifragemDeSegredos } from "./jobs/iniciar";
-import { criarRepositorioManutencao } from "./jobs/manutencao/repositorio";
-import { criarRepositorioSegredos } from "./jobs/manutencao/repositorio-segredos";
-import { criarRepositorioPrazosDoJob } from "./jobs/prazos/repositorio";
-import { criarRepositorioRecalculo } from "./jobs/recalculo/repositorio";
 import { type RepositoriosDosJobs } from "./jobs/registro";
-import { criarRepositorioAgendamentos } from "./jobs/repositorio-agendamentos";
+import { criarRepositorioAgendamentos } from "./models/agendamentos/agendamentos.repository";
 import { criarCacheDeConfiguracoes } from "./models/configuracoes/cache";
 import { criarRepositorioCteNucleo } from "./models/cte/cte.repository";
+import { criarRepositorioManutencao } from "./models/manutencao/manutencao.repository";
+import { criarRepositorioPrazosDoJob } from "./models/prazos/recalculo-de-prazos.repository";
+import { criarRepositorioRecalculo } from "./models/recalculo/recalculo.repository";
 import { criarRepositorios } from "./models/repositorios";
+import { criarRepositorioSegredos } from "./models/segredos/segredos.repository";
 
 /**
  * Tempo para terminar as requisições e os jobs em andamento depois do SIGTERM. O job que não
