@@ -16,7 +16,7 @@ const queryClient = criarQueryClient(() => {
   queryClient.clear();
   void roteador.navigate({
     to: "/login",
-    search: { reason: "expired", redirect: `${pathname}${search}` },
+    search: { redirect: `${pathname}${search}` },
   });
 });
 const roteador = criarRoteador(queryClient);

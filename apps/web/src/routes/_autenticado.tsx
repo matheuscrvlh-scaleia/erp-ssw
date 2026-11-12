@@ -7,7 +7,6 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { type CSSProperties, useCallback, useState } from "react";
-import { toast } from "sonner";
 
 import { decidirAcesso } from "@/acesso/guarda";
 import { useEncerrarPorInatividade } from "@/acesso/inatividade";
@@ -69,7 +68,6 @@ function LayoutAutenticado() {
       const { pathname, search } = window.location;
       await sair().catch(() => undefined);
       queryClient.clear();
-      toast.info("Sessão encerrada após 30 minutos sem uso. Entre novamente.");
       await navigate({ to: "/login", search: { redirect: `${pathname}${search}` } });
     })();
   }, [queryClient, navigate]);
@@ -78,7 +76,7 @@ function LayoutAutenticado() {
   const aoSair = async () => {
     await sair().catch(() => undefined);
     queryClient.clear();
-    await navigate({ to: "/login", search: { reason: "signed_out" } });
+    await navigate({ to: "/login" });
   };
 
   if (caminho === "/sem-acesso") {

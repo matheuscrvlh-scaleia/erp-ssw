@@ -1,7 +1,9 @@
 /*
  * Ilustração isométrica (projeção 2:1) de um centro de distribuição para a tela de login:
- * galpão, esteira com caixas, caminhão baú na doca, racks de servidores, pilha de caixas em
- * destaque e um cartão flutuante, sobre um piso de placas.
+ * galpão, esteira com as etapas (pórtico de leitura, etiquetadora e túnel de triagem), terminal,
+ * caminhão baú na
+ * doca, racks de servidores, pilha de caixas em destaque e um cartão flutuante. O piso de placas
+ * é `PisoIsometrico`, à parte, para cobrir a tela inteira por baixo do formulário.
  *
  * As cores vêm de variáveis CSS (com fallback para o tema claro), para o tema escuro só
  * redefini-las num ancestral:
@@ -184,25 +186,6 @@ function CaixaPapelao({ x, y, z = 0, w, d, h }: Medidas) {
 
 /* ---------------------------------------------------------------- cenário */
 
-function Piso() {
-  const placas: Medidas[] = [];
-  const lado = 104;
-  const vao = 8;
-  for (let i = -3; i <= 6; i++) {
-    for (let j = -3; j <= 4; j++) {
-      placas.push({ x: i * (lado + vao), y: j * (lado + vao), z: -6, w: lado, d: lado, h: 6 });
-    }
-  }
-  placas.sort((a, b) => a.x + a.y - (b.x + b.y));
-  return (
-    <g mask="url(#ilustra-logistica-fade)">
-      {placas.map((p) => (
-        <Bloco key={`${p.x}:${p.y}`} {...p} />
-      ))}
-    </g>
-  );
-}
-
 function Galpao() {
   const comprimento = 160;
   const fundo = 150;
@@ -338,14 +321,15 @@ function Galpao() {
   );
 }
 
-const ESTEIRA = { inicio: 160, fim: 336, y: 60, largura: 40, altura: 30 } as const;
+const ESTEIRA = { inicio: 160, fim: 424, y: 60, largura: 40, altura: 30 } as const;
 const CAIXA_ESTEIRA = 22;
 const PASSO_ESTEIRA = 44;
+const CAIXAS_NA_ESTEIRA = 6;
 
 function Esteira() {
   const { inicio, fim, y, largura, altura } = ESTEIRA;
   const comprimento = fim - inicio;
-  const pernas = [186, 250, 314];
+  const pernas = [186, 250, 314, 378, 412];
   return (
     <g>
       {pernas.map((px) => (
@@ -376,8 +360,9 @@ function Esteira() {
         ))}
       </g>
       <Bloco x={inicio} y={y} z={altura - 2} w={comprimento} d={4} h={6} />
+      <EtapasAtras />
       <g className="ilustra-logistica-caixas">
-        {[0, 1, 2, 3].map((i) => (
+        {Array.from({ length: CAIXAS_NA_ESTEIRA }, (_, i) => (
           <g
             key={i}
             className="ilustra-logistica-caixa"
@@ -399,6 +384,92 @@ function Esteira() {
       {pernas.map((px) => (
         <Bloco key={`f${px}`} x={px} y={y + largura - 8} w={5} d={5} h={altura - 10} />
       ))}
+      <EtapasNaFrente />
+    </g>
+  );
+}
+
+const PORTAL = { x: 200, w: 10, h: 50 } as const;
+const ETIQUETADORA = { x: 262, w: 34 } as const;
+const TUNEL = { x: 344, w: 36, h: 40 } as const;
+
+/** Partes das etapas atrás das caixas: postes de trás, corpo da etiquetadora e fundo do túnel. */
+function EtapasAtras() {
+  const { y, altura } = ESTEIRA;
+  const topo = altura - 2;
+  return (
+    <g>
+      <Bloco x={PORTAL.x} y={y - 6} z={topo} w={PORTAL.w} d={6} h={PORTAL.h} />
+      <Bloco x={TUNEL.x} y={y - 6} z={topo} w={TUNEL.w} d={6} h={TUNEL.h} />
+      <Bloco x={ETIQUETADORA.x} y={y - 20} w={ETIQUETADORA.w} d={18} h={86} />
+      <g transform={planoEsq(ETIQUETADORA.x, y - 2, 0)}>
+        <rect x={5} y={-80} width={24} height={15} rx={1.5} fill={COR.marca} fillOpacity={0.9} />
+        <rect x={8} y={-76} width={12} height={2} rx={1} fill={COR.topo} />
+        <rect x={8} y={-71} width={18} height={2} rx={1} fill={COR.topo} fillOpacity={0.6} />
+        <circle cx={9} cy={-58} r={2} fill={COR.marca} />
+        <circle cx={16} cy={-58} r={2} fill={COR.linha} />
+      </g>
+      <g transform={planoDir(ETIQUETADORA.x + ETIQUETADORA.w, y - 2, 0)}>
+        {[0, 1, 2, 3].map((i) => (
+          <rect key={i} x={4} y={-78 + i * 6} width={10} height={2} fill={COR.linha} />
+        ))}
+      </g>
+    </g>
+  );
+}
+
+/**
+ * Partes das etapas que passam na frente das caixas: o feixe de leitura (translúcido, na cor da
+ * empresa), o poste da frente e a viga do pórtico, o braço da etiquetadora e o túnel de triagem.
+ */
+function EtapasNaFrente() {
+  const { y, largura, altura } = ESTEIRA;
+  const topo = altura - 2;
+  const frente = y + largura;
+  const meio = PORTAL.x + PORTAL.w / 2;
+  return (
+    <g>
+      <Face
+        p={[
+          [meio, y, topo + 6],
+          [meio, frente, topo + 6],
+          [meio, frente, topo + PORTAL.h],
+          [meio, y, topo + PORTAL.h],
+        ]}
+        cor={COR.marca}
+        opacidade={0.12}
+      />
+      <Bloco x={PORTAL.x} y={frente} z={topo} w={PORTAL.w} d={6} h={PORTAL.h} />
+      <g transform={planoEsq(PORTAL.x, frente + 6, topo)}>
+        <rect x={4} y={-44} width={2.5} height={34} rx={1} fill={COR.marca} />
+      </g>
+      <Bloco x={PORTAL.x} y={y - 6} z={topo + PORTAL.h} w={PORTAL.w} d={largura + 12} h={9} />
+      <Bloco x={ETIQUETADORA.x + 4} y={y - 2} z={topo + 38} w={26} d={30} h={11} />
+      <Bloco x={TUNEL.x} y={frente} z={topo} w={TUNEL.w} d={6} h={TUNEL.h} />
+      <g transform={planoEsq(TUNEL.x, frente + 6, topo)}>
+        <rect x={5} y={-30} width={TUNEL.w - 10} height={3} rx={1} fill={COR.marca} />
+        <rect x={5} y={-23} width={(TUNEL.w - 10) * 0.6} height={2} rx={1} fill={COR.linha} />
+      </g>
+      <Bloco x={TUNEL.x - 2} y={y - 6} z={topo + TUNEL.h} w={TUNEL.w + 4} d={largura + 12} h={8} />
+      <Bloco x={ETIQUETADORA.x + 13} y={y + 14} z={topo + 26} w={8} d={8} h={12} destaque />
+    </g>
+  );
+}
+
+/** Terminal de conferência ao lado da esteira, com a tela na cor da empresa. */
+function Terminal() {
+  const x = 196;
+  const y = 124;
+  return (
+    <g>
+      <Bloco x={x} y={y} w={18} d={14} h={4} />
+      <Bloco x={x + 6} y={y + 4} z={4} w={6} d={6} h={34} />
+      <Bloco x={x - 2} y={y + 6} z={38} w={22} d={4} h={18} />
+      <g transform={planoEsq(x - 2, y + 10, 38)}>
+        <rect x={2.5} y={-15.5} width={17} height={13} rx={1} fill={COR.marca} fillOpacity={0.9} />
+        <rect x={5} y={-12} width={8} height={1.6} fill={COR.topo} />
+        <rect x={5} y={-8.5} width={11} height={1.6} fill={COR.topo} fillOpacity={0.6} />
+      </g>
     </g>
   );
 }
@@ -600,10 +671,13 @@ function PaleteComCaixas() {
   );
 }
 
+/** Quanto o caminhão (e o palete ao lado) andam no eixo x para a esteira mais longa caber. */
+const AVANCO = 88;
+
 const ESTILO = `
 @media (prefers-reduced-motion: no-preference) {
   .ilustra-logistica-caixa {
-    animation: ilustra-logistica-esteira 12s linear infinite;
+    animation: ilustra-logistica-esteira 18s linear infinite;
   }
   .ilustra-logistica-cartao {
     animation: ilustra-logistica-flutuar 5s ease-in-out infinite;
@@ -613,7 +687,7 @@ const ESTILO = `
   0% { transform: translate(0px, 0px); opacity: 0; }
   6% { opacity: 1; }
   94% { opacity: 1; }
-  100% { transform: translate(${4 * PASSO_ESTEIRA}px, ${2 * PASSO_ESTEIRA}px); opacity: 0; }
+  100% { transform: translate(${CAIXAS_NA_ESTEIRA * PASSO_ESTEIRA}px, ${(CAIXAS_NA_ESTEIRA * PASSO_ESTEIRA) / 2}px); opacity: 0; }
 }
 @keyframes ilustra-logistica-flutuar {
   0%, 100% { transform: translate(0px, 0px); }
@@ -624,7 +698,7 @@ const ESTILO = `
 export function IlustracaoLogistica({ className }: { className?: string | undefined }) {
   return (
     <svg
-      viewBox="0 0 800 520"
+      viewBox="40 80 840 460"
       role="img"
       aria-label="Ilustração de um centro de distribuição com caminhão"
       preserveAspectRatio="xMidYMid meet"
@@ -634,17 +708,8 @@ export function IlustracaoLogistica({ className }: { className?: string | undefi
         <filter id="ilustra-logistica-desfoque" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="6" />
         </filter>
-        <radialGradient id="ilustra-logistica-gradiente" cx="50%" cy="50%" r="55%">
-          <stop offset="0.45" stopColor="#ffffff" />
-          <stop offset="1" stopColor="#000000" />
-        </radialGradient>
-        <mask id="ilustra-logistica-fade">
-          <rect width="800" height="520" fill="url(#ilustra-logistica-gradiente)" />
-        </mask>
       </defs>
       <style>{ESTILO}</style>
-
-      <Piso />
 
       {/* sombras de contato de tudo que está no chão */}
       <Sombra x={0} y={0} w={166} d={158} opacidade={0.35} />
@@ -655,20 +720,88 @@ export function IlustracaoLogistica({ className }: { className?: string | undefi
         d={40}
         opacidade={0.25}
       />
-      <Sombra x={380} y={146} w={44} d={40} opacidade={0.3} />
-      <Sombra x={344} y={50} w={190} d={64} opacidade={0.4} />
+      <Sombra x={380 + AVANCO} y={146} w={44} d={40} opacidade={0.3} />
+      <Sombra x={344 + AVANCO} y={56} w={186} d={52} opacidade={0.18} />
       <Sombra x={206} y={-34} w={78} d={40} opacidade={0.35} />
       <Sombra x={60} y={196} w={92} d={66} opacidade={0.3} />
       <Sombra x={242} y={176} w={82} d={38} opacidade={0.25} />
+      <Sombra x={262} y={40} w={34} d={18} opacidade={0.3} />
+      <Sombra x={196} y={124} w={18} d={14} opacidade={0.3} />
 
       <Rack x={206} y={-34} />
       <Rack x={250} y={-34} />
       <Galpao />
       <Esteira />
-      <PaleteComCaixas />
-      <Caminhao />
+      <Terminal />
+      <g transform={`translate(${AVANCO} ${AVANCO / 2})`}>
+        <Caminhao />
+        <PaleteComCaixas />
+      </g>
       <PilhaDestaque />
       <CartaoFlutuante />
+    </svg>
+  );
+}
+
+/** Lado da placa e vão entre placas, em unidades do mundo (o mesmo desenho da ilustração). */
+const PLACA = 104;
+const VAO = 8;
+const PASSO = PLACA + VAO;
+
+/** Uma placa do piso com o topo e as duas bordas visíveis, com o canto de cima em (cx, cy). */
+function PlacaDoPiso({ cx, cy }: { cx: number; cy: number }) {
+  const meia = PLACA / 2;
+  const espessura = 6;
+  return (
+    <g>
+      <polygon
+        points={`${cx - PLACA},${cy + meia} ${cx},${cy + PLACA} ${cx},${cy + PLACA + espessura} ${cx - PLACA},${cy + meia + espessura}`}
+        fill={COR.esq}
+      />
+      <polygon
+        points={`${cx},${cy + PLACA} ${cx + PLACA},${cy + meia} ${cx + PLACA},${cy + meia + espessura} ${cx},${cy + PLACA + espessura}`}
+        fill={COR.dir}
+      />
+      <polygon
+        points={`${cx},${cy} ${cx + PLACA},${cy + meia} ${cx},${cy + PLACA} ${cx - PLACA},${cy + meia}`}
+        fill={COR.topo}
+      />
+    </g>
+  );
+}
+
+/**
+ * Piso de placas isométricas que se repete pela tela inteira (fundo do login). O padrão tem duas
+ * placas por célula (2·PASSO × PASSO) e repete as vizinhas para as bordas não cortarem.
+ */
+export function PisoIsometrico({ className }: { className?: string | undefined }) {
+  const largura = 2 * PASSO;
+  const altura = PASSO;
+  const cantos: { cx: number; cy: number }[] = [];
+  for (let i = -1; i <= 2; i++) {
+    for (let j = -2; j <= 1; j++) {
+      cantos.push({ cx: i * largura, cy: j * altura });
+      cantos.push({ cx: i * largura + PASSO, cy: j * altura + altura / 2 });
+    }
+  }
+  cantos.sort((a, b) => a.cy - b.cy);
+  return (
+    <svg aria-hidden className={className}>
+      <defs>
+        <pattern
+          id="piso-isometrico"
+          width={largura}
+          height={altura}
+          patternUnits="userSpaceOnUse"
+          patternTransform="scale(1.7)"
+        >
+          <rect width={largura} height={altura} fill={COR.linha} fillOpacity={0.3} />
+          {cantos.map((c) => (
+            <PlacaDoPiso key={`${c.cx}:${c.cy}`} {...c} />
+          ))}
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#piso-isometrico)" />
     </svg>
   );
 }

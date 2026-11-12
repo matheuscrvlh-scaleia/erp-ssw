@@ -1,9 +1,8 @@
-import { CAMINHOS_GOOGLE, contratosAuth, ERROS_LOGIN_GOOGLE } from "@erp/shared/contratos/auth";
+import { CAMINHOS_GOOGLE, contratosAuth } from "@erp/shared/contratos/auth";
 import { z } from "@erp/shared/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,17 +14,15 @@ import {
 } from "@/acesso/componentes/CartaoDeEntrada";
 import { destinoSeguro } from "@/acesso/guarda";
 import { entrar } from "@/acesso/sessao";
-import { Aviso } from "@/componentes/comum/Aviso";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
-import { chamar, renovarSessao } from "@/lib/api";
+import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
+/** Só o destino: no login não aparece aviso nenhum além de e-mail ou senha errados. */
 const busca = z.object({
-  reason: z.enum(["expired", "signed_out"]).optional().catch(undefined),
   redirect: z.string().optional().catch(undefined),
-  erro: z.enum(["sem_conta", "falhou"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/login")({
@@ -36,13 +33,11 @@ export const Route = createFileRoute("/login")({
 type Campos = z.infer<typeof contratosAuth.login.entrada>;
 
 function PaginaLogin() {
-  const { reason, redirect, erro } = Route.useSearch();
+  const { redirect } = Route.useSearch();
   const destino = destinoSeguro(redirect);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [modo, setModo] = useState<"entrar" | "esqueci">("entrar");
-  const [avisoFechado, setAvisoFechado] = useState(false);
-  const [restaurando, setRestaurando] = useState(false);
   const provedores = useQuery({
     queryKey: ["provedores-de-login"],
     queryFn: () => chamar(contratosAuth.provedores),
@@ -56,48 +51,6 @@ function PaginaLogin() {
     await queryClient.invalidateQueries({ queryKey: ["acesso"] });
     await navigate({ href: destino });
   };
-
-  const restaurarSessao = async () => {
-    setRestaurando(true);
-    try {
-      if (await renovarSessao()) {
-        toast.success("Sessão restaurada.");
-        await irParaODestino();
-        return;
-      }
-      toast.error("Não foi possível restaurar a sessão. Entre novamente.");
-      setAvisoFechado(true);
-    } finally {
-      setRestaurando(false);
-    }
-  };
-
-  const aviso = avisoFechado ? null : (
-    <>
-      {reason === "expired" && (
-        <Aviso
-          tom="alerta"
-          titulo="Sua sessão expirou"
-          acao={
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => void restaurarSessao()}
-              disabled={restaurando}
-              className="h-8 gap-1.5 text-[12px]"
-            >
-              <RefreshCw className={`h-3 w-3 ${restaurando ? "animate-spin" : ""}`} />
-              {restaurando ? "Restaurando…" : "Tentar restaurar sessão"}
-            </Button>
-          }
-        >
-          Podemos tentar restaurar automaticamente antes de pedir suas credenciais.
-        </Aviso>
-      )}
-      {erro && <Aviso tom="erro">{ERROS_LOGIN_GOOGLE[erro]}</Aviso>}
-    </>
-  );
 
   if (modo === "esqueci") {
     return (
@@ -118,7 +71,6 @@ function PaginaLogin() {
     <CartaoDeEntrada
       titulo="Entre com sua conta"
       subtitulo="Performance logística em tempo real."
-      aviso={aviso}
       rodape="Sem conta? Peça um convite ao administrador da sua empresa."
     >
       <FormularioEntrar

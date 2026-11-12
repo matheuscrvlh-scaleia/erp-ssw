@@ -22,7 +22,7 @@ function PaginaSemAcesso() {
   const aoSair = async () => {
     await sair().catch(() => undefined);
     queryClient.clear();
-    await navigate({ to: "/login", search: { reason: "signed_out" } });
+    await navigate({ to: "/login" });
   };
 
   const inativa = data ? !data.ativo : false;

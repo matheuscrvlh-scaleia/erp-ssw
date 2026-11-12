@@ -3,23 +3,22 @@ import { type ReactNode, useEffect, useLayoutEffect } from "react";
 import { aplicarPaleta, ultimaCorDaMarca } from "@/acesso/marca";
 import { forcarTemaClaro } from "@/lib/tema";
 
-import { IlustracaoLogistica } from "./IlustracaoLogistica";
+import { IlustracaoLogistica, PisoIsometrico } from "./IlustracaoLogistica";
 
 /**
  * Moldura das telas fora do painel (login, nova senha, convite), no desenho de
- * mockups/login.png, em tela cheia: ilustração à esquerda e o formulário à direita. A cor é a
+ * mockups/login.png, em tela cheia: o piso de placas cobre a tela, a ilustração fica à esquerda e o
+ * formulário à direita num painel translúcido (o piso aparece por baixo). A cor é a
  * da última empresa usada neste navegador (antes do login não se sabe a empresa).
  */
 export function CartaoDeEntrada({
   titulo,
   subtitulo,
-  aviso,
   rodape,
   children,
 }: {
   titulo: string;
   subtitulo: string;
-  aviso?: ReactNode;
   /** Linha no pé do formulário (ex.: "Sem conta? Peça um convite…"). */
   rodape?: ReactNode;
   children: ReactNode;
@@ -29,25 +28,26 @@ export function CartaoDeEntrada({
   useLayoutEffect(forcarTemaClaro, []);
 
   return (
-    <div className="grid min-h-screen w-full bg-card lg:grid-cols-[1.35fr_1fr]">
-      <div
-        aria-hidden
-        className="relative hidden items-center justify-center overflow-hidden bg-gradient-to-br from-superficie to-muted p-10 lg:flex"
-      >
-        <IlustracaoLogistica className="h-auto w-full max-w-[760px]" />
-      </div>
-      <div className="flex justify-center px-6 py-10 sm:px-12 lg:border-l lg:border-border [&_button]:rounded-none [&_input]:rounded-none">
-        <div className="flex w-full max-w-[440px] flex-col">
-          <span className="text-[17px] font-semibold tracking-tight">Copiloto SSW</span>
-          <div className="flex flex-1 flex-col justify-center py-10">
-            {aviso}
-            <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.02em] text-foreground">
-              {titulo}
-            </h1>
-            <p className="mt-2 mb-8 text-[13.5px] text-muted-foreground">{subtitulo}</p>
-            {children}
+    <div className="relative min-h-screen w-full overflow-hidden font-entrada">
+      <PisoIsometrico className="absolute inset-0 h-full w-full" />
+      <div className="relative grid min-h-screen lg:grid-cols-[1.35fr_1fr]">
+        <div aria-hidden className="hidden items-center justify-center p-10 lg:flex">
+          <IlustracaoLogistica className="h-auto w-full max-w-[1000px]" />
+        </div>
+        <div className="flex justify-center bg-card/65 px-6 py-10 backdrop-blur-[1.5px] sm:px-12 lg:border-l lg:border-card/80 [&_button]:rounded-none [&_input]:rounded-none">
+          <div className="flex w-full max-w-[420px] flex-col">
+            <span className="text-[16px] font-semibold tracking-tight text-foreground">
+              Copiloto SSW
+            </span>
+            <div className="flex flex-1 flex-col justify-center py-10">
+              <h1 className="text-[30px] leading-tight font-normal tracking-[-0.01em] text-foreground">
+                {titulo}
+              </h1>
+              <p className="mt-2 mb-9 text-[13px] text-muted-foreground">{subtitulo}</p>
+              {children}
+            </div>
+            {rodape && <div className="text-[12.5px] text-muted-foreground">{rodape}</div>}
           </div>
-          {rodape && <div className="text-[13px] text-muted-foreground">{rodape}</div>}
         </div>
       </div>
     </div>
