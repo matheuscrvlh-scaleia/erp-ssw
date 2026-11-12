@@ -1,4 +1,4 @@
-import { diferencaEmDias, ehDataIso, hojeNoFuso, somarDias } from "@erp/shared/datas";
+import { hojeNoFuso, somarDias } from "@erp/shared/datas";
 import { formatarDataHora } from "@erp/shared/formatacao";
 import { useQuery } from "@tanstack/react-query";
 import { Fingerprint, RefreshCw, Search, UserRound } from "lucide-react";
@@ -29,22 +29,17 @@ import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
-import { consultaBatidas, consultaFuncionarios } from "./api";
+import { consultaBatidas, consultaFuncionarios } from "../api";
+import { filtrarFuncionarios, periodoDeBatidasValido } from "../regras";
+import { localizacaoDaBatida, TIPO_LABEL } from "../textos";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 
-const TIPO_LABEL: Record<string, string> = {
-  ORIGINAL: "Original",
-  MANUAL: "Manual",
-  ONLINE: "Online",
-  DELETADA: "Deletada",
-};
-
-function periodoDeBatidasValido(inicio: string, fim: string): boolean {
-  return ehDataIso(inicio) && ehDataIso(fim) && fim >= inicio && diferencaEmDias(inicio, fim) <= 30;
-}
-
-/** origem: features/ahgora/components/AhgoraPontoScreen.tsx (sistema atual) */
-export function BatidasPorColaborador({ abas }: { abas: ReactNode }) {
+/**
+ * Aba "Batidas por colaborador": uma tela inteira, com filtros e consultas próprios (trocar de
+ * aba recomeça a outra).
+ * origem: features/ahgora/components/AhgoraPontoScreen.tsx (sistema atual)
+ */
+export function AbaBatidasPorColaborador({ abas }: { abas: ReactNode }) {
   const [busca, setBusca] = useState("");
   const [funcionarioId, setFuncionarioId] = useState<string | null>(null);
   const fuso = useFusoDaEmpresa();
@@ -54,16 +49,7 @@ export function BatidasPorColaborador({ abas }: { abas: ReactNode }) {
   const funcionariosQ = useQuery(consultaFuncionarios);
   const funcionarios = useMemo(() => funcionariosQ.data ?? [], [funcionariosQ.data]);
 
-  const filtrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    if (!termo) return funcionarios;
-    return funcionarios.filter(
-      (f) =>
-        f.name.toLowerCase().includes(termo) ||
-        f.register.toLowerCase().includes(termo) ||
-        (f.cpf?.includes(termo) ?? false),
-    );
-  }, [funcionarios, busca]);
+  const filtrados = useMemo(() => filtrarFuncionarios(funcionarios, busca), [funcionarios, busca]);
 
   const selecionado = funcionarios.find((f) => f.id === funcionarioId) ?? null;
   const periodoValido = periodoDeBatidasValido(inicio, fim);
@@ -228,9 +214,7 @@ export function BatidasPorColaborador({ abas }: { abas: ReactNode }) {
                       {b.deviceName || "—"}
                     </td>
                     <td className={cn(CLASSE_TD, "text-muted-foreground")}>
-                      {b.latitude !== undefined && b.longitude !== undefined
-                        ? `${b.latitude.toFixed(6)}, ${b.longitude.toFixed(6)}`
-                        : "—"}
+                      {localizacaoDaBatida(b.latitude, b.longitude)}
                     </td>
                     <td className={cn(CLASSE_TD, "text-muted-foreground")}>{b.reason || "—"}</td>
                   </tr>

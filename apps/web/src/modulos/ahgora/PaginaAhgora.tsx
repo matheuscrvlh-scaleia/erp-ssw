@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import { Abas } from "@/componentes/comum/Abas";
 
-import { ApuracaoPonto } from "./ApuracaoPonto";
-import { BatidasPorColaborador } from "./BatidasPorColaborador";
+import { AbaApuracaoDoPeriodo } from "./componentes/AbaApuracaoDoPeriodo";
+import { AbaBatidasPorColaborador } from "./componentes/AbaBatidasPorColaborador";
 
 type Aba = "apuracao" | "colaborador";
 
@@ -25,5 +25,9 @@ export function PaginaAhgora() {
       aoMudar={setAba}
     />
   );
-  return aba === "apuracao" ? <ApuracaoPonto abas={abas} /> : <BatidasPorColaborador abas={abas} />;
+  return aba === "apuracao" ? (
+    <AbaApuracaoDoPeriodo abas={abas} />
+  ) : (
+    <AbaBatidasPorColaborador abas={abas} />
+  );
 }
