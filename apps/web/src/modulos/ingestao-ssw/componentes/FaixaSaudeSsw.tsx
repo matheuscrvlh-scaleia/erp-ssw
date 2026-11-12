@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { Aviso } from "@/componentes/comum/Aviso";
 import { Button } from "@/componentes/ui/button";
 
-import { consultaSaudeSsw } from "./api";
+import { consultaSaudeSsw } from "../api";
 
 const DETALHE: Record<Exclude<MotivoDaSaude, "ok">, string> = {
   sem_credenciais: "credenciais não configuradas",

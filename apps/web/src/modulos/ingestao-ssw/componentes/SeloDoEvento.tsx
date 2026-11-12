@@ -2,18 +2,7 @@ import { CircleCheck, CircleX, type LucideIcon, ShieldX, Unlink } from "lucide-r
 
 import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 
-type SituacaoDoEvento = "processado" | "sem_vinculo" | "rejeitado" | "erro";
-
-/** Mesma classificação dos contadores do diagnóstico (rejeitado = auth/4xx; erro = 5xx). */
-export function situacaoDoEvento(e: {
-  statusHttp: number;
-  autenticado: boolean;
-}): SituacaoDoEvento {
-  if (!e.autenticado || (e.statusHttp >= 400 && e.statusHttp < 500)) return "rejeitado";
-  if (e.statusHttp >= 500) return "erro";
-  if (e.statusHttp === 202) return "sem_vinculo";
-  return "processado";
-}
+import { type SituacaoDoEvento } from "../regras";
 
 const SELO = {
   processado: { rotulo: "processado", tom: "sucesso", icone: CircleCheck },

@@ -18,7 +18,7 @@ import { EsqueletoDaTela } from "@/componentes/layout/EsqueletoDaTela";
 import { ModuloDesligado } from "@/componentes/layout/ModuloDesligado";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/componentes/ui/sidebar";
 import { ehSessaoVencida } from "@/lib/api";
-import { FaixaSaudeSsw } from "@/modulos/ingestao-ssw/FaixaSaudeSsw";
+import { FaixaSaudeSsw } from "@/modulos/ingestao-ssw/componentes/FaixaSaudeSsw";
 
 /**
  * Layout das telas logadas. A guarda roda antes de montar a tela (a cada navegação): sem sessão
