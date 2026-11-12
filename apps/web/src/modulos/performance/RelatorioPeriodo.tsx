@@ -21,6 +21,7 @@ import { Alternador } from "@/componentes/comum/Alternador";
 import { Aviso } from "@/componentes/comum/Aviso";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { useEmpresaDaExportacao } from "@/componentes/comum/use-empresa-da-exportacao";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -33,7 +34,6 @@ import {
 import { Switch } from "@/componentes/ui/switch";
 import { exportarCsvEmSecoes, exportarExcel, imprimirDocumento } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaRelatorio } from "./api";
 import { DistribuicaoPontualidade } from "./Kpis";

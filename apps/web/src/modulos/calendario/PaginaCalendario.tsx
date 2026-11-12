@@ -12,7 +12,9 @@ import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
+import { type FeriadoParaGravar, ModalDeFeriado } from "@/componentes/comum/ModalDeFeriado";
 import { Painel } from "@/componentes/comum/Painel";
+import { SeletorDeAno } from "@/componentes/comum/SeletorDeAno";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
@@ -22,8 +24,6 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DO_CALENDARIO, consultaCalendario } from "./api";
 import { formatarDiaCurto, porData } from "./calendario";
-import { type FeriadoParaGravar, ModalDeFeriado } from "./ModalDeFeriado";
-import { SeletorDeAno } from "./SeletorDeAno";
 import { VisaoAno, VisaoLista, VisaoMes } from "./Visoes";
 
 const VISOES = ["mes", "ano", "lista"] as const;

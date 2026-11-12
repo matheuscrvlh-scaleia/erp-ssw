@@ -1,4 +1,3 @@
-import { type TipoFeriado } from "@erp/shared/contratos/calendario";
 import { diaDaSemana, montarDataIso, somarDias } from "@erp/shared/datas";
 
 export const MESES = [
@@ -61,23 +60,6 @@ export function textoDaDistancia(dias: number): string {
   if (dias === 0) return "hoje";
   return dias > 0 ? `em ${dias}d` : `há ${-dias}d`;
 }
-
-/**
- * Cor de cada tipo de feriado (categoria, não situação): fundo leve e borda da série do gráfico,
- * texto no tom principal para manter o contraste nos dois temas.
- */
-export function corDoTipo(tipo: TipoFeriado): string {
-  if (tipo === "nacional") return "border-serie-2/45 bg-serie-2/12 text-foreground";
-  if (tipo === "municipal") return "border-serie-4/50 bg-serie-4/14 text-foreground";
-  return "border-serie-1/45 bg-serie-1/12 text-foreground";
-}
-
-/** Ponto sólido do tipo (legenda, miniatura do ano). */
-export const PONTO_DO_TIPO: Record<TipoFeriado, string> = {
-  nacional: "bg-serie-2",
-  estadual: "bg-serie-1",
-  municipal: "bg-serie-4",
-};
 
 /** Feriados por data, para pintar a grade sem procurar na lista a cada dia. */
 export function porData<F extends { data: string }>(feriados: readonly F[]): Map<string, F[]> {

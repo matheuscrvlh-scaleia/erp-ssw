@@ -33,9 +33,9 @@ import {
 } from "@/componentes/ui/select";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { periodoDoMes } from "@/lib/periodo-do-mes";
 import { cn } from "@/lib/utils";
 
-import { periodoDoMes } from "../ranking/periodo";
 import { CHAVE_DAS_FALTAS, consultaFaltas } from "./api";
 
 type TipoDeFalta = (typeof TIPOS_DE_FALTA)[number];

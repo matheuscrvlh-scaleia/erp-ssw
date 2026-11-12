@@ -44,9 +44,9 @@ import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { ErroDoOperador, mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { mesAnterior } from "@/lib/periodo-do-mes";
 
 import { CHAVE_DAS_REGRAS, consultaRegras } from "./api";
-import { mesAnterior } from "./periodo";
 import {
   PARAMETROS_PADRAO,
   type Rascunho,

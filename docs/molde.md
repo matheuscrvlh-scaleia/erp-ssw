@@ -101,19 +101,30 @@ app.get(
 
 ## 6. Tela — `apps/web`
 
-- Rota: `src/routes/_autenticado/<caminho>.tsx` só aponta para a página em
-  `src/modulos/<dominio>/`. O caminho é o mesmo de hoje (`CAMINHO_DA_TELA` em
+O padrão completo está no ADR 0016 (`docs/adr/0016-arquitetura-do-web.md`). Em resumo:
+
+- Rota: `src/routes/_autenticado/<caminho>.tsx` só aponta para `modulos/<dominio>/Pagina<Nome>.tsx`
+  (caminho e schema da busca). O caminho é o mesmo de hoje (`CAMINHO_DA_TELA` em
   `@erp/shared/acesso/telas`): a guarda e o menu saem dele sozinhos.
-- Dados: `queryOptions` com `chamar(contrato, { parametros, entrada })` de `@/lib/api` (token,
-  renovação e erro padrão já tratados). Depois de gravar, `invalidateQueries` da chave do
-  domínio. Não mude a política de cache do `roteador.tsx` (contorno de timeout).
-- Permissão na tela vem do acesso (`useSuspenseQuery(consultaAcesso)`): `ehAdminDaEmpresa(papel)`,
-  `adminPlataforma`, `telas`. A API confere de novo; a tela só esconde botão.
-- Formulário com `react-hook-form` + `zodResolver`, reaproveitando o schema do contrato e a regra
-  do `src/dominio` (cópia do web; ver `ModalDeFeriado.tsx`).
-- Mesmo visual do sistema atual: copie classes e textos da tela de referência; componentes em
-  `src/componentes/ui` (shadcn).
-- Teste de lógica pura (`*.test.ts`) e de componente com lógica (`*.test.tsx`, Testing Library).
+- Módulo: `Pagina<Nome>.tsx` (lê a busca, chama as consultas, monta o `<Pagina>`), `componentes/`
+  (um componente exportado por arquivo, recebe props) e, só os que precisar, os arquivos de nome
+  fixo `api.ts`, `busca.ts`, `regras.ts`, `textos.ts` e `exportacao.ts`.
+- Dados: só o `api.ts` chama `chamar(contrato, { parametros, entrada })` de `@/lib/api` (token,
+  renovação e erro padrão já tratados). Chaves numa fábrica `chaves` que começa pelo nome do módulo;
+  consultas com `queryOptions`; escrita com `mutacao<Acao>(cliente)` (`mutationOptions` que
+  invalida a chave do módulo), e o componente só faz `useMutation(mutacaoX(cliente))`. Não mude a
+  política de cache do `roteador.tsx` (contorno de timeout).
+- Estado: filtro, página e aba na URL (`busca.ts`); formulário com `react-hook-form` +
+  `zodResolver`, reaproveitando o schema do contrato e a regra do `src/dominio` (ver
+  `componentes/comum/ModalDeFeriado.tsx`); efêmero em `useState`. Sem store global.
+- Permissão na tela vem do acesso (`usePermissao`, `useSuspenseQuery(consultaAcesso)`). A API
+  confere de novo; a tela só esconde botão.
+- Mesmo visual do sistema atual: copie classes e textos da tela de referência; `<Pagina>` e as
+  peças comuns de carregando/vazio/erro; componentes em `src/componentes/ui` (shadcn).
+- Dependências: um módulo só importa de outro o `api.ts`; peça usada por dois módulos sobe para
+  `componentes/comum`, `hooks` ou `lib`, que não importam de `modulos/`. O ESLint barra.
+- Teste de `regras`, `busca`, `textos` e `exportacao` (`*.test.ts`) e de componente com lógica
+  (`*.test.tsx`, Testing Library), ao lado do arquivo testado.
 
 ## Checklist do domínio portado
 

@@ -45,6 +45,7 @@ import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { Painel } from "@/componentes/comum/Painel";
 import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -58,7 +59,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/componentes/ui/toolti
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { urlCtrcNoSsw } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { consultaCtrc } from "./api";
 import { COLUNAS_DO_PDF, linhasDoPdf } from "./exportacao";

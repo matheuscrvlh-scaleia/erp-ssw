@@ -33,10 +33,10 @@ import { Skeleton } from "@/componentes/ui/skeleton";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { mesDe, periodoDoMes } from "@/lib/periodo-do-mes";
 import { cn } from "@/lib/utils";
 
 import { CHAVE_DAS_EQUIPES, consultaCtesParaAtribuir, consultaEquipes } from "./api";
-import { mesDe, periodoDoMes } from "./periodo";
 
 // O Select não aceita valor vazio num item: "sem unidade" viaja com esta marca.
 const SEM_UNIDADE = "__sem_unidade__";

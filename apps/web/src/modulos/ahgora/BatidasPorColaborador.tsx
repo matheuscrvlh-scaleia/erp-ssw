@@ -5,6 +5,11 @@ import { Fingerprint, RefreshCw, Search, UserRound } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import {
+  CampoRotulado,
+  CLASSE_DO_CAMPO,
+  GatilhoRotulado,
+} from "@/componentes/comum/CamposRotulados";
+import {
   CLASSE_CABECALHO,
   CLASSE_LINHA,
   CLASSE_TABELA,
@@ -24,7 +29,6 @@ import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
-import { CampoRotulado, CLASSE_DO_CAMPO, GatilhoRotulado } from "../ranking/campos-do-filtro";
 import { consultaBatidas, consultaFuncionarios } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 

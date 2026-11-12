@@ -40,6 +40,7 @@ import { FiltroUnico } from "@/componentes/comum/FiltroUnico";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
+import { corDoTipo } from "@/componentes/comum/tipo-de-feriado";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
@@ -48,7 +49,6 @@ import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { corDoTipo } from "@/modulos/calendario/calendario";
 
 import { CHAVE_DO_HISTORICO, consultaHistorico } from "./api";
 import {

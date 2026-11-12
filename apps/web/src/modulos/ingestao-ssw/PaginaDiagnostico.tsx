@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { Aviso } from "@/componentes/comum/Aviso";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { Painel } from "@/componentes/comum/Painel";
+import { SeloDaSituacao } from "@/componentes/comum/SeloDaSituacao";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina, Secao } from "@/componentes/layout/Pagina";
@@ -32,7 +33,6 @@ import { Button } from "@/componentes/ui/button";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { SeloDaSituacao } from "@/modulos/ingestao/pecas";
 
 import { CHAVE_DA_INGESTAO, consultaDiagnostico } from "./api";
 import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";

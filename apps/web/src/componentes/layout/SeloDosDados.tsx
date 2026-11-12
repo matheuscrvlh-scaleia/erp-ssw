@@ -2,8 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { consultaAcesso } from "@/acesso/sessao";
 import { SeloAtualizacao } from "@/componentes/comum/SeloAtualizacao";
-
-import { consultaAtualizacaoDosDados } from "./api";
+import { consultaAtualizacaoDosDados } from "@/modulos/ingestao-ssw/api";
 
 /**
  * Última aplicação dos arquivos do SSW na empresa ativa (e XML aguardando, só para a Plataforma).

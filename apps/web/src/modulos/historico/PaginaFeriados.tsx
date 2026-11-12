@@ -7,8 +7,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Aviso } from "@/componentes/comum/Aviso";
+import { EtiquetaDoTipo } from "@/componentes/comum/EtiquetaDoTipo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { FiltroUnico } from "@/componentes/comum/FiltroUnico";
+import { type FeriadoParaGravar, ModalDeFeriado } from "@/componentes/comum/ModalDeFeriado";
+import { SeletorDeAno } from "@/componentes/comum/SeletorDeAno";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
@@ -17,9 +20,6 @@ import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { CHAVE_DO_CALENDARIO } from "@/modulos/calendario/api";
-import { type FeriadoParaGravar, ModalDeFeriado } from "@/modulos/calendario/ModalDeFeriado";
-import { SeletorDeAno } from "@/modulos/calendario/SeletorDeAno";
-import { EtiquetaDoTipo } from "@/modulos/calendario/Visoes";
 
 import { CHAVE_DO_HISTORICO, consultaFeriados } from "./api";
 

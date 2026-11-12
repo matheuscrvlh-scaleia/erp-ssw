@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Alternador } from "@/componentes/comum/Alternador";
+import { BuscaNaBarra, Escolha } from "@/componentes/comum/CamposDeFormulario";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { KpiCard, type StatusKpi } from "@/componentes/comum/KpiCard";
@@ -28,7 +29,6 @@ import { Checkbox } from "@/componentes/ui/checkbox";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { BuscaNaBarra, Escolha } from "@/modulos/admin/comum";
 
 import { CHAVE_DOS_CODIGOS, consultaCodigos } from "./api";
 import { type CodigoParaSalvar, ModalDoCodigo } from "./ModalDoCodigo";

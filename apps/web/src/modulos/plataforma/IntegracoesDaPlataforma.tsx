@@ -7,13 +7,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Globe, type LucideIcon, Mail, Send, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { CAMPO } from "@/componentes/comum/CamposDeFormulario";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
-import { CAMPO, useGravacao } from "@/modulos/admin/comum";
 
 import { CampoDeSegredo, CampoDoParametro, parametrosEditados, paraTexto } from "./AbasDaEmpresa";
 import { CHAVES_DA_PLATAFORMA, consultaIntegracoesDaPlataforma } from "./api";

@@ -8,6 +8,7 @@ import { type Cargo, contratosAdmin as c } from "@erp/shared/contratos/admin";
 import { Lock, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
+import { CAMPO, Campo } from "@/componentes/comum/CamposDeFormulario";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
@@ -20,10 +21,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/componentes/ui/dialog";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
 
 import { CHAVES } from "../api";
-import { CAMPO, Campo, useGravacao } from "../comum";
 import { EditorDePermissoes } from "./EditorDePermissoes";
 
 /** Chave sugerida pelo nome: minúsculas, sem acento, `_` no lugar do resto. */

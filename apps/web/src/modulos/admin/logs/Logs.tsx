@@ -21,14 +21,13 @@ import { type ReactNode, useState } from "react";
 import { Abas } from "@/componentes/comum/Abas";
 import { Alternador } from "@/componentes/comum/Alternador";
 import { Aviso } from "@/componentes/comum/Aviso";
+import { BuscaNaBarra, Escolha, opcoesDoMapa } from "@/componentes/comum/CamposDeFormulario";
 import { ModalDetalhe } from "@/componentes/comum/Detalhe";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
-
-import { BuscaNaBarra, Escolha, opcoesDoMapa } from "../comum";
 
 /** Partes de uma tela de logs para o molde `Pagina`: a barra de filtros e o conteúdo. */
 interface PartesDosLogs {

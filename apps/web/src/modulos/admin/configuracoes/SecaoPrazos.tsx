@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarClock, Pencil, Plus, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
+import { CAMPO, Campo, Escolha } from "@/componentes/comum/CamposDeFormulario";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
@@ -22,10 +23,10 @@ import {
 } from "@/componentes/ui/dialog";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
 
 import { CHAVES, consultaPrazos } from "../api";
-import { CAMPO, Campo, Escolha, useGravacao } from "../comum";
 
 type Opcoes = SaidaDe<typeof c.listarPrazos>;
 type Resultado = SaidaDe<typeof c.criarPrazo>;

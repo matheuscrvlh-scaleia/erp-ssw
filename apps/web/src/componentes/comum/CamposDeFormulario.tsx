@@ -1,7 +1,5 @@
-import { type QueryKey, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, Search } from "lucide-react";
 import { cloneElement, type ReactElement, type ReactNode, useId, useState } from "react";
-import { toast } from "sonner";
 
 import {
   Select,
@@ -10,42 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/componentes/ui/select";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
-/** Peças das telas de Admin e Plataforma que o kit (componentes/comum) não tem. */
-
-/**
- * Escrita com aviso: toast de sucesso ou do erro da API (já em português) e invalidação das
- * consultas afetadas. `gravar` devolve `false` em caso de erro, para o modal ficar aberto.
- */
-export function useGravacao<E, S>(opcoes: {
-  executar: (entrada: E) => Promise<S>;
-  sucesso: string | ((entrada: E, saida: S) => string);
-  invalidar: readonly QueryKey[];
-  /** Depois do sucesso, com a resposta (ex.: abrir o que acabou de ser criado). */
-  aoConcluir?: (saida: S) => void;
-}) {
-  const queryClient = useQueryClient();
-  const mutacao = useMutation({ mutationFn: opcoes.executar });
-  const gravar = async (entrada: E): Promise<boolean> => {
-    try {
-      const saida = await mutacao.mutateAsync(entrada);
-      toast.success(
-        typeof opcoes.sucesso === "string" ? opcoes.sucesso : opcoes.sucesso(entrada, saida),
-      );
-      await Promise.all(
-        opcoes.invalidar.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-      );
-      opcoes.aoConcluir?.(saida);
-      return true;
-    } catch (e) {
-      toast.error(mensagemAmigavel(e));
-      return false;
-    }
-  };
-  return { gravar, gravando: mutacao.isPending };
-}
+/** Campos de formulário das telas de Admin, Plataforma e Códigos (inputs, escolha, senha, busca). */
 
 /** Campo de formulário no desenho do `ui/input` (inputs e textarea feitos à mão). */
 export const CAMPO =

@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Circle, ExternalLink, KeyRound, ListChecks } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
+import { CAMPO, Campo, Escolha } from "@/componentes/comum/CamposDeFormulario";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
@@ -23,9 +24,9 @@ import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { CAMPO, Campo, Escolha, useGravacao } from "@/modulos/admin/comum";
 import { ModalNovoUsuario } from "@/modulos/admin/usuarios/ModalNovoUsuario";
 
 import {

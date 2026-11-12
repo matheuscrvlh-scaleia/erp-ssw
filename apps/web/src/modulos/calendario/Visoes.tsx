@@ -3,19 +3,19 @@ import { type Feriado, type UnidadeDoCalendario } from "@erp/shared/contratos/ca
 import { diferencaEmDias } from "@erp/shared/datas";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
+import { EtiquetaDoTipo } from "@/componentes/comum/EtiquetaDoTipo";
 import { Painel } from "@/componentes/comum/Painel";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
+import { corDoTipo } from "@/componentes/comum/tipo-de-feriado";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { cn } from "@/lib/utils";
 
 import {
-  corDoTipo,
   formatarDiaCurto,
   MESES_LONGOS,
   montarGradeDoMes,
-  PONTO_DO_TIPO,
   SEMANA,
   textoDaDistancia,
 } from "./calendario";
@@ -179,21 +179,6 @@ function Dia({
         </div>
       </PopoverContent>
     </Popover>
-  );
-}
-
-/** Selo do tipo de feriado (texto + cor da categoria). */
-export function EtiquetaDoTipo({ tipo }: { tipo: Feriado["tipo"] }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-6 items-center gap-1.5 rounded-full border px-2 text-[12px] font-semibold capitalize",
-        corDoTipo(tipo),
-      )}
-    >
-      <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", PONTO_DO_TIPO[tipo])} />
-      {tipo}
-    </span>
   );
 }
 

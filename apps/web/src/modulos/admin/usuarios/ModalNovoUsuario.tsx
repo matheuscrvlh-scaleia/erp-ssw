@@ -3,6 +3,7 @@ import { UserPlus } from "lucide-react";
 import { useState } from "react";
 
 import { Abas } from "@/componentes/comum/Abas";
+import { CAMPO, Campo, CampoDeSenha, Escolha } from "@/componentes/comum/CamposDeFormulario";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -12,8 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/componentes/ui/dialog";
-
-import { CAMPO, Campo, CampoDeSenha, Escolha } from "../comum";
 
 export interface Opcao {
   chave: string;

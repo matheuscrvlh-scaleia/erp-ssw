@@ -7,10 +7,10 @@ import { useEffect, useMemo } from "react";
 import { aplicarPaleta, ultimaCorDaMarca } from "@/acesso/marca";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { Skeleton } from "@/componentes/ui/skeleton";
+import { mesDe, periodoDoMes } from "@/lib/periodo-do-mes";
 
 import { consultaRankingPublico } from "./api";
 import { EquipeMobileView } from "./EquipeMobileView";
-import { mesDe, periodoDoMes } from "./periodo";
 
 /**
  * Link público do ranking da equipe (sem login). Período = mês corrente no dia de Brasília (Q11;

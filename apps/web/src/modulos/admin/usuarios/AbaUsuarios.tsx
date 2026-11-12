@@ -9,14 +9,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
+import { BuscaNaBarra, Escolha } from "@/componentes/comum/CamposDeFormulario";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
 
 import { CHAVES, consultaUsuarios } from "../api";
-import { BuscaNaBarra, Escolha, useGravacao } from "../comum";
 import { DialogoPermissoes } from "./DialogoPermissoes";
 import { type AlteracaoDeUsuario, ModalEditarUsuario } from "./ModalEditarUsuario";
 import { ModalNovoUsuario, type Opcao } from "./ModalNovoUsuario";

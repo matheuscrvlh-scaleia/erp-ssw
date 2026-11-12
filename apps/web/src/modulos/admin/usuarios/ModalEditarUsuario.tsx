@@ -3,6 +3,13 @@ import { type contratosAdmin, type UsuarioDaEmpresa } from "@erp/shared/contrato
 import { ArrowRight, Check, Copy, KeyRound, Pencil, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
+import {
+  BotaoDoCampo,
+  CAMPO,
+  Campo,
+  CampoDeSenha,
+  Escolha,
+} from "@/componentes/comum/CamposDeFormulario";
 import { Button } from "@/componentes/ui/button";
 import {
   Dialog,
@@ -14,7 +21,6 @@ import {
 } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
 
-import { BotaoDoCampo, CAMPO, Campo, CampoDeSenha, Escolha } from "../comum";
 import { type Opcao } from "./ModalNovoUsuario";
 
 export type AlteracaoDeUsuario = EntradaDe<typeof contratosAdmin.alterarUsuario>;

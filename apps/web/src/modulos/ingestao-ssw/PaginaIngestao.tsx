@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
+import { SeloDaSituacao } from "@/componentes/comum/SeloDaSituacao";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
@@ -20,7 +21,6 @@ import { Label } from "@/componentes/ui/label";
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { SeloDaSituacao } from "@/modulos/ingestao/pecas";
 
 import { CHAVE_DA_INGESTAO, consultaBi2, consultaEventosWebhook } from "./api";
 import { CartaoCredenciaisSsw } from "./CartaoCredenciaisSsw";

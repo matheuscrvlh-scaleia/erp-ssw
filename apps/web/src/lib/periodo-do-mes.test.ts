@@ -1,7 +1,7 @@
 import { hojeNoFuso } from "@erp/shared/datas";
 import { describe, expect, it } from "vitest";
 
-import { mesAnterior, mesDe, periodoDoMes } from "./periodo";
+import { mesAnterior, mesDe, periodoDoMes } from "./periodo-do-mes";
 
 describe("períodos do ranking", () => {
   it("mês inteiro e mês anterior", () => {

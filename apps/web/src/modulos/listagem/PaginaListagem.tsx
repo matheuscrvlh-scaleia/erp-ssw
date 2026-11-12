@@ -30,6 +30,7 @@ import { InfoTip } from "@/componentes/comum/InfoTip";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { Painel } from "@/componentes/comum/Painel";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Badge } from "@/componentes/ui/badge";
 import { Button } from "@/componentes/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
@@ -45,7 +46,6 @@ import {
   SeletorDeTexto,
 } from "@/modulos/filtros/componentes";
 import { nomesDosPagadores } from "@/modulos/filtros/regras";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import {
   carregarTodasAsLinhas,

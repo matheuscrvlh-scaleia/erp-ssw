@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Abas } from "@/componentes/comum/Abas";
+import { SeloDaSituacao } from "@/componentes/comum/SeloDaSituacao";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { Checkbox } from "@/componentes/ui/checkbox";
@@ -19,7 +20,6 @@ import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
 import { CHAVE_DA_INGESTAO, consultaAplicacoes } from "./api";
-import { SeloDaSituacao } from "./pecas";
 
 const LOTE = 4000;
 const MAX_LISTA = 500;

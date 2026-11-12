@@ -14,11 +14,11 @@ import { Abas } from "@/componentes/comum/Abas";
 import { Aviso } from "@/componentes/comum/Aviso";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Button } from "@/componentes/ui/button";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { cn } from "@/lib/utils";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { AbaHoje, FILTROS_DA_HOJE_VAZIOS, FiltrosDaHoje, type FiltrosHoje } from "./AbaHoje";
 import {

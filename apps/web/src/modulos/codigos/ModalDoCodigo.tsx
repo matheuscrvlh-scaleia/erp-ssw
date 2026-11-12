@@ -9,12 +9,12 @@ import { useEffect, useState } from "react";
 
 import { Abas } from "@/componentes/comum/Abas";
 import { Aviso } from "@/componentes/comum/Aviso";
+import { CAMPO, Campo, Escolha } from "@/componentes/comum/CamposDeFormulario";
 import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/componentes/ui/dialog";
 import { Switch } from "@/componentes/ui/switch";
-import { CAMPO, Campo, Escolha } from "@/modulos/admin/comum";
 
 import { consultaHistoricoDoCodigo } from "./api";
 import { ehLetra, rotulosDaLetra } from "./regras";

@@ -20,11 +20,11 @@ import { KpiCard } from "@/componentes/comum/KpiCard";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { resolverPeriodo } from "@/componentes/comum/periodo";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Button } from "@/componentes/ui/button";
 import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import {
   carregarListaInteira,

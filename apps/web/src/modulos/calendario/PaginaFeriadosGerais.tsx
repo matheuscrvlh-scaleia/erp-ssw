@@ -5,7 +5,10 @@ import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { EtiquetaDoTipo } from "@/componentes/comum/EtiquetaDoTipo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { type FeriadoParaGravar, ModalDeFeriado } from "@/componentes/comum/ModalDeFeriado";
+import { SeletorDeAno } from "@/componentes/comum/SeletorDeAno";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
@@ -16,9 +19,6 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { CHAVE_DO_HISTORICO } from "@/modulos/historico/api";
 
 import { CHAVE_DO_CALENDARIO, consultaFeriadosGerais } from "./api";
-import { type FeriadoParaGravar, ModalDeFeriado } from "./ModalDeFeriado";
-import { SeletorDeAno } from "./SeletorDeAno";
-import { EtiquetaDoTipo } from "./Visoes";
 
 /**
  * Plataforma › Configurações › Feriados gerais: os feriados sem empresa, que valem para todas.

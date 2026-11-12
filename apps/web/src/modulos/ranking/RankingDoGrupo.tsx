@@ -46,12 +46,14 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { GraficoSerie } from "@/componentes/comum/GraficoSerie";
 import { KpiCard } from "@/componentes/comum/KpiCard";
 import { LinhasCarregando } from "@/componentes/comum/LinhasCarregando";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { resolverPeriodo, ROTULO_ATALHO } from "@/componentes/comum/periodo";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { type ColunaExportacao } from "@/lib/exportacao";
 import { cn } from "@/lib/utils";
@@ -66,9 +68,7 @@ import {
   SeletorDeTipoDocumento,
 } from "@/modulos/filtros/componentes";
 import { nomesDosPagadoresAgrupados } from "@/modulos/filtros/regras";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 import { caminhoDaLista } from "@/modulos/listagem/busca";
-import { GraficoSerie } from "@/modulos/performance/GraficoSerie";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";
 import { type Base, type FiltrosDoRanking } from "./filtros-do-ranking";

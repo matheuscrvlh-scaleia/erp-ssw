@@ -5,6 +5,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
+import { CAMPO, Campo } from "@/componentes/comum/CamposDeFormulario";
 import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
@@ -17,8 +18,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/componentes/ui/dialog";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
-import { CAMPO, Campo, useGravacao } from "@/modulos/admin/comum";
 
 import { CHAVES_DA_PLATAFORMA, consultaEmpresas } from "./api";
 

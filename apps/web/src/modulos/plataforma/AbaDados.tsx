@@ -9,12 +9,13 @@ import { BarChart3, Building2, ImageUp, Palette, Route, Settings2, Truck } from 
 import { type CSSProperties, useEffect, useState } from "react";
 
 import { paletaDaMarca } from "@/acesso/marca";
+import { CAMPO, Campo, Escolha } from "@/componentes/comum/CamposDeFormulario";
 import { Painel } from "@/componentes/comum/Painel";
 import { Button } from "@/componentes/ui/button";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
 import { ErroDoOperador } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { CAMPO, Campo, Escolha, useGravacao } from "@/modulos/admin/comum";
 
 import { CHAVES_DA_PLATAFORMA } from "./api";
 

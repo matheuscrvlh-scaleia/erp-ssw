@@ -22,6 +22,12 @@ import { type KeyboardEvent, type ReactNode, useState } from "react";
 
 import { Aviso } from "@/componentes/comum/Aviso";
 import {
+  CampoRotulado,
+  CLASSE_DO_CAMPO,
+  GatilhoRotulado,
+  InterruptorRotulado,
+} from "@/componentes/comum/CamposRotulados";
+import {
   CLASSE_CABECALHO,
   CLASSE_LINHA,
   CLASSE_TABELA,
@@ -40,15 +46,9 @@ import { Skeleton } from "@/componentes/ui/skeleton";
 import { Switch } from "@/componentes/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { mesDe, periodoDoMes } from "@/lib/periodo-do-mes";
 import { cn } from "@/lib/utils";
 
-import {
-  CampoRotulado,
-  CLASSE_DO_CAMPO,
-  GatilhoRotulado,
-  InterruptorRotulado,
-} from "../ranking/campos-do-filtro";
-import { mesDe, periodoDoMes } from "../ranking/periodo";
 import { consultaApuracaoDoPonto, consultaDepartamentos } from "./api";
 import { ComoFuncionaPonto } from "./ComoFuncionaPonto";
 

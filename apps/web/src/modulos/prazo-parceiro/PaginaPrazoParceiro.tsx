@@ -53,6 +53,7 @@ import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Button } from "@/componentes/ui/button";
 import {
   Select,
@@ -69,7 +70,6 @@ import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, type ColunaExportacao, urlCtrcNoSsw } from "@/lib/exportacao";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import {
   CHAVE_DO_PRAZO,

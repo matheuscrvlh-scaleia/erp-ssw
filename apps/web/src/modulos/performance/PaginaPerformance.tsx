@@ -31,7 +31,9 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { GraficoSerie } from "@/componentes/comum/GraficoSerie";
 import { Pagina, Secao } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Button } from "@/componentes/ui/button";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { chamar } from "@/lib/api";
@@ -44,7 +46,6 @@ import {
   SeletorDeTexto,
   SeletorDeTipoDocumento,
 } from "@/modulos/filtros/componentes";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { cartoesDeAlerta } from "./alertas";
 import {
@@ -77,7 +78,6 @@ import {
 } from "./busca";
 import { ComoFuncionaPerformance } from "./ComoFuncionaPerformance";
 import { COLUNAS_DA_EXPORTACAO } from "./exportacao";
-import { GraficoSerie } from "./GraficoSerie";
 import { EsqueletoDeCards, LinhaDeKpis } from "./Kpis";
 import { type CliqueNosPrevistos, SecaoPrevistos } from "./Previstos";
 import { type CardDeProducao, LinhaDeProducao, VerificacaoDaParticao } from "./Producao";

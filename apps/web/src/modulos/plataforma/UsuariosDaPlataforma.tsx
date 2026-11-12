@@ -9,13 +9,14 @@ import { useState } from "react";
 import { pode } from "@/acesso/permissao";
 import { consultaAcesso } from "@/acesso/sessao";
 import { Abas } from "@/componentes/comum/Abas";
+import { CAMPO } from "@/componentes/comum/CamposDeFormulario";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
 import { CHAVES } from "@/modulos/admin/api";
-import { CAMPO, useGravacao } from "@/modulos/admin/comum";
 import {
   type CatalogoDeCargos,
   type DadosDoCargo,

@@ -8,15 +8,16 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, Gauge, type LucideIcon, Trophy, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { CAMPO } from "@/componentes/comum/CamposDeFormulario";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
 import { Skeleton } from "@/componentes/ui/skeleton";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { chamar } from "@/lib/api";
 
 import { CHAVES, consultaConfiguracoes } from "../api";
-import { CAMPO, useGravacao } from "../comum";
 import { SecaoPrazos } from "./SecaoPrazos";
 
 const ROTULO_DO_GRUPO: Record<GrupoDeConfiguracao, string> = {

@@ -32,6 +32,7 @@ import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
+import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { Button } from "@/componentes/ui/button";
 import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
@@ -47,7 +48,6 @@ import {
   SeletorDeTipoDocumento,
 } from "@/modulos/filtros/componentes";
 import { nomesDosPagadores } from "@/modulos/filtros/regras";
-import { SeloDosDados } from "@/modulos/ingestao-ssw/SeloDosDados";
 
 import { carregarListaInteira, consultaLista, consultaPainel } from "./api";
 import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, NAO_SAO_FILTRO } from "./busca";

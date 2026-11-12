@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
+import { SeloDaSituacao } from "@/componentes/comum/SeloDaSituacao";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
@@ -21,7 +22,7 @@ import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
 import { CHAVE_DA_INGESTAO, consultaArquivosXml, consultaFtp } from "./api";
-import { BarraDeProgresso, ConfirmarAcao, SeloDaSituacao } from "./pecas";
+import { BarraDeProgresso, ConfirmarAcao } from "./pecas";
 
 const MAX_ARQUIVOS = 50;
 

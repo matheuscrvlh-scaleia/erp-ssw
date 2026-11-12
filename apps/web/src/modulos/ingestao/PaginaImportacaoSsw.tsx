@@ -15,6 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Painel } from "@/componentes/comum/Painel";
+import { SeloDaSituacao } from "@/componentes/comum/SeloDaSituacao";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina, Secao } from "@/componentes/layout/Pagina";
@@ -33,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { CHAVE_DA_INGESTAO, consultaPipeline } from "./api";
 import { AplicarStaging } from "./AplicarStaging";
 import { ImportadorManual } from "./ImportadorManual";
-import { ConfirmarAcao, ItemRecolhivel, SeloDaSituacao } from "./pecas";
+import { ConfirmarAcao, ItemRecolhivel } from "./pecas";
 
 /** Ordem dos importadores manuais (como hoje). O 455 de largura fixa saiu (Q44). */
 const IMPORTADORES: readonly Relatorio[] = ["038", "455csv", "930", "306", "036"];
