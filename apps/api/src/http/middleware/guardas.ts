@@ -87,3 +87,17 @@ export const exigirAdminPlataforma: Guarda = async (request) => {
   if (!acesso.adminPlataforma) throw semPermissao("Esta ação é só da equipe da Plataforma.");
   if (!acesso.ativo) throw semPermissao("Sua conta foi desativada por um administrador.");
 };
+
+/**
+ * Tela da Plataforma: só a equipe da Plataforma, com a ação no cargo dela na Plataforma. Não
+ * precisa de empresa ativa.
+ */
+export function exigirPermissaoDaPlataforma(tela: Tela, acao: Acao): Guarda {
+  return async (request) => {
+    await exigirAdminPlataforma(request);
+    const acesso = await request.acesso();
+    if (!acesso.permissoes.includes(permissao(tela, acao))) {
+      throw semPermissao(MENSAGEM_DA_ACAO[acao]);
+    }
+  };
+}

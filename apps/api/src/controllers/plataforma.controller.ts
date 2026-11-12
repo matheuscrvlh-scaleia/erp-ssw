@@ -4,7 +4,7 @@ import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { executorDePlataforma } from "../http/middleware/contexto";
-import { exigirAdminPlataforma } from "../http/middleware/guardas";
+import { exigirPermissaoDaPlataforma } from "../http/middleware/guardas";
 import { atorDa } from "../http/middleware/sessao";
 import type { Armazenamento } from "../infra/armazenamento";
 import { type FonteDaConfiguracao } from "../infra/configuracao-da-plataforma";
@@ -12,16 +12,19 @@ import { type Correio } from "../infra/correio";
 import { listarCargos } from "../models/cadastros/cadastros.service";
 import {
   adicionarAdmin,
+  alterarCargoDaPlataforma,
+  criarCargoDaPlataforma,
   criarEmpresa,
   definirSegredo,
   definirSegredoDaPlataforma,
   enviarLogo,
+  excluirCargoDaPlataforma,
   listarAdmins,
+  listarCargosDaPlataforma,
   listarEmpresas,
   listarIntegracoes,
   listarIntegracoesDaPlataforma,
   listarModulos,
-  listarPessoas,
   listarVinculos,
   obterEmpresa,
   removerAdmin,
@@ -32,6 +35,7 @@ import {
   salvarModulo,
   salvarVinculo,
   testarEmailDaPlataforma,
+  trocarCargoDoAdmin,
 } from "../models/plataforma/plataforma.service";
 import { type ExecutorComContexto } from "../models/repositorios";
 import {
@@ -42,13 +46,13 @@ import { apresentarCargos } from "../views/cadastros.view";
 import { confirmacao } from "../views/comum.view";
 import {
   apresentarAdmins,
+  apresentarCargosDaPlataforma,
   apresentarEmpresa,
   apresentarEmpresas,
   apresentarIntegracoes,
   apresentarIntegracoesDaPlataforma,
   apresentarLogo,
   apresentarModulos,
-  apresentarPessoas,
   apresentarSegredo,
   apresentarVinculos,
 } from "../views/plataforma.view";
@@ -77,11 +81,14 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
   const { executar } = opcoes;
   const naEmpresa = (request: FastifyRequest) => (empresaId: string | null) =>
     executorDePlataforma(executar, request, empresaId);
-  const onRequest = exigirAdminPlataforma;
+  const pode = exigirPermissaoDaPlataforma;
 
   app.get(
     c.listarEmpresas.caminho,
-    { schema: { response: { 200: c.listarEmpresas.saida } }, onRequest },
+    {
+      schema: { response: { 200: c.listarEmpresas.saida } },
+      onRequest: pode("plataforma_empresas", "ver"),
+    },
     async (request) =>
       apresentarEmpresas(await listarEmpresas(naEmpresa(request)(null), opcoes.agora())),
   );
@@ -90,7 +97,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     c.criarEmpresa.caminho,
     {
       schema: { body: c.criarEmpresa.entrada, response: { 200: c.criarEmpresa.saida } },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => criarEmpresa(naEmpresa(request), await atorDa(request), request.body),
   );
@@ -99,7 +106,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     c.obterEmpresa.caminho,
     {
       schema: { params: c.obterEmpresa.parametros, response: { 200: c.obterEmpresa.saida } },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "ver"),
     },
     async (request) =>
       apresentarEmpresa(
@@ -116,7 +123,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.salvarEmpresa.entrada,
         response: { 200: c.salvarEmpresa.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id } = request.params;
@@ -140,7 +147,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         response: { 200: c.enviarLogo.saida },
       },
       bodyLimit: LIMITE_DO_CORPO_DO_LOGO,
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id } = request.params;
@@ -159,7 +166,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     c.removerLogo.caminho,
     {
       schema: { params: c.removerLogo.parametros, response: { 200: c.removerLogo.saida } },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id } = request.params;
@@ -172,7 +179,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     c.listarModulos.caminho,
     {
       schema: { params: c.listarModulos.parametros, response: { 200: c.listarModulos.saida } },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "ver"),
     },
     async (request) =>
       apresentarModulos(
@@ -188,7 +195,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.salvarModulo.entrada,
         response: { 200: c.salvarModulo.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id, modulo } = request.params;
@@ -201,7 +208,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     c.listarUsuarios.caminho,
     {
       schema: { params: c.listarUsuarios.parametros, response: { 200: c.listarUsuarios.saida } },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "ver"),
     },
     async (request) =>
       apresentarVinculos(
@@ -217,7 +224,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.convidarUsuario.entrada,
         response: { 200: c.convidarUsuario.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id } = request.params;
@@ -241,7 +248,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.salvarVinculo.entrada,
         response: { 200: c.salvarVinculo.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id, usuarioId } = request.params;
@@ -263,7 +270,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         params: c.cargosDaEmpresa.parametros,
         response: { 200: c.cargosDaEmpresa.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "ver"),
     },
     async (request) => {
       const { id } = request.params;
@@ -280,7 +287,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         params: c.listarIntegracoes.parametros,
         response: { 200: c.listarIntegracoes.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "ver"),
     },
     async (request) =>
       apresentarIntegracoes(
@@ -296,7 +303,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.salvarIntegracao.entrada,
         response: { 200: c.salvarIntegracao.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id, tipo } = request.params;
@@ -313,7 +320,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.definirSegredo.entrada,
         response: { 200: c.definirSegredo.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_empresas", "editar"),
     },
     async (request) => {
       const { id, tipo } = request.params;
@@ -333,7 +340,10 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
 
   app.get(
     c.listarIntegracoesDaPlataforma.caminho,
-    { schema: { response: { 200: c.listarIntegracoesDaPlataforma.saida } }, onRequest },
+    {
+      schema: { response: { 200: c.listarIntegracoesDaPlataforma.saida } },
+      onRequest: pode("plataforma_integracoes", "ver"),
+    },
     async (request) =>
       apresentarIntegracoesDaPlataforma(
         await listarIntegracoesDaPlataforma(naEmpresa(request)(null)),
@@ -348,7 +358,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.salvarIntegracaoDaPlataforma.entrada,
         response: { 200: c.salvarIntegracaoDaPlataforma.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_integracoes", "editar"),
     },
     async (request) => {
       await salvarIntegracaoDaPlataforma(
@@ -372,7 +382,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.definirSegredoDaPlataforma.entrada,
         response: { 200: c.definirSegredoDaPlataforma.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_integracoes", "editar"),
     },
     async (request) =>
       apresentarSegredo(
@@ -397,7 +407,7 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
         body: c.testarEmailDaPlataforma.entrada,
         response: { 200: c.testarEmailDaPlataforma.saida },
       },
-      onRequest,
+      onRequest: pode("plataforma_integracoes", "editar"),
     },
     async (request) => {
       await testarEmailDaPlataforma(opcoes.correio, request.body.para);
@@ -406,14 +416,11 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
   );
 
   app.get(
-    c.listarPessoas.caminho,
-    { schema: { response: { 200: c.listarPessoas.saida } }, onRequest },
-    async (request) => apresentarPessoas(await listarPessoas(naEmpresa(request)(null))),
-  );
-
-  app.get(
     c.listarAdmins.caminho,
-    { schema: { response: { 200: c.listarAdmins.saida } }, onRequest },
+    {
+      schema: { response: { 200: c.listarAdmins.saida } },
+      onRequest: pode("plataforma_admins", "ver"),
+    },
     async (request) => apresentarAdmins(await listarAdmins(naEmpresa(request)(null))),
   );
 
@@ -421,10 +428,10 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     c.adicionarAdmin.caminho,
     {
       schema: { body: c.adicionarAdmin.entrada, response: { 200: c.adicionarAdmin.saida } },
-      onRequest,
+      onRequest: pode("plataforma_admins", "editar"),
     },
     async (request) => {
-      await adicionarAdmin(naEmpresa(request)(null), await atorDa(request), request.body.email);
+      await adicionarAdmin(naEmpresa(request)(null), await atorDa(request), request.body);
       return confirmacao();
     },
   );
@@ -433,10 +440,96 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     c.removerAdmin.caminho,
     {
       schema: { params: c.removerAdmin.parametros, response: { 200: c.removerAdmin.saida } },
-      onRequest,
+      onRequest: pode("plataforma_admins", "excluir"),
     },
     async (request) => {
       await removerAdmin(naEmpresa(request)(null), await atorDa(request), request.params.usuarioId);
+      return confirmacao();
+    },
+  );
+
+  app.put(
+    c.trocarCargoDoAdmin.caminho,
+    {
+      schema: {
+        params: c.trocarCargoDoAdmin.parametros,
+        body: c.trocarCargoDoAdmin.entrada,
+        response: { 200: c.trocarCargoDoAdmin.saida },
+      },
+      onRequest: pode("plataforma_admins", "editar"),
+    },
+    async (request) => {
+      await trocarCargoDoAdmin(
+        naEmpresa(request)(null),
+        await atorDa(request),
+        request.params.usuarioId,
+        request.body.cargo,
+      );
+      return confirmacao();
+    },
+  );
+
+  app.get(
+    c.listarCargosDaPlataforma.caminho,
+    {
+      schema: { response: { 200: c.listarCargosDaPlataforma.saida } },
+      onRequest: pode("plataforma_admins", "ver"),
+    },
+    async (request) =>
+      apresentarCargosDaPlataforma(await listarCargosDaPlataforma(naEmpresa(request)(null))),
+  );
+
+  app.post(
+    c.criarCargoDaPlataforma.caminho,
+    {
+      schema: {
+        body: c.criarCargoDaPlataforma.entrada,
+        response: { 200: c.criarCargoDaPlataforma.saida },
+      },
+      onRequest: pode("plataforma_admins", "editar"),
+    },
+    async (request) => {
+      await criarCargoDaPlataforma(naEmpresa(request)(null), await atorDa(request), request.body);
+      return confirmacao();
+    },
+  );
+
+  app.put(
+    c.alterarCargoDaPlataforma.caminho,
+    {
+      schema: {
+        params: c.alterarCargoDaPlataforma.parametros,
+        body: c.alterarCargoDaPlataforma.entrada,
+        response: { 200: c.alterarCargoDaPlataforma.saida },
+      },
+      onRequest: pode("plataforma_admins", "editar"),
+    },
+    async (request) => {
+      await alterarCargoDaPlataforma(
+        naEmpresa(request)(null),
+        await atorDa(request),
+        request.params.chave,
+        request.body,
+      );
+      return confirmacao();
+    },
+  );
+
+  app.delete(
+    c.excluirCargoDaPlataforma.caminho,
+    {
+      schema: {
+        params: c.excluirCargoDaPlataforma.parametros,
+        response: { 200: c.excluirCargoDaPlataforma.saida },
+      },
+      onRequest: pode("plataforma_admins", "excluir"),
+    },
+    async (request) => {
+      await excluirCargoDaPlataforma(
+        naEmpresa(request)(null),
+        await atorDa(request),
+        request.params.chave,
+      );
       return confirmacao();
     },
   );

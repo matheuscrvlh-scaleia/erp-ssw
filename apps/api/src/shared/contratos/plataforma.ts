@@ -2,11 +2,20 @@ import { contrato } from "../contrato";
 import { ehDataIso } from "../datas";
 import { STATUS_EMPRESA, TIPOS_INTEGRACAO, TIPOS_INTEGRACAO_PLATAFORMA } from "../plataforma";
 import { z } from "../zod";
-import { cargo, emailDeUsuario, novoUsuario } from "./admin";
+import {
+  cargo,
+  chaveDeCadastro,
+  emailDeUsuario,
+  listaDePermissoes,
+  novoUsuario,
+  parametroChave,
+  rotuloDoCargo,
+} from "./admin";
 
 /*
  * Plataforma (equipe Scale IA): empresas, marca, módulos, usuários por empresa, integrações e
- * segredos, administradores. Tudo exige admin da Plataforma.
+ * segredos, a equipe da Plataforma e os cargos dela. Tudo exige a equipe da Plataforma, com a
+ * ação no cargo dela.
  * origem: src/features/plataforma/plataforma.functions.ts (sistema atual)
  */
 
@@ -126,32 +135,20 @@ export const integracaoDaEmpresa = z.object({
 });
 export type IntegracaoDaEmpresa = z.infer<typeof integracaoDaEmpresa>;
 
+/** Pessoa da equipe da Plataforma (entra em todas as empresas) com o cargo dela na Plataforma. */
 export const adminDaPlataforma = z.object({
   usuarioId: z.uuid(),
   nome: z.string().nullable(),
   email: z.string(),
+  ativo: z.boolean(),
+  cargo: z.string(),
+  cargoRotulo: z.string(),
+  ultimoLoginEm: z.iso.datetime().nullable(),
   criadoEm: z.iso.datetime(),
 });
 export type AdminDaPlataforma = z.infer<typeof adminDaPlataforma>;
 
-/** Plataforma › Usuários e cargos: cada pessoa com o cargo em cada empresa. */
-export const pessoaDaPlataforma = z.object({
-  id: z.uuid(),
-  nome: z.string().nullable(),
-  email: z.string(),
-  ativo: z.boolean(),
-  adminPlataforma: z.boolean(),
-  empresas: z.array(
-    z.object({
-      empresaId: z.uuid(),
-      empresaNome: z.string(),
-      papel: z.string().nullable(),
-      cargoRotulo: z.string().nullable(),
-      ativo: z.boolean(),
-    }),
-  ),
-});
-export type PessoaDaPlataforma = z.infer<typeof pessoaDaPlataforma>;
+const chaveDoCargoDaPlataforma = z.string().min(1).max(64);
 
 const parametroTipo = z.object({ id: z.uuid(), tipo: z.enum(TIPOS_INTEGRACAO) });
 
@@ -333,11 +330,6 @@ export const contratosPlataforma = {
     entrada: z.object({ para: emailDeUsuario }),
     saida: ok,
   }),
-  listarPessoas: contrato({
-    metodo: "GET",
-    caminho: "/api/v1/plataforma/usuarios",
-    saida: z.object({ pessoas: z.array(pessoaDaPlataforma) }),
-  }),
   listarAdmins: contrato({
     metodo: "GET",
     caminho: "/api/v1/plataforma/administradores",
@@ -346,13 +338,49 @@ export const contratosPlataforma = {
   adicionarAdmin: contrato({
     metodo: "POST",
     caminho: "/api/v1/plataforma/administradores",
-    entrada: z.object({ email: emailDeUsuario }),
+    entrada: z.object({ email: emailDeUsuario, cargo: chaveDoCargoDaPlataforma }),
+    saida: ok,
+  }),
+  trocarCargoDoAdmin: contrato({
+    metodo: "PUT",
+    caminho: "/api/v1/plataforma/administradores/:usuarioId",
+    parametros: z.object({ usuarioId: z.uuid() }),
+    entrada: z.object({ cargo: chaveDoCargoDaPlataforma }),
     saida: ok,
   }),
   removerAdmin: contrato({
     metodo: "DELETE",
     caminho: "/api/v1/plataforma/administradores/:usuarioId",
     parametros: z.object({ usuarioId: z.uuid() }),
+    saida: ok,
+  }),
+  /** Cargos da equipe da Plataforma (`temTudo` = Super Admin; `usuarios` = quantos estão nele). */
+  listarCargosDaPlataforma: contrato({
+    metodo: "GET",
+    caminho: "/api/v1/plataforma/cargos",
+    saida: z.object({ cargos: z.array(cargo) }),
+  }),
+  criarCargoDaPlataforma: contrato({
+    metodo: "POST",
+    caminho: "/api/v1/plataforma/cargos",
+    entrada: z.object({
+      chave: chaveDeCadastro,
+      rotulo: rotuloDoCargo,
+      permissoes: listaDePermissoes,
+    }),
+    saida: ok,
+  }),
+  alterarCargoDaPlataforma: contrato({
+    metodo: "PUT",
+    caminho: "/api/v1/plataforma/cargos/:chave",
+    parametros: parametroChave,
+    entrada: z.object({ rotulo: rotuloDoCargo, permissoes: listaDePermissoes }),
+    saida: ok,
+  }),
+  excluirCargoDaPlataforma: contrato({
+    metodo: "DELETE",
+    caminho: "/api/v1/plataforma/cargos/:chave",
+    parametros: parametroChave,
     saida: ok,
   }),
 } as const;

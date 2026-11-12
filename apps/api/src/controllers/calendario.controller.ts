@@ -1,9 +1,14 @@
+import { type Acao } from "@erp/shared/acesso/permissoes";
 import { contratosCalendario as c } from "@erp/shared/contratos/calendario";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirAdminPlataforma, exigirModulo, exigirPermissao } from "../http/middleware/guardas";
+import {
+  exigirModulo,
+  exigirPermissao,
+  exigirPermissaoDaPlataforma,
+} from "../http/middleware/guardas";
 import { atorDa } from "../http/middleware/sessao";
 import {
   alterarFeriado,
@@ -27,7 +32,7 @@ const modulo = exigirModulo("historico");
 const ler = [modulo, exigirPermissao("calendario", "ver")];
 const editar = [modulo, exigirPermissao("calendario", "editar")];
 const excluir = [modulo, exigirPermissao("calendario", "excluir")];
-const gerais = [exigirAdminPlataforma];
+const geral = (acao: Acao) => [exigirPermissaoDaPlataforma("plataforma_integracoes", acao)];
 
 async function contextoDe(request: FastifyRequest): Promise<ContextoCalendario> {
   const { acesso, empresa } = await empresaDaRequisicao(request);
@@ -102,7 +107,7 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
     c.gerarNacionais.caminho,
     {
       schema: { body: c.gerarNacionais.entrada, response: { 200: c.gerarNacionais.saida } },
-      preHandler: gerais,
+      preHandler: geral("editar"),
     },
     async (request) =>
       gerarNacionais(request.db, await atorDa(request), request.body.ano, request.body.anosAFrente),
@@ -115,7 +120,7 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
         querystring: c.listarFeriadosGerais.entrada,
         response: { 200: c.listarFeriadosGerais.saida },
       },
-      preHandler: gerais,
+      preHandler: geral("ver"),
     },
     async (request) =>
       apresentarFeriadosGerais(await listarFeriadosGerais(request.db, request.query.ano)),
@@ -125,7 +130,7 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
     c.criarFeriadoGeral.caminho,
     {
       schema: { body: c.criarFeriadoGeral.entrada, response: { 200: c.criarFeriadoGeral.saida } },
-      preHandler: gerais,
+      preHandler: geral("editar"),
     },
     async (request) => criarFeriado(request.db, ESCOPO_GERAL, await atorDa(request), request.body),
   );
@@ -138,7 +143,7 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
         body: c.alterarFeriadoGeral.entrada,
         response: { 200: c.alterarFeriadoGeral.saida },
       },
-      preHandler: gerais,
+      preHandler: geral("editar"),
     },
     async (request) =>
       alterarFeriado(
@@ -157,7 +162,7 @@ export const controladorCalendario: FastifyPluginCallbackZod<{ agora: () => Date
         params: c.excluirFeriadoGeral.parametros,
         response: { 200: c.excluirFeriadoGeral.saida },
       },
-      preHandler: gerais,
+      preHandler: geral("editar"),
     },
     async (request) => {
       await excluirFeriado(request.db, ESCOPO_GERAL, await atorDa(request), request.params.id);

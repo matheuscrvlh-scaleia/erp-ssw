@@ -6,6 +6,7 @@ import {
   empresas,
   empresaUsuarios,
   plataformaAdmins,
+  plataformaCargoPermissoes,
   sessoes,
   usuarioPermissoes,
   usuarios,
@@ -104,6 +105,19 @@ export function criarRepositorioAcesso(tx: Transacao): RepositorioAcesso {
           and(eq(cargoPermissoes.empresaId, empresaId), eq(cargoPermissoes.cargoChave, papel)),
         );
       return { rotulo: linha.rotulo, permissoes: permissoes.map((p) => `${p.tela}.${p.acao}`) };
+    },
+
+    cargoDaPlataforma: async (usuarioId) => {
+      const [linha] = await tx
+        .select({ chave: plataformaAdmins.cargo })
+        .from(plataformaAdmins)
+        .where(eq(plataformaAdmins.usuarioId, usuarioId));
+      if (!linha) return null;
+      const permissoes = await tx
+        .select({ tela: plataformaCargoPermissoes.telaChave, acao: plataformaCargoPermissoes.acao })
+        .from(plataformaCargoPermissoes)
+        .where(eq(plataformaCargoPermissoes.cargoChave, linha.chave));
+      return { chave: linha.chave, permissoes: permissoes.map((p) => `${p.tela}.${p.acao}`) };
     },
 
     excecoes: async (empresaId, usuarioId) => {

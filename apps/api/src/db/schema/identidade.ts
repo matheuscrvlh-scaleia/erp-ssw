@@ -1,3 +1,4 @@
+import { ACOES } from "@erp/shared/acesso/permissoes";
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
@@ -5,6 +6,7 @@ import {
   check,
   index,
   integer,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -12,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { atualizadoEm, criadoEm, erp } from "./base";
-import { empresas } from "./plataforma";
+import { empresas, telas } from "./plataforma";
 
 /*
  * Identidade é global (uma pessoa pode estar em várias empresas) e é lida antes de existir
@@ -106,11 +108,52 @@ export const identidadesExternas = erp.table(
   (t) => [unique("identidades_externas_provedor_sujeito").on(t.provedor, t.sujeito)],
 );
 
-/** Equipe da Plataforma: vê e administra todas as empresas. */
-export const plataformaAdmins = erp.table("plataforma_admins", {
-  usuarioId: uuid("usuario_id")
-    .primaryKey()
-    .references(() => usuarios.id, { onDelete: "cascade" }),
+/**
+ * Cargos da equipe da Plataforma: o que cada pessoa da equipe vê e faz nas telas da Plataforma.
+ * `super_admin` (protegido) tem todas as permissões pelo código e não grava linhas.
+ */
+export const plataformaCargos = erp.table("plataforma_cargos", {
+  chave: text("chave").primaryKey(),
+  rotulo: text("rotulo").notNull(),
+  protegido: boolean("protegido").notNull().default(false),
   criadoEm: criadoEm(),
-  criadoPor: uuid("criado_por").references(() => usuarios.id),
+  atualizadoEm: atualizadoEm(),
 });
+
+/** Permissões do cargo da Plataforma: ação (`ver`, `editar`, `excluir`) por tela da Plataforma. */
+export const plataformaCargoPermissoes = erp.table(
+  "plataforma_cargo_permissoes",
+  {
+    cargoChave: text("cargo_chave")
+      .notNull()
+      .references(() => plataformaCargos.chave, { onDelete: "cascade", onUpdate: "cascade" }),
+    telaChave: text("tela_chave")
+      .notNull()
+      .references(() => telas.chave, { onDelete: "cascade" }),
+    acao: text("acao", { enum: ACOES }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.cargoChave, t.telaChave, t.acao] }),
+    check(
+      "plataforma_cargo_permissoes_acao_valida",
+      sql`${t.acao} in ('ver', 'editar', 'excluir')`,
+    ),
+  ],
+);
+
+/** Equipe da Plataforma: entra em todas as empresas; o cargo diz o que faz na Plataforma. */
+export const plataformaAdmins = erp.table(
+  "plataforma_admins",
+  {
+    usuarioId: uuid("usuario_id")
+      .primaryKey()
+      .references(() => usuarios.id, { onDelete: "cascade" }),
+    cargo: text("cargo")
+      .notNull()
+      .default("super_admin")
+      .references(() => plataformaCargos.chave, { onUpdate: "cascade" }),
+    criadoEm: criadoEm(),
+    criadoPor: uuid("criado_por").references(() => usuarios.id),
+  },
+  (t) => [index("plataforma_admins_cargo_idx").on(t.cargo)],
+);

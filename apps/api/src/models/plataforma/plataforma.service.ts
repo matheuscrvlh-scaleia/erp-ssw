@@ -8,12 +8,12 @@ import {
   contextoDoSegredo,
   type SegredoCifrado,
 } from "@erp/db/segredos";
-import { modulosVigentes } from "@erp/dominio/acesso";
+import { modulosVigentes, permissoesDoCargoDaPlataforma } from "@erp/dominio/acesso";
 import {
   caminhoDoLogo,
   CARGOS_PADRAO,
   escolherEmpresaModelo,
-  exigirPodeRemoverAdminPlataforma,
+  exigirOutroSuperAdmin,
   validarLogo,
   validarParametrosDeIntegracao,
   validarVigencia,
@@ -22,14 +22,15 @@ import { mudancaParaAuditoria, type Registro } from "@erp/dominio/auditoria";
 import { copiaParaEmpresaNova } from "@erp/dominio/configuracoes";
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import { MODULOS } from "@erp/shared/acesso/modulos";
+import { CARGO_SUPER_ADMIN_DA_PLATAFORMA } from "@erp/shared/acesso/papeis";
 import { type Permissao } from "@erp/shared/acesso/permissoes";
+import { type Cargo } from "@erp/shared/contratos/admin";
 import {
   type DadosDaEmpresa,
   type IntegracaoDaEmpresa,
   type IntegracaoDaPlataforma,
   type ModuloDaEmpresa,
   PARAMETROS_DA_INTEGRACAO_PLATAFORMA,
-  type PessoaDaPlataforma,
   type ValorDeParametro,
   valorDeParametro,
   type VinculoNaEmpresa,
@@ -130,18 +131,6 @@ export type EstadoDaIntegracaoDaPlataforma = Omit<
   "segredoDefinidoEm" | "atualizadoEm"
 > & { segredoDefinidoEm: Date | null; atualizadoEm: Date | null };
 
-export interface AdminGravado {
-  usuarioId: string;
-  nome: string | null;
-  email: string;
-  criadoEm: Date;
-}
-
-/** Pessoa com a conta, se é da equipe da Plataforma e o vínculo em cada empresa. */
-export type PessoaComVinculos = Omit<PessoaDaPlataforma, "empresas"> & {
-  empresas: VinculoDaPessoa[];
-};
-
 /** O que a empresa nova copia da empresa modelo. */
 export interface CopiaDoModelo {
   /** Linhas de `codigos_ocorrencia` sem empresa e sem autoria. */
@@ -151,14 +140,25 @@ export interface CopiaDoModelo {
   permissoesDosCargos: Map<string, Permissao[]>;
 }
 
-/** Vínculo de alguém numa empresa, com o nome do cargo (Plataforma › Usuários e cargos). */
-export interface VinculoDaPessoa {
+/** Pessoa da equipe da Plataforma, com o cargo dela na Plataforma. */
+export interface AdminGravado {
   usuarioId: string;
-  empresaId: string;
-  empresaNome: string;
-  papel: string | null;
-  cargoRotulo: string | null;
+  nome: string | null;
+  email: string;
   ativo: boolean;
+  cargo: string;
+  cargoRotulo: string;
+  ultimoLoginEm: Date | null;
+  criadoEm: Date;
+}
+
+/** Cargo da Plataforma com as permissões gravadas e quantas pessoas da equipe estão nele. */
+export interface CargoDaPlataformaGravado {
+  chave: string;
+  rotulo: string;
+  protegido: boolean;
+  permissoes: string[];
+  usuarios: number;
 }
 
 export interface RepositorioPlataforma {
@@ -221,13 +221,23 @@ export interface RepositorioPlataforma {
     atualizadoPor: string,
   ): Promise<void>;
   admins(): Promise<AdminGravado[]>;
-  /** Todas as contas e os vínculos de todas as empresas (contexto de Plataforma). */
-  contas(): Promise<{ id: string; nome: string | null; email: string; ativo: boolean }[]>;
-  vinculosDeTodas(): Promise<VinculoDaPessoa[]>;
-  /** Trava a lista (duas remoções ao mesmo tempo não zeram a equipe) e devolve quantos são. */
-  travarAdmins(): Promise<number>;
-  adicionarAdmin(usuarioId: string, criadoPor: string): Promise<void>;
+  /** Trava a equipe (duas mudanças ao mesmo tempo não zeram o Super Admin) e devolve os cargos. */
+  travarAdmins(): Promise<{ usuarioId: string; cargo: string }[]>;
+  adicionarAdmin(usuarioId: string, cargo: string, criadoPor: string): Promise<void>;
+  trocarCargoDoAdmin(usuarioId: string, cargo: string): Promise<void>;
   removerAdmin(usuarioId: string): Promise<void>;
+  cargosDaPlataforma(): Promise<CargoDaPlataformaGravado[]>;
+  cargoDaPlataforma(chave: string): Promise<CargoDaPlataformaGravado | null>;
+  criarCargoDaPlataforma(
+    cargo: { chave: string; rotulo: string },
+    permissoes: readonly Permissao[],
+  ): Promise<void>;
+  alterarCargoDaPlataforma(chave: string, rotulo: string): Promise<void>;
+  trocarPermissoesDoCargoDaPlataforma(
+    chave: string,
+    permissoes: readonly Permissao[],
+  ): Promise<void>;
+  excluirCargoDaPlataforma(chave: string): Promise<void>;
 }
 
 /** Executor no contexto de uma empresa (ou de nenhuma), com a Plataforma ligada. */
@@ -774,62 +784,93 @@ export async function listarAdmins(db: Executor<"plataforma">): Promise<AdminGra
   return db(({ plataforma }) => plataforma.admins());
 }
 
-/**
- * Plataforma › Usuários e cargos: todas as pessoas, com o cargo em cada empresa e se são da
- * equipe da Plataforma.
- */
-export async function listarPessoas(db: Executor<"plataforma">): Promise<PessoaComVinculos[]> {
-  const { contas, vinculos, admins } = await db(async ({ plataforma }) => ({
-    contas: await plataforma.contas(),
-    vinculos: await plataforma.vinculosDeTodas(),
-    admins: new Set((await plataforma.admins()).map((a) => a.usuarioId)),
-  }));
-  return contas.map((conta) => ({
-    ...conta,
-    adminPlataforma: admins.has(conta.id),
-    empresas: vinculos.filter((v) => v.usuarioId === conta.id),
-  }));
+async function cargoDaPlataformaExistente(
+  plataforma: RepositorioPlataforma,
+  chave: string,
+): Promise<CargoDaPlataformaGravado> {
+  const cargo = await plataforma.cargoDaPlataforma(chave);
+  if (!cargo) throw naoEncontrado("Cargo da Plataforma não encontrado.");
+  return cargo;
 }
 
+const ehSuperAdmin = (cargo: string) => cargo === CARGO_SUPER_ADMIN_DA_PLATAFORMA;
+
 /**
- * Dá acesso de Plataforma a quem já tem conta (a pessoa é convidada antes).
+ * Põe na equipe da Plataforma quem já tem conta (a pessoa é convidada antes), num cargo da
+ * Plataforma. Quem já é da equipe não muda aqui (troca de cargo é outra ação).
  * origem: adicionarAdminPlataforma + plataforma_admin_definir (sistema atual)
  */
 export async function adicionarAdmin(
   db: Executor<"plataforma" | "usuarios" | "acesso" | "auditoria">,
   ator: Ator,
-  email: string,
+  entrada: { email: string; cargo: string },
 ): Promise<void> {
   await db(async ({ plataforma, usuarios, acesso, auditoria }) => {
-    const conta = await usuarios.contaPorEmail(email);
+    const conta = await usuarios.contaPorEmail(entrada.email);
     if (!conta) {
       throw naoEncontrado(
-        "Nenhum usuário com esse e-mail. Convide a pessoa antes de torná-la admin.",
+        "Nenhum usuário com esse e-mail. Convide a pessoa antes de colocá-la na Plataforma.",
       );
     }
-    if (await acesso.ehAdminPlataforma(conta.id)) return;
-    await plataforma.adicionarAdmin(conta.id, ator.usuarioId);
+    await cargoDaPlataformaExistente(plataforma, entrada.cargo);
+    if (await acesso.ehAdminPlataforma(conta.id)) {
+      throw conflito("Essa pessoa já é da equipe da Plataforma. Para mudar o cargo, edite-a.");
+    }
+    await plataforma.adicionarAdmin(conta.id, entrada.cargo, ator.usuarioId);
     await registrarCadastro(auditoria, ator, {
       empresaId: null,
       acao: "criar",
       entidade: "admin_plataforma",
       entidadeId: conta.id,
       antes: null,
-      depois: { usuario_id: conta.id, email: conta.email },
+      depois: { usuario_id: conta.id, email: conta.email, cargo: entrada.cargo },
     });
   });
 }
 
-/** A Plataforma nunca fica sem admin: a lista é travada antes de contar. */
+/** Super Admins da equipe travada (duas mudanças ao mesmo tempo não zeram o cargo). */
+async function superAdminsTravados(plataforma: RepositorioPlataforma): Promise<number> {
+  const equipe = await plataforma.travarAdmins();
+  return equipe.filter((a) => ehSuperAdmin(a.cargo)).length;
+}
+
+/** Troca o cargo da pessoa na Plataforma; o último Super Admin não sai do cargo. */
+export async function trocarCargoDoAdmin(
+  db: Executor<"plataforma" | "auditoria">,
+  ator: Ator,
+  usuarioId: string,
+  cargo: string,
+): Promise<void> {
+  await db(async ({ plataforma, auditoria }) => {
+    const superAdmins = await superAdminsTravados(plataforma);
+    const atual = (await plataforma.admins()).find((a) => a.usuarioId === usuarioId);
+    if (!atual) throw naoEncontrado("Essa pessoa não é da equipe da Plataforma.");
+    if (atual.cargo === cargo) return;
+    await cargoDaPlataformaExistente(plataforma, cargo);
+    if (ehSuperAdmin(atual.cargo)) exigirOutroSuperAdmin(superAdmins);
+    await plataforma.trocarCargoDoAdmin(usuarioId, cargo);
+    await registrarCadastro(auditoria, ator, {
+      empresaId: null,
+      acao: "alterar",
+      entidade: "admin_plataforma",
+      entidadeId: usuarioId,
+      antes: { cargo: atual.cargo },
+      depois: { cargo },
+    });
+  });
+}
+
+/** Tira da equipe da Plataforma (a conta e os vínculos com as empresas ficam). */
 export async function removerAdmin(
-  db: Executor<"plataforma" | "usuarios" | "acesso" | "auditoria">,
+  db: Executor<"plataforma" | "usuarios" | "auditoria">,
   ator: Ator,
   usuarioId: string,
 ): Promise<void> {
-  await db(async ({ plataforma, usuarios, acesso, auditoria }) => {
-    const total = await plataforma.travarAdmins();
-    if (!(await acesso.ehAdminPlataforma(usuarioId))) return;
-    exigirPodeRemoverAdminPlataforma(total);
+  await db(async ({ plataforma, usuarios, auditoria }) => {
+    const superAdmins = await superAdminsTravados(plataforma);
+    const atual = (await plataforma.admins()).find((a) => a.usuarioId === usuarioId);
+    if (!atual) return;
+    if (ehSuperAdmin(atual.cargo)) exigirOutroSuperAdmin(superAdmins);
     await plataforma.removerAdmin(usuarioId);
     const conta = await usuarios.conta(usuarioId);
     await registrarCadastro(auditoria, ator, {
@@ -837,7 +878,98 @@ export async function removerAdmin(
       acao: "excluir",
       entidade: "admin_plataforma",
       entidadeId: usuarioId,
-      antes: { usuario_id: usuarioId, email: conta?.email ?? null },
+      antes: { usuario_id: usuarioId, email: conta?.email ?? null, cargo: atual.cargo },
+      depois: null,
+    });
+  });
+}
+
+const comoTexto = (permissoes: readonly string[]) => [...permissoes].sort().join(", ");
+
+/** Cargos da Plataforma com as permissões que valem (o Super Admin tem todas). */
+export async function listarCargosDaPlataforma(db: Executor<"plataforma">): Promise<Cargo[]> {
+  const cargos = await db(({ plataforma }) => plataforma.cargosDaPlataforma());
+  return cargos.map((c) => ({
+    chave: c.chave,
+    rotulo: c.rotulo,
+    protegido: c.protegido,
+    temTudo: ehSuperAdmin(c.chave),
+    permissoes: permissoesDoCargoDaPlataforma(c.chave, c.permissoes),
+    usuarios: c.usuarios,
+  }));
+}
+
+/** Só as permissões da Plataforma entram num cargo da Plataforma (o resto é ignorado). */
+export async function criarCargoDaPlataforma(
+  db: Executor<"plataforma" | "auditoria">,
+  ator: Ator,
+  entrada: { chave: string; rotulo: string; permissoes: string[] },
+): Promise<void> {
+  const permissoes = permissoesDoCargoDaPlataforma(entrada.chave, entrada.permissoes);
+  await db(async ({ plataforma, auditoria }) => {
+    if (ehSuperAdmin(entrada.chave) || (await plataforma.cargoDaPlataforma(entrada.chave))) {
+      throw conflito("Já existe um cargo com essa chave.");
+    }
+    await plataforma.criarCargoDaPlataforma(
+      { chave: entrada.chave, rotulo: entrada.rotulo },
+      permissoes,
+    );
+    await registrarCadastro(auditoria, ator, {
+      empresaId: null,
+      acao: "criar",
+      entidade: "cargo_plataforma",
+      entidadeId: entrada.chave,
+      antes: null,
+      depois: { chave: entrada.chave, rotulo: entrada.rotulo, permissoes: comoTexto(permissoes) },
+    });
+  });
+}
+
+/** Super Admin: só o nome muda (as permissões são todas as da Plataforma). */
+export async function alterarCargoDaPlataforma(
+  db: Executor<"plataforma" | "auditoria">,
+  ator: Ator,
+  chave: string,
+  entrada: { rotulo: string; permissoes: string[] },
+): Promise<void> {
+  const permissoes = permissoesDoCargoDaPlataforma(chave, entrada.permissoes);
+  await db(async ({ plataforma, auditoria }) => {
+    const antes = await cargoDaPlataformaExistente(plataforma, chave);
+    const fixas = ehSuperAdmin(chave);
+    await plataforma.alterarCargoDaPlataforma(chave, entrada.rotulo);
+    if (!fixas) await plataforma.trocarPermissoesDoCargoDaPlataforma(chave, permissoes);
+    await registrarCadastro(auditoria, ator, {
+      empresaId: null,
+      acao: "alterar",
+      entidade: "cargo_plataforma",
+      entidadeId: chave,
+      antes: { rotulo: antes.rotulo, permissoes: comoTexto(antes.permissoes) },
+      depois: {
+        rotulo: entrada.rotulo,
+        permissoes: comoTexto(fixas ? antes.permissoes : permissoes),
+      },
+    });
+  });
+}
+
+export async function excluirCargoDaPlataforma(
+  db: Executor<"plataforma" | "auditoria">,
+  ator: Ator,
+  chave: string,
+): Promise<void> {
+  await db(async ({ plataforma, auditoria }) => {
+    const antes = await cargoDaPlataformaExistente(plataforma, chave);
+    if (antes.protegido || ehSuperAdmin(chave)) throw conflito("Este cargo é protegido");
+    if (antes.usuarios > 0) {
+      throw conflito(`Cargo em uso por ${String(antes.usuarios)} pessoa(s) da Plataforma`);
+    }
+    await plataforma.excluirCargoDaPlataforma(chave);
+    await registrarCadastro(auditoria, ator, {
+      empresaId: null,
+      acao: "excluir",
+      entidade: "cargo_plataforma",
+      entidadeId: chave,
+      antes: { chave, rotulo: antes.rotulo, permissoes: comoTexto(antes.permissoes) },
       depois: null,
     });
   });

@@ -11,3 +11,9 @@ export const PAPEL_GESTOR = "gestor";
 export function ehAdminDaEmpresa(papel: string | null): boolean {
   return papel === PAPEL_ADMIN || papel === PAPEL_SUPER_ADMIN;
 }
+
+/**
+ * Cargo da equipe da Plataforma com todas as permissões da Plataforma (não se edita nem se apaga).
+ * Os outros cargos da Plataforma são criados na tela e têm as permissões gravadas.
+ */
+export const CARGO_SUPER_ADMIN_DA_PLATAFORMA = "super_admin";

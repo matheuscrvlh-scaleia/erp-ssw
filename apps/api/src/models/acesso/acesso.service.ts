@@ -5,6 +5,7 @@ import {
   type LiberacaoDeModulo,
   modulosVigentes,
   papelNaEmpresa,
+  permissoesDoCargoDaPlataforma,
   type VinculoComEmpresa,
 } from "@erp/dominio/acesso";
 import { empresaEmOperacao } from "@erp/dominio/empresas";
@@ -52,6 +53,8 @@ export interface RepositorioAcesso {
   todasAsEmpresas(): Promise<{ id: string; nome: string }[]>;
   /** Cargo da empresa (cada empresa tem os seus, Q30) com as permissões gravadas (`tela.acao`). */
   cargo(empresaId: string, papel: string): Promise<{ rotulo: string; permissoes: string[] } | null>;
+  /** Cargo na equipe da Plataforma com as permissões gravadas; nulo fora da equipe. */
+  cargoDaPlataforma(usuarioId: string): Promise<{ chave: string; permissoes: string[] } | null>;
   excecoes(empresaId: string, usuarioId: string): Promise<ExcecaoDePermissao[]>;
   liberacoes(empresaId: string): Promise<LiberacaoDeModulo[]>;
 }
@@ -145,6 +148,7 @@ export async function carregarAcesso(
       const papel = papelNaEmpresa({ vinculo, adminPlataforma, empresaId: empresa?.id ?? null });
       const cargo = empresa && papel ? await acesso.cargo(empresa.id, papel) : null;
       const excecoes = empresa ? await acesso.excecoes(empresa.id, usuarioId) : [];
+      const daPlataforma = adminPlataforma ? await acesso.cargoDaPlataforma(usuarioId) : null;
       const liberacoes = empresa ? await acesso.liberacoes(empresa.id) : [];
       const vigentes = empresa
         ? modulosVigentes(MODULOS, liberacoes, hojeNoFuso(empresa.fuso, deps.agora()))
@@ -155,6 +159,9 @@ export async function carregarAcesso(
         empresaId: empresa?.id ?? null,
         adminPlataforma,
         vinculo,
+        permissoesDaPlataforma: daPlataforma
+          ? permissoesDoCargoDaPlataforma(daPlataforma.chave, daPlataforma.permissoes)
+          : [],
         permissoesDoCargo: cargo?.permissoes ?? [],
         excecoes,
         catalogo: MODULOS,

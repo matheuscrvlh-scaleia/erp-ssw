@@ -2,7 +2,7 @@ import { contratosPainelPlataforma as c } from "@erp/shared/contratos/painel-pla
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { executorDePlataforma } from "../http/middleware/contexto";
-import { exigirAdminPlataforma } from "../http/middleware/guardas";
+import { exigirPermissaoDaPlataforma } from "../http/middleware/guardas";
 import { type ClienteWorkerSsw } from "../infra/worker-ssw";
 import {
   criarCacheDoPainel,
@@ -27,7 +27,10 @@ export const controladorPainelPlataforma: FastifyPluginCallbackZod<OpcoesRotasPa
 
   app.get(
     c.obter.caminho,
-    { schema: { response: { 200: c.obter.saida } }, onRequest: exigirAdminPlataforma },
+    {
+      schema: { response: { 200: c.obter.saida } },
+      onRequest: exigirPermissaoDaPlataforma("plataforma_painel", "ver"),
+    },
     async (request) =>
       apresentarPainel(
         await doCache(() =>

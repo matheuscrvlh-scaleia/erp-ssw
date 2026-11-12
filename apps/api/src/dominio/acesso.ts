@@ -1,14 +1,21 @@
 import { type ModuloCatalogo } from "@erp/shared/acesso/modulos";
-import { ehAdminDaEmpresa, PAPEL_ADMIN, PAPEL_GESTOR } from "@erp/shared/acesso/papeis";
+import {
+  CARGO_SUPER_ADMIN_DA_PLATAFORMA,
+  ehAdminDaEmpresa,
+  PAPEL_ADMIN,
+  PAPEL_GESTOR,
+} from "@erp/shared/acesso/papeis";
 import {
   ACOES_DA_TELA,
   type Efeito,
   ehPermissao,
+  ehPermissaoDaPlataforma,
   ehPermissaoGravavel,
   partesDaPermissao,
   type Permissao,
   permissao,
   PERMISSOES,
+  PERMISSOES_DA_PLATAFORMA,
   PERMISSOES_GRAVAVEIS,
   telasComVer,
 } from "@erp/shared/acesso/permissoes";
@@ -86,20 +93,41 @@ function todasAsAcoes(telas: readonly Tela[]): Permissao[] {
 }
 
 /**
- * Telas da Plataforma só para quem é admin da plataforma (nunca por cargo ou exceção), com todas
- * as ações; Logs da empresa para o admin da empresa.
+ * Permissões do cargo da equipe da Plataforma: o Super Admin tem todas as da Plataforma (não se
+ * edita); os outros, as gravadas (as de fora da Plataforma não valem, nem ação sem "Ver").
+ */
+export function permissoesDoCargoDaPlataforma(
+  cargo: string,
+  gravadas: readonly string[],
+): Permissao[] {
+  if (cargo === CARGO_SUPER_ADMIN_DA_PLATAFORMA) return [...PERMISSOES_DA_PLATAFORMA];
+  const validas = new Set<string>(gravadas.filter(ehPermissaoDaPlataforma));
+  tirarAcoesSemVer(validas);
+  return emOrdemDoCatalogo(validas);
+}
+
+/**
+ * Telas da Plataforma só vêm do cargo da pessoa na equipe da Plataforma (nunca do cargo na empresa
+ * ou de exceção); Logs da empresa para o admin da empresa e para a equipe da Plataforma.
  * origem: aplicarTelasMultiempresa (src/lib/permissions.ts, sistema atual)
  */
 export function aplicarPermissoesDaPlataforma(
   permissoes: readonly Permissao[],
-  opcoes: { adminPlataforma: boolean; papel: string | null },
+  opcoes: {
+    adminPlataforma: boolean;
+    papel: string | null;
+    /** Do cargo da Plataforma (`permissoesDoCargoDaPlataforma`); ignoradas fora da equipe. */
+    daPlataforma: readonly Permissao[];
+  },
 ): Permissao[] {
   const daRegra = new Set<string>(todasAsAcoes([...TELAS_SO_PLATAFORMA, ...TELAS_POR_REGRA]));
   const resultado = new Set<string>(permissoes.filter((p) => !daRegra.has(p)));
   if (ehAdminDaEmpresa(opcoes.papel) || opcoes.adminPlataforma) {
     for (const p of todasAsAcoes(TELAS_POR_REGRA)) resultado.add(p);
   }
-  if (opcoes.adminPlataforma) for (const p of todasAsAcoes(TELAS_SO_PLATAFORMA)) resultado.add(p);
+  if (opcoes.adminPlataforma) {
+    for (const p of opcoes.daPlataforma) if (ehPermissaoDaPlataforma(p)) resultado.add(p);
+  }
   return emOrdemDoCatalogo(resultado);
 }
 
@@ -190,6 +218,8 @@ export interface EntradaDoAcesso {
   empresaId: string | null;
   adminPlataforma: boolean;
   vinculo: VinculoComEmpresa | null;
+  /** Permissões do cargo na equipe da Plataforma (`permissoesDoCargoDaPlataforma`). */
+  permissoesDaPlataforma: readonly Permissao[];
   /** Permissões gravadas no cargo do usuário (o cargo Admin ignora: tem tudo). */
   permissoesDoCargo: readonly string[];
   excecoes: readonly ExcecaoDePermissao[];
@@ -232,7 +262,11 @@ export function calcularAcesso(entrada: EntradaDoAcesso): ResultadoDoAcesso {
 
   const doCargo = aplicarPermissoesDaPlataforma(
     calcularPermissoes({ papel, doCargo: entrada.permissoesDoCargo, excecoes: entrada.excecoes }),
-    { adminPlataforma: entrada.adminPlataforma, papel },
+    {
+      adminPlataforma: entrada.adminPlataforma,
+      papel,
+      daPlataforma: entrada.permissoesDaPlataforma,
+    },
   );
   const { permissoes, bloqueadas } = aplicarModulos(
     doCargo,

@@ -2,7 +2,7 @@ import { contratosAuditoria as c } from "@erp/shared/contratos/auditoria";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao, executorDePlataforma } from "../http/middleware/contexto";
-import { exigirAdminPlataforma, exigirPermissao } from "../http/middleware/guardas";
+import { exigirPermissao, exigirPermissaoDaPlataforma } from "../http/middleware/guardas";
 import {
   type EscopoDosLogs,
   listarAlteracoes,
@@ -63,7 +63,7 @@ export const controladorLogs: FastifyPluginCallbackZod<{ executar: ExecutorComCo
         querystring: c.alteracoesDaPlataforma.entrada,
         response: { 200: c.alteracoesDaPlataforma.saida },
       },
-      onRequest: exigirAdminPlataforma,
+      onRequest: exigirPermissaoDaPlataforma("plataforma_logs", "ver"),
     },
     async (request) => {
       const { empresa, ...filtros } = request.query;
@@ -87,7 +87,7 @@ export const controladorLogs: FastifyPluginCallbackZod<{ executar: ExecutorComCo
         querystring: c.integracoesDeEmpresaNaPlataforma.entrada,
         response: { 200: c.integracoesDeEmpresaNaPlataforma.saida },
       },
-      onRequest: exigirAdminPlataforma,
+      onRequest: exigirPermissaoDaPlataforma("plataforma_logs", "ver"),
     },
     async (request) =>
       apresentarIntegracoes(

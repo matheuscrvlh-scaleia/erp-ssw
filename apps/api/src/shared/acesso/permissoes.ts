@@ -156,3 +156,38 @@ export const CATEGORIAS_DE_TELA: readonly CategoriaDeTela[] = [
     telas: ["romaneio_placa"],
   },
 ];
+
+/** Tudo o que um cargo da Plataforma pode ter: só as telas da equipe da Plataforma. */
+export const PERMISSOES_DA_PLATAFORMA: readonly Permissao[] = permissoesDas(TELAS_SO_PLATAFORMA);
+
+export function ehPermissaoDaPlataforma(valor: string): valor is Permissao {
+  return (PERMISSOES_DA_PLATAFORMA as readonly string[]).includes(valor);
+}
+
+/** Editor dos cargos da Plataforma: as telas da Plataforma e as ferramentas dela nas empresas. */
+export const CATEGORIAS_DA_PLATAFORMA: readonly CategoriaDeTela[] = [
+  {
+    chave: "plataforma",
+    rotulo: "Plataforma",
+    descricao: "Telas da equipe da Plataforma",
+    telas: [
+      "plataforma_painel",
+      "plataforma_empresas",
+      "plataforma_admins",
+      "plataforma_integracoes",
+      "plataforma_logs",
+    ],
+  },
+  {
+    chave: "ferramentas",
+    rotulo: "Ferramentas nas empresas",
+    descricao: "Integração com o SSW e ponto, dentro da empresa aberta",
+    telas: [
+      "admin_ingestao",
+      "admin_importacao_ssw",
+      "admin_xml_cte",
+      "admin_ssw_diagnostico",
+      "admin_ahgora",
+    ],
+  },
+];

@@ -1,7 +1,6 @@
 import { type Transacao } from "@erp/db";
 import {
   cargoPermissoes,
-  cargos,
   codigosOcorrencia,
   configuracoes,
   empresaIntegracoes,
@@ -9,11 +8,13 @@ import {
   empresas,
   empresaUsuarios,
   plataformaAdmins,
+  plataformaCargoPermissoes,
+  plataformaCargos,
   plataformaIntegracoes,
   usuarios,
 } from "@erp/db/schema";
-import { ehPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
-import { and, asc, count, eq, isNotNull, max, sql } from "drizzle-orm";
+import { ehPermissao, partesDaPermissao, type Permissao } from "@erp/shared/acesso/permissoes";
+import { and, count, eq, isNotNull, max, sql } from "drizzle-orm";
 
 import { type EmpresaGravada, type RepositorioPlataforma } from "./plataforma.service";
 
@@ -306,53 +307,106 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
           usuarioId: plataformaAdmins.usuarioId,
           nome: usuarios.nome,
           email: usuarios.email,
+          ativo: usuarios.ativo,
+          cargo: plataformaAdmins.cargo,
+          cargoRotulo: plataformaCargos.rotulo,
+          ultimoLoginEm: usuarios.ultimoLoginEm,
           criadoEm: plataformaAdmins.criadoEm,
         })
         .from(plataformaAdmins)
-        .innerJoin(usuarios, eq(usuarios.id, plataformaAdmins.usuarioId)),
+        .innerJoin(usuarios, eq(usuarios.id, plataformaAdmins.usuarioId))
+        .innerJoin(plataformaCargos, eq(plataformaCargos.chave, plataformaAdmins.cargo)),
 
-    contas: () =>
+    travarAdmins: () =>
       tx
-        .select({
-          id: usuarios.id,
-          nome: usuarios.nome,
-          email: usuarios.email,
-          ativo: usuarios.ativo,
-        })
-        .from(usuarios),
+        .select({ usuarioId: plataformaAdmins.usuarioId, cargo: plataformaAdmins.cargo })
+        .from(plataformaAdmins)
+        .for("update"),
 
-    vinculosDeTodas: () =>
-      tx
-        .select({
-          usuarioId: empresaUsuarios.usuarioId,
-          empresaId: empresaUsuarios.empresaId,
-          empresaNome: empresas.nome,
-          papel: empresaUsuarios.papel,
-          cargoRotulo: cargos.rotulo,
-          ativo: empresaUsuarios.ativo,
-        })
-        .from(empresaUsuarios)
-        .innerJoin(empresas, eq(empresas.id, empresaUsuarios.empresaId))
-        .leftJoin(
-          cargos,
-          and(
-            eq(cargos.empresaId, empresaUsuarios.empresaId),
-            eq(cargos.chave, empresaUsuarios.papel),
-          ),
-        )
-        .orderBy(asc(empresas.nome)),
-
-    travarAdmins: async () => {
-      const linhas = await tx.select().from(plataformaAdmins).for("update");
-      return linhas.length;
+    adicionarAdmin: async (usuarioId, cargo, criadoPor) => {
+      await tx
+        .insert(plataformaAdmins)
+        .values({ usuarioId, cargo, criadoPor })
+        .onConflictDoNothing();
     },
 
-    adicionarAdmin: async (usuarioId, criadoPor) => {
-      await tx.insert(plataformaAdmins).values({ usuarioId, criadoPor }).onConflictDoNothing();
+    trocarCargoDoAdmin: async (usuarioId, cargo) => {
+      await tx
+        .update(plataformaAdmins)
+        .set({ cargo })
+        .where(eq(plataformaAdmins.usuarioId, usuarioId));
     },
 
     removerAdmin: async (usuarioId) => {
       await tx.delete(plataformaAdmins).where(eq(plataformaAdmins.usuarioId, usuarioId));
     },
+
+    cargosDaPlataforma: () => cargosDaPlataforma(tx, null),
+
+    cargoDaPlataforma: async (chave) => (await cargosDaPlataforma(tx, chave))[0] ?? null,
+
+    criarCargoDaPlataforma: async (cargo, permissoes) => {
+      await tx.insert(plataformaCargos).values(cargo);
+      await gravarPermissoesDoCargoDaPlataforma(tx, cargo.chave, permissoes);
+    },
+
+    alterarCargoDaPlataforma: async (chave, rotulo) => {
+      await tx
+        .update(plataformaCargos)
+        .set({ rotulo, atualizadoEm: new Date() })
+        .where(eq(plataformaCargos.chave, chave));
+    },
+
+    trocarPermissoesDoCargoDaPlataforma: async (chave, permissoes) => {
+      await tx
+        .delete(plataformaCargoPermissoes)
+        .where(eq(plataformaCargoPermissoes.cargoChave, chave));
+      await gravarPermissoesDoCargoDaPlataforma(tx, chave, permissoes);
+    },
+
+    excluirCargoDaPlataforma: async (chave) => {
+      await tx.delete(plataformaCargos).where(eq(plataformaCargos.chave, chave));
+    },
   };
+}
+
+/** Cargos da Plataforma (um só, se `chave`) com as permissões e quantos da equipe estão em cada. */
+async function cargosDaPlataforma(tx: Transacao, chave: string | null) {
+  const filtro = chave === null ? undefined : eq(plataformaCargos.chave, chave);
+  const [linhas, permissoes, membros] = await Promise.all([
+    tx.select().from(plataformaCargos).where(filtro),
+    tx
+      .select({
+        cargo: plataformaCargoPermissoes.cargoChave,
+        tela: plataformaCargoPermissoes.telaChave,
+        acao: plataformaCargoPermissoes.acao,
+      })
+      .from(plataformaCargoPermissoes)
+      .where(chave === null ? undefined : eq(plataformaCargoPermissoes.cargoChave, chave)),
+    tx
+      .select({ cargo: plataformaAdmins.cargo, total: count() })
+      .from(plataformaAdmins)
+      .groupBy(plataformaAdmins.cargo),
+  ]);
+  return linhas.map((c) => ({
+    chave: c.chave,
+    rotulo: c.rotulo,
+    protegido: c.protegido,
+    permissoes: permissoes.filter((p) => p.cargo === c.chave).map((p) => `${p.tela}.${p.acao}`),
+    usuarios: membros.find((m) => m.cargo === c.chave)?.total ?? 0,
+  }));
+}
+
+async function gravarPermissoesDoCargoDaPlataforma(
+  tx: Transacao,
+  chave: string,
+  permissoes: readonly Permissao[],
+): Promise<void> {
+  if (permissoes.length === 0) return;
+  await tx.insert(plataformaCargoPermissoes).values(
+    permissoes.map((p) => {
+      const { tela, acao } = partesDaPermissao(p);
+      return { cargoChave: chave, telaChave: tela, acao };
+    }),
+  );
 }

@@ -1,4 +1,5 @@
 import { type SaidaDe } from "@erp/shared/contrato";
+import { type Cargo } from "@erp/shared/contratos/admin";
 import { type contratosPlataforma } from "@erp/shared/contratos/plataforma";
 
 import {
@@ -8,7 +9,6 @@ import {
   type EstadoDaIntegracao,
   type EstadoDaIntegracaoDaPlataforma,
   type ModuloLiberado,
-  type PessoaComVinculos,
   type VinculoGravadoNaEmpresa,
 } from "../models/plataforma/plataforma.service";
 
@@ -107,21 +107,24 @@ export function apresentarIntegracoesDaPlataforma(
 }
 
 /** Pessoas por nome; em cada uma, as empresas por nome. */
-export function apresentarPessoas(pessoas: readonly PessoaComVinculos[]): Saida<"listarPessoas"> {
+/** A equipe da Plataforma por nome, com o cargo de cada um. */
+export function apresentarAdmins(admins: readonly AdminGravado[]): Saida<"listarAdmins"> {
   return {
-    pessoas: [...pessoas].sort(porNome).map((p) => ({
-      ...p,
-      empresas: [...p.empresas]
-        .sort((a, b) => a.empresaNome.localeCompare(b.empresaNome, "pt-BR"))
-        .map(({ usuarioId: _usuarioId, ...vinculo }) => vinculo),
+    admins: [...admins].sort(porNome).map((a) => ({
+      ...a,
+      ultimoLoginEm: iso(a.ultimoLoginEm),
+      criadoEm: a.criadoEm.toISOString(),
     })),
   };
 }
 
-export function apresentarAdmins(admins: readonly AdminGravado[]): Saida<"listarAdmins"> {
+/** Cargos da Plataforma: o Super Admin primeiro (tem tudo), depois por nome. */
+export function apresentarCargosDaPlataforma(
+  cargos: readonly Cargo[],
+): Saida<"listarCargosDaPlataforma"> {
   return {
-    admins: [...admins]
-      .sort((a, b) => a.email.localeCompare(b.email))
-      .map((a) => ({ ...a, criadoEm: a.criadoEm.toISOString() })),
+    cargos: [...cargos].sort(
+      (a, b) => Number(b.temTudo) - Number(a.temTudo) || a.rotulo.localeCompare(b.rotulo, "pt-BR"),
+    ),
   };
 }

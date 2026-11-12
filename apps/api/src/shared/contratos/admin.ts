@@ -25,7 +25,7 @@ export const emailDeUsuario = z
   .toLowerCase()
   .pipe(z.email("Informe um e-mail válido.").max(320));
 
-const chaveDeCadastro = z
+export const chaveDeCadastro = z
   .string()
   .trim()
   .min(2)
@@ -37,7 +37,7 @@ const papel = z.string().trim().min(1).max(64);
 const nomeDePessoa = z.string().trim().min(1).max(120);
 
 const permissao = z.enum(PERMISSOES);
-const listaDePermissoes = z.array(permissao).max(PERMISSOES.length);
+export const listaDePermissoes = z.array(permissao).max(PERMISSOES.length);
 
 /** Exceção por usuário: "Sim" (concede) ou "Não" (nega); sem linha = "Padrão" (herda o cargo). */
 export const excecaoDePermissao = z.object({ permissao, efeito: z.enum(EFEITOS) });
@@ -91,8 +91,8 @@ export const cargo = z.object({
 });
 export type Cargo = z.infer<typeof cargo>;
 
-const rotuloDoCargo = z.string().trim().min(1).max(60);
-const parametroChave = z.object({ chave: z.string().min(1).max(64) });
+export const rotuloDoCargo = z.string().trim().min(1).max(60);
+export const parametroChave = z.object({ chave: z.string().min(1).max(64) });
 
 export const GRUPOS_DE_CONFIGURACAO = [
   "performance",

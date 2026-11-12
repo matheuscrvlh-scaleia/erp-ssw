@@ -3,7 +3,7 @@ import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import { empresaDaRequisicao } from "../http/middleware/contexto";
-import { exigirAdminPlataforma, exigirEmpresa } from "../http/middleware/guardas";
+import { exigirAdminPlataforma, exigirPermissao } from "../http/middleware/guardas";
 import {
   apurarPeriodo,
   clienteDaEmpresa,
@@ -15,7 +15,7 @@ import {
 import { apresentarApuracao } from "../views/ahgora.view";
 
 /** Ponto (Ahgora): só a equipe da Plataforma, com os dados da empresa ativa (decisão de 09/11). */
-const soPlataforma = [exigirEmpresa, exigirAdminPlataforma];
+const soPlataforma = [exigirPermissao("admin_ahgora", "ver"), exigirAdminPlataforma];
 
 export const controladorAhgora: FastifyPluginCallbackZod<{ ahgora: DependenciasAhgora }> = (
   app,
