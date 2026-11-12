@@ -203,7 +203,6 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     tokens: deps.tokens,
     limitador: deps.limitador,
     correio,
-    refreshDias: ambiente.REFRESH_DIAS,
     webUrl,
   };
   await app.register(rotasAuth, {

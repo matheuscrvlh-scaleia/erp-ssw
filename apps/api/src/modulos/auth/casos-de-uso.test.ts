@@ -137,6 +137,34 @@ describe("renovar e sair", () => {
       codigo: "SESSAO_EXPIRADA",
     });
   });
+
+  it("sessão parada há mais de 30 min não renova e a família é revogada", async () => {
+    await preparar();
+    const sessao = await entrar(cenario.deps, { email: "joana@fr.com.br", senha: SENHA }, origem);
+    cenario.relogio.avancar(29 * 60_000);
+    const viva = await renovar(cenario.deps, sessao.refresh.token, origem);
+    cenario.relogio.avancar(31 * 60_000);
+    await expect(renovar(cenario.deps, viva.refresh.token, origem)).rejects.toMatchObject({
+      codigo: "SESSAO_EXPIRADA",
+    });
+    expect(cenario.banco.sessoes.every((s) => s.motivo === "inatividade")).toBe(true);
+  });
+
+  it("renovar não estende: o login vale 8 h no máximo", async () => {
+    await preparar();
+    let sessao = await entrar(cenario.deps, { email: "joana@fr.com.br", senha: SENHA }, origem);
+    const limite = sessao.refresh.expiraEm.getTime();
+    expect(limite - cenario.relogio.atual.getTime()).toBe(8 * 60 * 60_000);
+    for (let i = 0; i < 31; i++) {
+      cenario.relogio.avancar(15 * 60_000);
+      sessao = await renovar(cenario.deps, sessao.refresh.token, origem);
+      expect(sessao.refresh.expiraEm.getTime()).toBe(limite);
+    }
+    cenario.relogio.avancar(15 * 60_000);
+    await expect(renovar(cenario.deps, sessao.refresh.token, origem)).rejects.toMatchObject({
+      codigo: "SESSAO_EXPIRADA",
+    });
+  });
 });
 
 describe("trocar empresa", () => {

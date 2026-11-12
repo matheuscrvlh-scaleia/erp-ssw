@@ -30,9 +30,16 @@ const MENSAGEM_SEM_CONEXAO = "Sem conexão com o servidor. Verifique a internet 
  * e volta pelo cookie httpOnly de refresh na primeira chamada que tomar 401.
  */
 let tokenAcesso: string | null = null;
+/** Quando o último token foi emitido (login ou renovação): base da renovação com uso. */
+let tokenEmitidoEm = 0;
 
 export function definirTokenAcesso(token: string | null): void {
   tokenAcesso = token;
+  if (token) tokenEmitidoEm = Date.now();
+}
+
+export function momentoDoUltimoToken(): number {
+  return tokenEmitidoEm;
 }
 
 interface OpcoesSoltas {
@@ -110,7 +117,7 @@ export function renovarSessao(): Promise<boolean> {
         tokenAcesso = null;
         return false;
       }
-      tokenAcesso = contratosAuth.renovar.saida.parse(await resposta.json()).tokenAcesso;
+      definirTokenAcesso(contratosAuth.renovar.saida.parse(await resposta.json()).tokenAcesso);
       return true;
     } finally {
       renovacaoEmCurso = null;

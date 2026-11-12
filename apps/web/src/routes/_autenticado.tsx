@@ -7,8 +7,10 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { type CSSProperties, useCallback, useState } from "react";
+import { toast } from "sonner";
 
 import { decidirAcesso } from "@/acesso/guarda";
+import { useEncerrarPorInatividade } from "@/acesso/inatividade";
 import { useMarcaDaEmpresa } from "@/acesso/marca";
 import { consultaAcesso, sair } from "@/acesso/sessao";
 import { BarraLateral } from "@/componentes/layout/BarraLateral";
@@ -62,6 +64,16 @@ function LayoutAutenticado() {
     setBuscaAberta(true);
   }, []);
   useAtalhoDaBusca(abrirBusca);
+  const encerrarPorInatividade = useCallback(() => {
+    void (async () => {
+      const { pathname, search } = window.location;
+      await sair().catch(() => undefined);
+      queryClient.clear();
+      toast.info("Sessão encerrada após 30 minutos sem uso. Entre novamente.");
+      await navigate({ to: "/login", search: { redirect: `${pathname}${search}` } });
+    })();
+  }, [queryClient, navigate]);
+  useEncerrarPorInatividade(encerrarPorInatividade);
 
   const aoSair = async () => {
     await sair().catch(() => undefined);

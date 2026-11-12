@@ -65,6 +65,7 @@ export function criarRepositorioAuth(tx: Transacao): RepositorioAuth {
           usuarioId: sessoes.usuarioId,
           familiaId: sessoes.familiaId,
           empresaAtivaId: sessoes.empresaAtivaId,
+          criadoEm: sessoes.criadoEm,
           expiraEm: sessoes.expiraEm,
           substituidaEm: sessoes.substituidaEm,
           revogadaEm: sessoes.revogadaEm,

@@ -1,46 +1,99 @@
-import { type LucideIcon } from "lucide-react";
-import { type ReactNode } from "react";
+import { type LucideIcon, X } from "lucide-react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
 import { CLASSE_DO_TOM, ICONE_DO_TOM, type Tom } from "./SeloStatus";
 
+type PropsDoAviso = {
+  tom: Exclude<Tom, "neutro">;
+  titulo?: ReactNode;
+  icone?: LucideIcon | undefined;
+  /** Botão ou link (ex.: "Abrir configuração"). */
+  acao?: ReactNode;
+  children?: ReactNode;
+};
+
 /**
- * Faixa de aviso dentro da tela (alerta, erro, informação, sucesso): ícone, título, texto e ação
- * à direita. Substitui as caixas âmbar/vermelhas montadas à mão em cada tela.
+ * Aviso da tela (alerta, erro, informação, sucesso). Não ocupa a página: vira notificação no canto
+ * inferior direito enquanto o componente estiver montado (sai junto com a condição que o mostrou).
+ * Erro e alerta ficam até fechar; informação e sucesso somem em 8 s. Fechado, não volta enquanto
+ * a tela estiver aberta.
  */
-export function Aviso({
+export function Aviso(props: PropsDoAviso) {
+  const id = useId();
+  const fechado = useRef(false);
+  const fixo = props.tom === "erro" || props.tom === "alerta";
+
+  // Sem dependências de propósito: título e texto são ReactNode; atualiza a mesma notificação.
+  useEffect(() => {
+    if (fechado.current) return;
+    toast.custom(
+      () => (
+        <CartaoDoAviso
+          {...props}
+          aoFechar={() => {
+            fechado.current = true;
+            toast.dismiss(id);
+          }}
+        />
+      ),
+      {
+        id,
+        duration: fixo ? Infinity : 8000,
+        onAutoClose: () => {
+          fechado.current = true;
+        },
+      },
+    );
+  });
+  useEffect(
+    () => () => {
+      toast.dismiss(id);
+    },
+    [id],
+  );
+  return null;
+}
+
+function CartaoDoAviso({
   tom,
   titulo,
   icone,
   acao,
-  className,
   children,
-}: {
-  tom: Exclude<Tom, "neutro">;
-  titulo?: ReactNode;
-  icone?: LucideIcon | undefined;
-  /** Botão ou link à direita (ex.: "Abrir configuração"). */
-  acao?: ReactNode;
-  className?: string | undefined;
-  children?: ReactNode;
-}) {
+  aoFechar,
+}: PropsDoAviso & { aoFechar: () => void }) {
   const Icone = icone ?? ICONE_DO_TOM[tom];
   return (
     <div
       role={tom === "erro" ? "alert" : "status"}
-      className={cn(
-        "flex flex-wrap items-start gap-x-3 gap-y-2 rounded-xl border px-4 py-3 text-[13px]",
-        CLASSE_DO_TOM[tom],
-        className,
-      )}
+      className="relative flex w-[min(380px,calc(100vw-2rem))] items-start gap-3 rounded-xl border bg-card py-3 pr-9 pl-4 text-[13px] text-foreground shadow-flutuante"
     >
-      <Icone className="mt-0.5 h-[18px] w-[18px] shrink-0" aria-hidden />
+      <span
+        className={cn(
+          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border",
+          CLASSE_DO_TOM[tom],
+        )}
+      >
+        <Icone className="h-4 w-4" aria-hidden />
+      </span>
       <div className="min-w-0 flex-1">
         {titulo && <p className="font-semibold">{titulo}</p>}
-        {children && <div className={cn(titulo && "mt-0.5", "opacity-90")}>{children}</div>}
+        {children && (
+          <div className={cn(titulo && "mt-0.5", "text-muted-foreground")}>{children}</div>
+        )}
+        {acao && <div className="mt-2.5">{acao}</div>}
       </div>
-      {acao && <div className="shrink-0">{acao}</div>}
+      <button
+        type="button"
+        onClick={aoFechar}
+        aria-label="Fechar aviso"
+        className="absolute top-2.5 right-2.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <X className="h-3.5 w-3.5" aria-hidden />
+      </button>
     </div>
   );
 }

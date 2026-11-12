@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { Toaster } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SecaoPrevistos } from "./Previstos";
@@ -32,7 +33,7 @@ describe("SecaoPrevistos", () => {
     expect(onClique).toHaveBeenLastCalledWith({ eixo: "total" });
   });
 
-  it("alternador 'Todos em aberto' avisa que sai da partição", () => {
+  it("alternador 'Todos em aberto' avisa (em notificação) que sai da partição", async () => {
     const onIgnorar = vi.fn();
     const { rerender } = render(
       <SecaoPrevistos
@@ -46,14 +47,17 @@ describe("SecaoPrevistos", () => {
     fireEvent.click(screen.getByText("Todos em aberto"));
     expect(onIgnorar).toHaveBeenCalledWith(true);
     rerender(
-      <SecaoPrevistos
-        dados={undefined}
-        carregando
-        ignorarPeriodo
-        onIgnorarPeriodo={onIgnorar}
-        onClique={vi.fn()}
-      />,
+      <>
+        <SecaoPrevistos
+          dados={undefined}
+          carregando
+          ignorarPeriodo
+          onIgnorarPeriodo={onIgnorar}
+          onClique={vi.fn()}
+        />
+        <Toaster />
+      </>,
     );
-    expect(screen.getByText("sai da partição de 100%")).toBeTruthy();
+    expect(await screen.findByText("sai da partição de 100%")).toBeTruthy();
   });
 });

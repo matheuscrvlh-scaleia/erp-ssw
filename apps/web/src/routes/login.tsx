@@ -3,7 +3,7 @@ import { z } from "@erp/shared/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import {
 } from "@/acesso/componentes/CartaoDeEntrada";
 import { destinoSeguro } from "@/acesso/guarda";
 import { entrar } from "@/acesso/sessao";
+import { Aviso } from "@/componentes/comum/Aviso";
 import { Button } from "@/componentes/ui/button";
 import { Input } from "@/componentes/ui/input";
 import { Label } from "@/componentes/ui/label";
@@ -74,19 +75,27 @@ function PaginaLogin() {
   const aviso = avisoFechado ? null : (
     <>
       {reason === "expired" && (
-        <AvisoSessaoExpirada
-          restaurando={restaurando}
-          aoRestaurar={() => void restaurarSessao()}
-          aoFechar={() => {
-            setAvisoFechado(true);
-          }}
-        />
+        <Aviso
+          tom="alerta"
+          titulo="Sua sessão expirou"
+          acao={
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void restaurarSessao()}
+              disabled={restaurando}
+              className="h-8 gap-1.5 text-[12px]"
+            >
+              <RefreshCw className={`h-3 w-3 ${restaurando ? "animate-spin" : ""}`} />
+              {restaurando ? "Restaurando…" : "Tentar restaurar sessão"}
+            </Button>
+          }
+        >
+          Podemos tentar restaurar automaticamente antes de pedir suas credenciais.
+        </Aviso>
       )}
-      {erro && (
-        <div className="mb-4 rounded-lg border border-status-bad/40 bg-status-bad-bg p-3 text-[13px] text-status-bad-fg">
-          {ERROS_LOGIN_GOOGLE[erro]}
-        </div>
-      )}
+      {erro && <Aviso tom="erro">{ERROS_LOGIN_GOOGLE[erro]}</Aviso>}
     </>
   );
 
@@ -254,52 +263,6 @@ function FormularioEsqueci({ aoVoltar }: { aoVoltar: () => void }) {
       <Button type="button" variant="ghost" className="h-11 w-full" onClick={aoVoltar}>
         Voltar para o login
       </Button>
-    </div>
-  );
-}
-
-function AvisoSessaoExpirada({
-  restaurando,
-  aoRestaurar,
-  aoFechar,
-}: {
-  restaurando: boolean;
-  aoRestaurar: () => void;
-  aoFechar: () => void;
-}) {
-  return (
-    <div className="mb-4 rounded-lg border border-status-warn/40 bg-status-warn-bg p-3 text-[13px] text-status-warn-fg">
-      <div className="flex items-start gap-2">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-        <div className="flex-1">
-          <div className="font-medium">Sua sessão expirou</div>
-          <p className="mt-0.5 text-[12px] opacity-90">
-            Podemos tentar restaurar automaticamente antes de pedir suas credenciais.
-          </p>
-          <div className="mt-2 flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={aoRestaurar}
-              disabled={restaurando}
-              className="h-8 gap-1.5 text-[12px]"
-            >
-              <RefreshCw className={`h-3 w-3 ${restaurando ? "animate-spin" : ""}`} />
-              {restaurando ? "Restaurando…" : "Tentar restaurar sessão"}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={aoFechar}
-              className="h-8 text-[12px]"
-            >
-              Fechar
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

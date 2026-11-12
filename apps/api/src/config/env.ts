@@ -35,7 +35,6 @@ const esquema = z
     JWT_CHAVES_ANTERIORES: z.string().optional(),
     JWT_EMISSOR: z.string().default("erp-ssw"),
     JWT_AUDIENCIA: z.string().default("erp-ssw-web"),
-    REFRESH_DIAS: z.coerce.number().int().positive().default(30),
     /** Assina o cookie do login pelo Google. Sem ele, derivado de `SEGREDOS_CHAVES`. */
     COOKIE_SEGREDO: z.string().min(32).optional(),
 

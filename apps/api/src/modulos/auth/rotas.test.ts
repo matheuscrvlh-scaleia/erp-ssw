@@ -271,3 +271,30 @@ describe("Google", () => {
     }
   });
 });
+
+describe("acesso guardado por 30 s", () => {
+  it("revogação fora da API vale em até 30 s; qualquer escrita da API limpa na hora", async () => {
+    const empresa = cenario.banco.criarEmpresa();
+    const usuario = await usuarioComSenha(cenario, "joana@fr.com.br", "senha-boa-123");
+    cenario.banco.vincular(usuario.id, empresa.id);
+    const eu = (headers: { authorization: string }) =>
+      app.inject({ url: "/api/v1/auth/me", headers });
+    const revogar = () => {
+      for (const s of cenario.banco.sessoes) s.revogadaEm = cenario.relogio.atual;
+    };
+
+    const headers = await entrarComo(cenario, usuario.id, empresa.id);
+    expect((await eu(headers)).statusCode).toBe(200);
+    revogar();
+    expect((await eu(headers)).statusCode).toBe(200);
+    cenario.relogio.avancar(31_000);
+    expect((await eu(headers)).statusCode).toBe(401);
+
+    const outra = await entrarComo(cenario, usuario.id, empresa.id);
+    expect((await eu(outra)).statusCode).toBe(200);
+    revogar();
+    const escrita = await app.inject({ method: "POST", url: "/api/v1/auth/logout" });
+    expect(escrita.statusCode).toBeLessThan(400);
+    expect((await eu(outra)).statusCode).toBe(401);
+  });
+});

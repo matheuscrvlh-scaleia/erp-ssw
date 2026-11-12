@@ -14,7 +14,7 @@ const DETALHE: Record<Exclude<MotivoDaSaude, "ok">, string> = {
 };
 
 /**
- * Faixa do layout quando a SSW API da empresa ativa está ligada e sem token válido. O link leva
+ * Notificação do layout quando a SSW API da empresa ativa está ligada e sem token válido. O link leva
  * à configuração (a tela só abre para quem tem acesso; os demais caem na primeira tela deles).
  * origem: features/ssw/components/SswHealthBanner.tsx (sistema atual)
  */
@@ -23,19 +23,16 @@ export function FaixaSaudeSsw({ empresaId }: { empresaId: string }) {
   if (!data || data.saudavel || data.motivo === "ok") return null;
 
   return (
-    <div className="px-4 pt-4 md:px-8">
-      <Aviso
-        tom="alerta"
-        titulo={`Integração SSW indisponível — ${DETALHE[data.motivo]}.`}
-        className="mx-auto max-w-[1600px]"
-        acao={
-          <Button asChild size="sm" variant="outline">
-            <Link to="/admin/ingestao">Abrir configuração</Link>
-          </Button>
-        }
-      >
-        Os dados exibidos podem estar desatualizados até que a conexão seja restabelecida.
-      </Aviso>
-    </div>
+    <Aviso
+      tom="alerta"
+      titulo={`Integração SSW indisponível — ${DETALHE[data.motivo]}.`}
+      acao={
+        <Button asChild size="sm" variant="outline">
+          <Link to="/admin/ingestao">Abrir configuração</Link>
+        </Button>
+      }
+    >
+      Os dados exibidos podem estar desatualizados até que a conexão seja restabelecida.
+    </Aviso>
   );
 }

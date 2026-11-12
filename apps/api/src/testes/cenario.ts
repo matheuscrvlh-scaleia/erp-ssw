@@ -101,7 +101,6 @@ export function criarCenario(): Cenario {
     limitador: criarLimitadorEmMemoria(() => relogio.atual.getTime()),
     correio,
     agora: relogio.agora,
-    refreshDias: 30,
     webUrl: () => Promise.resolve("http://localhost:5173"),
     urlDoLogo: () => null,
   };
@@ -171,6 +170,7 @@ export async function entrarComo(
     familiaId,
     tokenHash: randomUUID(),
     empresaAtivaId: empresaId,
+    criadoEm: cenario.relogio.atual,
     expiraEm: new Date(cenario.relogio.atual.getTime() + 86_400_000),
     ip: null,
     userAgent: null,

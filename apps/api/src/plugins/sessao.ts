@@ -26,6 +26,37 @@ export interface OpcoesSessao extends DependenciasAcesso {
   executar: ExecutorComContexto;
 }
 
+/**
+ * Acesso da sessão guardado por 30 s no processo. Montá-lo custa ~16 idas ao banco em sequência e
+ * cada tela dispara várias chamadas juntas (que agora esperam a mesma carga). Toda escrita que deu
+ * certo limpa o cache: logout, revogação e mudança de permissão valem na hora; o que mudar fora da
+ * API vale em até 30 s.
+ */
+const VALIDADE_DO_ACESSO_MS = 30_000;
+const METODOS_DE_LEITURA = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function criarCacheDeAcesso(agora: () => number) {
+  const guardados = new Map<string, { ate: number; acesso: Promise<Acesso> }>();
+  return {
+    obter(sessao: SessaoDoToken, carregar: () => Promise<Acesso>): Promise<Acesso> {
+      const chave = `${sessao.familiaId}|${sessao.usuarioId}|${sessao.empresaId ?? ""}`;
+      const momento = agora();
+      const guardado = guardados.get(chave);
+      if (guardado && guardado.ate > momento) return guardado.acesso;
+      for (const [k, g] of guardados) if (g.ate <= momento) guardados.delete(k);
+      const acesso = carregar();
+      guardados.set(chave, { ate: momento + VALIDADE_DO_ACESSO_MS, acesso });
+      acesso.catch(() => {
+        if (guardados.get(chave)?.acesso === acesso) guardados.delete(chave);
+      });
+      return acesso;
+    },
+    limpar: () => {
+      guardados.clear();
+    },
+  };
+}
+
 function tokenDoCabecalho(request: FastifyRequest): string | null {
   const [tipo, token] = request.headers.authorization?.split(" ") ?? [];
   return tipo?.toLowerCase() === "bearer" && token ? token : null;
@@ -53,11 +84,13 @@ export async function atorDa(request: FastifyRequest): Promise<Ator> {
  */
 export const pluginSessao = fp(
   (app: FastifyInstance, opcoes: OpcoesSessao) => {
+    const cache = criarCacheDeAcesso(() => opcoes.agora().getTime());
     app.decorateRequest("sessao", null);
     app.decorateRequest("tokenRecusado", false);
     app.decorateRequest("acessoEmCache", null);
     app.decorateRequest("acesso", function (this: FastifyRequest) {
-      this.acessoEmCache ??= carregarAcesso(opcoes, sessaoObrigatoria(this));
+      const sessao = sessaoObrigatoria(this);
+      this.acessoEmCache ??= cache.obter(sessao, () => carregarAcesso(opcoes, sessao));
       return this.acessoEmCache;
     });
     app.decorateRequest("db", {
@@ -82,6 +115,11 @@ export const pluginSessao = fp(
       const resultado = await opcoes.tokens.verificar(token);
       if (resultado.valido) request.sessao = resultado.sessao;
       else request.tokenRecusado = true;
+    });
+
+    // Antes de responder, para a próxima chamada do cliente já ver a mudança.
+    app.addHook("onSend", async (request, reply) => {
+      if (!METODOS_DE_LEITURA.has(request.method) && reply.statusCode < 400) cache.limpar();
     });
   },
   { name: "sessao" },

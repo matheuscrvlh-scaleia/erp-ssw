@@ -60,7 +60,7 @@ export const sessoes = erp.table(
     substituidaEm: timestamp("substituida_em", { withTimezone: true, mode: "date" }),
     revogadaEm: timestamp("revogada_em", { withTimezone: true, mode: "date" }),
     motivoRevogacao: text("motivo_revogacao", {
-      enum: ["logout", "reuso_detectado", "senha_redefinida", "usuario_desativado"],
+      enum: ["logout", "reuso_detectado", "senha_redefinida", "usuario_desativado", "inatividade"],
     }),
     ip: text("ip"),
     userAgent: text("user_agent"),

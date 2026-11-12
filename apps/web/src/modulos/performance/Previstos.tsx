@@ -114,16 +114,14 @@ export function SecaoPrevistos({
       rodape={rodape}
     >
       {ignorarPeriodo && (
-        <div className="border-b border-border p-4">
-          <Aviso tom="info">
-            Modo <strong className="font-semibold">Todos em aberto</strong>: mostra todos os CTRCs
-            ainda não entregues, inclusive de meses anteriores — este bloco ignora o período
-            escolhido no topo da tela. Nesse modo o número{" "}
-            <strong className="font-semibold">sai da partição de 100%</strong>: Entregues +
-            Finalizado em Sistema + Previstos deixa de fechar com o total de CT-e emitidos do
-            período. Use &quot;Emitidos no período&quot; ao lado para voltar à partição fechada.
-          </Aviso>
-        </div>
+        <Aviso tom="info">
+          Modo <strong className="font-semibold">Todos em aberto</strong>: mostra todos os CTRCs
+          ainda não entregues, inclusive de meses anteriores — este bloco ignora o período escolhido
+          no topo da tela. Nesse modo o número{" "}
+          <strong className="font-semibold">sai da partição de 100%</strong>: Entregues + Finalizado
+          em Sistema + Previstos deixa de fechar com o total de CT-e emitidos do período. Use
+          &quot;Emitidos no período&quot; ao lado para voltar à partição fechada.
+        </Aviso>
       )}
 
       <div className="grid gap-5 p-4 lg:grid-cols-[260px_minmax(0,1fr)]">

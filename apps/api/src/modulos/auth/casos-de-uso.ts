@@ -2,10 +2,12 @@ import { randomUUID } from "node:crypto";
 
 import { CONTEXTO_VAZIO } from "@erp/db";
 import {
+  DURACAO_DA_SESSAO_MS,
   duracaoDoBloqueioMs,
   FALHAS_TOLERADAS_POR_CONTA,
   FALHAS_TOLERADAS_POR_IP,
   normalizarEmail,
+  sessaoOciosa,
 } from "@erp/dominio/autenticacao";
 import { ErroDeNegocio } from "@erp/dominio/erros";
 import { type TokenEmitido } from "@erp/shared/contratos/auth";
@@ -49,6 +51,8 @@ export interface SessaoGravada {
   usuarioId: string;
   familiaId: string;
   empresaAtivaId: string | null;
+  /** Quando este refresh foi emitido (login ou última renovação). */
+  criadoEm: Date;
   expiraEm: Date;
   substituidaEm: Date | null;
   revogadaEm: Date | null;
@@ -59,13 +63,14 @@ export interface NovaSessao {
   familiaId: string;
   tokenHash: string;
   empresaAtivaId: string | null;
+  criadoEm: Date;
   expiraEm: Date;
   ip: string | null;
   userAgent: string | null;
 }
 
 export type TipoTokenSenha = "redefinicao" | "convite";
-type MotivoRevogacao = "logout" | "reuso_detectado" | "senha_redefinida";
+type MotivoRevogacao = "logout" | "reuso_detectado" | "senha_redefinida" | "inatividade";
 
 export interface TokenSenhaGravado {
   id: string;
@@ -115,7 +120,6 @@ export interface DependenciasAuth {
   limitador: LimitadorDeFalhas;
   correio: Correio;
   agora: () => Date;
-  refreshDias: number;
   /** Origem pública do ERP (Plataforma › Integrações › Domínio) para os links dos e-mails. */
   webUrl: () => Promise<string>;
   urlDoLogo: (caminho: string | null) => string | null;
@@ -174,7 +178,7 @@ async function abrirSessao(
   const agora = deps.agora();
   const refresh = gerarTokenOpaco();
   const familiaId = randomUUID();
-  const expiraEm = new Date(agora.getTime() + deps.refreshDias * 86_400_000);
+  const expiraEm = new Date(agora.getTime() + DURACAO_DA_SESSAO_MS);
   const ator: Ator = { usuarioId, email: usuario.email, plataforma: adminPlataforma, ...origem };
 
   await deps.executar(
@@ -186,6 +190,7 @@ async function abrirSessao(
         familiaId,
         tokenHash: hashDoToken(refresh),
         empresaAtivaId: empresaId,
+        criadoEm: agora,
         expiraEm,
         ...origem,
       });
@@ -277,7 +282,8 @@ type SituacaoDoRefresh = { tipo: "valida"; sessao: SessaoGravada } | { tipo: "in
 
 /**
  * Troca o refresh por um novo (rotação) e emite access token. Refresh já trocado reaparecendo
- * fora da janela de concorrência = reuso (token vazado): a família inteira é revogada.
+ * fora da janela de concorrência = reuso (token vazado): a família inteira é revogada. O novo
+ * herda o vencimento do login (8 h no máximo) e a sessão parada há mais de 30 min não renova.
  */
 export async function renovar(
   deps: DependenciasAuth,
@@ -290,6 +296,10 @@ export async function renovar(
     async ({ auth }): Promise<SituacaoDoRefresh> => {
       const sessao = await auth.sessaoPorHash(hashDoToken(refreshToken));
       if (!sessao || sessao.revogadaEm || sessao.expiraEm <= agora) return { tipo: "invalida" };
+      if (!sessao.substituidaEm && sessaoOciosa(sessao.criadoEm, agora)) {
+        await auth.revogarFamilia(sessao.familiaId, "inatividade", agora);
+        return { tipo: "invalida" };
+      }
       const reuso =
         sessao.substituidaEm !== null &&
         agora.getTime() - sessao.substituidaEm.getTime() > JANELA_DE_RENOVACAO_CONCORRENTE_MS;
@@ -311,7 +321,7 @@ export async function renovar(
   if (!usuario?.ativo) throw sessaoExpirada();
   const empresaId = empresaDaSessao(sessao.empresaAtivaId, adminPlataforma, vinculos);
   const novo = gerarTokenOpaco();
-  const expiraEm = new Date(agora.getTime() + deps.refreshDias * 86_400_000);
+  const { expiraEm } = sessao;
 
   await deps.executar(CONTEXTO_VAZIO, async ({ auth }) => {
     if (!sessao.substituidaEm) await auth.substituirSessao(sessao.id, agora);
@@ -320,6 +330,7 @@ export async function renovar(
       familiaId: sessao.familiaId,
       tokenHash: hashDoToken(novo),
       empresaAtivaId: empresaId,
+      criadoEm: agora,
       expiraEm,
       ...origem,
     });
