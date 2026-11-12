@@ -1,4 +1,33 @@
+import { type SaidaDe } from "@erp/shared/contrato";
+import { type contratosAuth, type TokenEmitido } from "@erp/shared/contratos/auth";
+
 import { type Mensagem } from "../infra/correio";
+import { type AjudaDeAcesso } from "../models/auth/auth.service";
+
+/** O corpo leva só o access token: o refresh vai no cookie httpOnly. */
+export function apresentarToken(sessao: TokenEmitido): SaidaDe<typeof contratosAuth.login> {
+  return { tokenAcesso: sessao.tokenAcesso, expiraEmSegundos: sessao.expiraEmSegundos };
+}
+
+/** A mesma resposta exista ou não o e-mail. */
+export function apresentarPedidoDeRedefinicao(): SaidaDe<typeof contratosAuth.esqueciSenha> {
+  return {
+    mensagem: "Se o e-mail estiver cadastrado, você vai receber um link para criar uma nova senha.",
+  };
+}
+
+export function apresentarAjudaDeAcesso({
+  acesso,
+  admins,
+}: AjudaDeAcesso): SaidaDe<typeof contratosAuth.ajudaAcesso> {
+  return {
+    ativo: acesso.ativo,
+    nome: acesso.usuario.nome,
+    email: acesso.usuario.email,
+    papelRotulo: acesso.papelRotulo,
+    admins,
+  };
+}
 
 function escaparHtml(texto: string): string {
   return texto
