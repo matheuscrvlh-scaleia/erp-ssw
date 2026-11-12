@@ -7,8 +7,9 @@ import { ComoFunciona, ComoFuncionaSecao, Formula } from "@/componentes/comum/Co
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 
-import { consultaParametros } from "./api";
-import { NIVEL } from "./niveis";
+import { consultaParametros } from "../api";
+import { vigenteHoje } from "../regras";
+import { NIVEL, pct } from "../textos";
 
 type Taxas = Omit<ParametrosDeBonificacao, "id" | "vigenciaInicio" | "vigenciaFim">;
 
@@ -23,18 +24,6 @@ const PADRAO: Taxas = {
   metaEmRota: 0.8,
   limiteNfsRotaPequena: 15,
 };
-
-const pct = (v: number) => `${Math.round(v * 100)}%`;
-
-function vigenteHoje(linhas: readonly ParametrosDeBonificacao[], hoje: string): Taxas | null {
-  return (
-    linhas.find(
-      (l) => l.vigenciaInicio <= hoje && (l.vigenciaFim === null || l.vigenciaFim >= hoje),
-    ) ??
-    linhas[0] ??
-    null
-  );
-}
 
 /**
  * Explicação da bonificação de entrega. Taxas e metas vêm dos parâmetros vigentes, então o texto

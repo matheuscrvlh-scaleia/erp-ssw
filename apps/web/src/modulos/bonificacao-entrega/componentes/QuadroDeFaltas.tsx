@@ -1,13 +1,8 @@
-import {
-  contratosBonificacaoEntrega as c,
-  ROTULO_DO_TIPO_DE_FALTA,
-  TIPOS_DE_FALTA,
-} from "@erp/shared/contratos/bonificacao-entrega";
+import { ROTULO_DO_TIPO_DE_FALTA, TIPOS_DE_FALTA } from "@erp/shared/contratos/bonificacao-entrega";
 import { formatarDiaMes } from "@erp/shared/formatacao";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarX, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { usePermissao } from "@/acesso/permissao";
 import {
@@ -31,12 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/componentes/ui/select";
-import { chamar } from "@/lib/api";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { useGravacao } from "@/hooks/use-gravacao";
 import { periodoDoMes } from "@/lib/periodo-do-mes";
 import { cn } from "@/lib/utils";
 
-import { CHAVE_DAS_FALTAS, consultaFaltas } from "./api";
+import { consultaFaltas, mutacaoExcluirFalta, mutacaoRegistrarFalta } from "../api";
 
 type TipoDeFalta = (typeof TIPOS_DE_FALTA)[number];
 
@@ -56,38 +50,15 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
   const [tipo, setTipo] = useState<TipoDeFalta>("falta_injustificada");
   const [observacao, setObservacao] = useState("");
 
-  const atualizar = () =>
-    Promise.all([
-      qc.invalidateQueries({ queryKey: CHAVE_DAS_FALTAS }),
-      qc.invalidateQueries({ queryKey: ["bonificacao-apuracao"] }),
-    ]);
-
-  const registrar = useMutation({
-    mutationFn: () =>
-      chamar(c.registrarFalta, {
-        entrada: {
-          colaboradorNome: nome,
-          dataFalta: data,
-          tipo,
-          observacao: observacao.trim() || null,
-        },
-      }),
-    onSuccess: () => {
-      toast.success("Falta registrada");
+  const registrar = useGravacao({
+    mutacao: mutacaoRegistrarFalta(qc),
+    sucesso: "Falta registrada",
+    aoConcluir: () => {
       setNome("");
       setObservacao("");
-      void atualizar();
     },
-    onError: (e) => toast.error(mensagemAmigavel(e)),
   });
-  const excluir = useMutation({
-    mutationFn: (id: string) => chamar(c.excluirFalta, { parametros: { id } }),
-    onSuccess: () => {
-      toast.success("Falta excluída");
-      void atualizar();
-    },
-    onError: (e) => toast.error(mensagemAmigavel(e)),
-  });
+  const excluir = useGravacao({ mutacao: mutacaoExcluirFalta(qc), sucesso: "Falta excluída" });
 
   const lista = faltas.data ?? [];
 
@@ -164,9 +135,14 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
           </div>
           <div className="flex items-end">
             <Button
-              disabled={nome.trim().length < 3 || !data || registrar.isPending}
+              disabled={nome.trim().length < 3 || !data || registrar.gravando}
               onClick={() => {
-                registrar.mutate();
+                void registrar.gravar({
+                  colaboradorNome: nome,
+                  dataFalta: data,
+                  tipo,
+                  observacao: observacao.trim() || null,
+                });
               }}
             >
               <Plus aria-hidden /> Registrar
@@ -221,7 +197,7 @@ export function QuadroDeFaltas({ mes }: { mes: string }) {
                       title={`Excluir falta de ${f.colaboradorNome}`}
                       onClick={() => {
                         if (window.confirm(`Excluir a falta de ${f.colaboradorNome}?`)) {
-                          excluir.mutate(f.id);
+                          void excluir.gravar(f.id);
                         }
                       }}
                     >
