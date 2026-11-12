@@ -8,10 +8,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popove
 import { useSelecaoAdiada } from "@/hooks/use-selecao-adiada";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
-import { AvisoDaLista, ItemMarcavel } from "@/modulos/filtros/componentes";
 
 import { consultaCodigosDoRecorte } from "../api";
 import { codigosDoGrupo, type GrupoDeOcorrencia, GRUPOS_DE_OCORRENCIA } from "../regras";
+import { AvisoDaLista } from "./AvisoDaLista";
+import { ItemMarcavel } from "./ItemMarcavel";
 
 const ROTULO_DO_GRUPO: Record<GrupoDeOcorrencia, string> = {
   aberto: "Em aberto",

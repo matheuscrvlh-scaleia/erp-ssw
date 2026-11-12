@@ -4,9 +4,9 @@ import { GatilhoFiltro } from "@/componentes/comum/GatilhoFiltro";
 import { Badge } from "@/componentes/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { useSelecaoAdiada } from "@/hooks/use-selecao-adiada";
-import { ItemMarcavel } from "@/modulos/filtros/componentes";
 
 import { alternarRecorte } from "../regras";
+import { ItemMarcavel } from "./ItemMarcavel";
 
 /**
  * Seletor "Recorte", de múltipla escolha: o CT-e entra se cair em qualquer recorte marcado.

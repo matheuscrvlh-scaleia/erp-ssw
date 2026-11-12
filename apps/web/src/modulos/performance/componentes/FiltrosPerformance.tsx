@@ -11,6 +11,7 @@ import {
 import { lerFiltroTexto } from "@erp/shared/filtro-texto";
 
 import { Alternador } from "@/componentes/comum/Alternador";
+import { BuscaDocumento } from "@/componentes/comum/BuscaDocumento";
 import { FiltroMultiplo } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import {
@@ -19,13 +20,15 @@ import {
   FiltrosAvancados,
   resumirNomes,
 } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
+import { SeletorDeFilial } from "@/componentes/comum/SeletorDeFilial";
+import { SeletorDePagador } from "@/componentes/comum/SeletorDePagador";
+import { SeletorDeTipoDocumento } from "@/componentes/comum/SeletorDeTipoDocumento";
 import {
-  BuscaDocumento,
-  SeletorDeFilial,
-  SeletorDePagador,
-  SeletorDeTexto,
-  SeletorDeTipoDocumento,
-} from "@/modulos/filtros/componentes";
+  consultasDoSeletorDeFilial,
+  consultaTiposDocumento,
+  sugestoesDoCampo,
+} from "@/modulos/filtros/api";
 
 import {
   BASE_CURTA,
@@ -185,25 +188,23 @@ export function FiltrosPerformance({
         />
         <SeletorDeFilial
           selecionadas={busca.filiais}
-          contexto={contexto}
+          consultas={consultasDoSeletorDeFilial(contexto)}
           aoMudar={(siglas) => {
             mudar({ filiais: siglas });
           }}
         />
-        <SeletorDeTexto
+        <FiltroTexto
           rotulo="Remetente"
-          campo="remetente"
           valor={busca.remetente}
-          contexto={contexto}
+          sugestoes={sugestoesDoCampo(contexto, "remetente")}
           aoMudar={(v) => {
             mudar({ remetente: v });
           }}
         />
-        <SeletorDeTexto
+        <FiltroTexto
           rotulo="Destino"
-          campo="cidade_destino"
           valor={busca.destino}
-          contexto={contexto}
+          sugestoes={sugestoesDoCampo(contexto, "cidade_destino")}
           aoMudar={(v) => {
             mudar({ destino: v });
           }}
@@ -234,6 +235,7 @@ export function FiltrosPerformance({
         <SeletorDeTipoDocumento
           contagens={tiposNoPeriodo}
           aoAbrir={aoAbrirTipo}
+          consultaTipos={consultaTiposDocumento}
           selecionados={busca.tipos}
           aoMudar={(ids) => {
             mudar({ tipos: ids });

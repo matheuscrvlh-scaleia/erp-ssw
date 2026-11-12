@@ -7,17 +7,21 @@ import {
   FiltrandoPor,
   FiltrosAvancados,
 } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
+import { SeletorDeFilial } from "@/componentes/comum/SeletorDeFilial";
+import { SeletorDePagador } from "@/componentes/comum/SeletorDePagador";
+import { SeletorDeTipoDocumentoDoPeriodo } from "@/componentes/comum/SeletorDeTipoDocumentoDoPeriodo";
 import {
+  consultasDoSeletorDeFilial,
+  consultaTiposDocumento,
+  consultaTiposNoPeriodo,
   type ContextoDosFiltros,
-  SeletorDeFilial,
-  SeletorDePagador,
-  SeletorDePagadorAgrupado,
-  SeletorDeTexto,
-  SeletorDeTipoDocumento,
-} from "@/modulos/filtros/componentes";
+  sugestoesDoCampo,
+} from "@/modulos/filtros/api";
 
 import { type FiltrosDoRanking } from "../busca";
 import { ROTULO_DA_BASE } from "../textos";
+import { SeletorDePagadorAgrupado } from "./SeletorDePagadorAgrupado";
 
 const ATALHOS = ["hoje", "7d", "30d", "mes"] as const;
 
@@ -66,7 +70,11 @@ export function FiltrosRanking({
             },
           ]}
         />
-        <SeletorDeFilial selecionadas={filiais} contexto={contexto} aoMudar={f.setFiliais} />
+        <SeletorDeFilial
+          selecionadas={filiais}
+          consultas={consultasDoSeletorDeFilial(contexto)}
+          aoMudar={f.setFiliais}
+        />
         <SeletorDePagador
           rotulo="Parceiros"
           opcoes={pagadores}
@@ -79,23 +87,26 @@ export function FiltrosRanking({
           selecionados={f.parceirosAgrupados}
           aoMudar={f.setParceirosAgrupados}
         />
-        <SeletorDeTexto
+        <FiltroTexto
           rotulo="Remetente"
-          campo="remetente"
           valor={remetente}
-          contexto={contexto}
+          sugestoes={sugestoesDoCampo(contexto, "remetente")}
           aoMudar={f.setRemetente}
         />
-        <SeletorDeTexto
+        <FiltroTexto
           rotulo="Destino"
-          campo="cidade_destino"
           valor={destino}
-          contexto={contexto}
+          sugestoes={sugestoesDoCampo(contexto, "cidade_destino")}
           aoMudar={f.setDestino}
         />
-        <SeletorDeTipoDocumento
+        <SeletorDeTipoDocumentoDoPeriodo
+          consultaTipos={consultaTiposDocumento}
           selecionados={tipos}
-          escopo={{ inicio: periodo.inicio, fim: periodo.fim, campoData: base }}
+          consultaNoPeriodo={consultaTiposNoPeriodo({
+            inicio: periodo.inicio,
+            fim: periodo.fim,
+            campoData: base,
+          })}
           aoMudar={f.setTipos}
         />
       </FiltrosAvancados>

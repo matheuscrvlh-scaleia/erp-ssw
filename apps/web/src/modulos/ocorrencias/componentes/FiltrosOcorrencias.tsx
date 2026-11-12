@@ -2,18 +2,22 @@ import { type PagadorOpcao } from "@erp/shared/contratos/filtros";
 import { RESPONSAVEIS_DO_FILTRO } from "@erp/shared/contratos/ocorrencias";
 
 import { Alternador } from "@/componentes/comum/Alternador";
+import { BuscaDocumento } from "@/componentes/comum/BuscaDocumento";
 import { FiltroMultiplo, type OpcaoFiltro } from "@/componentes/comum/FiltroMultiplo";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { SeletorDeFilial } from "@/componentes/comum/SeletorDeFilial";
+import { SeletorDePagador } from "@/componentes/comum/SeletorDePagador";
+import { SeletorDeTipoDocumentoDoPeriodo } from "@/componentes/comum/SeletorDeTipoDocumentoDoPeriodo";
 import {
-  BuscaDocumento,
+  consultasDoSeletorDeFilial,
+  consultaTiposDocumento,
+  consultaTiposNoPeriodo,
   type ContextoDosFiltros,
-  SeletorDeFilial,
-  SeletorDePagador,
-  SeletorDeTexto,
-  SeletorDeTipoDocumento,
-} from "@/modulos/filtros/componentes";
+  sugestoesDoCampo,
+} from "@/modulos/filtros/api";
 
 import { type BuscaOcorrencias } from "../busca";
 import { rotulosDoResponsavel } from "../textos";
@@ -99,25 +103,23 @@ export function FiltrosOcorrencias({
       />
       <SeletorDeFilial
         selecionadas={busca.filiais}
-        contexto={contexto}
+        consultas={consultasDoSeletorDeFilial(contexto)}
         aoMudar={(filiais) => {
           mudar({ filiais });
         }}
       />
-      <SeletorDeTexto
+      <FiltroTexto
         rotulo="Remetente"
-        campo="remetente"
         valor={busca.remetente}
-        contexto={contexto}
+        sugestoes={sugestoesDoCampo(contexto, "remetente")}
         aoMudar={(remetente) => {
           mudar({ remetente });
         }}
       />
-      <SeletorDeTexto
+      <FiltroTexto
         rotulo="Destino"
-        campo="cidade_destino"
         valor={busca.destino}
-        contexto={contexto}
+        sugestoes={sugestoesDoCampo(contexto, "cidade_destino")}
         aoMudar={(destino) => {
           mudar({ destino });
         }}
@@ -140,9 +142,10 @@ export function FiltrosOcorrencias({
           mudar({ responsaveis: RESPONSAVEIS_DO_FILTRO.filter((r) => rs.includes(r)) });
         }}
       />
-      <SeletorDeTipoDocumento
+      <SeletorDeTipoDocumentoDoPeriodo
+        consultaTipos={consultaTiposDocumento}
         selecionados={busca.tipos}
-        escopo={{ ...periodo, campoData: busca.campoData }}
+        consultaNoPeriodo={consultaTiposNoPeriodo({ ...periodo, campoData: busca.campoData })}
         aoMudar={(tipos) => {
           mudar({ tipos });
         }}

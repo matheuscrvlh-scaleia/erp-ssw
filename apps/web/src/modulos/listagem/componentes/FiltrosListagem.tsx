@@ -7,21 +7,23 @@ import {
 } from "@erp/shared/contratos/listagem";
 
 import { Alternador } from "@/componentes/comum/Alternador";
+import { BuscaDocumento } from "@/componentes/comum/BuscaDocumento";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import {
   etiquetasQueLimpam,
   FiltrandoPor,
   FiltrosAvancados,
 } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { SeletorDeFilial } from "@/componentes/comum/SeletorDeFilial";
+import { SeletorDePagador } from "@/componentes/comum/SeletorDePagador";
+import { nomesDosPagadores } from "@/lib/opcoes-de-filtro";
 import {
-  BuscaDocumento,
+  consultasDoSeletorDeFilial,
   type ContextoDosFiltros,
-  SeletorDeFilial,
-  SeletorDePagador,
-  SeletorDeTexto,
-} from "@/modulos/filtros/componentes";
-import { nomesDosPagadores } from "@/modulos/filtros/regras";
+  sugestoesDoCampo,
+} from "@/modulos/filtros/api";
 
 import { type BuscaDaLista, rotulosDosRecortes } from "../busca";
 import {
@@ -151,7 +153,7 @@ export function FiltrosListagem({
           aoMudar={(filiais) => {
             aoMudar({ filiais });
           }}
-          contexto={contexto}
+          consultas={consultasDoSeletorDeFilial(contexto)}
         />
         <SeletorDePagador
           rotulo="Parceiros"
@@ -161,23 +163,21 @@ export function FiltrosListagem({
             aoMudar({ parceiros });
           }}
         />
-        <SeletorDeTexto
+        <FiltroTexto
           rotulo="Remetente"
-          campo="remetente"
           valor={busca.remetente}
           aoMudar={(remetente) => {
             aoMudar({ remetente });
           }}
-          contexto={contexto}
+          sugestoes={sugestoesDoCampo(contexto, "remetente")}
         />
-        <SeletorDeTexto
+        <FiltroTexto
           rotulo="Destino"
-          campo="cidade_destino"
           valor={busca.destino}
           aoMudar={(destino) => {
             aoMudar({ destino });
           }}
-          contexto={contexto}
+          sugestoes={sugestoesDoCampo(contexto, "cidade_destino")}
         />
         {/* Ocorrência efetiva — também muda pelo clique no gráfico "Ocorrências". */}
         <SeletorDeOcorrencia

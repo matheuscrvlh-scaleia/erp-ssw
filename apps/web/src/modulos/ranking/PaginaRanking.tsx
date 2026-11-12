@@ -16,10 +16,9 @@ import { resolverPeriodo, ROTULO_ATALHO } from "@/componentes/comum/periodo";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { SeloDosDados } from "@/componentes/layout/SeloDosDados";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
+import { nomesDosPagadoresAgrupados } from "@/lib/opcoes-de-filtro";
 import { consultaConfiguracoesPublicas } from "@/modulos/admin/api";
-import { consultaPagadores } from "@/modulos/filtros/api";
-import { type ContextoDosFiltros } from "@/modulos/filtros/componentes";
-import { nomesDosPagadoresAgrupados } from "@/modulos/filtros/regras";
+import { consultaPagadores, type ContextoDosFiltros } from "@/modulos/filtros/api";
 import { caminhoDaLista } from "@/modulos/listagem/busca";
 
 import { consultaRankingOperacional, consultaSerieMensal } from "./api";

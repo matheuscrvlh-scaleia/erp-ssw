@@ -8,7 +8,7 @@ import {
   nomesDosPagadoresAgrupados,
   siglasDoSeletor,
   unirParceiros,
-} from "./regras";
+} from "./opcoes-de-filtro";
 
 const opcoes = [
   { id: "11222333000181", nome: "Zeta Ltda", cnpjFormatado: "11.222.333/0001-81" },

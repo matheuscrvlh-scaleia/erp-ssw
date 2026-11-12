@@ -5,6 +5,7 @@ import {
 } from "@erp/shared/contratos/coletas";
 import { formatarDataHora, formatarInteiro } from "@erp/shared/formatacao";
 
+import { BuscaDocumento } from "@/componentes/comum/BuscaDocumento";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
@@ -15,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/componentes/ui/select";
-import { BuscaDocumento } from "@/modulos/filtros/componentes";
 
 import { type BuscaColetas } from "../busca";
 import { ROTULO_DA_ETAPA, ROTULO_DO_PRAZO, ROTULO_DO_STATUS } from "../textos";

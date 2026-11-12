@@ -22,13 +22,10 @@ const CHAMAM_FORA_DO_API = [
   "src/routes/login.tsx", // atalho: sai na migração das telas de acesso
   "src/routes/redefinir-senha.tsx", // atalho: sai na migração das telas de acesso
   "src/routes/_autenticado/sem-acesso.tsx", // atalho: sai na migração das telas de acesso
-  "src/modulos/filtros/**", // atalho: sai na migração do módulo filtros
 ];
 
 /** Arquivo interno de outro módulo que ainda é importado (o público é só o `api.ts`). */
 const INTERNOS_AINDA_IMPORTADOS = [
-  "filtros/componentes", // atalho: sai na migração do módulo filtros
-  "filtros/regras", // atalho: sai na migração do módulo filtros
   "listagem/busca", // atalho: link para a tela da lista; decisão pendente do dono (busca.ts público?)
 ];
 

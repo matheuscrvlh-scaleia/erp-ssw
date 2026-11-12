@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { type EtiquetaFiltroOpcional, resumirNomes } from "@/componentes/comum/FiltrosAvancados";
 import { type Periodo } from "@/componentes/comum/periodo";
-import { unirParceiros } from "@/modulos/filtros/regras";
+import { unirParceiros } from "@/lib/opcoes-de-filtro";
 
 export type Base = "emissao" | "prevista";
 

@@ -21,8 +21,8 @@ import { temFiltro } from "@/hooks/filtros-na-url";
 import { useFiltrosNaUrl } from "@/hooks/use-filtros-na-url";
 import { useFusoDaEmpresa } from "@/hooks/use-fuso-da-empresa";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
+import { nomesDosPagadores } from "@/lib/opcoes-de-filtro";
 import { consultaPagadores } from "@/modulos/filtros/api";
-import { nomesDosPagadores } from "@/modulos/filtros/regras";
 
 import { carregarListaInteira, consultaLista, consultaPainel } from "./api";
 import { esquemaDaBusca, etiquetasDaBusca, filtrosDaBusca, NAO_SAO_FILTRO } from "./busca";

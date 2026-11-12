@@ -1,16 +1,19 @@
 import { type PagadorOpcao } from "@erp/shared/contratos/filtros";
 
+import { BuscaDocumento } from "@/componentes/comum/BuscaDocumento";
 import { FiltroPeriodo } from "@/componentes/comum/FiltroPeriodo";
 import { FiltrosAvancados } from "@/componentes/comum/FiltrosAvancados";
+import { FiltroTexto } from "@/componentes/comum/FiltroTexto";
 import { InfoTip } from "@/componentes/comum/InfoTip";
+import { SeletorDeFilial } from "@/componentes/comum/SeletorDeFilial";
+import { SeletorDePagador } from "@/componentes/comum/SeletorDePagador";
+import { SeletorDeTipoDocumento } from "@/componentes/comum/SeletorDeTipoDocumento";
 import {
-  BuscaDocumento,
+  consultasDoSeletorDeFilial,
+  consultaTiposDocumento,
   type ContextoDosFiltros,
-  SeletorDeFilial,
-  SeletorDePagador,
-  SeletorDeTexto,
-  SeletorDeTipoDocumento,
-} from "@/modulos/filtros/componentes";
+  sugestoesDoCampo,
+} from "@/modulos/filtros/api";
 
 import { type BuscaComprovantes } from "../busca";
 
@@ -53,7 +56,7 @@ export function FiltrosComprovantes({
       </span>
       <SeletorDeFilial
         selecionadas={busca.filiais}
-        contexto={contexto}
+        consultas={consultasDoSeletorDeFilial(contexto)}
         aoMudar={(filiais) => {
           mudar({ filiais });
         }}
@@ -66,25 +69,24 @@ export function FiltrosComprovantes({
           mudar({ pagadores });
         }}
       />
-      <SeletorDeTexto
+      <FiltroTexto
         rotulo="Remetente"
-        campo="remetente"
         valor={busca.remetente}
-        contexto={contexto}
+        sugestoes={sugestoesDoCampo(contexto, "remetente")}
         aoMudar={(remetente) => {
           mudar({ remetente });
         }}
       />
-      <SeletorDeTexto
+      <FiltroTexto
         rotulo="Destino"
-        campo="cidade_destino"
         valor={busca.destino}
-        contexto={contexto}
+        sugestoes={sugestoesDoCampo(contexto, "cidade_destino")}
         aoMudar={(destino) => {
           mudar({ destino });
         }}
       />
       <SeletorDeTipoDocumento
+        consultaTipos={consultaTiposDocumento}
         selecionados={busca.tipos}
         contagens={tiposContagem}
         aoMudar={(tipos) => {
