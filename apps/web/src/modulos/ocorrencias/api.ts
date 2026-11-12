@@ -9,37 +9,48 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { chamar } from "@/lib/api";
 
+type EntradaDaLista = EntradaDe<typeof c.lista>;
+
+/** Chaves do cache do módulo (nada fora daqui as invalida hoje). */
+const chaves = {
+  tudo: ["ocorrencias"] as const,
+  painel: (entrada: FiltrosDeCte & Recortes) => [...chaves.tudo, "painel", entrada] as const,
+  lista: (entrada: EntradaDaLista) => [...chaves.tudo, "lista", entrada] as const,
+  opcoes: (entrada: EntradaDe<typeof c.opcoes>) => [...chaves.tudo, "opcoes", entrada] as const,
+  conferentes: () => [...chaves.tudo, "conferentes"] as const,
+  codigosDoCard: (card: Card, filtros: FiltrosDeCte) =>
+    [...chaves.tudo, "codigos-do-card", card, filtros] as const,
+};
+
 export const consultaPainel = (entrada: FiltrosDeCte & Recortes) =>
   queryOptions({
-    queryKey: ["ocorrencias", "painel", entrada],
+    queryKey: chaves.painel(entrada),
     queryFn: () => chamar(c.painel, { entrada }),
   });
 
-type EntradaDaLista = EntradaDe<typeof c.lista>;
-
 export const consultaLista = (entrada: EntradaDaLista) =>
   queryOptions({
-    queryKey: ["ocorrencias", "lista", entrada],
+    queryKey: chaves.lista(entrada),
     queryFn: () => chamar(c.lista, { entrada }),
   });
 
 /** As opções só dependem do período e das unidades/filiais. */
 export const consultaOpcoes = (entrada: EntradaDe<typeof c.opcoes>) =>
   queryOptions({
-    queryKey: ["ocorrencias", "opcoes", entrada],
+    queryKey: chaves.opcoes(entrada),
     queryFn: () => chamar(c.opcoes, { entrada }),
     staleTime: 5 * 60_000,
   });
 
 export const consultaConferentes = queryOptions({
-  queryKey: ["ocorrencias", "conferentes"],
+  queryKey: chaves.conferentes(),
   queryFn: () => chamar(c.conferentes),
   staleTime: 60 * 60_000,
 });
 
 export const consultaCodigosDoCard = (filtros: FiltrosDeCte, card: Card) =>
   queryOptions({
-    queryKey: ["ocorrencias", "codigos-do-card", card, filtros],
+    queryKey: chaves.codigosDoCard(card, filtros),
     queryFn: () => chamar(c.codigosDoCard, { entrada: { ...filtros, card } }),
     staleTime: 60_000,
   });

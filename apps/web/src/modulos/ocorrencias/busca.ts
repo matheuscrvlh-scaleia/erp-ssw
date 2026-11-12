@@ -119,6 +119,21 @@ export function camposMantidosAoLimpar(b: BuscaOcorrencias): (keyof BuscaOcorren
 export type RecorteFinalizacao =
   "ocorr_entregues" | "ocorr_baixados" | "ocorr_abertos" | "ocorr_em_atraso";
 
+/** Recortes que os blocos aplicam na tela (clicar de novo desfaz). */
+export interface RecortesDosBlocos {
+  prazo: FiltroPrazo | null;
+  faixa: FaixaAtraso | null;
+  pagador: string | null;
+  codigo: number | null;
+  unidadeResp: string | null;
+  aoPrazo: (v: FiltroPrazo | null) => void;
+  aoFaixa: (v: FaixaAtraso | null) => void;
+  aoPagador: (v: string | null) => void;
+  aoCodigo: (v: number | null) => void;
+  aoUnidadeResp: (v: string | null) => void;
+  aoFinalizacao: (v: RecorteFinalizacao) => void;
+}
+
 /**
  * Atalho do card "CT-e finalizados e em aberto" para a Listagem detalhada (mesma lista com KPIs
  * das demais telas). Leva só os filtros que a Listagem entende.

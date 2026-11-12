@@ -15,8 +15,8 @@ import {
   SeletorDeTipoDocumento,
 } from "@/modulos/filtros/componentes";
 
-import { type BuscaOcorrencias } from "./busca";
-import { rotulosDoResponsavel } from "./rotulos";
+import { type BuscaOcorrencias } from "../busca";
+import { rotulosDoResponsavel } from "../textos";
 
 const OPCOES_DE_DATA = [
   { valor: "emissao", rotulo: "Por emissão" },
@@ -29,7 +29,7 @@ interface OpcoesDosFiltros {
   conferentes: readonly OpcaoFiltro[] | undefined;
 }
 
-export function BarraDeFiltros({
+export function FiltrosOcorrencias({
   busca,
   periodo,
   opcoes,

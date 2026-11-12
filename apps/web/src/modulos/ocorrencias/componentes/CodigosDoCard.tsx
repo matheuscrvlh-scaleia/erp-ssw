@@ -8,7 +8,7 @@ import { ExportMenu } from "@/componentes/comum/ExportMenu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/componentes/ui/popover";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { consultaCodigosDoCard } from "./api";
+import { consultaCodigosDoCard } from "../api";
 
 /** "ver códigos": os códigos que compõem o número do card, com busca e exportação. */
 export function CodigosDoCard({

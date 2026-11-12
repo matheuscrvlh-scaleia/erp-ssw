@@ -2,14 +2,11 @@ import {
   type LinhaDeOcorrencia,
   type OrdemDaLista,
   ORDENS_DA_LISTA,
-  type ResponsavelDoEvento,
   TAMANHOS_DE_PAGINA,
 } from "@erp/shared/contratos/ocorrencias";
 import { formatarInteiro } from "@erp/shared/formatacao";
 import { AlertTriangle, Clock } from "lucide-react";
-import { type ReactNode } from "react";
 
-import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import {
@@ -21,29 +18,14 @@ import {
 } from "@/componentes/ui/select";
 import { COLUNA_LINK_SSW, urlCtrcNoSsw } from "@/lib/exportacao";
 
-import { type BuscaOcorrencias } from "./busca";
-import { identificacaoDoCte, rotulosDoResponsavel, tomDoResponsavel } from "./rotulos";
-
-/** Responsável do código em pílula (transportador em vermelho, pendente em alerta). */
-export function SeloDoResponsavel({
-  responsavel,
-  children,
-}: {
-  responsavel: ResponsavelDoEvento;
-  children: ReactNode;
-}) {
-  const tom = tomDoResponsavel(responsavel);
-  return (
-    <SeloStatus tom={tom} semIcone={tom === "neutro"} className="shrink-0">
-      {children}
-    </SeloStatus>
-  );
-}
+import { type BuscaOcorrencias } from "../busca";
+import { identificacaoDoCte, rotulosDoResponsavel } from "../textos";
+import { SeloDoResponsavel } from "./SeloDoResponsavel";
 
 const ehOrdem = (chave: string): chave is OrdemDaLista => ORDENS_DA_LISTA.some((o) => o === chave);
 
 /** Colunas da lista; as ordenáveis no servidor têm a chave da ordem do contrato. */
-export function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrencia>[] {
+function colunasDaLista(nomeCurto: string): ColunaTabela<LinhaDeOcorrencia>[] {
   const rotulos = rotulosDoResponsavel(nomeCurto);
   return [
     {
