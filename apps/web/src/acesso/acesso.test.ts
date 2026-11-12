@@ -56,10 +56,9 @@ describe("decidirAcesso (guarda de rota, regras/05 §1.9)", () => {
     });
   });
 
-  it("Plataforma › Configurações: só o admin da Plataforma (Feriados gerais não tem tela)", () => {
-    expect(decidirAcesso({ ...base, adminPlataforma: true }, "/plataforma/configuracoes")).toEqual({
-      tipo: "liberado",
-    });
+  it("Plataforma › Configurações: pela tela de Integrações do cargo na Plataforma", () => {
+    const daEquipe = { ...base, adminPlataforma: true, telas: ["plataforma_integracoes" as const] };
+    expect(decidirAcesso(daEquipe, "/plataforma/configuracoes")).toEqual({ tipo: "liberado" });
     expect(decidirAcesso({ ...base, telas: ["romaneio"] }, "/plataforma/configuracoes")).toEqual({
       tipo: "redirecionar",
       para: "/romaneio",
@@ -124,7 +123,13 @@ describe("montarMenu", () => {
   it("Plataforma: Empresas, Usuários e cargos, Configurações e Logs", () => {
     const menu = montarMenu({
       adminPlataforma: true,
-      telas: ["plataforma_empresas", "plataforma_admins", "plataforma_logs", "admin_ahgora"],
+      telas: [
+        "plataforma_empresas",
+        "plataforma_admins",
+        "plataforma_integracoes",
+        "plataforma_logs",
+        "admin_ahgora",
+      ],
     });
     expect(menu.plataforma.map((i) => [i.caminho, i.rotulo])).toEqual([
       ["/plataforma/empresas", "Empresas"],
@@ -139,13 +144,14 @@ describe("montarBusca", () => {
   it("acha as abas dos hubs pelo caminho novo e as abas da empresa ativa", () => {
     const busca = montarBusca({
       adminPlataforma: true,
-      telas: ["admin_codigos", "admin_ssw_diagnostico"],
+      telas: ["admin_codigos", "plataforma_integracoes", "admin_ssw_diagnostico"],
       empresa: { id: "e1", nome: "FR" },
     });
     expect(busca.map((d) => [d.rotulo, d.caminho, d.aba])).toEqual([
       ["Configurações", "/admin/configuracoes", undefined],
       ["Códigos de ocorrências", "/admin/configuracoes", "codigos"],
       ["Configurações", "/plataforma/configuracoes", undefined],
+      ["Integrações", "/plataforma/configuracoes", "integracoes"],
       ["Feriados gerais", "/plataforma/configuracoes", "feriados-gerais"],
       ["Diagnóstico SSW", "/plataforma/empresas/e1", "diagnostico"],
     ]);

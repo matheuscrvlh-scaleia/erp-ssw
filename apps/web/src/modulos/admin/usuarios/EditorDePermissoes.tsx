@@ -2,6 +2,7 @@ import {
   type Acao,
   ACOES,
   ACOES_DA_TELA,
+  type CategoriaDeTela,
   CATEGORIAS_DE_TELA,
   type Permissao,
   ROTULO_DA_ACAO,
@@ -27,13 +28,16 @@ import { alternarAcao, temAcao } from "../permissoes";
 export function TabelaDePermissoes({
   celula,
   larguraDaCelula = "w-32",
+  categorias = CATEGORIAS_DE_TELA,
 }: {
   celula: (tela: Tela, acao: Acao) => ReactNode;
   larguraDaCelula?: string;
+  /** Telas do editor (padrão: as da empresa; a Plataforma passa as dela). */
+  categorias?: readonly CategoriaDeTela[];
 }) {
   return (
     <div className="min-w-0 space-y-3">
-      {CATEGORIAS_DE_TELA.map((c) => (
+      {categorias.map((c) => (
         <div key={c.chave} className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className={CLASSE_TABELA}>
             <thead className={CLASSE_CABECALHO}>
@@ -80,14 +84,17 @@ export function TabelaDePermissoes({
 export function EditorDePermissoes({
   permissoes,
   aoMudar,
+  categorias,
   somenteLeitura = false,
 }: {
   permissoes: ReadonlySet<Permissao>;
   aoMudar: (permissoes: Set<Permissao>) => void;
+  categorias: readonly CategoriaDeTela[];
   somenteLeitura?: boolean;
 }) {
   return (
     <TabelaDePermissoes
+      categorias={categorias}
       celula={(tela, acao) => (
         <Checkbox
           aria-label={`${ROTULO_DA_TELA[tela]}: ${ROTULO_DA_ACAO[acao]}`}

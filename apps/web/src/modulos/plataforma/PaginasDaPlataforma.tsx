@@ -1,12 +1,8 @@
-import {
-  type AdminDaPlataforma,
-  contratosPlataforma as p,
-  type EmpresaCompleta,
-} from "@erp/shared/contratos/plataforma";
+import { type EmpresaCompleta } from "@erp/shared/contratos/plataforma";
 import { ROTULO_DO_STATUS } from "@erp/shared/plataforma";
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowLeftRight, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight } from "lucide-react";
 import { type ComponentType, useState } from "react";
 import { toast } from "sonner";
 
@@ -16,13 +12,10 @@ import { EstadoVazio } from "@/componentes/comum/EstadoVazio";
 import { MensagemErro } from "@/componentes/comum/MensagemErro";
 import { Painel } from "@/componentes/comum/Painel";
 import { SeloStatus } from "@/componentes/comum/SeloStatus";
-import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { HubDeAbas, useAbasDoHub } from "@/componentes/layout/HubDeAbas";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
-import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
-import { CAMPO, useGravacao } from "@/modulos/admin/comum";
 import { useAlteracoes, useLogsComAbas } from "@/modulos/admin/logs/Logs";
 import { PaginaAhgora } from "@/modulos/ahgora/PaginaAhgora";
 import { PaginaImportacaoSsw } from "@/modulos/ingestao/PaginaImportacaoSsw";
@@ -32,7 +25,7 @@ import { PaginaIngestao } from "@/modulos/ingestao-ssw/PaginaIngestao";
 
 import { AbaDados } from "./AbaDados";
 import { AbaImplantacao, AbaIntegracoes, AbaModulos, AbaUsuarios } from "./AbasDaEmpresa";
-import { CHAVES_DA_PLATAFORMA, consultaAdmins, consultaEmpresa, consultaEmpresas } from "./api";
+import { consultaEmpresa, consultaEmpresas } from "./api";
 import { TOM_DO_STATUS } from "./PaginaEmpresas";
 
 const CONTEUDO_NA_EMPRESA_ATIVA: Record<string, ComponentType> = {
@@ -201,92 +194,5 @@ export function PaginaLogsDaPlataforma() {
     >
       {alteracoes.conteudo}
     </Pagina>
-  );
-}
-
-/** Equipe da Plataforma (aba de Plataforma › Usuários e cargos). */
-export function ListaDeAdministradores() {
-  const consulta = useQuery(consultaAdmins);
-  const [email, setEmail] = useState("");
-  const admins = consulta.data?.admins ?? [];
-  const adicionar = useGravacao({
-    executar: (novo: string) => chamar(p.adicionarAdmin, { entrada: { email: novo } }),
-    sucesso: "Administrador adicionado",
-    invalidar: [CHAVES_DA_PLATAFORMA.admins, CHAVES_DA_PLATAFORMA.pessoas],
-    aoConcluir: () => {
-      setEmail("");
-    },
-  });
-  const remover = useGravacao({
-    executar: (usuarioId: string) => chamar(p.removerAdmin, { parametros: { usuarioId } }),
-    sucesso: "Administrador removido",
-    invalidar: [CHAVES_DA_PLATAFORMA.admins, CHAVES_DA_PLATAFORMA.pessoas],
-  });
-
-  const colunas: ColunaTabela<AdminDaPlataforma>[] = [
-    { chave: "nome", titulo: "Nome", classe: "font-medium" },
-    { chave: "email", titulo: "E-mail", classe: "text-muted-foreground" },
-    { chave: "criadoEm", titulo: "Desde", formato: "datahora", classe: "text-muted-foreground" },
-    {
-      chave: "acoes",
-      titulo: "",
-      ordenavel: false,
-      semExportar: true,
-      alinhamento: "direita",
-      celula: (a) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0 text-status-bad-fg hover:text-status-bad-fg"
-          aria-label={`Remover ${a.email}`}
-          disabled={admins.length <= 1 || remover.gravando}
-          title={admins.length <= 1 ? "Não dá para remover o último administrador" : "Remover"}
-          onClick={() => {
-            const confirmou = window.confirm(
-              `Remover ${a.email}? A pessoa deixa de ver a Plataforma e as outras empresas. O acesso à própria empresa continua.`,
-            );
-            if (confirmou) void remover.gravar(a.usuarioId);
-          }}
-        >
-          <Trash2 aria-hidden />
-        </Button>
-      ),
-    },
-  ];
-
-  return (
-    <TabelaDados
-      colunas={colunas}
-      linhas={admins}
-      chaveDaLinha={(a) => a.usuarioId}
-      carregando={consulta.isLoading}
-      erro={consulta.error}
-      aoTentarDeNovo={() => void consulta.refetch()}
-      mensagemVazia="Nenhum administrador."
-      acoes={
-        <form
-          className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (email.trim()) void adicionar.gravar(email);
-          }}
-        >
-          <input
-            type="email"
-            aria-label="E-mail do novo administrador"
-            placeholder="E-mail de um usuário já cadastrado"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-            className={`${CAMPO} w-full sm:w-80`}
-          />
-          <Button size="sm" type="submit" className="h-9" disabled={adicionar.gravando}>
-            <UserPlus aria-hidden />
-            Adicionar
-          </Button>
-        </form>
-      }
-    />
   );
 }

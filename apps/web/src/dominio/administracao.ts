@@ -225,13 +225,13 @@ export function caminhoDoLogo(empresaId: string, agora: Date, extensao: string):
   return `${empresaId}/logo-${carimbo}.${extensao}`;
 }
 
-/** A Plataforma nunca fica sem administrador. */
-export function exigirPodeRemoverAdminPlataforma(totalDeAdmins: number): void {
-  if (totalDeAdmins <= 1) {
-    throw new ErroDeNegocio(
-      "CONFLITO",
-      "Não dá para remover o último administrador da Plataforma.",
-    );
+/**
+ * A Plataforma nunca fica sem Super Admin (o cargo que dá e tira acesso a tudo): tirar alguém do
+ * cargo, ou da equipe, só se houver outro.
+ */
+export function exigirOutroSuperAdmin(superAdmins: number): void {
+  if (superAdmins <= 1) {
+    throw new ErroDeNegocio("CONFLITO", "A Plataforma precisa de pelo menos um Super Admin.");
   }
 }
 

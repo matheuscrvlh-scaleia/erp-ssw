@@ -8,7 +8,7 @@ import {
 
 const busca = z.object({ aba: z.enum(ABAS_DA_PLATAFORMA).optional().catch(undefined) });
 
-/** Plataforma › Usuários e cargos (a URL é a de Administradores, que virou a primeira aba). */
+/** Plataforma › Usuários e cargos: a equipe da Plataforma (a URL é a de Administradores). */
 export const Route = createFileRoute("/_autenticado/plataforma/administradores")({
   validateSearch: (s) => busca.parse(s),
   component: UsuariosDaPlataforma,
@@ -19,7 +19,7 @@ function UsuariosDaPlataforma() {
   const navigate = Route.useNavigate();
   return (
     <PaginaUsuariosDaPlataforma
-      aba={aba ?? "administradores"}
+      aba={aba ?? "usuarios"}
       aoMudarAba={(proxima) => void navigate({ search: { aba: proxima }, replace: true })}
     />
   );

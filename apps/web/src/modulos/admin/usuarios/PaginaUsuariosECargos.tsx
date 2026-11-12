@@ -1,4 +1,5 @@
 import { ehAdminDaEmpresa } from "@erp/shared/acesso/papeis";
+import { CATEGORIAS_DE_TELA } from "@erp/shared/acesso/permissoes";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
 import { pode } from "@/acesso/permissao";
@@ -7,7 +8,7 @@ import { Abas } from "@/componentes/comum/Abas";
 import { Pagina } from "@/componentes/layout/Pagina";
 
 import { consultaCargos } from "../api";
-import { useAbaCargos } from "./AbaCargos";
+import { AVISO_TEM_TUDO_DA_EMPRESA, useAbaCargos, useGravacoesDeCargo } from "./AbaCargos";
 import { MatrizDePermissoes } from "./AbaMatriz";
 import { useAbaUsuarios } from "./AbaUsuarios";
 
@@ -39,6 +40,11 @@ export function PaginaUsuariosECargos({
   const atual = aba ?? (veUsuarios ? "usuarios" : "cargos");
   const disponiveis = ABAS.filter((a) => (a.valor === "usuarios" ? veUsuarios : veCargos));
 
+  const catalogo = {
+    categorias: CATEGORIAS_DE_TELA,
+    avisoTemTudo: AVISO_TEM_TUDO_DA_EMPRESA,
+    gravacoes: useGravacoesDeCargo(),
+  };
   const cargos = useQuery(consultaCargos);
   const listaDeCargos = cargos.data?.cargos ?? [];
   const consultaDosCargos = {
@@ -60,6 +66,7 @@ export function PaginaUsuariosECargos({
     ...consultaDosCargos,
     podeEditar: podeEditarCargos,
     podeExcluir: gestor && pode(acesso, "admin_roles", "excluir"),
+    catalogo,
   });
 
   return (
@@ -79,7 +86,11 @@ export function PaginaUsuariosECargos({
       ) : atual === "cargos" ? (
         abaCargos.conteudo
       ) : (
-        <MatrizDePermissoes {...consultaDosCargos} podeEditar={podeEditarCargos} />
+        <MatrizDePermissoes
+          {...consultaDosCargos}
+          podeEditar={podeEditarCargos}
+          catalogo={catalogo}
+        />
       )}
     </Pagina>
   );

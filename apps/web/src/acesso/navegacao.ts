@@ -34,13 +34,13 @@ import {
   UsersRound,
 } from "lucide-react";
 
-/** Quem vê: quem tem a tela; `plataforma` = só o admin da Plataforma (não há tela própria). */
-export type Requisito = Tela | "plataforma";
+/** Quem vê: quem tem a tela (as da Plataforma vêm do cargo da pessoa na Plataforma). */
+export type Requisito = Tela;
 
 export type AcessoDoMenu = Pick<Acesso, "telas" | "adminPlataforma">;
 
 export function atende(acesso: AcessoDoMenu, requisito: Requisito): boolean {
-  return requisito === "plataforma" ? acesso.adminPlataforma : acesso.telas.includes(requisito);
+  return acesso.telas.includes(requisito);
 }
 
 /**
@@ -116,7 +116,7 @@ export const HUB_CONFIGURACOES_DA_PLATAFORMA: Hub = {
     {
       valor: "feriados-gerais",
       rotulo: "Feriados gerais",
-      requisito: "plataforma",
+      requisito: "plataforma_integracoes",
       icone: Calendar,
     },
   ],

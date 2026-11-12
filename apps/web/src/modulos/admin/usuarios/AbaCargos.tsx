@@ -1,4 +1,9 @@
-import { type Permissao, TELAS_EDITAVEIS, telasComVer } from "@erp/shared/acesso/permissoes";
+import {
+  type CategoriaDeTela,
+  CATEGORIAS_DE_TELA,
+  type Permissao,
+  telasComVer,
+} from "@erp/shared/acesso/permissoes";
 import { type Cargo, contratosAdmin as c } from "@erp/shared/contratos/admin";
 import { Lock, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -32,14 +37,18 @@ export function chaveDoNome(nome: string): string {
     .slice(0, 40);
 }
 
-/** "8 de 18 telas" (Admin e Super Admin: "Todas"). */
-export function resumoDoCargo(cargo: Pick<Cargo, "temTudo" | "permissoes">): string {
+/** "8 de 18 telas" das categorias do editor (cargo com tudo: "Todas"). */
+export function resumoDoCargo(
+  cargo: Pick<Cargo, "temTudo" | "permissoes">,
+  categorias: readonly CategoriaDeTela[] = CATEGORIAS_DE_TELA,
+): string {
   if (cargo.temTudo) return "Todas";
-  const telas = telasComVer(cargo.permissoes).filter((t) => TELAS_EDITAVEIS.includes(t));
-  return `${String(telas.length)} de ${String(TELAS_EDITAVEIS.length)} telas`;
+  const doEditor = categorias.flatMap((c) => c.telas);
+  const telas = telasComVer(cargo.permissoes).filter((t) => doEditor.includes(t));
+  return `${String(telas.length)} de ${String(doEditor.length)} telas`;
 }
 
-interface DadosDoCargo {
+export interface DadosDoCargo {
   chave: string;
   rotulo: string;
   permissoes: Permissao[];
@@ -48,7 +57,31 @@ interface DadosDoCargo {
 /** Mudar permissões de um cargo muda o acesso de quem o usa (inclusive o de quem edita). */
 export const INVALIDAR_CARGOS = [CHAVES.cargos, CHAVES.usuarios, CHAVES.acesso];
 
-export function useGravacoesDeCargo() {
+interface Gravacao<E> {
+  gravar: (entrada: E) => Promise<boolean>;
+  gravando: boolean;
+}
+
+export interface GravacoesDeCargo {
+  criar: Gravacao<DadosDoCargo>;
+  alterar: Gravacao<DadosDoCargo>;
+  excluir: Gravacao<string>;
+}
+
+/**
+ * De quem são os cargos: as telas do editor, o aviso do cargo que tem tudo e as gravações (os
+ * cargos da empresa ou os da equipe da Plataforma).
+ */
+export interface CatalogoDeCargos {
+  categorias: readonly CategoriaDeTela[];
+  avisoTemTudo: string;
+  gravacoes: GravacoesDeCargo;
+}
+
+export const AVISO_TEM_TUDO_DA_EMPRESA =
+  "Admin e Super Admin têm todas as permissões e não podem ser restringidos. Para tirar algo de uma pessoa, marque “Não” nas permissões dela.";
+
+export function useGravacoesDeCargo(): GravacoesDeCargo {
   const criar = useGravacao({
     executar: (d: DadosDoCargo) => chamar(c.criarCargo, { entrada: d }),
     sucesso: "Cargo criado",
@@ -79,6 +112,7 @@ export function useAbaCargos({
   aoTentarDeNovo,
   podeEditar,
   podeExcluir,
+  catalogo,
 }: {
   cargos: readonly Cargo[];
   carregando: boolean;
@@ -86,8 +120,9 @@ export function useAbaCargos({
   aoTentarDeNovo: () => void;
   podeEditar: boolean;
   podeExcluir: boolean;
+  catalogo: CatalogoDeCargos;
 }): { acoes: ReactNode; conteudo: ReactNode } {
-  const { criar, alterar, excluir } = useGravacoesDeCargo();
+  const { criar, alterar, excluir } = catalogo.gravacoes;
 
   const apagar = (cargo: Cargo) => {
     const confirmou = window.confirm(
@@ -121,7 +156,7 @@ export function useAbaCargos({
       chave: "permissoes",
       titulo: "Telas",
       classe: "text-muted-foreground",
-      valor: resumoDoCargo,
+      valor: (cargo) => resumoDoCargo(cargo, catalogo.categorias),
     },
     { chave: "usuarios", titulo: "Usuários", formato: "inteiro", classe: "text-muted-foreground" },
     {
@@ -132,7 +167,12 @@ export function useAbaCargos({
       alinhamento: "direita",
       celula: (cargo) => (
         <div className="flex justify-end gap-1">
-          <DialogoCargo cargo={cargo} podeEditar={podeEditar} aoGravar={alterar.gravar} />
+          <DialogoCargo
+            cargo={cargo}
+            podeEditar={podeEditar}
+            aoGravar={alterar.gravar}
+            catalogo={catalogo}
+          />
           {podeExcluir && !cargo.protegido && !cargo.temTudo && (
             <Button
               size="sm"
@@ -158,7 +198,9 @@ export function useAbaCargos({
   ];
 
   return {
-    acoes: podeEditar && <DialogoCargo cargo={null} podeEditar aoGravar={criar.gravar} />,
+    acoes: podeEditar && (
+      <DialogoCargo cargo={null} podeEditar aoGravar={criar.gravar} catalogo={catalogo} />
+    ),
     conteudo: (
       <TabelaDados
         colunas={colunas}
@@ -180,10 +222,12 @@ function DialogoCargo({
   cargo,
   podeEditar,
   aoGravar,
+  catalogo,
 }: {
   cargo: Cargo | null;
   podeEditar: boolean;
   aoGravar: (dados: DadosDoCargo) => Promise<boolean>;
+  catalogo: CatalogoDeCargos;
 }) {
   const [aberto, setAberto] = useState(false);
   const [dados, setDados] = useState<DadosDoCargo>(VAZIO);
@@ -263,14 +307,10 @@ function DialogoCargo({
         </div>
         <div className="space-y-2">
           <span className="label-xs">Permissões</span>
-          {temTudo && (
-            <p className="text-xs text-muted-foreground">
-              Admin e Super Admin têm todas as permissões e não podem ser restringidos. Para tirar
-              algo de uma pessoa, marque “Não” nas permissões dela.
-            </p>
-          )}
+          {temTudo && <p className="text-xs text-muted-foreground">{catalogo.avisoTemTudo}</p>}
           <EditorDePermissoes
             permissoes={new Set(dados.permissoes)}
+            categorias={catalogo.categorias}
             somenteLeitura={temTudo || !podeEditar}
             aoMudar={(permissoes) => {
               mudar({ permissoes: [...permissoes] });

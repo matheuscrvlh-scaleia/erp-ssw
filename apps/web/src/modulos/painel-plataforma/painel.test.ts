@@ -1,7 +1,13 @@
 import { type EmpresaNoPainel } from "@erp/shared/contratos/painel-plataforma";
 import { describe, expect, it } from "vitest";
 
-import { haQuantoTempo, resumoDosNiveis, seloDaSsw } from "./PaginaPainel";
+import {
+  haQuantoTempo,
+  resumoDosNiveis,
+  resumoDosStatus,
+  rotuloDoMes,
+  seloDaSsw,
+} from "./PaginaPainel";
 
 const REF = "2026-11-12T15:00:00.000Z";
 
@@ -11,10 +17,13 @@ const empresa = (mudanca: Partial<EmpresaNoPainel>): EmpresaNoPainel => ({
   nomeCurto: "FR",
   status: "ativa",
   corPrimaria: "#212a63",
+  criadaEm: "2026-03-10T12:00:00.000Z",
   usuariosAtivos: 1,
+  usuariosNoMes: 1,
   modulosLiberados: 1,
   ultimoLoginEm: null,
   saude: { nivel: "ok", motivos: [] },
+  integracoes: [],
   ssw: {
     configurado: true,
     tokenValido: false,
@@ -25,7 +34,7 @@ const empresa = (mudanca: Partial<EmpresaNoPainel>): EmpresaNoPainel => ({
   workerSsw: { situacao: "ok", jobsComFalha: [] },
   ultimoDadoEm: null,
   xml: { pendentes: 0, expirados: 0 },
-  numeros: null,
+  ctesPorMes: null,
   ...mudanca,
 });
 
@@ -68,5 +77,20 @@ describe("resumoDosNiveis", () => {
     expect(resumoDosNiveis({ ok: 2, atencao: 1, critico: 1, inativa: 0 })).toBe(
       "2 saudáveis · 1 em atenção · 1 crítica",
     );
+  });
+});
+
+describe("resumoDosStatus", () => {
+  it("só as situações com empresa", () => {
+    expect(resumoDosStatus({ ativa: 3, implantacao: 1, suspensa: 0, encerrada: 0 })).toBe(
+      "3 ativas · 1 em implantação",
+    );
+  });
+});
+
+describe("rotuloDoMes", () => {
+  it("mês abreviado e ano com dois dígitos", () => {
+    expect(rotuloDoMes("2026-11")).toBe("nov/26");
+    expect(rotuloDoMes("2025-01")).toBe("jan/25");
   });
 });

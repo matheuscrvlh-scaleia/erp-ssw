@@ -1,4 +1,4 @@
-import { CATEGORIAS_DE_TELA, type Permissao } from "@erp/shared/acesso/permissoes";
+import { type Permissao } from "@erp/shared/acesso/permissoes";
 import { ROTULO_DA_TELA, type Tela } from "@erp/shared/acesso/telas";
 import { type Cargo } from "@erp/shared/contratos/admin";
 import { Fragment } from "react";
@@ -17,7 +17,7 @@ import { Painel } from "@/componentes/comum/Painel";
 import { Checkbox } from "@/componentes/ui/checkbox";
 
 import { alternarNaMatriz, marcadoNaMatriz } from "../permissoes";
-import { useGravacoesDeCargo } from "./AbaCargos";
+import { type CatalogoDeCargos } from "./AbaCargos";
 
 /**
  * Matriz de permissões: linhas = telas, colunas = cargos. A célula liga Ver e Criar/Editar;
@@ -30,14 +30,16 @@ export function MatrizDePermissoes({
   erro,
   aoTentarDeNovo,
   podeEditar,
+  catalogo,
 }: {
   cargos: readonly Cargo[];
   carregando: boolean;
   erro: unknown;
   aoTentarDeNovo: () => void;
   podeEditar: boolean;
+  catalogo: CatalogoDeCargos;
 }) {
-  const { alterar } = useGravacoesDeCargo();
+  const { alterar } = catalogo.gravacoes;
 
   const alternar = (cargo: Cargo, tela: Tela, ligar: boolean) => {
     const permissoes: Permissao[] = [...alternarNaMatriz(new Set(cargo.permissoes), tela, ligar)];
@@ -73,7 +75,7 @@ export function MatrizDePermissoes({
             </tr>
           </thead>
           <tbody>
-            {CATEGORIAS_DE_TELA.map((categoria) => (
+            {catalogo.categorias.map((categoria) => (
               <Fragment key={categoria.chave}>
                 <tr className="border-b border-border bg-muted/40">
                   <td colSpan={cargos.length + 1} className={`${CLASSE_TD} label-xs`}>
@@ -87,7 +89,7 @@ export function MatrizDePermissoes({
                       <td key={c.chave} className={`${CLASSE_TD} text-center`}>
                         <Checkbox
                           aria-label={`${c.rotulo}: ${ROTULO_DA_TELA[tela]}`}
-                          title={c.temTudo ? "Admin e Super Admin têm tudo" : undefined}
+                          title={c.temTudo ? "Este cargo tem tudo" : undefined}
                           checked={c.temTudo || marcadoNaMatriz(new Set(c.permissoes), tela)}
                           disabled={c.temTudo || !podeEditar || alterar.gravando}
                           onCheckedChange={(v) => {

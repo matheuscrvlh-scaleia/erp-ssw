@@ -1,4 +1,4 @@
-import { tempoDecorrido } from "@erp/dominio/painel-plataforma";
+import { tempoDecorrido, variacaoDoMes } from "@erp/dominio/painel-plataforma";
 import { type MotivoDaSaude } from "@erp/shared/contratos/ingestao-ssw";
 import {
   type EmpresaNoPainel,
@@ -11,17 +11,17 @@ import {
   formatarInteiro,
   formatarPercentual,
 } from "@erp/shared/formatacao";
-import { ROTULO_DO_STATUS } from "@erp/shared/plataforma";
+import { INFO_DA_INTEGRACAO, ROTULO_DO_STATUS, type StatusEmpresa } from "@erp/shared/plataforma";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  AlarmClock,
   Building2,
-  ChartColumnStacked,
+  ChartColumnBig,
   FileText,
-  Gauge,
   HeartPulse,
+  Plug,
   RefreshCw,
+  TrendingUp,
   Users,
 } from "lucide-react";
 
@@ -34,8 +34,6 @@ import { SeloStatus, type Tom } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Pagina } from "@/componentes/layout/Pagina";
 import { Button } from "@/componentes/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/componentes/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 import { consultaPainelDaPlataforma } from "./api";
 
@@ -46,15 +44,21 @@ const SAUDE: Record<NivelDeSaude, { tom: Tom; texto: string; ordem: number }> = 
   inativa: { tom: "neutro", texto: "Inativa", ordem: 3 },
 };
 
-const TOM_DO_SLA: Record<StatusKpi, Tom> = { bom: "sucesso", alerta: "alerta", ruim: "erro" };
-
 const PROBLEMA_DA_SSW: Record<Exclude<MotivoDaSaude, "ok">, string> = {
   sem_credenciais: "Sem credenciais",
   sem_token: "Sem token",
   token_expirado: "Token expirado",
 };
 
-const pct = (v: number | null | undefined) => formatarPercentual(v, { separador: "." });
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+/** "2026-11" → "nov/26". */
+export function rotuloDoMes(mes: string): string {
+  return `${MESES[Number(mes.slice(5, 7)) - 1] ?? mes}/${mes.slice(2, 4)}`;
+}
+
+const plural = (n: number, um: string, varios: string) =>
+  `${formatarInteiro(n)} ${n === 1 ? um : varios}`;
 
 /** "agora", "há 25 min", "há 3 h", "há 2 dias" (a partir da hora em que o painel foi montado). */
 export function haQuantoTempo(iso: string | null, referencia: string): string {
@@ -89,14 +93,36 @@ function seloDoWorker(e: EmpresaNoPainel): { tom: Tom; texto: string; dica?: str
   };
 }
 
-/** Quando foi, por extenso na dica ("12/11/2026 10:58"). */
-function Quando({ iso, referencia }: { iso: string | null; referencia: string }) {
-  return (
-    <span className="whitespace-nowrap" title={iso ? formatarDataHora(iso) : undefined}>
-      {haQuantoTempo(iso, referencia)}
-    </span>
-  );
+/** "2 saudáveis · 1 em atenção · 1 crítica" (só os níveis que têm empresa). */
+export function resumoDosNiveis(n: PainelPlataforma["totais"]["porNivel"]): string {
+  const partes: [number, string, string][] = [
+    [n.ok, "saudável", "saudáveis"],
+    [n.atencao, "em atenção", "em atenção"],
+    [n.critico, "crítica", "críticas"],
+    [n.inativa, "inativa", "inativas"],
+  ];
+  return partes
+    .filter(([qtd]) => qtd > 0)
+    .map(([qtd, um, varios]) => plural(qtd, um, varios))
+    .join(" · ");
 }
+
+const STATUS_NO_RESUMO: [StatusEmpresa, string, string][] = [
+  ["ativa", "ativa", "ativas"],
+  ["implantacao", "em implantação", "em implantação"],
+  ["suspensa", "suspensa", "suspensas"],
+  ["encerrada", "encerrada", "encerradas"],
+];
+
+/** "3 ativas · 1 em implantação" (só as situações que têm empresa). */
+export function resumoDosStatus(n: PainelPlataforma["totais"]["porStatus"]): string {
+  return STATUS_NO_RESUMO.filter(([s]) => n[s] > 0)
+    .map(([s, um, varios]) => plural(n[s], um, varios))
+    .join(" · ");
+}
+
+/** Empresas em operação (as inativas não contam para integração). */
+const emOperacao = (e: EmpresaNoPainel) => e.status === "ativa" || e.status === "implantacao";
 
 function SeloComDica({ selo }: { selo: { tom: Tom; texto: string; dica?: string } }) {
   return (
@@ -106,14 +132,67 @@ function SeloComDica({ selo }: { selo: { tom: Tom; texto: string; dica?: string 
   );
 }
 
-/**
- * Situação e números primeiro (cabem em 1440 px); integração e acesso à direita, que a tabela rola
- * na horizontal. Entregues e Módulos começam escondidos (ligam em "Colunas").
- */
-function colunas(geradoEm: string): ColunaTabela<EmpresaNoPainel>[] {
-  const numero =
-    (campo: (e: NonNullable<EmpresaNoPainel["numeros"]>) => number) => (e: EmpresaNoPainel) =>
-      e.numeros ? campo(e.numeros) : null;
+function Quando({ iso, referencia }: { iso: string | null; referencia: string }) {
+  return (
+    <span className="whitespace-nowrap" title={iso ? formatarDataHora(iso) : undefined}>
+      {haQuantoTempo(iso, referencia)}
+    </span>
+  );
+}
+
+/** "+12%" verde, "−8%" vermelho; sem base, "—". */
+function Variacao({ valor }: { valor: number | null }) {
+  if (valor === null) return <span className="text-muted-foreground">—</span>;
+  const sinal = valor > 0 ? "+" : valor < 0 ? "−" : "";
+  const cor = valor > 0 ? "text-status-good-fg" : valor < 0 ? "text-status-bad-fg" : "";
+  return (
+    <span className={`tabular-nums ${cor}`}>
+      {sinal}
+      {formatarPercentual(Math.abs(valor), { separador: "." })}
+    </span>
+  );
+}
+
+/** Mini gráfico dos CT-e dos 12 meses (o último ponto é o mês corrente, pela metade). */
+function Tendencia({ valores, meses }: { valores: readonly number[]; meses: readonly string[] }) {
+  const max = Math.max(1, ...valores);
+  const largura = 96;
+  const altura = 24;
+  const passo = largura / Math.max(1, valores.length - 1);
+  const pontos = valores
+    .map(
+      (v, i) => `${(i * passo).toFixed(1)},${(altura - 2 - (v / max) * (altura - 4)).toFixed(1)}`,
+    )
+    .join(" ");
+  const dica = valores
+    .map((v, i) => `${rotuloDoMes(meses[i] ?? "")}: ${formatarInteiro(v)}`)
+    .join("\n");
+  return (
+    <svg
+      width={largura}
+      height={altura}
+      viewBox={`0 0 ${String(largura)} ${String(altura)}`}
+      className="text-primary"
+      role="img"
+      aria-label={`CT-e por mês. ${dica}`}
+    >
+      <title>{dica}</title>
+      <polyline
+        points={pontos}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function colunas(painel: PainelPlataforma): ColunaTabela<EmpresaNoPainel>[] {
+  const { geradoEm, meses } = painel;
+  const ctesNoMes = (e: EmpresaNoPainel) => e.ctesPorMes?.at(-1) ?? null;
+  const variacao = (e: EmpresaNoPainel) => (e.ctesPorMes ? variacaoDoMes(e.ctesPorMes) : null);
   return [
     {
       chave: "nome",
@@ -152,43 +231,52 @@ function colunas(geradoEm: string): ColunaTabela<EmpresaNoPainel>[] {
         );
       },
     },
+    { chave: "criadaEm", titulo: "Na Plataforma desde", formato: "data" },
     {
-      chave: "ctesNoMes",
-      titulo: "CT-e no mês",
-      formato: "inteiro",
-      valor: numero((n) => n.ctesNoMes),
+      chave: "usuariosAtivos",
+      titulo: "Usuários",
+      valor: (e) => e.usuariosAtivos,
+      celula: (e) => (
+        <div className="whitespace-nowrap tabular-nums">
+          {formatarInteiro(e.usuariosAtivos)}
+          <div className="text-xs text-muted-foreground">
+            {formatarInteiro(e.usuariosNoMes)} em 30 dias
+          </div>
+        </div>
+      ),
     },
     {
-      chave: "entreguesNoMes",
-      titulo: "Entregues",
-      formato: "inteiro",
-      oculta: true,
-      valor: numero((n) => n.entreguesNoMes),
+      chave: "ultimoLoginEm",
+      titulo: "Último acesso",
+      celula: (e) => <Quando iso={e.ultimoLoginEm} referencia={geradoEm} />,
     },
     {
-      chave: "sla",
-      titulo: "SLA Op.",
-      formato: "percentual",
-      valor: (e) => e.numeros?.slaOperacional ?? null,
-      celula: (e) => {
-        const n = e.numeros;
-        if (!n?.situacaoDoSla) return <span className="text-muted-foreground">—</span>;
-        return (
-          <SeloComDica
-            selo={{
-              tom: TOM_DO_SLA[n.situacaoDoSla],
-              texto: pct(n.slaOperacional),
-              dica: `Meta ${pct(n.slaMeta)}`,
-            }}
-          />
-        );
-      },
+      chave: "integracoes",
+      titulo: "Integrações",
+      valor: (e) => e.integracoes.length,
+      celula: (e) =>
+        e.integracoes.length === 0 ? (
+          <span className="text-muted-foreground">Nenhuma</span>
+        ) : (
+          <span
+            className="whitespace-nowrap"
+            title={e.integracoes.map((t) => INFO_DA_INTEGRACAO[t].nome).join("\n")}
+          >
+            {plural(e.integracoes.length, "ligada", "ligadas")}
+          </span>
+        ),
     },
     {
-      chave: "emAtraso",
-      titulo: "Em atraso",
-      formato: "inteiro",
-      valor: numero((n) => n.emAtraso),
+      chave: "ssw",
+      titulo: "SSW API",
+      valor: (e) => seloDaSsw(e).texto,
+      celula: (e) => <SeloComDica selo={seloDaSsw(e)} />,
+    },
+    {
+      chave: "worker",
+      titulo: "worker-ssw",
+      valor: (e) => seloDoWorker(e).texto,
+      celula: (e) => <SeloComDica selo={seloDoWorker(e)} />,
     },
     {
       chave: "ultimoDadoEm",
@@ -205,59 +293,45 @@ function colunas(geradoEm: string): ColunaTabela<EmpresaNoPainel>[] {
         </div>
       ),
     },
+    { chave: "ctesNoMes", titulo: "CT-e no mês", formato: "inteiro", valor: ctesNoMes },
     {
-      chave: "ssw",
-      titulo: "SSW API",
-      valor: (e) => seloDaSsw(e).texto,
-      celula: (e) => <SeloComDica selo={seloDaSsw(e)} />,
+      chave: "crescimento",
+      titulo: "Crescimento (mês fechado)",
+      valor: variacao,
+      celula: (e) => <Variacao valor={variacao(e)} />,
     },
     {
-      chave: "worker",
-      titulo: "worker-ssw",
-      valor: (e) => seloDoWorker(e).texto,
-      celula: (e) => <SeloComDica selo={seloDoWorker(e)} />,
+      chave: "tendencia",
+      titulo: "12 meses",
+      ordenavel: false,
+      semExportar: true,
+      celula: (e) =>
+        e.ctesPorMes ? (
+          <Tendencia valores={e.ctesPorMes} meses={meses} />
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
-    {
-      chave: "ultimoLoginEm",
-      titulo: "Último acesso",
-      celula: (e) => <Quando iso={e.ultimoLoginEm} referencia={geradoEm} />,
-    },
-    { chave: "usuariosAtivos", titulo: "Usuários", formato: "inteiro" },
     { chave: "modulosLiberados", titulo: "Módulos", formato: "inteiro", oculta: true },
   ];
 }
 
-function statusDasEmpresas(t: PainelPlataforma["totais"]): StatusKpi {
-  if (t.porNivel.critico > 0) return "ruim";
-  return t.porNivel.atencao > 0 ? "alerta" : "bom";
-}
-
-/** "2 saudáveis · 1 em atenção · 1 crítica" (só os níveis que têm empresa). */
-export function resumoDosNiveis(n: PainelPlataforma["totais"]["porNivel"]): string {
-  const partes: [number, string, string][] = [
-    [n.ok, "saudável", "saudáveis"],
-    [n.atencao, "em atenção", "em atenção"],
-    [n.critico, "crítica", "críticas"],
-    [n.inativa, "inativa", "inativas"],
-  ];
-  return partes
-    .filter(([qtd]) => qtd > 0)
-    .map(([qtd, um, varios]) => `${formatarInteiro(qtd)} ${qtd === 1 ? um : varios}`)
-    .join(" · ");
-}
-
 function Kpis({ painel }: { painel: PainelPlataforma | undefined }) {
   const t = painel?.totais;
-  const plural = (n: number, um: string, varios: string) =>
-    `${formatarInteiro(n)} ${n === 1 ? um : varios}`;
+  const operando = painel?.empresas.filter(emOperacao) ?? [];
+  const sswOk = operando.filter((e) => seloDaSsw(e).tom === "sucesso").length;
+  const sswComProblema = operando.filter((e) => seloDaSsw(e).tom === "erro").length;
+  const ctes = t?.ctesPorMes ?? [];
+  const statusDasEmpresas: StatusKpi =
+    t && t.porNivel.critico > 0 ? "ruim" : t && t.porNivel.atencao > 0 ? "alerta" : "bom";
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <KpiCard
         rotulo="Empresas"
         icone={Building2}
         valor={t ? formatarInteiro(t.empresas) : "—"}
-        status={t ? statusDasEmpresas(t) : "bom"}
-        neutro={!t}
+        status={statusDasEmpresas}
+        neutro={!t || statusDasEmpresas === "bom"}
         selo={
           t && t.porNivel.critico > 0
             ? plural(t.porNivel.critico, "crítica", "críticas")
@@ -265,158 +339,76 @@ function Kpis({ painel }: { painel: PainelPlataforma | undefined }) {
               ? `${formatarInteiro(t.porNivel.atencao)} em atenção`
               : undefined
         }
-        detalhe={t ? resumoDosNiveis(t.porNivel) : "Carregando…"}
+        detalhe={t ? resumoDosStatus(t.porStatus) : "Carregando…"}
       />
       <KpiCard
-        rotulo="CT-e no mês"
-        icone={FileText}
-        valor={t ? formatarInteiro(t.ctesNoMes) : "—"}
+        rotulo="Novas em 12 meses"
+        icone={TrendingUp}
+        valor={t ? formatarInteiro(t.novasNoAno) : "—"}
         status="bom"
         neutro
-        detalhe={t ? `${formatarInteiro(t.entreguesNoMes)} entregues` : "Carregando…"}
+        detalhe={t ? `${plural(t.novasNoMes, "nova", "novas")} neste mês` : "Carregando…"}
       />
       <KpiCard
-        rotulo="SLA Operacional"
-        icone={Gauge}
-        dica="Todas as empresas juntas, pela mesma conta da Performance: CT-e emitidos no mês menos os entregues fora do prazo (sem os de responsabilidade do cliente), sobre os emitidos."
-        valor={t?.slaOperacional != null ? pct(t.slaOperacional) : "—"}
-        status="bom"
-        neutro
-        progresso={t?.slaOperacional ?? undefined}
-        detalhe={t?.slaOperacional != null ? "todas as empresas no mês" : "Sem CT-e no mês"}
-      />
-      <KpiCard
-        rotulo="Em atraso"
-        icone={AlarmClock}
-        valor={t ? formatarInteiro(t.emAtraso) : "—"}
+        rotulo="Integração SSW"
+        icone={Plug}
+        dica="Empresas ativas ou em implantação com a SSW API funcionando (token válido)."
+        valor={painel ? `${formatarInteiro(sswOk)} de ${formatarInteiro(operando.length)}` : "—"}
         status="alerta"
-        neutro={!t || t.emAtraso === 0}
-        detalhe="CT-e do mês em aberto com prazo vencido"
+        neutro={!painel || sswComProblema === 0}
+        selo={
+          sswComProblema > 0 ? plural(sswComProblema, "com problema", "com problema") : undefined
+        }
+        detalhe="empresas com a SSW API funcionando"
       />
       <KpiCard
-        rotulo="Usuários ativos"
+        rotulo="Usuários"
         icone={Users}
         valor={t ? formatarInteiro(t.usuariosAtivos) : "—"}
         status="bom"
         neutro
-        detalhe="vínculos ativos nas empresas"
+        detalhe={
+          t ? `${formatarInteiro(t.usuariosNoMes)} entraram nos últimos 30 dias` : "Carregando…"
+        }
+      />
+      <KpiCard
+        rotulo="CT-e no mês"
+        icone={FileText}
+        dica="CT-e emitidos no mês corrente, todas as empresas (mesmo universo das telas)."
+        valor={t ? formatarInteiro(ctes.at(-1) ?? 0) : "—"}
+        status="bom"
+        neutro
+        detalhe={t ? `${formatarInteiro(ctes.at(-2) ?? 0)} no mês passado` : "Carregando…"}
       />
     </div>
   );
 }
 
-interface PontoDeCtes {
-  id: string;
-  rotulo: string;
-  entregues: number;
-  emAberto: number;
-  semEntrega: number;
-}
-
-/** Empresas com CT-e no mês, da que mais emite para a que menos (a mesma ordem nos dois blocos). */
-function comNumeros(empresas: readonly EmpresaNoPainel[]) {
-  return empresas
-    .flatMap((e) => (e.numeros && e.numeros.ctesNoMes > 0 ? [{ e, n: e.numeros }] : []))
-    .sort((a, b) => b.n.ctesNoMes - a.n.ctesNoMes);
-}
-
-function pontosDeCtes(empresas: readonly EmpresaNoPainel[]): PontoDeCtes[] {
-  return comNumeros(empresas).map(({ e, n }) => ({
-    id: e.id,
-    rotulo: e.nomeCurto,
-    entregues: n.entreguesNoMes,
-    emAberto: n.emAberto,
-    semEntrega: Math.max(0, n.ctesNoMes - n.entreguesNoMes - n.emAberto),
-  }));
-}
-
-const ROTULO_DO_SLA: Record<StatusKpi, string> = {
-  bom: "na meta",
-  alerta: "abaixo da meta",
-  ruim: "crítico",
-};
-
-const COR_DO_SLA: Record<StatusKpi, string> = {
-  bom: "bg-status-good",
-  alerta: "bg-status-warn",
-  ruim: "bg-status-bad",
-};
-
-/**
- * SLA de cada empresa contra a meta dela: barra de 0 a 100% na cor da situação, traço na meta e
- * o valor com ícone ao lado (nunca só a cor). Feito em HTML para marcar a meta de cada uma; cada
- * linha é um botão (teclado e dica) que abre a empresa.
- */
-function SlaPorEmpresa({
-  empresas,
-  aoAbrir,
-}: {
-  empresas: readonly EmpresaNoPainel[];
-  aoAbrir: (id: string) => void;
-}) {
-  const linhas = comNumeros(empresas).flatMap(({ e, n }) =>
-    n.slaOperacional !== null && n.situacaoDoSla !== null
-      ? [{ e, sla: n.slaOperacional, meta: n.slaMeta, situacao: n.situacaoDoSla }]
-      : [],
-  );
-  if (linhas.length === 0) {
-    return (
-      <EstadoVazio
-        mensagem="Nenhuma empresa com SLA no mês."
-        detalhe="O SLA aparece quando a empresa tem CT-e emitidos no mês."
-        className="min-h-[220px]"
-      />
-    );
-  }
+/** Quantas empresas em operação têm cada integração ligada (barra = parte das empresas). */
+function Integracoes({ painel }: { painel: PainelPlataforma }) {
+  const base = painel.empresas.filter(emOperacao).length;
   return (
-    <TooltipProvider delayDuration={100}>
-      <ul className="space-y-1 px-3 py-4" aria-label="SLA Operacional do mês por empresa">
-        {linhas.map(({ e, sla, meta, situacao }) => {
-          const texto = `${e.nome}: SLA ${pct(sla)}, meta ${pct(meta)} (${ROTULO_DO_SLA[situacao]})`;
-          return (
-            <li key={e.id}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={texto}
-                    onClick={() => {
-                      aoAbrir(e.id);
-                    }}
-                    className="flex min-h-9 w-full items-center gap-3 rounded-md px-2 text-left text-[13px] transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <span className="w-24 shrink-0 truncate text-muted-foreground sm:w-28">
-                      {e.nomeCurto}
-                    </span>
-                    <span className="relative h-2.5 min-w-0 flex-1 rounded-full bg-muted">
-                      <span
-                        className={cn(
-                          "absolute inset-y-0 left-0 rounded-full",
-                          COR_DO_SLA[situacao],
-                        )}
-                        style={{ width: `${String(Math.max(1, sla * 100))}%` }}
-                      />
-                      <span
-                        aria-hidden
-                        className="absolute -inset-y-1 w-0.5 rounded-full bg-foreground"
-                        style={{ left: `${String(meta * 100)}%` }}
-                      />
-                    </span>
-                    <SeloStatus tom={TOM_DO_SLA[situacao]} className="w-[84px] justify-center">
-                      {pct(sla)}
-                    </SeloStatus>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-[12px]">
-                  {texto}
-                  <span className="block opacity-75">Clique para abrir a empresa</span>
-                </TooltipContent>
-              </Tooltip>
-            </li>
-          );
-        })}
-      </ul>
-    </TooltipProvider>
+    <ul className="space-y-3 px-5 py-4" aria-label="Integrações ligadas por empresa">
+      {painel.integracoes.map((i) => {
+        const fracao = base > 0 ? i.empresas / base : 0;
+        return (
+          <li key={i.tipo} className="space-y-1.5">
+            <div className="flex items-baseline justify-between gap-3 text-[13px]">
+              <span className="truncate">{INFO_DA_INTEGRACAO[i.tipo].nome}</span>
+              <span className="shrink-0 text-muted-foreground tabular-nums">
+                {formatarInteiro(i.empresas)} de {formatarInteiro(base)}
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-muted" aria-hidden>
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${String(Math.min(100, fracao * 100))}%` }}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -425,18 +417,26 @@ export function PaginaPainel() {
   const consulta = useQuery(consultaPainelDaPlataforma);
   const painel = consulta.data;
   const abrir = (id: string) => void navigate({ to: "/plataforma/empresas/$id", params: { id } });
-  const pontos = pontosDeCtes(painel?.empresas ?? []);
   const vazio = painel !== undefined && painel.empresas.length === 0;
+  const crescimento = (painel?.crescimento ?? []).map((m) => ({
+    rotulo: rotuloDoMes(m.mes),
+    existentes: m.total - m.novas,
+    novas: m.novas,
+  }));
+  const ctesPorMes = (painel?.meses ?? []).map((mes, i) => ({
+    rotulo: rotuloDoMes(mes),
+    ctes: painel?.totais.ctesPorMes[i] ?? 0,
+  }));
 
   return (
     <Pagina
       titulo="Dashboard"
-      descricao="Saúde, uso e números do mês de todas as empresas."
+      descricao="Empresas, crescimento, integrações e uso da Plataforma."
       meta={
         painel && (
           <p className="text-[12.5px] text-muted-foreground">
-            Mês de {formatarData(painel.periodo.inicio)} a {formatarData(painel.periodo.fim)} ·
-            montado em {formatarDataHora(painel.geradoEm)}
+            Montado em {formatarDataHora(painel.geradoEm)}
+            {painel.meses[0] && ` · 12 meses desde ${formatarData(`${painel.meses[0]}-01`)}`}
           </p>
         )
       }
@@ -471,14 +471,66 @@ export function PaginaPainel() {
         <>
           <Kpis painel={painel} />
 
+          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+            <Painel
+              titulo="Crescimento da Plataforma"
+              descricao="Empresas cadastradas até o fim de cada mês; em destaque, as que entraram no mês."
+              icone={TrendingUp}
+            >
+              <GraficoBarras
+                descricao="Empresas na Plataforma por mês, separando as que entraram no mês"
+                dados={crescimento}
+                eixoX="rotulo"
+                formato="inteiro"
+                carregando={consulta.isLoading}
+                mensagemVazia="Nenhuma empresa nos últimos 12 meses."
+                series={[
+                  {
+                    chave: "existentes",
+                    nome: "Já na Plataforma",
+                    cor: "var(--grafico-comparacao)",
+                    pilha: "a",
+                  },
+                  { chave: "novas", nome: "Novas no mês", pilha: "a" },
+                ]}
+              />
+            </Painel>
+            <Painel
+              titulo="CT-e processados por mês"
+              descricao="Todas as empresas, pela data de emissão. O último mês está em andamento."
+              icone={ChartColumnBig}
+            >
+              <GraficoBarras
+                descricao="CT-e emitidos por mês, somando todas as empresas"
+                dados={ctesPorMes}
+                eixoX="rotulo"
+                formato="inteiro"
+                carregando={consulta.isLoading}
+                mensagemVazia="Nenhum CT-e nos últimos 12 meses."
+                series={[{ chave: "ctes", nome: "CT-e" }]}
+              />
+            </Painel>
+            <Painel
+              titulo="Integrações"
+              descricao="Empresas ativas ou em implantação com cada integração ligada."
+              icone={Plug}
+            >
+              {painel ? (
+                <Integracoes painel={painel} />
+              ) : (
+                <EstadoVazio mensagem="Carregando…" className="min-h-[220px]" />
+              )}
+            </Painel>
+          </div>
+
           <Painel
-            titulo="Saúde por empresa"
-            descricao="Integração com o SSW, dados, acesso e números do mês. Clique numa empresa para abrir o cadastro."
+            titulo="Empresas"
+            descricao="Saúde, integração com o SSW, uso e CT-e de cada empresa. Clique numa empresa para abrir o cadastro."
             icone={HeartPulse}
           >
             <TabelaDados
               embutida
-              colunas={colunas(painel?.geradoEm ?? new Date(0).toISOString())}
+              colunas={painel ? colunas(painel) : []}
               linhas={painel?.empresas ?? []}
               chaveDaLinha={(e) => e.id}
               aoClicarLinha={(e) => {
@@ -487,46 +539,9 @@ export function PaginaPainel() {
               carregando={consulta.isLoading}
               porPagina={0}
               configurarColunas
-              rotuloTotal={(n) => `${formatarInteiro(n)} empresa${n === 1 ? "" : "s"}`}
+              rotuloTotal={(n) => plural(n, "empresa", "empresas")}
             />
           </Painel>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Painel
-              titulo="CT-e emitidos no mês"
-              descricao="Por situação hoje. Clique numa barra para abrir a empresa."
-              icone={ChartColumnStacked}
-            >
-              <GraficoBarras
-                descricao="CT-e emitidos no mês por empresa, divididos em entregues, em aberto e baixados sem entrega"
-                dados={pontos}
-                eixoX="rotulo"
-                formato="inteiro"
-                carregando={consulta.isLoading}
-                mensagemVazia="Nenhuma empresa com números no mês."
-                aoClicarBarra={(p) => {
-                  abrir(p.id);
-                }}
-                series={[
-                  { chave: "entregues", nome: "Entregues", pilha: "a" },
-                  { chave: "emAberto", nome: "Em aberto", cor: "var(--serie-2)", pilha: "a" },
-                  {
-                    chave: "semEntrega",
-                    nome: "Baixados sem entrega",
-                    cor: "var(--grafico-comparacao)",
-                    pilha: "a",
-                  },
-                ]}
-              />
-            </Painel>
-            <Painel
-              titulo="SLA Operacional do mês"
-              descricao="Mesma conta da Performance; o traço marca a meta de cada empresa."
-              icone={Gauge}
-            >
-              <SlaPorEmpresa empresas={painel?.empresas ?? []} aoAbrir={abrir} />
-            </Painel>
-          </div>
         </>
       )}
     </Pagina>

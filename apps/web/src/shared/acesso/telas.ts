@@ -152,7 +152,7 @@ export const ROTULO_DA_TELA: Record<Tela, string> = {
   plataforma_painel: "Plataforma · Dashboard",
   plataforma_empresas: "Plataforma · Empresas",
   plataforma_logs: "Plataforma · Logs",
-  plataforma_admins: "Plataforma · Administradores",
+  plataforma_admins: "Plataforma · Usuários e cargos",
   plataforma_integracoes: "Plataforma · Integrações",
 };
 
