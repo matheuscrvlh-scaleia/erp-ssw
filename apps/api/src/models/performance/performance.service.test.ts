@@ -294,7 +294,7 @@ describe("exportarTela", () => {
     statusAtual: null,
   });
 
-  it("uma linha por ocorrência; CT-e sem ocorrência sai uma vez; avisa o corte", async () => {
+  it("cada CT-e com as ocorrências dele; avisa o corte", async () => {
     const repo: RepositorioPerformance = {
       ...criarPerformanceFalsa(),
       ctesParaExportar: (_c, _f, limite) =>
@@ -307,14 +307,8 @@ describe("exportarTela", () => {
     };
     const r = await exportarTela(executor(repo), ctx, entrada, agora);
     expect(r.truncado).toBe(true);
-    expect(r.linhas).toHaveLength(LIMITE_DA_EXPORTACAO + 1);
-    expect(r.linhas[0]).toMatchObject({
-      codigo: 85,
-      cidadeDestino: "Campinas/SP",
-      peso: 10.5,
-      valorFrete: 99.9,
-      cteVinculo: "CT55",
-    });
-    expect(r.linhas[2]).toMatchObject({ codigo: null, dataHora: null });
+    expect(r.ctes).toHaveLength(LIMITE_DA_EXPORTACAO);
+    expect(r.ctes[0]?.ocorrencias.map((o) => o.codigo)).toEqual([85, 1]);
+    expect(r.ctes[1]?.ocorrencias).toEqual([]);
   });
 });
