@@ -144,7 +144,7 @@ describe("Admin › Ingestão SSW", () => {
     expect(acao.json()).toMatchObject({
       erro: {
         mensagem:
-          "Integração com o worker do SSW não configurada. Configure em Plataforma › Integrações.",
+          "Integração com o worker do SSW não configurada. Configure em Plataforma › Configurações › Integrações.",
       },
     });
     const leitura = await app.inject({ url: "/api/v1/admin/ingestao/bi2-0017", headers });

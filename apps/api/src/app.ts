@@ -188,7 +188,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     if (!url) {
       throw new ErroDeNegocio(
         "INDISPONIVEL",
-        "O domínio do sistema não está configurado. Configure em Plataforma › Integrações.",
+        "O domínio do sistema não está configurado. Configure em Plataforma › Configurações › Integrações.",
       );
     }
     return url;
