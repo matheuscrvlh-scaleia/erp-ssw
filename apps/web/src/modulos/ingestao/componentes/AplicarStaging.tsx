@@ -2,11 +2,8 @@
  * "Aplicar importações à produção": simulação (não grava) ou aplicação em blocos de 4000 CT-e,
  * com o resumo de cada lista (até 500 itens) e o histórico das aplicações.
  */
-import {
-  contratosIngestao as c,
-  type ResultadoDoBlocoDeAplicacao,
-} from "@erp/shared/contratos/ingestao";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type AplicacaoDaIngestao } from "@erp/shared/contratos/ingestao";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,87 +13,55 @@ import { SeloDaSituacao } from "@/componentes/comum/SeloDaSituacao";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { Checkbox } from "@/componentes/ui/checkbox";
-import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { CHAVE_DA_INGESTAO, consultaAplicacoes } from "./api";
+import { mutacaoAplicarStaging } from "../api";
+import { type Acumulado, somar } from "../regras";
 
 const LOTE = 4000;
-const MAX_LISTA = 500;
 
 type Aba = "inserir" | "atualizar" | "ocorrencias" | "ignorados" | "romaneio_036";
 
-interface Acumulado {
-  dryRun: boolean;
-  blocos: number;
-  totais: ResultadoDoBlocoDeAplicacao["totais"];
-  inserir: ResultadoDoBlocoDeAplicacao["inserir"];
-  atualizar: ResultadoDoBlocoDeAplicacao["atualizar"];
-  ocorrencias: ResultadoDoBlocoDeAplicacao["ocorrencias"];
-  ignorados: ResultadoDoBlocoDeAplicacao["ignorados"];
-  romaneio036: number | null;
-  pendentes: number;
-}
-
-function somar(a: Acumulado | null, r: ResultadoDoBlocoDeAplicacao): Acumulado {
-  const base: Acumulado = a ?? {
-    dryRun: r.dryRun,
-    blocos: 0,
-    totais: { inserir: 0, atualizar: 0, ocorrencias: 0, ignorados: 0 },
-    inserir: [],
-    atualizar: [],
-    ocorrencias: [],
-    ignorados: [],
-    romaneio036: null,
-    pendentes: 0,
-  };
-  return {
-    dryRun: r.dryRun,
-    blocos: base.blocos + 1,
-    totais: {
-      inserir: base.totais.inserir + r.totais.inserir,
-      atualizar: base.totais.atualizar + r.totais.atualizar,
-      ocorrencias: base.totais.ocorrencias + r.totais.ocorrencias,
-      ignorados: base.totais.ignorados + r.totais.ignorados,
-    },
-    inserir: [...base.inserir, ...r.inserir].slice(0, MAX_LISTA),
-    atualizar: [...base.atualizar, ...r.atualizar].slice(0, MAX_LISTA),
-    ocorrencias: [...base.ocorrencias, ...r.ocorrencias].slice(0, MAX_LISTA),
-    ignorados: [...base.ignorados, ...r.ignorados].slice(0, MAX_LISTA),
-    romaneio036: r.romaneio036 ?? base.romaneio036,
-    pendentes: r.pendentes,
-  };
-}
-
-export function AplicarStaging() {
+export function AplicarStaging({
+  aplicacoes,
+  carregando,
+  erro,
+  aoTentarDeNovo,
+}: {
+  /** Histórico das aplicações. */
+  aplicacoes: AplicacaoDaIngestao[];
+  carregando: boolean;
+  erro: Error | null;
+  aoTentarDeNovo: () => void;
+}) {
   const queryClient = useQueryClient();
-  const historico = useQuery(consultaAplicacoes);
+  const aplicar = useMutation(mutacaoAplicarStaging(queryClient));
   const [confirmado, setConfirmado] = useState(false);
   const [rodando, setRodando] = useState<string | null>(null);
   const [resultado, setResultado] = useState<Acumulado | null>(null);
   const [aba, setAba] = useState<Aba>("inserir");
 
-  const executar = async (dryRun: boolean) => {
+  const executar = (dryRun: boolean) => {
     setResultado(null);
     let acumulado: Acumulado | null = null;
-    let offset = 0;
-    try {
-      for (let bloco = 1; ; bloco++) {
+    aplicar.mutate({
+      dryRun,
+      lote: LOTE,
+      aoIniciarBloco: (bloco) => {
         setRodando(`${dryRun ? "Simulando" : "Aplicando"} bloco ${bloco}…`);
-        const r = await chamar(c.aplicar, { entrada: { dryRun, limite: LOTE, offset } });
+      },
+      aoConcluirBloco: (r) => {
         acumulado = somar(acumulado, r);
         setResultado(acumulado);
-        if (!r.temMais) break;
-        offset += dryRun ? LOTE : 0;
-      }
-      toast.success(dryRun ? "Simulação concluída (nada foi gravado)" : "Aplicação concluída");
-    } catch (e) {
-      toast.error("Não foi possível concluir", { description: mensagemAmigavel(e) });
-    } finally {
-      setRodando(null);
-      setConfirmado(false);
-      await queryClient.invalidateQueries({ queryKey: CHAVE_DA_INGESTAO });
-    }
+      },
+      aoTerminar: (_, e) => {
+        if (e) toast.error("Não foi possível concluir", { description: mensagemAmigavel(e) });
+        else
+          toast.success(dryRun ? "Simulação concluída (nada foi gravado)" : "Aplicação concluída");
+        setRodando(null);
+        setConfirmado(false);
+      },
+    });
   };
 
   const abas: { valor: Aba; rotulo: string }[] = resultado
@@ -121,7 +86,9 @@ export function AplicarStaging() {
           variant="outline"
           className="self-center"
           disabled={rodando !== null}
-          onClick={() => void executar(true)}
+          onClick={() => {
+            executar(true);
+          }}
         >
           Simular (não grava)
         </Button>
@@ -141,7 +108,9 @@ export function AplicarStaging() {
             size="sm"
             variant="destructive"
             disabled={!confirmado || rodando !== null}
-            onClick={() => void executar(false)}
+            onClick={() => {
+              executar(false);
+            }}
           >
             Aplicar à produção
           </Button>
@@ -254,11 +223,11 @@ export function AplicarStaging() {
           { chave: "totalIgnorados", titulo: "Ignorados", formato: "inteiro" },
           { chave: "erro", titulo: "Erro", classe: "max-w-[280px] truncate" },
         ]}
-        linhas={historico.data?.aplicacoes ?? []}
+        linhas={aplicacoes}
         chaveDaLinha={(a) => a.id}
-        carregando={historico.isLoading}
-        erro={historico.error}
-        aoTentarDeNovo={() => void historico.refetch()}
+        carregando={carregando}
+        erro={erro}
+        aoTentarDeNovo={aoTentarDeNovo}
         mensagemVazia="Nenhuma aplicação registrada."
         porPagina={10}
       />

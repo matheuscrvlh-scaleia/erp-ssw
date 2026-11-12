@@ -23,7 +23,6 @@ const CHAMAM_FORA_DO_API = [
   "src/routes/redefinir-senha.tsx", // atalho: sai na migração das telas de acesso
   "src/routes/_autenticado/sem-acesso.tsx", // atalho: sai na migração das telas de acesso
   "src/modulos/filtros/**", // atalho: sai na migração do módulo filtros
-  "src/modulos/ingestao/**", // atalho: sai na migração do módulo ingestao
 ];
 
 /** Arquivo interno de outro módulo que ainda é importado (o público é só o `api.ts`). */

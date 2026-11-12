@@ -1,7 +1,7 @@
 /** Admin › Importação SSW (só Plataforma): pipeline automático + importação manual + aplicação. */
 import { DESCRICAO_DO_RELATORIO, type Relatorio } from "@erp/dominio/ingestao/relatorios";
-import { type CicloDaIngestao, contratosIngestao as c } from "@erp/shared/contratos/ingestao";
-import { useIsFetching, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type CicloDaIngestao } from "@erp/shared/contratos/ingestao";
+import { useIsFetching, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DatabaseZap,
   FileText,
@@ -27,54 +27,57 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/componentes/ui/dropdown-menu";
-import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
-import { CHAVE_DA_INGESTAO, consultaPipeline } from "./api";
-import { AplicarStaging } from "./AplicarStaging";
-import { ImportadorManual } from "./ImportadorManual";
-import { ConfirmarAcao, ItemRecolhivel } from "./pecas";
+import {
+  chaves,
+  consultaAplicacoes,
+  consultaPipeline,
+  mutacaoDescartarCiclo,
+  mutacaoRetomarCiclo,
+} from "./api";
+import { AplicarStaging } from "./componentes/AplicarStaging";
+import { ConfirmarAcao } from "./componentes/ConfirmarAcao";
+import { ImportadorManual } from "./componentes/ImportadorManual";
+import { ItemRecolhivel } from "./componentes/ItemRecolhivel";
+import { num } from "./textos";
 
 /** Ordem dos importadores manuais (como hoje). O 455 de largura fixa saiu (Q44). */
 const IMPORTADORES: readonly Relatorio[] = ["038", "455csv", "930", "306", "036"];
 
-const num = (v: unknown) => (typeof v === "number" ? v.toLocaleString("pt-BR") : "—");
-
 function PipelineAutomatico() {
   const queryClient = useQueryClient();
   const consulta = useQuery(consultaPipeline);
+  const retomarCiclo = useMutation(mutacaoRetomarCiclo(queryClient));
+  const descartarCiclo = useMutation(mutacaoDescartarCiclo(queryClient));
   const [agindo, setAgindo] = useState<string | null>(null);
   const [descartando, setDescartando] = useState<CicloDaIngestao | null>(null);
   const dados = consulta.data;
 
-  const agir = async (chave: string, acao: () => Promise<unknown>, sucesso: string) => {
+  /** Marca o ciclo em andamento; o toast sai e os botões voltam antes de o cache ser invalidado (como hoje). */
+  const agir = (chave: string, sucesso: string) => {
     setAgindo(chave);
-    try {
-      await acao();
-      toast.success(sucesso);
-    } catch (e) {
-      toast.error("Não foi possível concluir", { description: mensagemAmigavel(e) });
-    } finally {
-      setAgindo(null);
-      await queryClient.invalidateQueries({ queryKey: CHAVE_DA_INGESTAO });
-    }
+    return {
+      chave,
+      aoTerminar: (_: unknown, e: Error | null) => {
+        if (e) toast.error("Não foi possível concluir", { description: mensagemAmigavel(e) });
+        else toast.success(sucesso);
+        setAgindo(null);
+      },
+    };
   };
 
-  const retomar = (ciclo: CicloDaIngestao) =>
-    agir(
-      ciclo.cicloChave,
-      () => chamar(c.retomarCiclo, { parametros: { chave: ciclo.cicloChave } }),
-      `Ciclo ${ciclo.cicloChave} enviado para aplicação`,
-    );
+  const retomar = (ciclo: CicloDaIngestao) => {
+    retomarCiclo.mutate(agir(ciclo.cicloChave, `Ciclo ${ciclo.cicloChave} enviado para aplicação`));
+  };
 
-  const descartar = (ciclo: CicloDaIngestao, motivo: string) =>
-    agir(
-      ciclo.cicloChave,
-      () =>
-        chamar(c.descartarCiclo, { parametros: { chave: ciclo.cicloChave }, entrada: { motivo } }),
-      `Ciclo ${ciclo.cicloChave} descartado`,
-    );
+  const descartar = (ciclo: CicloDaIngestao, motivo: string) => {
+    descartarCiclo.mutate({
+      ...agir(ciclo.cicloChave, `Ciclo ${ciclo.cicloChave} descartado`),
+      motivo,
+    });
+  };
 
   const podeAgir = (s: string) => s !== "aplicado" && s !== "descartado";
 
@@ -131,7 +134,11 @@ function PipelineAutomatico() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="min-w-48">
-                    <DropdownMenuItem onSelect={() => void retomar(x)}>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        retomar(x);
+                      }}
+                    >
                       <Play aria-hidden />
                       Aplicar mesmo assim
                     </DropdownMenuItem>
@@ -226,7 +233,7 @@ function PipelineAutomatico() {
         motivo="Informe o motivo:"
         rotuloDoBotao="Descartar ciclo"
         aoConfirmar={(motivo) => {
-          if (descartando) void descartar(descartando, motivo);
+          if (descartando) descartar(descartando, motivo);
         }}
       />
     </Secao>
@@ -235,7 +242,8 @@ function PipelineAutomatico() {
 
 export function PaginaImportacaoSsw() {
   const queryClient = useQueryClient();
-  const atualizando = useIsFetching({ queryKey: CHAVE_DA_INGESTAO }) > 0;
+  const atualizando = useIsFetching({ queryKey: chaves.tudo }) > 0;
+  const aplicacoes = useQuery(consultaAplicacoes);
   return (
     <Pagina
       titulo="Importação SSW"
@@ -244,7 +252,7 @@ export function PaginaImportacaoSsw() {
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => void queryClient.invalidateQueries({ queryKey: CHAVE_DA_INGESTAO })}
+          onClick={() => void queryClient.invalidateQueries({ queryKey: chaves.tudo })}
           disabled={atualizando}
         >
           <RefreshCw className={cn(atualizando && "motion-safe:animate-spin")} aria-hidden />
@@ -264,7 +272,12 @@ export function PaginaImportacaoSsw() {
             </ItemRecolhivel>
           ))}
           <ItemRecolhivel titulo="Aplicar importações à produção" icone={DatabaseZap}>
-            <AplicarStaging />
+            <AplicarStaging
+              aplicacoes={aplicacoes.data?.aplicacoes ?? []}
+              carregando={aplicacoes.isLoading}
+              erro={aplicacoes.error}
+              aoTentarDeNovo={() => void aplicacoes.refetch()}
+            />
           </ItemRecolhivel>
         </Painel>
       </Secao>

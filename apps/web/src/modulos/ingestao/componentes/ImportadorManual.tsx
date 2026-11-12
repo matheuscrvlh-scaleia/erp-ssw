@@ -3,8 +3,7 @@
  * prévia lida aqui no navegador (mesmo leitor do servidor) → "Gravar na staging".
  */
 import { lerRelatorio, type Relatorio } from "@erp/dominio/ingestao/relatorios";
-import { contratosIngestao as c } from "@erp/shared/contratos/ingestao";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, FileUp, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,12 +13,11 @@ import { SeloStatus } from "@/componentes/comum/SeloStatus";
 import { type ColunaTabela, TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button, buttonVariants } from "@/componentes/ui/button";
 import { Checkbox } from "@/componentes/ui/checkbox";
-import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 import { cn } from "@/lib/utils";
 
-import { CHAVE_DA_INGESTAO } from "./api";
-import { AreaDeTexto } from "./pecas";
+import { mutacaoImportarRelatorio } from "../api";
+import { AreaDeTexto } from "./AreaDeTexto";
 
 /** Colunas mostradas na prévia (o 455 tem 130; o resto aparece no arquivo gravado). */
 const MAX_COLUNAS_NA_PREVIA = 12;
@@ -33,6 +31,7 @@ export function ImportadorManual({ relatorio }: { relatorio: Relatorio }) {
   const [analise, setAnalise] = useState<ReturnType<typeof lerRelatorio> | null>(null);
   const [aceitarDivergencia, setAceitarDivergencia] = useState(false);
   const [gravando, setGravando] = useState(false);
+  const importar = useMutation(mutacaoImportarRelatorio(queryClient));
 
   const lerArquivo = async (arquivo: File) => {
     // Relatórios do SSW vêm em latin-1.
@@ -74,17 +73,18 @@ export function ImportadorManual({ relatorio }: { relatorio: Relatorio }) {
   const gravar = async () => {
     setGravando(true);
     try {
-      const r = await chamar(c.importarRelatorio, {
+      await importar.mutateAsync({
         entrada: { relatorio, conteudo, nome, aceitarDivergencia },
+        aoGravar: (r) => {
+          toast.success(`${r.gravados} linha(s) gravada(s) na staging`, {
+            description:
+              r.erros > 0 ? `${r.erros} linha(s) com erro de leitura registradas.` : undefined,
+          });
+          setAnalise(null);
+          setConteudo("");
+          setNome(null);
+        },
       });
-      toast.success(`${r.gravados} linha(s) gravada(s) na staging`, {
-        description:
-          r.erros > 0 ? `${r.erros} linha(s) com erro de leitura registradas.` : undefined,
-      });
-      setAnalise(null);
-      setConteudo("");
-      setNome(null);
-      await queryClient.invalidateQueries({ queryKey: CHAVE_DA_INGESTAO });
     } catch (e) {
       toast.error("Não foi possível gravar", { description: mensagemAmigavel(e) });
     } finally {
