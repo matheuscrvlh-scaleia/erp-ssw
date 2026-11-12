@@ -2,8 +2,9 @@
 
 Leia `docs/arquitetura.md` antes de qualquer coisa. Resumo do que não se negocia:
 
-- Regra de negócio no backend (`apps/api/src/dominio` + casos de uso da API). O banco só guarda
-  dados + RLS: **nunca** criar função, gatilho, view materializada, cron ou extensão no banco.
+- Regra de negócio no backend (`apps/api/src/dominio` + `models/` da API). A API é MVC
+  (`controllers/`, `models/`, `views/`; ADR 0014, passo a passo em `docs/molde.md` §5). O banco
+  só guarda dados + RLS: **nunca** criar função, gatilho, view materializada, cron ou extensão.
 - A ingestão do SSW (FTP, BI2, webhook, XML, projeções do Romaneio) é o **worker-ssw**, outro
   repositório (pasta `worker-ssw` ao lado desta), ADR 0012. Aqui ficam só as telas (leem o banco)
   e o cliente do HTTP interno dele (`apps/api/src/infra/worker-ssw.ts`, contrato em

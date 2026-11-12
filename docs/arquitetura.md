@@ -50,9 +50,13 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 ```
 apps/
   api/                    projeto próprio: package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
-    src/
-      modulos/ jobs/ ...  HTTP (Fastify) + jobs do ERP no BullMQ (limpar sessões, prazos
-                          configurados, classificação de códigos, recifrar segredos)
+    src/                  MVC (ADR 0014)
+      controllers/        C: HTTP (Fastify), um por recurso
+      models/             M: services (operações, transação, auditoria) + repositories (Drizzle)
+      views/              V: apresentação (model → resposta do contrato) e e-mails
+      http/               monta o app; middleware (sessão, guardas, contexto, segurança)
+      jobs/               entrada pela fila (BullMQ): limpar sessões, prazos configurados,
+                          classificação de códigos, recifrar segredos
       shared/             contratos zod (entrada/saída de cada endpoint), tipos, permissões, formatação
       dominio/            regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
                           atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
@@ -69,14 +73,19 @@ docs/
   adr/                    decisões
 ```
 
-### Camadas dentro de `apps/api/src/modulos/<dominio>/`
+### MVC em `apps/api/src` (ADR 0014)
 
 ```
-rotas.ts          HTTP: valida (zod do shared), chama caso de uso, serializa. Sem SQL, sem regra.
-casos-de-uso.ts   orquestra: permissão de negócio, transação, chama domínio e repositório.
-repositorio.ts    acesso a dados (Drizzle). Consultas set-based; nenhuma regra de negócio escondida.
-*.test.ts         testes dos casos de uso com repositório falso.
+controllers/<recurso>.controller.ts       C  rota + contrato zod (validação), guardas, chama o model, entrega à view.
+                                             Sem SQL, sem regra, sem montar JSON.
+models/<recurso>/<recurso>.service.ts     M  operações: permissão de negócio, transação, auditoria, regras do
+                                             dominio. Devolve dado do model, não a resposta do endpoint.
+models/<recurso>/<recurso>.repository.ts  M  acesso a dados (Drizzle). Consultas set-based; nenhuma regra escondida.
+views/<recurso>.view.ts                   V  apresentar<Coisa>(dado) → saída do contrato. Pura; sem consulta, sem regra.
+*.test.ts                                    service com repositório falso; controller por app.inject (contrato).
 ```
+
+O passo a passo com exemplo (Calendário) está em `docs/molde.md` §5.
 
 Regras puras (cálculos) ficam em `apps/api/src/dominio` e os contratos em `apps/api/src/shared`. O web
 tem cópias dos dois em `apps/web/src/{dominio,shared}`, e o worker-ssw leva a sua cópia do núcleo do
