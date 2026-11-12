@@ -1,10 +1,5 @@
-import {
-  contratosColetas as c,
-  type ResultadoDaImportacao050,
-  TAMANHO_MAXIMO_DO_050,
-} from "@erp/shared/contratos/coletas";
 import { formatarData, formatarDataHora, formatarInteiro } from "@erp/shared/formatacao";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,19 +8,12 @@ import { type ColunaTabela } from "@/componentes/comum/tabela-dados";
 import { TabelaDados } from "@/componentes/comum/TabelaDados";
 import { Button } from "@/componentes/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/componentes/ui/dialog";
-import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
 
-import { CHAVE_DAS_COLETAS } from "./api";
+import { type ArquivoImportado050, mutacaoImportar050 } from "../api";
+import { conferenciaDoResumo } from "../textos";
 
-interface ArquivoImportado {
-  /** Arquivo + ordem do envio (o mesmo arquivo pode ser importado de novo). */
-  chave: string;
-  arquivo: string;
-  resultado: ResultadoDaImportacao050;
-}
-
-function colunasDoResultado(fuso: string): ColunaTabela<ArquivoImportado>[] {
+function colunasDoResultado(fuso: string): ColunaTabela<ArquivoImportado050>[] {
   return [
     {
       chave: "arquivo",
@@ -83,31 +71,11 @@ function colunasDoResultado(fuso: string): ColunaTabela<ArquivoImportado>[] {
   ];
 }
 
-/** Confere o que foi lido com o quadro RESUMO do próprio 050. */
-export function conferenciaDoResumo(r: ResultadoDaImportacao050): {
-  ok: boolean;
-  texto: string;
-} {
-  if (r.resumoSsw === null) return { ok: true, texto: "sem quadro de resumo" };
-  if (r.resumoSsw.quantidade === r.lidas) {
-    return { ok: true, texto: `ok — ${formatarInteiro(r.resumoSsw.quantidade)} coletas no resumo` };
-  }
-  return {
-    ok: false,
-    texto: `resumo do SSW diz ${formatarInteiro(r.resumoSsw.quantidade)}, lidas ${formatarInteiro(r.lidas)}`,
-  };
-}
-
-/** O 050 sai do SSW em ISO-8859-1 (impresso ou CSV); o servidor recebe o texto já decodificado. */
-export async function lerArquivo050(arquivo: Pick<Blob, "arrayBuffer">): Promise<string> {
-  return new TextDecoder("iso-8859-1").decode(await arquivo.arrayBuffer());
-}
-
 /**
  * Importação manual do relatório 050 (impresso ou CSV), um ou vários arquivos. Coleta já gravada
  * por um relatório mais novo não é sobrescrita (o servidor conta como "ignorada").
  */
-export function Importador050({
+export function ModalDeImportacao050({
   aberto,
   aoMudarAberto,
   fuso,
@@ -117,9 +85,10 @@ export function Importador050({
   fuso: string;
 }) {
   const queryClient = useQueryClient();
+  const importar050 = useMutation(mutacaoImportar050(queryClient));
   const [arquivos, setArquivos] = useState<File[]>([]);
   const [enviando, setEnviando] = useState(false);
-  const [resultados, setResultados] = useState<ArquivoImportado[]>([]);
+  const [resultados, setResultados] = useState<ArquivoImportado050[]>([]);
 
   const importar = async () => {
     if (arquivos.length === 0) {
@@ -127,35 +96,25 @@ export function Importador050({
       return;
     }
     setEnviando(true);
-    const novos: ArquivoImportado[] = [];
-    for (const arquivo of arquivos) {
-      try {
-        const conteudo = await lerArquivo050(arquivo);
-        if (conteudo.length > TAMANHO_MAXIMO_DO_050) {
-          toast.error(`${arquivo.name}: arquivo grande demais. Exporte um período menor no SSW.`);
-          continue;
-        }
-        const resultado = await chamar(c.importar050, {
-          entrada: { conteudo, arquivoOrigem: arquivo.name },
-        });
-        novos.push({
-          chave: `${arquivo.name}-${String(Date.now())}-${String(novos.length)}`,
-          arquivo: arquivo.name,
-          resultado,
-        });
-      } catch (e) {
+    await importar050.mutateAsync({
+      arquivos,
+      aoRecusarPorTamanho: (arquivo) => {
+        toast.error(`${arquivo.name}: arquivo grande demais. Exporte um período menor no SSW.`);
+      },
+      aoFalhar: (arquivo, e) => {
         toast.error(`${arquivo.name}: ${mensagemAmigavel(e)}`);
-      }
-    }
-    setResultados((antes) => [...novos, ...antes]);
-    setEnviando(false);
-    if (novos.length > 0) {
-      const gravadas = novos.reduce((s, n) => s + n.resultado.gravadas, 0);
-      toast.success(
-        `${formatarInteiro(gravadas)} coleta(s) gravada(s) de ${String(novos.length)} arquivo(s)`,
-      );
-      await queryClient.invalidateQueries({ queryKey: CHAVE_DAS_COLETAS });
-    }
+      },
+      aoConcluir: (novos) => {
+        setResultados((antes) => [...novos, ...antes]);
+        setEnviando(false);
+        if (novos.length > 0) {
+          const gravadas = novos.reduce((s, n) => s + n.resultado.gravadas, 0);
+          toast.success(
+            `${formatarInteiro(gravadas)} coleta(s) gravada(s) de ${String(novos.length)} arquivo(s)`,
+          );
+        }
+      },
+    });
   };
 
   return (

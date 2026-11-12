@@ -25,7 +25,6 @@ const CHAMAM_FORA_DO_API = [
   "src/modulos/bonificacao-entrega/**", // atalho: sai na migração do módulo bonificacao-entrega
   "src/modulos/calendario/**", // atalho: sai na migração do módulo calendario
   "src/modulos/codigos/**", // atalho: sai na migração do módulo codigos
-  "src/modulos/coletas/**", // atalho: sai na migração do módulo coletas
   "src/modulos/filtros/**", // atalho: sai na migração do módulo filtros
   "src/modulos/ingestao/**", // atalho: sai na migração do módulo ingestao
   "src/modulos/ingestao-ssw/**", // atalho: sai na migração do módulo ingestao-ssw
