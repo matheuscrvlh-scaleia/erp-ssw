@@ -82,11 +82,6 @@ function PaginaLogin() {
           }}
         />
       )}
-      {reason === "signed_out" && (
-        <div className="mb-4 rounded-lg border border-border bg-muted p-3 text-[13px] text-muted-foreground">
-          Você saiu da conta. Entre novamente para continuar.
-        </div>
-      )}
       {erro && (
         <div className="mb-4 rounded-lg border border-status-bad/40 bg-status-bad-bg p-3 text-[13px] text-status-bad-fg">
           {ERROS_LOGIN_GOOGLE[erro]}

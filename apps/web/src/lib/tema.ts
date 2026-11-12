@@ -26,6 +26,14 @@ export function aplicarTemaSalvo(): void {
   aplicar(temaDaSessao());
 }
 
+/** Telas de entrada: claro enquanto montadas; ao sair, volta o tema da sessão. */
+export function forcarTemaClaro(): () => void {
+  aplicar("claro");
+  return () => {
+    aplicar(temaDaSessao());
+  };
+}
+
 export function definirTema(tema: Tema): void {
   try {
     window.sessionStorage.setItem(CHAVE, tema);

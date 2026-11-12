@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useLayoutEffect } from "react";
 
 import { aplicarPaleta, ultimaCorDaMarca } from "@/acesso/marca";
+import { forcarTemaClaro } from "@/lib/tema";
 
 import { IlustracaoLogistica } from "./IlustracaoLogistica";
 
@@ -24,6 +25,8 @@ export function CartaoDeEntrada({
   children: ReactNode;
 }) {
   useEffect(() => aplicarPaleta(ultimaCorDaMarca()), []);
+  // As telas de entrada são sempre claras, mesmo com o painel no escuro.
+  useLayoutEffect(forcarTemaClaro, []);
 
   return (
     <div className="grid min-h-screen w-full bg-card lg:grid-cols-[1.35fr_1fr]">
@@ -33,14 +36,9 @@ export function CartaoDeEntrada({
       >
         <IlustracaoLogistica className="h-auto w-full max-w-[760px]" />
       </div>
-      <div className="flex justify-center px-6 py-10 sm:px-12 lg:border-l lg:border-border">
+      <div className="flex justify-center px-6 py-10 sm:px-12 lg:border-l lg:border-border [&_button]:rounded-none [&_input]:rounded-none">
         <div className="flex w-full max-w-[440px] flex-col">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-[12px] font-bold text-primary-foreground">
-              BI
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">Painel BI</span>
-          </div>
+          <span className="text-[17px] font-semibold tracking-tight">Copiloto SSW</span>
           <div className="flex flex-1 flex-col justify-center py-10">
             {aviso}
             <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.02em] text-foreground">
@@ -65,6 +63,6 @@ export function ErroDoCampo({ mensagem }: { mensagem: string | undefined }) {
   );
 }
 
-/** Campo do login: fundo cinza sem borda, como no mockup. */
+/** Campo do login: fundo cinza sem borda, quadrado como no mockup. */
 export const CLASSE_CAMPO_DE_ENTRADA =
-  "h-12 rounded-md border-transparent bg-campo px-4 text-[14px] shadow-none focus-visible:border-primary focus-visible:bg-card";
+  "h-12 border-transparent bg-campo px-4 text-[14px] shadow-none focus-visible:border-primary focus-visible:bg-card";
