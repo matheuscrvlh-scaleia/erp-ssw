@@ -57,8 +57,11 @@ export const ROTULO_DO_ATOR: Record<LinhaAuditoria["atorTipo"], string> = {
 export const ROTULO_DA_ORIGEM: Record<OrigemIntegracao, string> = {
   sftp_xml: "SFTP · XML de CT-e",
   relatorio_ssw: "SFTP · Relatórios SSW",
+  ciclo_ssw: "Ciclos dos relatórios",
   aplicacao_ssw: "Aplicação dos relatórios",
   bi2: "BI2 do SSW",
+  webhook_ssw: "Webhook do SSW",
+  xml_upload: "Upload de XML de CT-e",
 };
 
 function valorCurto(valor: unknown): string {

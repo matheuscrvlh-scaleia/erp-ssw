@@ -168,6 +168,40 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         ["segredoDefinidoEm", "ultimoTesteEm", "atualizadoEm"],
       ),
 
+    ultimosDados: async (empresaId) => {
+      /** O registro mais recente de uma tabela da empresa: `em` e `nome`. */
+      const ultimo = (tabela: Sql, em: Sql, nome: Sql, filtro: Sql) => sql`
+        (select ${em} as em, ${nome} as nome from ${tabela}
+         where empresa_id = ${empresaId} ${filtro} order by ${em} desc limit 1)`;
+      const [linha] = comInstantes<{
+        ftpEm: Date | null;
+        ftpNome: string | null;
+        bi2Em: Date | null;
+        bi2Nome: string | null;
+        webhookEm: Date | null;
+        xmlEm: Date | null;
+        xmlNome: string | null;
+      }>(
+        await tx.consultar(sql`
+          select f.em as "ftpEm", f.nome as "ftpNome", b.em as "bi2Em", b.nome as "bi2Nome",
+                 w.em as "webhookEm", x.em as "xmlEm", x.nome as "xmlNome"
+          from (select 1) as um
+          left join lateral ${ultimo(sql`erp.ingestao_arquivos`, sql`visto_em`, sql`nome_arquivo`, sql.vazio())} f on true
+          left join lateral ${ultimo(sql`erp.bi2_sincronizacoes`, sql`finalizado_em`, sql`codigo_relatorio`, sql`and finalizado_em is not null and erro is null`)} b on true
+          left join lateral ${ultimo(sql`erp.ssw_webhook_eventos`, sql`recebido_em`, sql`null::text`, sql`and autenticado and status_http = 200`)} w on true
+          left join lateral ${ultimo(sql`erp.xml_cte_arquivos`, sql`criado_em`, sql`nome_arquivo`, sql.vazio())} x on true`),
+        ["ftpEm", "bi2Em", "webhookEm", "xmlEm"],
+      );
+      const de = (em: Date | null | undefined, nome: string | null | undefined) =>
+        em ? { em, nome: nome ?? null } : null;
+      return {
+        sftp: de(linha?.ftpEm, linha?.ftpNome),
+        ssw_bi2: de(linha?.bi2Em, linha?.bi2Nome),
+        ssw_webhook: de(linha?.webhookEm, null),
+        xml_cte: de(linha?.xmlEm, linha?.xmlNome),
+      };
+    },
+
     gravarIntegracao: async (empresaId, tipo, dados, atualizadoPor) => {
       await tx.executar(sql`
         insert into erp.empresa_integracoes (empresa_id, tipo, ativo, parametros, atualizado_por,

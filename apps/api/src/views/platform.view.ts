@@ -79,6 +79,11 @@ export function apresentarIntegracoes(
       segredoDefinidoEm: iso(i.segredoDefinidoEm),
       ultimoTesteEm: iso(i.ultimoTesteEm),
       atualizadoEm: iso(i.atualizadoEm),
+      ultimaConexao: i.ultimaConexao && {
+        ...i.ultimaConexao,
+        em: i.ultimaConexao.em.toISOString(),
+      },
+      ultimoDado: i.ultimoDado && { ...i.ultimoDado, em: i.ultimoDado.em.toISOString() },
     })),
   };
 }

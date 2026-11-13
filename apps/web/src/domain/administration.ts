@@ -5,10 +5,15 @@ import {
   PAPEL_GESTOR,
   PAPEL_SUPER_ADMIN,
 } from "@erp/shared/access/roles";
-import { CHAVE_COM_CARA_DE_SEGREDO, LOGO_MAXIMO_BYTES } from "@erp/shared/platform";
+import {
+  CHAVE_COM_CARA_DE_SEGREDO,
+  LOGO_MAXIMO_BYTES,
+  type TipoIntegracao,
+} from "@erp/shared/platform";
 
 import { type ExcecaoDePermissao } from "./access";
 import { ErroDeNegocio } from "./errors";
+import { baseDaSswApi } from "./ingestion/ssw-api";
 
 /*
  * Regras do Admin da empresa e da Plataforma: quem pode mexer no login de quem, papel protegido,
@@ -179,12 +184,24 @@ export function escolherEmpresaModelo<E extends { id: string; criadoEm: Date }>(
   );
 }
 
-/** Senha e token não ficam nos parâmetros (que voltam para a tela): vão cifrados à parte. */
-export function validarParametrosDeIntegracao(parametros: Record<string, unknown>): void {
+/**
+ * Senha e token não ficam nos parâmetros (que voltam para a tela): vão cifrados à parte. O
+ * endereço da SSW API, quando vem, tem de ser um endereço http(s) válido.
+ */
+export function validarParametrosDeIntegracao(
+  tipo: TipoIntegracao,
+  parametros: Record<string, unknown>,
+): void {
   const suspeitas = Object.keys(parametros).filter((k) => CHAVE_COM_CARA_DE_SEGREDO.test(k));
   if (suspeitas.length > 0) {
     throw invalido(
       `Senha e token não ficam nos parâmetros (${suspeitas.join(", ")}). Use o campo de senha/token da integração (cofre).`,
+    );
+  }
+  const url = parametros["url"];
+  if (tipo === "ssw_api" && typeof url === "string" && baseDaSswApi(url) === null) {
+    throw invalido(
+      "Endereço da SSW API inválido. Use só o servidor (ex.: tms.ssw.inf.br) ou o endereço completo (https://…/api).",
     );
   }
 }

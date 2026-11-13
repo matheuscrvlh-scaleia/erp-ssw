@@ -1,11 +1,9 @@
-import { type SincronizacaoBi2 } from "@erp/shared/contracts/ssw-ingestion";
 import { formatarData, formatarDataHora, formatarInteiro } from "@erp/shared/formatting";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Database, Play } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { type ColunaTabela, TabelaDados } from "@/components/common/DataTable";
 import { MensagemErro } from "@/components/common/ErrorMessage";
 import { Painel } from "@/components/common/Panel";
 import { SeloDaSituacao } from "@/components/common/SituationBadge";
@@ -16,22 +14,7 @@ import { mensagemAmigavel } from "@/lib/error-message";
 
 import { consultaBi2, mutacaoRodarBi2 } from "../api";
 
-const COLUNAS_DO_BI2: ColunaTabela<SincronizacaoBi2>[] = [
-  { chave: "iniciadoEm", titulo: "Início", formato: "datahora", classe: "whitespace-nowrap" },
-  { chave: "dataAlvo", titulo: "Data", formato: "data" },
-  { chave: "modo", titulo: "Modo" },
-  {
-    chave: "status",
-    titulo: "Status",
-    celula: (s) => <SeloDaSituacao status={s.status} />,
-    valor: (s) => s.status,
-  },
-  { chave: "totalLinhas", titulo: "Linhas", formato: "inteiro" },
-  { chave: "atualizados", titulo: "Atualizados", formato: "inteiro" },
-  { chave: "erro", titulo: "Erro", classe: "max-w-[320px] truncate" },
-];
-
-/** BI2 0017: última execução, rodar uma data específica e as últimas execuções. */
+/** BI2 0017: última execução e rodar uma data específica. O histórico fica em Logs. */
 export function CartaoBi2() {
   const queryClient = useQueryClient();
   const consulta = useQuery(consultaBi2);
@@ -111,16 +94,6 @@ export function CartaoBi2() {
           </Button>
         </form>
       </div>
-      <TabelaDados
-        titulo="Últimas execuções"
-        colunas={COLUNAS_DO_BI2}
-        linhas={consulta.data?.recentes ?? []}
-        chaveDaLinha={(s) => `${s.iniciadoEm}-${s.dataAlvo}-${s.modo}`}
-        carregando={consulta.isLoading}
-        mensagemVazia="Nenhuma execução registrada ainda."
-        porPagina={0}
-        embutida
-      />
     </Painel>
   );
 }

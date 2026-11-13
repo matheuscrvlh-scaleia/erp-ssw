@@ -6,6 +6,7 @@ import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import { type Correio } from "../infra/mail";
 import { type FonteDaConfiguracao } from "../infra/platform-config";
 import type { Armazenamento } from "../infra/storage";
+import { type ClienteWorkerSsw } from "../infra/worker-ssw";
 import {
   adicionarAdmin,
   alterarCargoDaPlataforma,
@@ -58,6 +59,8 @@ interface OpcoesRotasPlataforma {
   /** Configuração da Plataforma (domínio, e-mail, worker-ssw): a tela salva e limpa o cache. */
   configuracao: FonteDaConfiguracao;
   correio: Correio;
+  /** Nulo = worker-ssw não configurado (as integrações saem sem as conexões dos jobs). */
+  workerSsw: ClienteWorkerSsw | null;
 }
 
 /** O logo vem em base64 no corpo: limite próprio, um pouco acima de 512 KB codificados. */
@@ -245,7 +248,17 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     },
     async (request) =>
       apresentarIntegracoes(
-        await listarIntegracoes(naEmpresa(request)(request.params.id), request.params.id),
+        await listarIntegracoes(
+          naEmpresa(request)(request.params.id),
+          {
+            workerSsw: opcoes.workerSsw,
+            agora: opcoes.agora,
+            aoFalharWorker: (erro) => {
+              request.log.warn({ err: erro }, "worker-ssw fora: integrações sem as conexões");
+            },
+          },
+          request.params.id,
+        ),
       ),
   );
 

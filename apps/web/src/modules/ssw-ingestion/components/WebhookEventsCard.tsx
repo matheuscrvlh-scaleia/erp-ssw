@@ -12,7 +12,10 @@ import { consultaEventosWebhook, mutacaoReprocessarEvento } from "../api";
 import { podeReprocessar, situacaoDoEvento } from "../rules";
 import { SeloDoEvento } from "./EventBadge";
 
-/** Últimos eventos do webhook (atualiza a cada 15s), com o reprocesso de cada um. */
+/**
+ * Eventos recentes do webhook que pedem reprocesso (atualiza a cada 15s). O histórico completo
+ * fica em Logs.
+ */
 export function CartaoEventosWebhook() {
   const queryClient = useQueryClient();
   const consulta = useQuery(consultaEventosWebhook);
@@ -23,7 +26,7 @@ export function CartaoEventosWebhook() {
     onError: (e) =>
       toast.error("Não foi possível reprocessar", { description: mensagemAmigavel(e) }),
   });
-  const eventos = consulta.data?.eventos ?? [];
+  const eventos = (consulta.data?.eventos ?? []).filter(podeReprocessar);
 
   const colunas: ColunaTabela<EventoWebhook>[] = [
     { chave: "recebidoEm", titulo: "Quando", formato: "datahora", classe: "whitespace-nowrap" },
@@ -64,26 +67,25 @@ export function CartaoEventosWebhook() {
       ordenavel: false,
       semExportar: true,
       alinhamento: "direita",
-      celula: (e) =>
-        podeReprocessar(e) ? (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={reprocessar.isPending && reprocessar.variables === e.id}
-            onClick={() => {
-              reprocessar.mutate(e.id);
-            }}
-          >
-            <RotateCw aria-hidden />
-            Reprocessar
-          </Button>
-        ) : null,
+      celula: (e) => (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={reprocessar.isPending && reprocessar.variables === e.id}
+          onClick={() => {
+            reprocessar.mutate(e.id);
+          }}
+        >
+          <RotateCw aria-hidden />
+          Reprocessar
+        </Button>
+      ),
     },
   ];
 
   return (
     <TabelaDados
-      titulo="Últimos eventos do webhook"
+      titulo="Eventos do webhook a reprocessar"
       acoes={
         <span className="text-[13px] text-muted-foreground tabular-nums">
           {eventos.length} evento(s) · atualiza a cada 15s
@@ -95,7 +97,7 @@ export function CartaoEventosWebhook() {
       carregando={consulta.isLoading}
       erro={consulta.error}
       aoTentarDeNovo={() => void consulta.refetch()}
-      mensagemVazia="Nenhum evento recebido ainda."
+      mensagemVazia="Nenhum evento a reprocessar. O histórico do webhook fica em Logs."
       porPagina={0}
     />
   );

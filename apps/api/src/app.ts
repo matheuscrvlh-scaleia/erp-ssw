@@ -249,6 +249,7 @@ export async function construirApp(deps: Dependencias): Promise<FastifyInstance>
     agora: deps.agora,
     configuracao,
     correio,
+    workerSsw,
   });
   await app.register(controladorPainelPlataforma, {
     executar: deps.executar,

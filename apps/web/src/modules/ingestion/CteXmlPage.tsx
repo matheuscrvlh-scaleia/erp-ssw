@@ -10,16 +10,14 @@ import { Pagina } from "@/components/layout/Page";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { chaves, consultaArquivosXml, consultaFtp } from "./api";
+import { chaves, consultaFtp } from "./api";
 import { CartaoFtp } from "./components/FtpCard";
-import { HistoricoXml } from "./components/XmlHistory";
 import { UploadXml } from "./components/XmlUpload";
 
 export function PaginaXmlCte() {
   const queryClient = useQueryClient();
   const atualizando = useIsFetching({ queryKey: chaves.tudo }) > 0;
   const ftp = useQuery(consultaFtp);
-  const xml = useQuery(consultaArquivosXml);
   return (
     <Pagina
       titulo="Importação de XMLs CT-e"
@@ -45,12 +43,6 @@ export function PaginaXmlCte() {
       >
         <UploadXml />
       </Painel>
-      <HistoricoXml
-        dados={xml.data}
-        carregando={xml.isLoading}
-        erro={xml.error}
-        aoTentarDeNovo={() => void xml.refetch()}
-      />
     </Pagina>
   );
 }
