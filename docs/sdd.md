@@ -164,7 +164,7 @@ executa.
 | Senhas antigas | Hash bcrypt do sistema atual validado no 1º login e regravado em argon2id na mesma transação |
 | Token de acesso | JWT EdDSA de 15 min, só em memória no web, com `kid` para rotação (`JWT_CHAVES_ANTERIORES`) |
 | Refresh | Opaco e rotativo, em cookie `httpOnly`, `Secure`, `SameSite=Strict`, preso a `/api/v1/auth`; só o hash vai ao banco. Reuso fora da janela de concorrência revoga a família inteira |
-| Limites da sessão | 8 h no máximo desde o login; 30 min sem uso encerra (api e web) |
+| Limites da sessão | 8 h no máximo desde o login; 1 h sem uso encerra (api e web) |
 | Acesso em cache | O acesso calculado (permissões, módulos, papel) fica 30 s em cache; qualquer escrita da api limpa na hora |
 | Empresa ativa | Trocar a empresa reemite o token (ADR 0003) |
 | Convite e redefinição | Token de uso único por e-mail; dois cliques no mesmo link, só um vale |

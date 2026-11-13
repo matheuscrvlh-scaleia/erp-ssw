@@ -80,7 +80,7 @@ cargos da Plataforma, integrações (domínio, e-mail, worker-ssw), logs da Plat
   o hash no primeiro login. Recuperação por "Esqueci a senha" (e-mail com link de uso único).
   Entrada de usuário novo só por convite do admin. **Sem login com Google** (decisão de
   12/11/2026).
-- **Sessão:** dura no máximo 8 horas e cai depois de 30 minutos sem uso. Sair encerra a sessão em
+- **Sessão:** dura no máximo 8 horas e cai depois de 1 hora sem uso. Sair encerra a sessão em
   todos os tokens dela. Revogar o acesso de alguém vale em até 30 segundos.
 - **Exportações** (Excel/PDF) iguais às de hoje, com os mesmos números da tela.
 - **Auditoria:** toda escrita registra quem, quando e o quê; consulta em Admin › Logs e

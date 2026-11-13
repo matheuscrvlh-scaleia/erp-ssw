@@ -25,11 +25,18 @@ export function normalizarEmail(email: string): string {
 
 /** Um login vale no máximo 8 h, contadas da entrada; renovar não estende. */
 export const DURACAO_DA_SESSAO_MS = 8 * 60 * 60_000;
-/** Sem uso por 30 min, a sessão cai (o painel renova a cada 10 min enquanto há uso). */
-export const INATIVIDADE_MAXIMA_MS = 30 * 60_000;
+/** Sem uso por 1 h, a sessão cai (o painel renova a cada 10 min enquanto há uso). */
+export const INATIVIDADE_MAXIMA_MS = 60 * 60_000;
 export const RENOVAR_COM_USO_A_CADA_MS = 10 * 60_000;
 
-/** A sessão ficou ociosa se a última renovação passou do limite de inatividade. */
+/**
+ * A sessão ficou ociosa se a última renovação passou do limite de inatividade. A última renovação
+ * pode ser até 10 min mais velha que o último uso (o painel só renova quando o token passou disso),
+ * então a API tolera esse intervalo: sem ele, a sessão caía na API antes de cair no painel e
+ * recarregar a página (trocar de empresa, F5) mandava ao login.
+ */
 export function sessaoOciosa(ultimaRenovacao: Date, agora: Date): boolean {
-  return agora.getTime() - ultimaRenovacao.getTime() > INATIVIDADE_MAXIMA_MS;
+  return (
+    agora.getTime() - ultimaRenovacao.getTime() > INATIVIDADE_MAXIMA_MS + RENOVAR_COM_USO_A_CADA_MS
+  );
 }

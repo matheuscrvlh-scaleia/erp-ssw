@@ -315,6 +315,9 @@ Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP
 - **Conta desativada não entra.** Com a senha certa, o login responde "Sua conta foi desativada por
   um administrador." (antes entrava e via a tela "Sem acesso"); a sessão aberta deixa de renovar e
   a conta desativada não usa as telas da Plataforma.
+- **Sessão cai com 1 h sem uso** (antes, 30 min). Recarregar a página ou trocar de empresa depois
+  de um tempo parado não pede mais login enquanto o painel ainda está aberto: a API tolera os até
+  10 min entre o último uso e a última renovação do token.
 - **Admin comum não desativa quem está acima.** Desativar ou reativar um Super Admin é só do Super
   Admin ou da Plataforma; quem é da equipe da Plataforma, só a Plataforma (ADR 0007).
 - **Rotas públicas da ingestão com segredo por empresa** (ADR 0010). `x-ftp-ingest-secret` (e

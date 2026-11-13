@@ -20,11 +20,11 @@ describe("useEncerrarPorInatividade", () => {
     vi.useRealTimers();
   });
 
-  it("encerra uma vez após 30 min sem uso", () => {
+  it("encerra uma vez após 1 h sem uso", () => {
     const aoEncerrar = vi.fn();
     render(<Painel aoEncerrar={aoEncerrar} />);
     act(() => {
-      vi.advanceTimersByTime(29 * MINUTO);
+      vi.advanceTimersByTime(59 * MINUTO);
     });
     expect(aoEncerrar).not.toHaveBeenCalled();
     act(() => {
@@ -37,21 +37,21 @@ describe("useEncerrarPorInatividade", () => {
     const aoEncerrar = vi.fn();
     render(<Painel aoEncerrar={aoEncerrar} />);
     act(() => {
-      vi.advanceTimersByTime(20 * MINUTO);
+      vi.advanceTimersByTime(40 * MINUTO);
     });
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown"));
     });
     act(() => {
-      vi.advanceTimersByTime(20 * MINUTO);
+      vi.advanceTimersByTime(40 * MINUTO);
     });
     window.localStorage.setItem("painel:ultima-atividade", String(Date.now()));
     act(() => {
-      vi.advanceTimersByTime(20 * MINUTO);
+      vi.advanceTimersByTime(40 * MINUTO);
     });
     expect(aoEncerrar).not.toHaveBeenCalled();
     act(() => {
-      vi.advanceTimersByTime(11 * MINUTO);
+      vi.advanceTimersByTime(21 * MINUTO);
     });
     expect(aoEncerrar).toHaveBeenCalledTimes(1);
   });

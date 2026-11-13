@@ -253,7 +253,7 @@ type SituacaoDoRefresh = { tipo: "valida"; sessao: SessaoGravada } | { tipo: "in
 /**
  * Troca o refresh por um novo (rotação) e emite access token. Refresh já trocado reaparecendo
  * fora da janela de concorrência = reuso (token vazado): a família inteira é revogada. O novo
- * herda o vencimento do login (8 h no máximo) e a sessão parada há mais de 30 min não renova.
+ * herda o vencimento do login (8 h no máximo) e a sessão parada há mais de 1 h não renova.
  */
 export async function renovar(
   deps: DependenciasAuth,

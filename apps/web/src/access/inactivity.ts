@@ -26,8 +26,8 @@ function gravarAtividade(momento: number): void {
 }
 
 /**
- * Sessão cai após 30 min sem uso do painel. Com uso, renova o token a cada 10 min, porque a API
- * também derruba a sessão que passa 30 min sem renovar (cobre o navegador fechado).
+ * Sessão cai após 1 h sem uso do painel. Com uso, renova o token a cada 10 min, porque a API
+ * também derruba a sessão que passa 1 h (mais esses 10 min) sem renovar (cobre o navegador fechado).
  * `aoEncerrar` deve ser estável (useCallback).
  */
 export function useEncerrarPorInatividade(aoEncerrar: () => void): void {
