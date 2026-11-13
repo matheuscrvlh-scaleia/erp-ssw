@@ -947,7 +947,7 @@ async function aplicarCiclo(empresa, ciclo) {
     ciclos(empresa).where(status in ABERTOS, ultimo_arquivo_em <= filaIniciadaEm).update({ status:"aplicado", aplicado_em: now });
     return "aplicado";
   } catch (e) {
-    ciclo.update({ status:"erro", motivo: msg(e), totais: {...totais, _blocos, _fila_pronta:true, _processados} });
+    ciclo.update({ status:"erro", motivo: msg(e), totais: {...totais, _blocos, _processados} }); // _fila_pronta só se a preparação terminou (desvio de 13/11: o sistema atual forçava true e, com a preparação falhando, a retomada fechava o ciclo sem aplicar)
     return "erro";                                 // o bloco que falhou é desfeito; a fila marca o que já foi
   }
 }
@@ -1477,7 +1477,8 @@ Feitas uma vez, à mão, com scripts fora do repositório; os dados resultantes 
 12. Chave CT-e duplicada no lote ou já usada por outro CT-e → não grava.
 13. Fila incremental: antes das 03:00 SP com completa de ontem 03:05 → incremental; depois das 03:00 → completa;
     número já aplicado volta ao fim da fila; pendente não muda de posição.
-14. Ciclo: fila vazia → não chama a aplicação; erro no 036 → ciclo `erro` e `_fila_pronta` mantido.
+14. Ciclo: fila vazia → não chama a aplicação; erro no 036 → ciclo `erro` e `_fila_pronta` mantido;
+    erro na preparação da fila → ciclo `erro` sem `_fila_pronta`, e a retomada prepara de novo.
 15. BI2 0017: 404 com fechamento numa segunda (conteúdo domingo) → "vazio"; linha sem DATA AUTORIZACAO ignorada;
     CT-e em aberto com `campos_ssw` → nada muda; entregue com previsão BI2 nova ≥ emissão → previsão e prazo
     (se eram iguais) trocados, `prazo_fonte='bi2'`.
