@@ -22,7 +22,11 @@ import {
   type SincronizacaoBi2,
   type StatusDoJob,
 } from "@erp/shared/contracts/ssw-ingestion";
-import { type IntegracaoDaIngestao, JOBS_DE_INGESTAO } from "@erp/shared/ingestion";
+import {
+  type IntegracaoDaIngestao,
+  integracoesDoJob,
+  JOBS_DE_INGESTAO,
+} from "@erp/shared/ingestion";
 
 import { type ClienteWorkerSsw, exigirWorkerSsw } from "../../infra/worker-ssw";
 import { type Ator } from "../audit/audit.service";
@@ -577,7 +581,7 @@ export async function diagnosticoSsw(
   const agora = deps.agora().getTime();
   const dados = await db(async ({ ingestaoSsw }) => {
     const ligadas = new Map<string, boolean>();
-    for (const tipo of new Set(JOBS_DE_INGESTAO.map((j) => j.integracao))) {
+    for (const tipo of new Set(JOBS_DE_INGESTAO.flatMap(integracoesDoJob))) {
       ligadas.set(tipo, (await ingestaoSsw.integracao(empresaId, tipo))?.ativo ?? false);
     }
     const semVinculo = await ingestaoSsw.semVinculo(new Date(agora - 7 * DIA_MS), 10);
@@ -600,7 +604,7 @@ export async function diagnosticoSsw(
       descricao: j.descricao,
       integracao: j.integracao,
       cron: j.cron,
-      integracaoLigada: dados.ligadas.get(j.integracao) ?? false,
+      integracaoLigada: integracoesDoJob(j).some((tipo) => dados.ligadas.get(tipo) ?? false),
       agendado: s?.agendado ?? false,
       proximaExecucao: s?.proximaExecucao ?? null,
       aguardando: s?.naFila ?? 0,

@@ -4,7 +4,8 @@
  * Especificação: docs/regras/06-ingestao.md §4.
  */
 
-export type IntegracaoDaIngestao = "sftp" | "ssw_api" | "ssw_bi2" | "ssw_webhook" | "xml_cte";
+export type IntegracaoDaIngestao =
+  "sftp" | "ssw_api" | "ssw_bi2" | "ssw_webhook" | "ssw_web" | "xml_cte";
 
 interface JobDeIngestao {
   /** Nome do job no worker-ssw. */
@@ -12,6 +13,11 @@ interface JobDeIngestao {
   descricao: string;
   /** Integração que precisa estar ligada na empresa para o job rodar. */
   integracao: IntegracaoDaIngestao;
+  /**
+   * Outras integrações com que o job também roda (qualquer uma ligada basta): a aplicação dos
+   * relatórios vale para quem recebe pelo SFTP e para quem baixa do SSW web (ADR 0018).
+   */
+  alternativas?: readonly IntegracaoDaIngestao[];
   /** Cron em UTC (os horários de hoje); `null` = só sob demanda. */
   cron: string | null;
 }
@@ -49,21 +55,30 @@ export const JOBS_DE_INGESTAO = [
     cron: "10 6 * * *",
   },
   {
+    job: "baixar-relatorios-ssw",
+    descricao: "Relatórios do SSW web (036/038/050/306/455/930), direto na ingestão",
+    integracao: "ssw_web",
+    cron: "0,30 * * * *",
+  },
+  {
     job: "aplicar-ciclos",
     descricao: "Aplicação dos ciclos de relatórios em CT-e e ocorrências",
     integracao: "sftp",
+    alternativas: ["ssw_web"],
     cron: "* * * * *",
   },
   {
     job: "sla-arquivos",
     descricao: "Unidade pelo 455 e SLA pelos arquivos",
     integracao: "sftp",
+    alternativas: ["ssw_web"],
     cron: "8,38 * * * *",
   },
   {
     job: "limpar-ingestao-arquivos",
     descricao: "Limpeza das linhas superadas do 038 (03:40 de Brasília)",
     integracao: "sftp",
+    alternativas: ["ssw_web"],
     cron: "40 6 * * *",
   },
   {
@@ -73,3 +88,8 @@ export const JOBS_DE_INGESTAO = [
     cron: null,
   },
 ] as const satisfies readonly JobDeIngestao[];
+
+/** A integração do job e as alternativas: qualquer uma ligada faz o job rodar na empresa. */
+export function integracoesDoJob(job: JobDeIngestao): IntegracaoDaIngestao[] {
+  return [job.integracao, ...(job.alternativas ?? [])];
+}
