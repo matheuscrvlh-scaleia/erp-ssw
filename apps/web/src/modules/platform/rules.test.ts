@@ -1,9 +1,9 @@
+import { baseDaSswApi } from "@erp/domain/ingestion/ssw-api";
 import {
   type Conexao,
   conexaoMaisRecente,
   situacaoDaIntegracao,
 } from "@erp/domain/integration-activity";
-import { baseDaSswApi } from "@erp/domain/ingestion/ssw-api";
 import { describe, expect, it } from "vitest";
 
 import { parametrosEditados, problemaDoLogo, slugDoNome } from "./rules";
