@@ -13,7 +13,7 @@ import { CartaoEventosWebhook } from "./components/WebhookEventsCard";
 
 /**
  * Admin › Ingestão SSW (só a Plataforma, na empresa ativa): BI2 0017, credenciais da SSW API e
- * últimos eventos do webhook. Sem o cabeçalho explicativo nem os cards de backfill (Q41, Q45).
+ * eventos do webhook a reprocessar (o histórico fica em Logs). Sem o cabeçalho explicativo nem os cards de backfill (Q41, Q45).
  * origem: routes/_authenticated/admin.ingestao.tsx (sistema atual)
  */
 export function PaginaIngestao() {

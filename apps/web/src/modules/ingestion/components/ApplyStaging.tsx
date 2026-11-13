@@ -1,15 +1,13 @@
 /**
  * "Aplicar importações à produção": simulação (não grava) ou aplicação em blocos de 4000 CT-e,
- * com o resumo de cada lista (até 500 itens) e o histórico das aplicações.
+ * com o resumo de cada lista (até 500 itens). O histórico das aplicações fica em Logs.
  */
-import { type AplicacaoDaIngestao } from "@erp/shared/contracts/ingestion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { TabelaDados } from "@/components/common/DataTable";
-import { SeloDaSituacao } from "@/components/common/SituationBadge";
 import { Abas } from "@/components/common/Tabs";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,18 +20,7 @@ const LOTE = 4000;
 
 type Aba = "inserir" | "atualizar" | "ocorrencias" | "ignorados" | "romaneio_036";
 
-export function AplicarStaging({
-  aplicacoes,
-  carregando,
-  erro,
-  aoTentarDeNovo,
-}: {
-  /** Histórico das aplicações. */
-  aplicacoes: AplicacaoDaIngestao[];
-  carregando: boolean;
-  erro: Error | null;
-  aoTentarDeNovo: () => void;
-}) {
+export function AplicarStaging() {
   const queryClient = useQueryClient();
   const aplicar = useMutation(mutacaoAplicarStaging(queryClient));
   const [confirmado, setConfirmado] = useState(false);
@@ -196,41 +183,6 @@ export function AplicarStaging({
           )}
         </div>
       )}
-
-      <TabelaDados
-        titulo="Histórico das aplicações"
-        colunas={[
-          {
-            chave: "iniciadoEm",
-            titulo: "Início",
-            formato: "datahora",
-            classe: "whitespace-nowrap",
-          },
-          {
-            chave: "simulacao",
-            titulo: "Tipo",
-            valor: (a) => (a.simulacao ? "Simulação" : "Aplicação"),
-          },
-          {
-            chave: "status",
-            titulo: "Situação",
-            celula: (a) => <SeloDaSituacao status={a.status} />,
-            valor: (a) => a.status,
-          },
-          { chave: "totalInseridos", titulo: "Inseridos", formato: "inteiro" },
-          { chave: "totalAtualizados", titulo: "Atualizados", formato: "inteiro" },
-          { chave: "totalOcorrencias", titulo: "Ocorrências", formato: "inteiro" },
-          { chave: "totalIgnorados", titulo: "Ignorados", formato: "inteiro" },
-          { chave: "erro", titulo: "Erro", classe: "max-w-[280px] truncate" },
-        ]}
-        linhas={aplicacoes}
-        chaveDaLinha={(a) => a.id}
-        carregando={carregando}
-        erro={erro}
-        aoTentarDeNovo={aoTentarDeNovo}
-        mensagemVazia="Nenhuma aplicação registrada."
-        porPagina={10}
-      />
     </div>
   );
 }

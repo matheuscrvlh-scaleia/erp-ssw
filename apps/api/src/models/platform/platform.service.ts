@@ -19,6 +19,11 @@ import {
 } from "@erp/domain/administration";
 import { mudancaParaAuditoria, type Registro } from "@erp/domain/audit";
 import { ErroDeNegocio } from "@erp/domain/errors";
+import {
+  type Conexao,
+  conexaoMaisRecente,
+  situacaoDaIntegracao,
+} from "@erp/domain/integration-activity";
 import { copiaParaEmpresaNova } from "@erp/domain/settings";
 import { MODULOS } from "@erp/shared/access/modules";
 import { type Permissao } from "@erp/shared/access/permissions";
@@ -33,6 +38,7 @@ import {
   type ValorDeParametro,
   valorDeParametro,
 } from "@erp/shared/contracts/platform";
+import { type JobAcompanhado, type SituacaoDaEmpresa } from "@erp/shared/contracts/worker-ssw";
 import { hojeNoFuso } from "@erp/shared/dates";
 import {
   INFO_DA_INTEGRACAO,
@@ -47,6 +53,7 @@ import { type FastifyBaseLogger } from "fastify";
 
 import { type Correio } from "../../infra/mail";
 import type { Armazenamento } from "../../infra/storage";
+import { type ClienteWorkerSsw } from "../../infra/worker-ssw";
 import { type Ator, type RepositorioAuditoria } from "../audit/audit.service";
 import { conflito, naoEncontrado } from "../errors";
 import { type Executor } from "../repositories";
@@ -118,8 +125,26 @@ export type ModuloLiberado = Omit<ModuloDaEmpresa, "atualizadoEm"> & { atualizad
 /** Integração da empresa: o que está gravado, ou o padrão (desligada) se não há linha. */
 export type EstadoDaIntegracao = Omit<
   IntegracaoDaEmpresa,
-  "segredoDefinidoEm" | "ultimoTesteEm" | "atualizadoEm"
-> & { segredoDefinidoEm: Date | null; ultimoTesteEm: Date | null; atualizadoEm: Date | null };
+  "segredoDefinidoEm" | "ultimoTesteEm" | "atualizadoEm" | "ultimaConexao" | "ultimoDado"
+> & {
+  segredoDefinidoEm: Date | null;
+  ultimoTesteEm: Date | null;
+  atualizadoEm: Date | null;
+  ultimaConexao: Conexao | null;
+  ultimoDado: { em: Date; detalhe: string | null } | null;
+};
+
+/** Integrações que gravam dado no banco (as outras só conectam). */
+export type IntegracaoComDado = "sftp" | "ssw_bi2" | "ssw_webhook" | "xml_cte";
+
+/** Job do worker-ssw que conecta em cada integração (o do FTP também puxa os XML). */
+const JOB_DA_INTEGRACAO: Partial<Record<TipoIntegracao, JobAcompanhado>> = {
+  sftp: "sincronizar-ftp",
+  xml_cte: "sincronizar-ftp",
+  ssw_api: "verificar-token-ssw",
+  ssw_bi2: "bi2-0017",
+  ssw_webhook: "processar-webhook-ssw",
+};
 
 export type EstadoDaIntegracaoDaPlataforma = Omit<
   IntegracaoDaPlataforma,
@@ -204,6 +229,10 @@ export interface RepositorioPlataforma {
     atualizadoPor: string,
   ): Promise<void>;
   integracoes(empresaId: string): Promise<IntegracaoGravada[]>;
+  /** O último registro gravado por cada integração que grava dado (nulo = nenhum ainda). */
+  ultimosDados(
+    empresaId: string,
+  ): Promise<Record<IntegracaoComDado, { em: Date; nome: string | null } | null>>;
   gravarIntegracao(
     empresaId: string,
     tipo: TipoIntegracao,
@@ -557,33 +586,116 @@ function parametrosValidos(parametros: Record<string, unknown>): Record<string, 
   return validos;
 }
 
+const COM_DADO: readonly TipoIntegracao[] = ["sftp", "ssw_bi2", "ssw_webhook", "xml_cte"];
+const gravaDado = (tipo: TipoIntegracao): tipo is IntegracaoComDado => COM_DADO.includes(tipo);
+
+interface AtividadeDaIntegracao {
+  /** Última execução do job do worker-ssw desta integração. */
+  job: Conexao | null;
+  ultimoDado: { em: Date; detalhe: string | null } | null;
+}
+
 function paraIntegracao(
   tipo: TipoIntegracao,
   l: IntegracaoGravada | undefined,
+  atividade: AtividadeDaIntegracao,
+  agora: Date,
 ): EstadoDaIntegracao {
+  const teste =
+    l?.ultimoTesteEm && l.ultimoTesteOk !== null
+      ? { em: l.ultimoTesteEm, ok: l.ultimoTesteOk, mensagem: l.ultimoTesteMsg }
+      : null;
+  const ultimaConexao = conexaoMaisRecente(atividade.job, teste);
+  const ativo = l?.ativo ?? false;
   return {
     tipo,
     configurada: l !== undefined,
-    ativo: l?.ativo ?? false,
+    ativo,
     parametros: parametrosValidos(l?.parametros ?? {}),
     segredoDefinidoEm: l?.segredoDefinidoEm ?? null,
     ultimoTesteEm: l?.ultimoTesteEm ?? null,
     ultimoTesteOk: l?.ultimoTesteOk ?? null,
     ultimoTesteMsg: l?.ultimoTesteMsg ?? null,
     atualizadoEm: l?.atualizadoEm ?? null,
+    ultimaConexao,
+    ultimoDado: atividade.ultimoDado,
+    situacao: situacaoDaIntegracao({
+      ativo,
+      ultimaConexao,
+      ultimoDadoEm: atividade.ultimoDado?.em ?? null,
+      agora,
+    }),
   };
 }
 
-/** Uma linha por tipo, mesmo sem configuração. O segredo nunca sai: só quando foi definido. */
+interface DependenciasDasIntegracoes {
+  /** Nulo = worker-ssw não configurado: a lista sai sem as conexões dos jobs. */
+  workerSsw: ClienteWorkerSsw | null;
+  agora: () => Date;
+  /** O worker-ssw não respondeu: a lista sai sem as conexões dos jobs. */
+  aoFalharWorker: (erro: unknown) => void;
+}
+
+/** Situação dos jobs da empresa no worker-ssw; fora do ar não derruba a lista. */
+async function situacaoNoWorker(
+  deps: DependenciasDasIntegracoes,
+  empresaId: string,
+): Promise<SituacaoDaEmpresa | null> {
+  if (deps.workerSsw === null) return null;
+  try {
+    return await deps.workerSsw.situacao(empresaId);
+  } catch (erro) {
+    deps.aoFalharWorker(erro);
+    return null;
+  }
+}
+
+/** Conexão = execução terminada do job; o token da SSW API é o dado dela. */
+function atividadeDe(
+  tipo: TipoIntegracao,
+  worker: SituacaoDaEmpresa | null,
+  dados: Record<IntegracaoComDado, { em: Date; nome: string | null } | null>,
+): AtividadeDaIntegracao {
+  const execucao = worker?.jobs.find((j) => j.job === JOB_DA_INTEGRACAO[tipo])?.ultimaExecucao;
+  const job = execucao
+    ? {
+        em: new Date(execucao.terminadaEm),
+        ok: execucao.estado === "concluida",
+        mensagem: execucao.erro ?? null,
+      }
+    : null;
+  if (tipo === "ssw_api") {
+    const token = worker?.tokenSswGeradoEm;
+    return { job, ultimoDado: token ? { em: new Date(token), detalhe: null } : null };
+  }
+  if (!gravaDado(tipo)) return { job, ultimoDado: null };
+  const dado = dados[tipo];
+  return { job, ultimoDado: dado ? { em: dado.em, detalhe: dado.nome } : null };
+}
+
+/**
+ * Uma linha por tipo, mesmo sem configuração, com a última conexão, o último dado e a situação.
+ * O segredo nunca sai: só quando foi definido. Roda no contexto da empresa (RLS).
+ */
 export async function listarIntegracoes(
   db: Executor<"plataforma">,
+  deps: DependenciasDasIntegracoes,
   id: string,
 ): Promise<EstadoDaIntegracao[]> {
-  return db(async ({ plataforma }) => {
-    await empresaExistente(plataforma, id);
-    const gravadas = new Map((await plataforma.integracoes(id)).map((l) => [l.tipo, l]));
-    return TIPOS_INTEGRACAO.map((tipo) => paraIntegracao(tipo, gravadas.get(tipo)));
-  });
+  const [{ gravadas, dados }, worker] = await Promise.all([
+    db(async ({ plataforma }) => {
+      await empresaExistente(plataforma, id);
+      return {
+        gravadas: new Map((await plataforma.integracoes(id)).map((l) => [l.tipo, l])),
+        dados: await plataforma.ultimosDados(id),
+      };
+    }),
+    situacaoNoWorker(deps, id),
+  ]);
+  const agora = deps.agora();
+  return TIPOS_INTEGRACAO.map((tipo) =>
+    paraIntegracao(tipo, gravadas.get(tipo), atividadeDe(tipo, worker, dados), agora),
+  );
 }
 
 export async function salvarIntegracao(

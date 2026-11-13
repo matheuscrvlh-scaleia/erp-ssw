@@ -15,7 +15,15 @@ export const LIMITE_AUDITORIA = 1000;
 /** Linhas por origem na aba Integrações. */
 export const LIMITE_INTEGRACAO_POR_ORIGEM = 250;
 
-export const ORIGENS_INTEGRACAO = ["sftp_xml", "relatorio_ssw", "aplicacao_ssw", "bi2"] as const;
+export const ORIGENS_INTEGRACAO = [
+  "sftp_xml",
+  "relatorio_ssw",
+  "ciclo_ssw",
+  "aplicacao_ssw",
+  "bi2",
+  "webhook_ssw",
+  "xml_upload",
+] as const;
 export type OrigemIntegracao = (typeof ORIGENS_INTEGRACAO)[number];
 
 export const linhaAuditoria = z.object({

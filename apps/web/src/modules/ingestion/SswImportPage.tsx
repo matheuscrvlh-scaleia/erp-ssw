@@ -30,13 +30,7 @@ import {
 import { mensagemAmigavel } from "@/lib/error-message";
 import { cn } from "@/lib/utils";
 
-import {
-  chaves,
-  consultaAplicacoes,
-  consultaPipeline,
-  mutacaoDescartarCiclo,
-  mutacaoRetomarCiclo,
-} from "./api";
+import { chaves, consultaPipeline, mutacaoDescartarCiclo, mutacaoRetomarCiclo } from "./api";
 import { AplicarStaging } from "./components/ApplyStaging";
 import { ItemRecolhivel } from "./components/CollapsibleItem";
 import { ConfirmarAcao } from "./components/ConfirmAction";
@@ -101,7 +95,7 @@ function PipelineAutomatico() {
       }
     >
       <TabelaDados
-        titulo="Últimos ciclos"
+        titulo="Ciclos pendentes"
         colunas={[
           { chave: "cicloChave", titulo: "Ciclo", classe: "font-mono whitespace-nowrap" },
           {
@@ -115,46 +109,45 @@ function PipelineAutomatico() {
             titulo: "",
             semExportar: true,
             ordenavel: false,
-            celula: (x) =>
-              podeAgir(x.status) ? (
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={agindo !== null}
-                      aria-label={`Ações do ciclo ${x.cicloChave}`}
-                    >
-                      {agindo === x.cicloChave ? (
-                        <Loader2 className="motion-safe:animate-spin" aria-hidden />
-                      ) : (
-                        <MoreHorizontal aria-hidden />
-                      )}
-                      Ações
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="min-w-48">
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        retomar(x);
-                      }}
-                    >
-                      <Play aria-hidden />
-                      Aplicar mesmo assim
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-status-bad-fg focus:bg-status-bad-bg focus:text-status-bad-fg"
-                      onSelect={() => {
-                        setDescartando(x);
-                      }}
-                    >
-                      <Trash2 aria-hidden />
-                      Descartar ciclo
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null,
+            celula: (x) => (
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={agindo !== null}
+                    aria-label={`Ações do ciclo ${x.cicloChave}`}
+                  >
+                    {agindo === x.cicloChave ? (
+                      <Loader2 className="motion-safe:animate-spin" aria-hidden />
+                    ) : (
+                      <MoreHorizontal aria-hidden />
+                    )}
+                    Ações
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-48">
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      retomar(x);
+                    }}
+                  >
+                    <Play aria-hidden />
+                    Aplicar mesmo assim
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-status-bad-fg focus:bg-status-bad-bg focus:text-status-bad-fg"
+                    onSelect={() => {
+                      setDescartando(x);
+                    }}
+                  >
+                    <Trash2 aria-hidden />
+                    Descartar ciclo
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ),
           },
           { chave: "arquivosImportados", titulo: "Arquivos", formato: "inteiro" },
           { chave: "linhasImportadas", titulo: "Linhas", formato: "inteiro" },
@@ -174,53 +167,13 @@ function PipelineAutomatico() {
           },
           { chave: "faltantes", titulo: "Faltantes", valor: (x) => x.faltantes.join(", ") },
           { chave: "motivo", titulo: "Motivo", classe: "max-w-[260px] truncate" },
-          {
-            chave: "aplicadoEm",
-            titulo: "Aplicado em",
-            formato: "datahora",
-            classe: "whitespace-nowrap",
-          },
         ]}
-        linhas={dados?.ciclos ?? []}
+        linhas={(dados?.ciclos ?? []).filter((c) => podeAgir(c.status))}
         chaveDaLinha={(x) => x.cicloChave}
         carregando={consulta.isLoading}
         erro={consulta.error}
         aoTentarDeNovo={() => void consulta.refetch()}
-        mensagemVazia="Nenhum ciclo recebido ainda."
-        porPagina={0}
-      />
-      <TabelaDados
-        titulo="Últimos arquivos"
-        colunas={[
-          { chave: "nomeArquivo", titulo: "Arquivo", classe: "font-mono max-w-[320px] truncate" },
-          { chave: "cicloChave", titulo: "Ciclo", classe: "font-mono whitespace-nowrap" },
-          { chave: "relatorio", titulo: "Relatório" },
-          { chave: "unidade", titulo: "Unidade" },
-          {
-            chave: "status",
-            titulo: "Situação",
-            celula: (a) => <SeloDaSituacao status={a.status} />,
-            valor: (a) => a.status,
-          },
-          { chave: "linhas", titulo: "Linhas", formato: "inteiro" },
-          { chave: "mensagem", titulo: "Mensagem", classe: "max-w-[280px] truncate" },
-          {
-            chave: "vistoEm",
-            titulo: "Visto em",
-            formato: "datahora",
-            classe: "whitespace-nowrap",
-          },
-          {
-            chave: "importadoEm",
-            titulo: "Importado em",
-            formato: "datahora",
-            classe: "whitespace-nowrap",
-          },
-        ]}
-        linhas={dados?.arquivos ?? []}
-        chaveDaLinha={(a) => a.nomeArquivo}
-        carregando={consulta.isLoading}
-        mensagemVazia="Nenhum arquivo recebido ainda."
+        mensagemVazia="Nenhum ciclo pendente. O histórico dos ciclos e dos arquivos fica em Logs."
         porPagina={0}
       />
       <ConfirmarAcao
@@ -243,7 +196,6 @@ function PipelineAutomatico() {
 export function PaginaImportacaoSsw() {
   const queryClient = useQueryClient();
   const atualizando = useIsFetching({ queryKey: chaves.tudo }) > 0;
-  const aplicacoes = useQuery(consultaAplicacoes);
   return (
     <Pagina
       titulo="Importação SSW"
@@ -272,12 +224,7 @@ export function PaginaImportacaoSsw() {
             </ItemRecolhivel>
           ))}
           <ItemRecolhivel titulo="Aplicar importações à produção" icone={DatabaseZap}>
-            <AplicarStaging
-              aplicacoes={aplicacoes.data?.aplicacoes ?? []}
-              carregando={aplicacoes.isLoading}
-              erro={aplicacoes.error}
-              aoTentarDeNovo={() => void aplicacoes.refetch()}
-            />
+            <AplicarStaging />
           </ItemRecolhivel>
         </Painel>
       </Secao>

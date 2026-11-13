@@ -9,13 +9,11 @@ import { mutationOptions, type QueryClient, queryOptions } from "@tanstack/react
 import { chamar } from "@/lib/api";
 import { mensagemAmigavel } from "@/lib/error-message";
 
-/** Chaves do cache do módulo: toda escrita invalida `tudo` (pipeline, aplicações, FTP e XML). */
+/** Chaves do cache do módulo: toda escrita invalida `tudo` (pipeline e FTP). */
 export const chaves = {
   tudo: ["ingestao"] as const,
   pipeline: () => [...chaves.tudo, "pipeline"] as const,
-  aplicacoes: () => [...chaves.tudo, "aplicacoes"] as const,
   ftp: () => [...chaves.tudo, "ftp"] as const,
-  xml: () => [...chaves.tudo, "xml"] as const,
 };
 
 /** Pipeline automático: a tela atualiza a cada 60 s (como hoje). */
@@ -25,22 +23,11 @@ export const consultaPipeline = queryOptions({
   refetchInterval: 60_000,
 });
 
-export const consultaAplicacoes = queryOptions({
-  queryKey: chaves.aplicacoes(),
-  queryFn: () => chamar(c.aplicacoes),
-});
-
 /** Sincronização do FTP: com execução em andamento, a tela acompanha a cada 3 s. */
 export const consultaFtp = queryOptions({
   queryKey: chaves.ftp(),
   queryFn: () => chamar(c.ftp),
   refetchInterval: (q) => (q.state.data?.travaAtiva ? 3_000 : 30_000),
-});
-
-export const consultaArquivosXml = queryOptions({
-  queryKey: chaves.xml(),
-  queryFn: () => chamar(c.arquivosXml),
-  refetchInterval: 120_000,
 });
 
 /**

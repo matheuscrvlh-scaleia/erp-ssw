@@ -1,6 +1,7 @@
 import { contrato } from "@erp/shared/contract";
 import { ehDataIso } from "@erp/shared/dates";
 import {
+  SITUACOES_DA_INTEGRACAO,
   STATUS_EMPRESA,
   TIPOS_INTEGRACAO,
   TIPOS_INTEGRACAO_PLATAFORMA,
@@ -124,6 +125,13 @@ export const integracaoDaEmpresa = z.object({
   ultimoTesteOk: z.boolean().nullable(),
   ultimoTesteMsg: z.string().nullable(),
   atualizadoEm: z.iso.datetime().nullable(),
+  /** Última vez que o sistema falou com o serviço (job do worker-ssw ou teste manual). */
+  ultimaConexao: z
+    .object({ em: z.iso.datetime(), ok: z.boolean(), mensagem: z.string().nullable() })
+    .nullable(),
+  /** Último dado que chegou por esta integração; `detalhe` = arquivo ou relatório, quando há. */
+  ultimoDado: z.object({ em: z.iso.datetime(), detalhe: z.string().nullable() }).nullable(),
+  situacao: z.enum(SITUACOES_DA_INTEGRACAO),
 });
 export type IntegracaoDaEmpresa = z.infer<typeof integracaoDaEmpresa>;
 

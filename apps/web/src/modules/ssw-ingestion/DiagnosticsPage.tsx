@@ -12,12 +12,11 @@ import { CartaoJobs } from "./components/JobsCard";
 import { CartaoOrfaos } from "./components/OrphansCard";
 import { CartaoReprocessarToken } from "./components/ReprocessTokenCard";
 import { CartaoCredenciaisSsw } from "./components/SswCredentialsCard";
-import { CartaoSincronizacoes } from "./components/SyncsCard";
 import { CartaoWebhook } from "./components/WebhookCard";
 
 /**
- * Plataforma › Diagnóstico SSW (empresa ativa): situação dos jobs no BullMQ, últimas
- * sincronizações, webhook nas últimas 24 h e 7 dias, órfãos e o teste do token.
+ * Plataforma › Diagnóstico SSW (empresa ativa): situação dos jobs no BullMQ, webhook nas últimas
+ * 24 h e 7 dias, órfãos e o teste do token. As sincronizações ficam em Logs.
  * origem: routes/_authenticated/admin.ssw-diagnostico.tsx (sistema atual)
  */
 export function PaginaDiagnostico() {
@@ -62,7 +61,6 @@ export function PaginaDiagnostico() {
         disponivel={d?.filasDisponiveis ?? true}
         carregando={consulta.isLoading}
       />
-      <CartaoSincronizacoes linhas={d?.sincronizacoes ?? []} carregando={consulta.isLoading} />
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <CartaoCredenciaisSsw />
         <CartaoReprocessarToken />

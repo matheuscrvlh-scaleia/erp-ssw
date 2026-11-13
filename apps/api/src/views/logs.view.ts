@@ -36,6 +36,22 @@ function resumoDaExecucao(origem: OrigemIntegracao, d: Execucao["dados"]): strin
         linhas > 0 ? ` · ${linhas} linha(s)` : ""
       }`;
     }
+    case "ciclo_ssw": {
+      const faltantes = Array.isArray(d["faltantes"]) ? d["faltantes"].filter(t) : [];
+      return `Ciclo ${t(d["ciclo"]) ?? "—"}: ${n(d["arquivos"])} arquivo(s), ${n(d["linhas"])} linha(s)${
+        faltantes.length > 0 ? ` · faltam ${faltantes.join(", ")}` : ""
+      }`;
+    }
+    case "webhook_ssw": {
+      const numero = t(d["numero"]);
+      return `HTTP ${String(n(d["statusHttp"]))}${numero ? ` · documento ${numero}` : ""}`;
+    }
+    case "xml_upload": {
+      const pulados = n(d["pulados"]);
+      return `${t(d["nomeArquivo"]) ?? "?"} · ${n(d["ctes"])} CT-e, ${n(d["cancelamentos"])} cancelamento(s)${
+        pulados > 0 ? `, ${pulados} pulado(s)` : ""
+      }`;
+    }
     case "aplicacao_ssw":
       return `${n(d["inseridos"])} inserido(s), ${n(d["atualizados"])} atualizado(s), ${n(
         d["ocorrencias"],

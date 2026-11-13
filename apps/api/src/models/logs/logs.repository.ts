@@ -61,6 +61,38 @@ const ORIGENS: Record<
     dados: sql`jsonb_build_object('inseridos', total_inseridos, 'atualizados', total_atualizados,
       'ocorrencias', total_ocorrencias, 'ignorados', total_ignorados, 'simulacao', simulacao)`,
   },
+  ciclo_ssw: {
+    tabela: sql`erp.ingestao_ciclos`,
+    filtro: sql`primeiro_arquivo_em`,
+    quando: sql`coalesce(aplicado_em, fechado_em, ultimo_arquivo_em, primeiro_arquivo_em)`,
+    status: sql`status`,
+    erro: sql`motivo`,
+    dados: sql`jsonb_build_object('ciclo', ciclo_chave, 'arquivos', arquivos_importados,
+      'linhas', linhas_importadas, 'faltantes', faltantes)`,
+  },
+  webhook_ssw: {
+    tabela: sql`erp.ssw_webhook_eventos`,
+    filtro: sql`recebido_em`,
+    quando: sql`recebido_em`,
+    // Mesma classificação da Ingestão SSW: rejeitado (auth/4xx), erro (5xx), sem vínculo (202).
+    status: sql`case when not autenticado or status_http between 400 and 499 then 'rejeitado'
+      when status_http >= 500 then 'erro' when status_http = 202 then 'sem vínculo'
+      else 'processado' end`,
+    erro: sql`coalesce(erro_processamento, motivo_rejeicao)`,
+    dados: sql`jsonb_build_object('statusHttp', status_http, 'numero', coalesce(
+      nullif(payload_bruto->'cte'->>'numeroCTe', ''),
+      nullif(nullif(payload_bruto->'cte'->>'numeroSSW', ''), '0'),
+      payload_bruto->'nf'->>'numeroNFe'))`,
+  },
+  xml_upload: {
+    tabela: sql`erp.xml_cte_arquivos`,
+    filtro: sql`criado_em`,
+    quando: sql`criado_em`,
+    status: sql`status`,
+    erro: sql`erro_mensagem`,
+    dados: sql`jsonb_build_object('nomeArquivo', nome_arquivo, 'tipo', tipo,
+      'ctes', ctes_processados, 'cancelamentos', cancelamentos, 'pulados', xmls_pulados)`,
+  },
   bi2: {
     tabela: sql`erp.bi2_sincronizacoes`,
     filtro: sql`iniciado_em`,
