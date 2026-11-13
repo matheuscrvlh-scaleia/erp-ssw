@@ -104,22 +104,24 @@ function lerBase64(arquivo: Blob): Promise<string> {
   });
 }
 
-export const mutacaoEnviarLogo = (cliente: QueryClient, id: string) =>
+/** Logo (menu e exportações) ou favicon (aba do navegador) da empresa. */
+export type ImagemDaMarca = "logo" | "favicon";
+
+export const mutacaoEnviarImagem = (cliente: QueryClient, id: string, imagem: ImagemDaMarca) =>
   mutationOptions({
     mutationFn: async (arquivo: File) => {
-      const problema = problemaDoLogo(arquivo);
+      const problema = problemaDoLogo(arquivo, imagem);
       if (problema) throw new ErroDoOperador(problema);
-      return chamar(p.enviarLogo, {
-        parametros: { id },
-        entrada: { conteudoBase64: await lerBase64(arquivo) },
-      });
+      const pedido = { parametros: { id }, entrada: { conteudoBase64: await lerBase64(arquivo) } };
+      await (imagem === "logo" ? chamar(p.enviarLogo, pedido) : chamar(p.enviarFavicon, pedido));
     },
     onSuccess: () => invalidarEmpresaEAcesso(cliente, id),
   });
 
-export const mutacaoRemoverLogo = (cliente: QueryClient, id: string) =>
+export const mutacaoRemoverImagem = (cliente: QueryClient, id: string, imagem: ImagemDaMarca) =>
   mutationOptions({
-    mutationFn: () => chamar(p.removerLogo, { parametros: { id } }),
+    mutationFn: () =>
+      chamar(imagem === "logo" ? p.removerLogo : p.removerFavicon, { parametros: { id } }),
     onSuccess: () => invalidarEmpresaEAcesso(cliente, id),
   });
 

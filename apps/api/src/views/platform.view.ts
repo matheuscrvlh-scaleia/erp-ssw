@@ -41,12 +41,13 @@ export function apresentarEmpresas(empresas: readonly EmpresaListada[]): Saida<"
 }
 
 export function apresentarEmpresa(
-  { logoCaminho, criadoEm, atualizadoEm, ...empresa }: EmpresaGravada,
+  { logoCaminho, faviconCaminho, criadoEm, atualizadoEm, ...empresa }: EmpresaGravada,
   urlDoLogo: UrlDoLogo,
 ): Saida<"obterEmpresa"> {
   return {
     ...empresa,
     logoUrl: urlDoLogo(logoCaminho),
+    faviconUrl: urlDoLogo(faviconCaminho),
     criadoEm: criadoEm.toISOString(),
     atualizadoEm: atualizadoEm.toISOString(),
   };
@@ -54,6 +55,10 @@ export function apresentarEmpresa(
 
 export function apresentarLogo(caminho: string, urlDoLogo: UrlDoLogo): Saida<"enviarLogo"> {
   return { logoUrl: urlDoLogo(caminho) };
+}
+
+export function apresentarFavicon(caminho: string, urlDoLogo: UrlDoLogo): Saida<"enviarFavicon"> {
+  return { faviconUrl: urlDoLogo(caminho) };
 }
 
 /** Na ordem do catálogo. */

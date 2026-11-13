@@ -26,6 +26,8 @@ export const empresaAtiva = z.object({
   nome: z.string(),
   nomeCurto: z.string(),
   logoUrl: z.string().nullable(),
+  /** Favicon da empresa; nulo = o do sistema. */
+  faviconUrl: z.string().nullable(),
   corPrimaria: z.string(),
   corDestaque: z.string(),
   slogan: z.string().nullable(),
@@ -48,6 +50,15 @@ export const acesso = z.object({
   modulos: z.array(z.string()),
   telasBloqueadas: z.array(
     z.object({ tela: z.enum(TELAS), modulo: z.string(), moduloNome: z.string() }),
+  ),
+  /** Módulos que vencem daqui a 7, 5, 2 ou 1 dia: a tela avisa a empresa. */
+  vencimentos: z.array(
+    z.object({
+      modulo: z.string(),
+      moduloNome: z.string(),
+      fim: z.string(),
+      dias: z.number().int(),
+    }),
   ),
   adminPlataforma: z.boolean(),
 });

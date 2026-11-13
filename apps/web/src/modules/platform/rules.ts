@@ -1,4 +1,8 @@
-import { type ValorDeParametro } from "@erp/shared/contracts/platform";
+import {
+  type DadosDaEmpresa,
+  type EmpresaCompleta,
+  type ValorDeParametro,
+} from "@erp/shared/contracts/platform";
 import { LOGO_MAXIMO_BYTES } from "@erp/shared/platform";
 
 /** Identificador sugerido pelo nome: minúsculas, sem acento, hífen no lugar do resto. */
@@ -36,11 +40,39 @@ export function parametrosEditados(
   return parametros;
 }
 
-/** Confere tipo e tamanho antes de enviar; a API confere de novo pelo conteúdo. */
-export function problemaDoLogo(arquivo: { type: string; size: number }): string | null {
-  if (!/^image\/(png|jpeg)$/.test(arquivo.type)) return "Envie o logo em PNG ou JPEG.";
+/**
+ * Confere tipo e tamanho do logo ou do favicon antes de enviar; a API confere de novo pelo
+ * conteúdo.
+ */
+export function problemaDoLogo(
+  arquivo: { type: string; size: number },
+  imagem: "logo" | "favicon" = "logo",
+): string | null {
+  const nome = imagem === "logo" ? "logo" : "favicon";
+  if (!/^image\/(png|jpeg)$/.test(arquivo.type)) return `Envie o ${nome} em PNG ou JPEG.`;
   if (arquivo.size > LOGO_MAXIMO_BYTES) {
-    return "O logo passa de 512 KB. Reduza a imagem e envie de novo.";
+    return `O ${nome} passa de 512 KB. Reduza a imagem e envie de novo.`;
   }
   return null;
+}
+
+/** Campos do formulário de dados da empresa (texto, como nos inputs). */
+export type FormularioDaEmpresa = Record<Exclude<keyof DadosDaEmpresa, "status">, string> & {
+  status: DadosDaEmpresa["status"];
+};
+
+/** Dados atuais da empresa no formato do salvar (vazio no lugar de nulo). */
+export function formularioDaEmpresa(e: EmpresaCompleta): FormularioDaEmpresa {
+  return {
+    nome: e.nome,
+    nomeCurto: e.nomeCurto,
+    razaoSocial: e.razaoSocial ?? "",
+    cnpj: e.cnpj ?? "",
+    dominioSsw: e.dominioSsw ?? "",
+    fuso: e.fuso,
+    status: e.status,
+    corPrimaria: e.corPrimaria,
+    corDestaque: e.corDestaque,
+    slogan: e.slogan ?? "",
+  };
 }

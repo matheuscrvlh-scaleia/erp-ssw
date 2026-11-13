@@ -202,27 +202,40 @@ function comecaCom(bytes: Uint8Array, assinatura: readonly number[]): boolean {
   return assinatura.every((b, i) => bytes[i] === b);
 }
 
+/** Imagens da marca da empresa: o logo (menu e exportações) e o favicon (aba do navegador). */
+export type ImagemDaMarca = "logo" | "favicon";
+
+const NOME_DA_IMAGEM: Record<ImagemDaMarca, string> = { logo: "o logo", favicon: "o favicon" };
+
 /**
- * Logo em base64 (com ou sem prefixo `data:`): até 512 KB e PNG ou JPEG pelos primeiros bytes
- * (o nome e o tipo que o navegador diz não valem).
+ * Imagem da marca em base64 (com ou sem prefixo `data:`): até 512 KB e PNG ou JPEG pelos
+ * primeiros bytes (o nome e o tipo que o navegador diz não valem).
  */
-export function validarLogo(conteudoBase64: string): LogoValidado {
+export function validarLogo(conteudoBase64: string, imagem: ImagemDaMarca = "logo"): LogoValidado {
+  const nome = NOME_DA_IMAGEM[imagem];
+  const formato = `Envie ${nome} em PNG ou JPEG.`;
   const base64 = conteudoBase64.replace(/^data:[^,]*,/, "");
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) throw invalido("Envie o logo em PNG ou JPEG.");
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) throw invalido(formato);
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  if (bytes.length === 0) throw invalido("Envie o logo em PNG ou JPEG.");
+  if (bytes.length === 0) throw invalido(formato);
   if (bytes.length > LOGO_MAXIMO_BYTES) {
-    throw invalido("O logo passa de 512 KB. Reduza a imagem e envie de novo.");
+    const Nome = nome.charAt(0).toUpperCase() + nome.slice(1);
+    throw invalido(`${Nome} passa de 512 KB. Reduza a imagem e envie de novo.`);
   }
   if (comecaCom(bytes, PNG)) return { bytes, extensao: "png", tipo: "image/png" };
   if (comecaCom(bytes, JPEG)) return { bytes, extensao: "jpg", tipo: "image/jpeg" };
-  throw invalido("Envie o logo em PNG ou JPEG.");
+  throw invalido(formato);
 }
 
-/** `<empresa>/logo-AAAAMMDDhhmmss.<ext>` (UTC): nome novo a cada envio, nunca sobrescreve. */
-export function caminhoDoLogo(empresaId: string, agora: Date, extensao: string): string {
+/** `<empresa>/<imagem>-AAAAMMDDhhmmss.<ext>` (UTC): nome novo a cada envio, nunca sobrescreve. */
+export function caminhoDoLogo(
+  empresaId: string,
+  agora: Date,
+  extensao: string,
+  imagem: ImagemDaMarca = "logo",
+): string {
   const carimbo = agora.toISOString().replace(/[-:T]/g, "").slice(0, 14);
-  return `${empresaId}/logo-${carimbo}.${extensao}`;
+  return `${empresaId}/${imagem}-${carimbo}.${extensao}`;
 }
 
 /**

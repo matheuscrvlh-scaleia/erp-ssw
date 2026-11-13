@@ -9,6 +9,7 @@ import {
 import { type CSSProperties, useCallback, useState } from "react";
 
 import { useMarcaDaEmpresa } from "@/access/brand";
+import { AvisoDeVencimento } from "@/access/components/ExpiryNotice";
 import { decidirAcesso } from "@/access/guard";
 import { useEncerrarPorInatividade } from "@/access/inactivity";
 import { consultaAcesso, sair } from "@/access/session";
@@ -107,6 +108,13 @@ function LayoutAutenticado() {
         )}
       </SidebarInset>
       <BuscaRapida acesso={acesso} aberta={buscaAberta} aoMudar={setBuscaAberta} />
+      {acesso.empresa && (
+        <AvisoDeVencimento
+          key={acesso.empresa.id}
+          empresaId={acesso.empresa.id}
+          vencimentos={acesso.vencimentos}
+        />
+      )}
     </SidebarProvider>
   );
 }

@@ -26,6 +26,7 @@ import {
   TELAS_POR_REGRA,
   TELAS_SO_PLATAFORMA,
 } from "@erp/shared/access/screens";
+import { diferencaEmDias } from "@erp/shared/dates";
 
 export interface ExcecaoDePermissao {
   permissao: string;
@@ -198,6 +199,39 @@ export function modulosVigentes(
   const vigentes = new Set(catalogo.filter((m) => m.essencial).map((m) => m.chave));
   for (const l of liberacoes) if (liberacaoVigente(l, hoje)) vigentes.add(l.modulo);
   return [...vigentes].sort();
+}
+
+/** Dias antes do fim da liberação em que a empresa é avisada na tela. */
+export const AVISOS_DE_VENCIMENTO: readonly number[] = [7, 5, 2, 1];
+
+export interface VencimentoDeModulo {
+  modulo: string;
+  moduloNome: string;
+  /** Último dia da liberação (AAAA-MM-DD, fuso da empresa). */
+  fim: string;
+  /** Dias até o fim: um dos `AVISOS_DE_VENCIMENTO`. */
+  dias: number;
+}
+
+/**
+ * Módulos que valem hoje e vencem exatamente daqui a 7, 5, 2 ou 1 dia (o aviso sai nesses dias).
+ * Essencial não vence.
+ */
+export function vencimentosParaAvisar(
+  catalogo: readonly ModuloCatalogo[],
+  liberacoes: readonly LiberacaoDeModulo[],
+  hoje: string,
+): VencimentoDeModulo[] {
+  const avisos: VencimentoDeModulo[] = [];
+  for (const l of liberacoes) {
+    const modulo = catalogo.find((m) => m.chave === l.modulo);
+    if (!modulo || modulo.essencial || !l.fim || !liberacaoVigente(l, hoje)) continue;
+    const dias = diferencaEmDias(hoje, l.fim);
+    if (AVISOS_DE_VENCIMENTO.includes(dias)) {
+      avisos.push({ modulo: l.modulo, moduloNome: modulo.nome, fim: l.fim, dias });
+    }
+  }
+  return avisos.sort((a, b) => a.dias - b.dias || a.moduloNome.localeCompare(b.moduloNome));
 }
 
 /** Admin da plataforma vê tudo; senão vale se algum dos módulos pedidos estiver liberado. */

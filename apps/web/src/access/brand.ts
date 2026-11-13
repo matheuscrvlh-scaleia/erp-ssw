@@ -157,10 +157,29 @@ export function aplicarPaleta(cor: string | undefined): () => void {
   };
 }
 
-/** Cores (barra lateral, botões, gráficos) e título da aba conforme a empresa ativa. */
+const FAVICON_PADRAO = "/favicon.png";
+
+/** Troca o ícone da aba; devolve a volta ao do sistema. */
+function aplicarFavicon(url: string | null | undefined): () => void {
+  const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) return () => undefined;
+  link.href = url ?? FAVICON_PADRAO;
+  link.type = url ? "" : "image/png";
+  return () => {
+    link.href = FAVICON_PADRAO;
+    link.type = "image/png";
+  };
+}
+
+/**
+ * Cores (barra lateral, botões, gráficos), título e favicon da aba conforme a empresa ativa. Sem
+ * favicon próprio, fica o do sistema.
+ */
 export function useMarcaDaEmpresa(empresa: EmpresaAtiva | null): void {
   const cor = empresa?.corPrimaria;
   const nome = empresa?.nome;
+  const favicon = empresa?.faviconUrl;
+  useEffect(() => aplicarFavicon(favicon), [favicon]);
   useEffect(() => {
     if (cor) {
       try {

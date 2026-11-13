@@ -7,6 +7,7 @@ import {
   modulosVigentes,
   papelNaEmpresa,
   permissoesDoCargoDaPlataforma,
+  vencimentosParaAvisar,
   type VinculoComEmpresa,
 } from "@erp/domain/access";
 import { empresaEmOperacao } from "@erp/domain/companies";
@@ -38,6 +39,7 @@ export interface EmpresaGravada {
   nome: string;
   nomeCurto: string;
   logoCaminho: string | null;
+  faviconCaminho: string | null;
   corPrimaria: string;
   corDestaque: string;
   slogan: string | null;
@@ -117,6 +119,7 @@ function paraEmpresaAtiva(deps: DependenciasAcesso, e: EmpresaGravada): EmpresaA
     nome: e.nome,
     nomeCurto: e.nomeCurto,
     logoUrl: deps.urlDoLogo(e.logoCaminho),
+    faviconUrl: deps.urlDoLogo(e.faviconCaminho),
     corPrimaria: e.corPrimaria,
     corDestaque: e.corDestaque,
     slogan: e.slogan,
@@ -167,9 +170,8 @@ export async function carregarAcesso(
   const cargo = empresa && papel ? cargoLido : null;
   const excecoes = empresa ? excecoesLidas : [];
   const liberacoes = empresa ? liberacoesLidas : [];
-  const vigentes = empresa
-    ? modulosVigentes(MODULOS, liberacoes, hojeNoFuso(empresa.fuso, deps.agora()))
-    : [];
+  const hoje = empresa ? hojeNoFuso(empresa.fuso, deps.agora()) : null;
+  const vigentes = hoje ? modulosVigentes(MODULOS, liberacoes, hoje) : [];
 
   const resultado = calcularAcesso({
     usuarioAtivo: usuario.ativo,
@@ -200,6 +202,7 @@ export async function carregarAcesso(
     empresas: [...empresas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
     modulos: vigentes,
     telasBloqueadas: resultado.telasBloqueadas,
+    vencimentos: hoje ? vencimentosParaAvisar(MODULOS, liberacoes, hoje) : [],
     adminPlataforma,
   };
 }

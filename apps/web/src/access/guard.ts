@@ -2,7 +2,7 @@ import { destinoInterno } from "@erp/shared/access/destination";
 import { CAMINHO_DA_TELA, type Tela, telaDoCaminho } from "@erp/shared/access/screens";
 import { type Acesso } from "@erp/shared/contracts/auth";
 
-import { atende, hubDoCaminho, type Requisito } from "./navigation";
+import { atende, hubDoCaminho, type Requisito, requisitosDaAba } from "./navigation";
 
 type DecisaoDaGuarda =
   | { tipo: "liberado" }
@@ -29,7 +29,7 @@ export function decidirAcesso(
   const hub = hubDoCaminho(caminho);
   const tela = telaDoCaminho(caminho);
   const requisitos: Requisito[] = hub
-    ? hub.abas.map((a) => a.requisito)
+    ? hub.abas.flatMap(requisitosDaAba)
     : tela
       ? [tela, ...(TAMBEM_ABREM[tela] ?? [])]
       : [];

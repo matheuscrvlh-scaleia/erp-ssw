@@ -22,6 +22,7 @@ type Retorno<K extends keyof RepositorioPlataforma> = Awaited<ReturnType<Reposit
 const SELECT_EMPRESA = sql`
   select id, slug, nome, nome_curto as "nomeCurto", razao_social as "razaoSocial", cnpj,
          dominio_ssw as "dominioSsw", logo_caminho as "logoCaminho",
+         favicon_caminho as "faviconCaminho",
          cor_primaria as "corPrimaria", cor_destaque as "corDestaque", slogan, fuso, status,
          criado_em as "criadoEm", atualizado_em as "atualizadoEm"
   from erp.empresas`;
@@ -81,10 +82,11 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         where id = ${id}`);
     },
 
-    definirLogo: async (id, caminho, atualizadoPor) => {
+    definirImagem: async (id, imagem, caminho, atualizadoPor) => {
+      const coluna = imagem === "logo" ? sql`logo_caminho` : sql`favicon_caminho`;
       await tx.executar(sql`
         update erp.empresas
-        set logo_caminho = ${caminho}, atualizado_por = ${atualizadoPor}, atualizado_em = now()
+        set ${coluna} = ${caminho}, atualizado_por = ${atualizadoPor}, atualizado_em = now()
         where id = ${id}`);
     },
 

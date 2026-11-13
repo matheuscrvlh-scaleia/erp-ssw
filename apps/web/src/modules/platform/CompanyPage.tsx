@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { type ComponentType, type ReactNode } from "react";
 
-import { ABAS_DA_EMPRESA } from "@/access/navigation";
+import { ABAS_DA_EMPRESA, atende, type Requisito } from "@/access/navigation";
 import { consultaAcesso } from "@/access/session";
 import { MensagemErro } from "@/components/common/ErrorMessage";
 import { Painel } from "@/components/common/Panel";
@@ -19,6 +19,12 @@ import { AbaIntegracoes } from "./components/IntegrationsTab";
 import { AbaModulos } from "./components/ModulesTab";
 import { TrocarParaAEmpresa } from "./components/SwitchToCompany";
 import { TOM_DO_STATUS } from "./texts";
+
+/** Seção de uma aba que é tela de outro módulo; aparece para quem tem a tela dela. */
+export interface SecaoNaEmpresaAtiva {
+  requisito: Requisito;
+  Tela: ComponentType;
+}
 
 /** Logs das integrações de uma empresa: o alternador da integração, os filtros e a tabela. */
 interface LogsDaEmpresa {
@@ -38,10 +44,11 @@ export function PaginaEmpresa({
   aba: string | undefined;
   aoMudarAba: (aba: string) => void;
   /**
-   * Abas que são telas de outros módulos (ingestão, importação, diagnóstico), por valor da aba.
-   * Operam na empresa ativa da sessão; a rota é quem as monta.
+   * Abas feitas de telas de outros módulos (Importações: ingestão, importação, XML e diagnóstico),
+   * por valor da aba, uma seção embaixo da outra. Operam na empresa ativa da sessão; a rota é quem
+   * as monta.
    */
-  naEmpresaAtiva: Readonly<Record<string, ComponentType>>;
+  naEmpresaAtiva: Readonly<Record<string, readonly SecaoNaEmpresaAtiva[]>>;
   /**
    * Hook dos logs das integrações (do admin), entregue pela rota. É chamado aqui, e não na aba,
    * para os filtros dos logs continuarem ao trocar de aba.
@@ -90,7 +97,10 @@ export function PaginaEmpresa({
     );
   }
 
-  const NaEmpresaAtiva = atual && naEmpresaAtiva[atual.valor];
+  const secoes = atual
+    ? naEmpresaAtiva[atual.valor]?.filter((s) => atende(acesso, s.requisito))
+    : undefined;
+  const NaEmpresaAtiva = secoes && secoes.length > 0 ? secoes : null;
   const ehAAtiva = acesso.empresa?.id === id;
   return (
     <HubDeAbas
@@ -108,7 +118,13 @@ export function PaginaEmpresa({
       {(a) =>
         NaEmpresaAtiva ? (
           ehAAtiva ? (
-            <NaEmpresaAtiva />
+            <div className="divide-y divide-border">
+              {NaEmpresaAtiva.map(({ requisito, Tela }) => (
+                <section key={requisito} className="pb-6 [&+section]:pt-2">
+                  <Tela />
+                </section>
+              ))}
+            </div>
           ) : (
             <TrocarParaAEmpresa empresa={empresa} ativa={acesso.empresa?.nome ?? null} />
           )
@@ -141,7 +157,7 @@ export function PaginaEmpresa({
             )}
             {a.valor === "integracoes" && (
               <AbaIntegracoes
-                empresaId={id}
+                empresa={empresa}
                 integracoes={integracoes.data?.integracoes}
                 carregando={integracoes.isLoading}
                 erro={integracoes.error}

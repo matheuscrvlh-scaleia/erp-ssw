@@ -255,6 +255,21 @@ Só telas da Plataforma mudam; operação, números e URLs das integrações fic
   da linha); as colunas Tipo e Identificador podem ser ligadas em "Colunas" e entram na exportação.
 - **Implantação** passa a apontar integração ligada sem senha/token e deixa de listar itens "fase
   seguinte" da migração antiga.
+- **Login sempre na cor do sistema.** Login, nova senha e convite usam o azul padrão; a cor da
+  empresa vale só depois de entrar (antes abria com a cor da última empresa usada no navegador).
+- **Favicon da empresa.** Plataforma › Empresa › Dados › Marca ganha o envio do favicon (PNG ou
+  JPEG até 512 KB). Com favicon, a aba do navegador usa o da empresa depois do login; sem, o do
+  sistema.
+- **Domínio SSW na aba Integrações.** Sai de Dados › Operação e vira um cartão próprio em
+  Integrações › Sistemas integrados.
+- **Prazo do módulo atrás do calendário.** Em Módulos, início e fim aparecem ao clicar no botão do
+  calendário, com o botão Liberar (liga o módulo com essas datas e salva).
+- **Aviso de vencimento.** Módulo com fim daqui a 7, 5, 2 ou 1 dia abre um aviso na tela para os
+  usuários da empresa (uma vez por marco, por navegador).
+- **Importações numa aba só.** Ingestão SSW, Importação SSW, Importar XML CT-e e Diagnóstico SSW da
+  empresa viram a aba Importações, uma seção embaixo da outra (cada uma para quem tem a tela dela).
+  Os links antigos (`?aba=ingestao`, `diagnostico`…) abrem Importações.
+
 ## Ocorrências, Comprovantes, Coletas, Histórico e Admin › Códigos (spec 04)
 
 - **Q04 — contagens reais.** A frequência de 30 dias em Admin › Códigos é a contagem real (antes,

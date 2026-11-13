@@ -1,14 +1,16 @@
 import { moduloVigente } from "@erp/domain/access";
 import { type ModuloDaEmpresa } from "@erp/shared/contracts/platform";
 import { diferencaEmDias, hojeNoFuso } from "@erp/shared/dates";
-import { formatarDataHora } from "@erp/shared/formatting";
+import { formatarData, formatarDataHora } from "@erp/shared/formatting";
 import { useQueryClient } from "@tanstack/react-query";
+import { CalendarDays } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { CAMPO } from "@/components/common/FormFields";
 import { Painel } from "@/components/common/Panel";
 import { SeloStatus } from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-company-timezone";
 import { useGravacao } from "@/hooks/use-save";
@@ -50,8 +52,7 @@ export function AbaModulos({
                 <tr className="border-b border-border bg-muted/70 text-muted-foreground">
                   <th className={CABECALHO}>Módulo</th>
                   <th className={CABECALHO}>Ligado</th>
-                  <th className={CABECALHO}>Início</th>
-                  <th className={CABECALHO}>Fim</th>
+                  <th className={CABECALHO}>Vigência</th>
                   <th className={CABECALHO}>Observação</th>
                   <th className={CABECALHO}>
                     <span className="sr-only">Ações</span>
@@ -133,28 +134,18 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
         />
       </td>
       <td className="px-4 py-3">
-        <input
-          type="date"
-          aria-label={`Início de ${modulo.nome}`}
-          className={cn(PEQUENO, "w-[150px] tabular-nums")}
-          value={m.inicio ?? ""}
-          disabled={bloqueado}
-          onChange={(e) => {
-            setM({ ...m, inicio: e.target.value || null });
-          }}
-        />
-      </td>
-      <td className="px-4 py-3">
-        <input
-          type="date"
-          aria-label={`Fim de ${modulo.nome}`}
-          className={cn(PEQUENO, "w-[150px] tabular-nums")}
-          value={m.fim ?? ""}
-          disabled={bloqueado}
-          onChange={(e) => {
-            setM({ ...m, fim: e.target.value || null });
-          }}
-        />
+        {!bloqueado && (
+          <Vigencia
+            modulo={m}
+            gravando={salvar.gravando}
+            aoLiberar={async (inicio, fim) => {
+              const liberado = { ...m, ativo: true, inicio, fim };
+              const ok = await salvar.gravar(liberado);
+              if (ok) setM(liberado);
+              return ok;
+            }}
+          />
+        )}
       </td>
       <td className="px-4 py-3">
         <input
@@ -186,5 +177,100 @@ function LinhaDoModulo({ empresaId, modulo }: { empresaId: string; modulo: Modul
         )}
       </td>
     </tr>
+  );
+}
+
+/** Resumo do prazo no botão do calendário. */
+function resumoDoPrazo(inicio: string | null, fim: string | null): string {
+  if (inicio && fim) return `${formatarData(inicio)} – ${formatarData(fim)}`;
+  if (fim) return `Até ${formatarData(fim)}`;
+  if (inicio) return `Desde ${formatarData(inicio)}`;
+  return "Sem prazo";
+}
+
+/**
+ * Prazo do módulo atrás do ícone do calendário: abre com o início, o fim e o botão Liberar, que
+ * liga o módulo com essas datas e salva.
+ */
+function Vigencia({
+  modulo,
+  gravando,
+  aoLiberar,
+}: {
+  modulo: ModuloDaEmpresa;
+  gravando: boolean;
+  aoLiberar: (inicio: string | null, fim: string | null) => Promise<boolean>;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [inicio, setInicio] = useState(modulo.inicio);
+  const [fim, setFim] = useState(modulo.fim);
+  const invertido = Boolean(inicio && fim && fim < inicio);
+  return (
+    <Popover
+      open={aberto}
+      onOpenChange={(abrir) => {
+        if (abrir) {
+          setInicio(modulo.inicio);
+          setFim(modulo.fim);
+        }
+        setAberto(abrir);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="tabular-nums"
+          aria-label={`Prazo de ${modulo.nome}`}
+        >
+          <CalendarDays aria-hidden />
+          {resumoDoPrazo(modulo.inicio, modulo.fim)}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 space-y-3">
+        <div className="text-[13px] font-semibold">Prazo de {modulo.nome}</div>
+        <label className="block space-y-1 text-[13px] font-medium">
+          <span>Início</span>
+          <input
+            type="date"
+            className={cn(PEQUENO, "tabular-nums")}
+            value={inicio ?? ""}
+            onChange={(e) => {
+              setInicio(e.target.value || null);
+            }}
+          />
+        </label>
+        <label className="block space-y-1 text-[13px] font-medium">
+          <span>Fim</span>
+          <input
+            type="date"
+            className={cn(PEQUENO, "tabular-nums")}
+            value={fim ?? ""}
+            onChange={(e) => {
+              setFim(e.target.value || null);
+            }}
+          />
+        </label>
+        {invertido && (
+          <p role="alert" className="text-xs font-medium text-status-bad-fg">
+            O fim vem antes do início.
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Sem datas, o módulo vale sem prazo. A empresa é avisada 7, 5, 2 e 1 dia antes do fim.
+        </p>
+        <Button
+          className="w-full"
+          disabled={gravando || invertido}
+          onClick={() => {
+            void aoLiberar(inicio, fim).then((ok) => {
+              if (ok) setAberto(false);
+            });
+          }}
+        >
+          {gravando ? "Liberando…" : "Liberar"}
+        </Button>
+      </PopoverContent>
+    </Popover>
   );
 }

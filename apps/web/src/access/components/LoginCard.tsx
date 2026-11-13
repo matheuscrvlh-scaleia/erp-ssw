@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useLayoutEffect } from "react";
 
-import { aplicarPaleta, ultimaCorDaMarca } from "@/access/brand";
+import { aplicarPaleta, COR_PADRAO } from "@/access/brand";
 import { forcarTemaClaro } from "@/lib/theme";
 
 import { IlustracaoLogistica, PisoIsometrico } from "./LogisticsIllustration";
@@ -8,8 +8,8 @@ import { IlustracaoLogistica, PisoIsometrico } from "./LogisticsIllustration";
 /**
  * Moldura das telas fora do painel (login, nova senha, convite), no desenho de
  * mockups/login.png, em tela cheia: o piso de placas cobre a tela, a ilustração fica à esquerda e o
- * formulário à direita num painel translúcido (o piso aparece por baixo). A cor é a
- * da última empresa usada neste navegador (antes do login não se sabe a empresa).
+ * formulário à direita num painel translúcido (o piso aparece por baixo). A cor é sempre a do
+ * sistema: a da empresa só vale depois do login.
  */
 export function CartaoDeEntrada({
   titulo,
@@ -23,7 +23,7 @@ export function CartaoDeEntrada({
   rodape?: ReactNode;
   children: ReactNode;
 }) {
-  useEffect(() => aplicarPaleta(ultimaCorDaMarca()), []);
+  useEffect(() => aplicarPaleta(COR_PADRAO), []);
   // As telas de entrada são sempre claras, mesmo com o painel no escuro.
   useLayoutEffect(forcarTemaClaro, []);
 

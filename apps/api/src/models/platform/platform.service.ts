@@ -13,6 +13,7 @@ import {
   CARGOS_PADRAO,
   escolherEmpresaModelo,
   exigirOutroSuperAdmin,
+  type ImagemDaMarca,
   validarLogo,
   validarParametrosDeIntegracao,
   validarVigencia,
@@ -67,6 +68,7 @@ export interface EmpresaGravada {
   cnpj: string | null;
   dominioSsw: string | null;
   logoCaminho: string | null;
+  faviconCaminho: string | null;
   corPrimaria: string;
   corDestaque: string;
   slogan: string | null;
@@ -184,7 +186,12 @@ export interface RepositorioPlataforma {
     criadoPor: string;
   }): Promise<void>;
   alterarEmpresa(id: string, dados: DadosDaEmpresa, atualizadoPor: string): Promise<void>;
-  definirLogo(id: string, caminho: string | null, atualizadoPor: string): Promise<void>;
+  definirImagem(
+    id: string,
+    imagem: ImagemDaMarca,
+    caminho: string | null,
+    atualizadoPor: string,
+  ): Promise<void>;
   usuariosAtivosPorEmpresa(): Promise<Map<string, number>>;
   /** Último login de algum usuário com vínculo ativo, por empresa. */
   ultimoLoginPorEmpresa(): Promise<Map<string, Date>>;
@@ -422,20 +429,26 @@ interface DependenciasDoLogo {
 const semArmazenamento = () =>
   new ErroDeNegocio(
     "INDISPONIVEL",
-    "O envio de logo não está configurado neste ambiente. Fale com o suporte.",
+    "O envio de imagens não está configurado neste ambiente. Fale com o suporte.",
   );
 
+/** Onde cada imagem fica gravada e o nome dela na auditoria (`logo_path`, como no sistema atual). */
+const CAMINHO_DA_IMAGEM = {
+  logo: { campo: "logoCaminho", naAuditoria: "logo_path" },
+  favicon: { campo: "faviconCaminho", naAuditoria: "favicon_path" },
+} as const satisfies Record<ImagemDaMarca, { campo: keyof EmpresaGravada; naAuditoria: string }>;
+
 /** Apagar o arquivo antigo é limpeza: se falhar, só fica no log. */
-async function apagarLogoAntigo(deps: DependenciasDoLogo, caminho: string | null): Promise<void> {
+async function apagarImagemAntiga(deps: DependenciasDoLogo, caminho: string | null): Promise<void> {
   if (!caminho || !deps.armazenamento) return;
   await deps.armazenamento.apagar(caminho).catch((erro: unknown) => {
-    deps.log.warn({ err: erro, caminho }, "não foi possível apagar o logo anterior");
+    deps.log.warn({ err: erro, caminho }, "não foi possível apagar a imagem anterior");
   });
 }
 
 /**
- * Logo novo (PNG ou JPEG até 512 KB, conferido pelos bytes): sobe com nome novo, grava o caminho
- * (devolvido) e apaga o anterior.
+ * Logo ou favicon novo (PNG ou JPEG até 512 KB, conferido pelos bytes): sobe com nome novo, grava
+ * o caminho (devolvido) e apaga o anterior.
  * origem: enviarLogoEmpresa (sistema atual)
  */
 export async function enviarLogo(
@@ -444,28 +457,30 @@ export async function enviarLogo(
   ator: Ator,
   id: string,
   conteudoBase64: string,
+  imagem: ImagemDaMarca = "logo",
 ): Promise<string> {
-  const logo = validarLogo(conteudoBase64);
+  const arquivo = validarLogo(conteudoBase64, imagem);
   const { armazenamento } = deps;
   if (!armazenamento) throw semArmazenamento();
+  const { campo, naAuditoria } = CAMINHO_DA_IMAGEM[imagem];
   const anterior = await db(({ plataforma }) => empresaExistente(plataforma, id));
-  const caminho = caminhoDoLogo(id, deps.agora(), logo.extensao);
-  await armazenamento.enviar(caminho, logo.bytes, logo.tipo).catch((erro: unknown) => {
-    deps.log.error({ err: erro }, "falha ao enviar logo");
-    throw new ErroDeNegocio("INDISPONIVEL", "Não foi possível enviar o logo. Tente de novo.");
+  const caminho = caminhoDoLogo(id, deps.agora(), arquivo.extensao, imagem);
+  await armazenamento.enviar(caminho, arquivo.bytes, arquivo.tipo).catch((erro: unknown) => {
+    deps.log.error({ err: erro, imagem }, "falha ao enviar imagem da marca");
+    throw new ErroDeNegocio("INDISPONIVEL", "Não foi possível enviar a imagem. Tente de novo.");
   });
   await db(async ({ plataforma, auditoria }) => {
-    await plataforma.definirLogo(id, caminho, ator.usuarioId);
+    await plataforma.definirImagem(id, imagem, caminho, ator.usuarioId);
     await registrarCadastro(auditoria, ator, {
       empresaId: id,
       acao: "alterar",
       entidade: "empresa",
       entidadeId: id,
-      antes: { logo_path: anterior.logoCaminho },
-      depois: { logo_path: caminho },
+      antes: { [naAuditoria]: anterior[campo] },
+      depois: { [naAuditoria]: caminho },
     });
   });
-  await apagarLogoAntigo(deps, anterior.logoCaminho);
+  await apagarImagemAntiga(deps, anterior[campo]);
   return caminho;
 }
 
@@ -474,21 +489,23 @@ export async function removerLogo(
   db: Executor<"plataforma" | "auditoria">,
   ator: Ator,
   id: string,
+  imagem: ImagemDaMarca = "logo",
 ): Promise<void> {
+  const { campo, naAuditoria } = CAMINHO_DA_IMAGEM[imagem];
   const anterior = await db(async ({ plataforma, auditoria }) => {
     const empresa = await empresaExistente(plataforma, id);
-    await plataforma.definirLogo(id, null, ator.usuarioId);
+    await plataforma.definirImagem(id, imagem, null, ator.usuarioId);
     await registrarCadastro(auditoria, ator, {
       empresaId: id,
       acao: "alterar",
       entidade: "empresa",
       entidadeId: id,
-      antes: { logo_path: empresa.logoCaminho },
-      depois: { logo_path: null },
+      antes: { [naAuditoria]: empresa[campo] },
+      depois: { [naAuditoria]: null },
     });
-    return empresa.logoCaminho;
+    return empresa[campo];
   });
-  await apagarLogoAntigo(deps, anterior);
+  await apagarImagemAntiga(deps, anterior);
 }
 
 /** Catálogo inteiro com o estado da empresa; sem liberação = desligado. */

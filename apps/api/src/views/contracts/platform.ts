@@ -57,6 +57,8 @@ export const empresaCompleta = z.object({
   cnpj: z.string().nullable(),
   dominioSsw: z.string().nullable(),
   logoUrl: z.string().nullable(),
+  /** Favicon da aba do navegador; nulo = o do sistema. */
+  faviconUrl: z.string().nullable(),
   corPrimaria: z.string(),
   corDestaque: z.string(),
   slogan: z.string().nullable(),
@@ -218,6 +220,19 @@ export const contratosPlataforma = {
   removerLogo: contrato({
     metodo: "DELETE",
     caminho: "/api/v1/plataforma/empresas/:id/logo",
+    parametros: parametroEmpresa,
+    saida: ok,
+  }),
+  enviarFavicon: contrato({
+    metodo: "PUT",
+    caminho: "/api/v1/plataforma/empresas/:id/favicon",
+    parametros: parametroEmpresa,
+    entrada: z.object({ conteudoBase64: z.string().min(1).max(699_100) }),
+    saida: z.object({ faviconUrl: z.string().nullable() }),
+  }),
+  removerFavicon: contrato({
+    metodo: "DELETE",
+    caminho: "/api/v1/plataforma/empresas/:id/favicon",
     parametros: parametroEmpresa,
     saida: ok,
   }),

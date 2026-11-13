@@ -38,6 +38,7 @@ import {
   apresentarCargosDaPlataforma,
   apresentarEmpresa,
   apresentarEmpresas,
+  apresentarFavicon,
   apresentarIntegracoes,
   apresentarIntegracoesDaPlataforma,
   apresentarLogo,
@@ -161,6 +162,45 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
     async (request) => {
       const { id } = request.params;
       await removerLogo(depsDoLogo(request), naEmpresa(request)(id), await atorDa(request), id);
+      return confirmacao();
+    },
+  );
+
+  app.put(
+    c.enviarFavicon.caminho,
+    {
+      schema: {
+        params: c.enviarFavicon.parametros,
+        body: c.enviarFavicon.entrada,
+        response: { 200: c.enviarFavicon.saida },
+      },
+      bodyLimit: LIMITE_DO_CORPO_DO_LOGO,
+      onRequest: pode("plataforma_empresas", "editar"),
+    },
+    async (request) => {
+      const { id } = request.params;
+      const caminho = await enviarLogo(
+        depsDoLogo(request),
+        naEmpresa(request)(id),
+        await atorDa(request),
+        id,
+        request.body.conteudoBase64,
+        "favicon",
+      );
+      return apresentarFavicon(caminho, opcoes.urlDoLogo);
+    },
+  );
+
+  app.delete(
+    c.removerFavicon.caminho,
+    {
+      schema: { params: c.removerFavicon.parametros, response: { 200: c.removerFavicon.saida } },
+      onRequest: pode("plataforma_empresas", "editar"),
+    },
+    async (request) => {
+      const { id } = request.params;
+      const db = naEmpresa(request)(id);
+      await removerLogo(depsDoLogo(request), db, await atorDa(request), id, "favicon");
       return confirmacao();
     },
   );

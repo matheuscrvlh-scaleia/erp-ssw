@@ -153,7 +153,7 @@ describe("montarBusca", () => {
       ["Configurações", "/plataforma/configuracoes", undefined],
       ["Integrações", "/plataforma/configuracoes", "integracoes"],
       ["Feriados gerais", "/plataforma/configuracoes", "feriados-gerais"],
-      ["Diagnóstico SSW", "/plataforma/empresas/e1", "diagnostico"],
+      ["Importações", "/plataforma/empresas/e1", "importacoes"],
     ]);
   });
 });

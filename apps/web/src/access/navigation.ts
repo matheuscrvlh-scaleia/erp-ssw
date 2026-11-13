@@ -26,7 +26,6 @@ import {
   Settings,
   ShieldCheck,
   SlidersHorizontal,
-  Stethoscope,
   Trophy,
   UserCog,
   Users,
@@ -50,9 +49,14 @@ export interface AbaDoHub {
   valor: string;
   rotulo: string;
   requisito: Requisito;
+  /** Outras telas que também mostram a aba (ex.: Importações junta quatro telas). */
+  tambem?: readonly Requisito[];
   icone: LucideIcon;
   grupo?: string;
 }
+
+/** Telas que mostram a aba: a dela e as de `tambem`. */
+export const requisitosDaAba = (a: AbaDoHub): Requisito[] => [a.requisito, ...(a.tambem ?? [])];
 
 /** Tela com abas: o item do menu aparece se o usuário vê pelo menos uma aba. */
 export interface Hub {
@@ -136,33 +140,15 @@ export const ABAS_DA_EMPRESA: readonly AbaDoHub[] = [
     requisito: "plataforma_empresas",
     icone: Plug,
   },
+  // Importações: ingestão, importação de relatórios, XML de CT-e e diagnóstico numa tela só; cada
+  // seção aparece para quem tem a tela dela.
   {
-    valor: "ingestao",
-    rotulo: "Ingestão SSW",
+    valor: "importacoes",
+    rotulo: "Importações",
     grupo: "Integrações",
     requisito: "admin_ingestao",
-    icone: Database,
-  },
-  {
-    valor: "importacao-ssw",
-    rotulo: "Importação SSW",
-    grupo: "Integrações",
-    requisito: "admin_importacao_ssw",
+    tambem: ["admin_importacao_ssw", "admin_xml_cte", "admin_ssw_diagnostico"],
     icone: FileUp,
-  },
-  {
-    valor: "xml-cte",
-    rotulo: "Importar XML CT-e",
-    grupo: "Integrações",
-    requisito: "admin_xml_cte",
-    icone: FileArchive,
-  },
-  {
-    valor: "diagnostico",
-    rotulo: "Diagnóstico SSW",
-    grupo: "Integrações",
-    requisito: "admin_ssw_diagnostico",
-    icone: Stethoscope,
   },
   {
     valor: "logs",
@@ -173,7 +159,10 @@ export const ABAS_DA_EMPRESA: readonly AbaDoHub[] = [
   },
 ];
 
-export const ABAS_NA_EMPRESA_ATIVA: readonly string[] = [
+export const ABAS_NA_EMPRESA_ATIVA: readonly string[] = ["importacoes"];
+
+/** Abas da empresa que viraram seções de Importações: o link antigo abre Importações. */
+export const ABAS_ANTIGAS_DE_IMPORTACAO: readonly string[] = [
   "ingestao",
   "importacao-ssw",
   "xml-cte",
@@ -187,7 +176,7 @@ export function hubDoCaminho(caminho: string): Hub | undefined {
 }
 
 export function abasVisiveis(hub: Pick<Hub, "abas">, acesso: AcessoDoMenu): AbaDoHub[] {
-  return hub.abas.filter((a) => atende(acesso, a.requisito));
+  return hub.abas.filter((a) => requisitosDaAba(a).some((r) => atende(acesso, r)));
 }
 
 export interface ItemDoMenu {
@@ -211,7 +200,7 @@ const hub = (h: Hub, rotulo: string, icone: LucideIcon): ItemDoCatalogo => ({
   caminho: h.caminho,
   rotulo,
   icone,
-  requisitos: h.abas.map((a) => a.requisito),
+  requisitos: h.abas.flatMap(requisitosDaAba),
 });
 
 const PRINCIPAL: readonly ItemDoCatalogo[] = [
@@ -265,8 +254,8 @@ export interface DestinoDaBusca extends ItemDoMenu {
   aba?: string;
 }
 
-/** Abas da empresa que só existem lá (as de ingestão também estão em Administração). */
-const ABAS_DA_EMPRESA_NA_BUSCA = ABAS_DA_EMPRESA.filter((a) => a.valor === "diagnostico");
+/** Abas da empresa que só existem lá (ingestão e importação também estão em Administração). */
+const ABAS_DA_EMPRESA_NA_BUSCA = ABAS_DA_EMPRESA.filter((a) => a.valor === "importacoes");
 
 /** Telas fora do menu que continuam com página própria (Usuários e cargos as reúne). */
 const FORA_DO_MENU: readonly ItemDoCatalogo[] = [

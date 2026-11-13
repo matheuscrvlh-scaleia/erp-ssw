@@ -1,8 +1,4 @@
-import {
-  type DadosDaEmpresa,
-  dadosDaEmpresa,
-  type EmpresaCompleta,
-} from "@erp/shared/contracts/platform";
+import { dadosDaEmpresa, type EmpresaCompleta } from "@erp/shared/contracts/platform";
 import { ROTULO_DO_STATUS, STATUS_EMPRESA } from "@erp/shared/platform";
 import { useQueryClient } from "@tanstack/react-query";
 import { Building2, Palette, Settings2 } from "lucide-react";
@@ -15,33 +11,16 @@ import { useGravacao } from "@/hooks/use-save";
 import { cn } from "@/lib/utils";
 
 import { mutacaoSalvarEmpresa } from "../api";
+import { type FormularioDaEmpresa as Formulario, formularioDaEmpresa } from "../rules";
+import { ImagemDaMarca } from "./BrandImage";
 import { PreviaDaMarca } from "./BrandPreview";
-import { Logo } from "./Logo";
 
-type Formulario = Record<Exclude<keyof DadosDaEmpresa, "status">, string> & {
-  status: DadosDaEmpresa["status"];
-};
 type CampoDeTexto = Exclude<keyof Formulario, "status">;
 
-function paraFormulario(e: EmpresaCompleta): Formulario {
-  return {
-    nome: e.nome,
-    nomeCurto: e.nomeCurto,
-    razaoSocial: e.razaoSocial ?? "",
-    cnpj: e.cnpj ?? "",
-    dominioSsw: e.dominioSsw ?? "",
-    fuso: e.fuso,
-    status: e.status,
-    corPrimaria: e.corPrimaria,
-    corDestaque: e.corDestaque,
-    slogan: e.slogan ?? "",
-  };
-}
-
 export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
-  const [f, setF] = useState(() => paraFormulario(empresa));
+  const [f, setF] = useState(() => formularioDaEmpresa(empresa));
   useEffect(() => {
-    setF(paraFormulario(empresa));
+    setF(formularioDaEmpresa(empresa));
   }, [empresa]);
   const mudar = (parte: Partial<Formulario>) => {
     setF((v) => ({ ...v, ...parte }));
@@ -104,8 +83,8 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
         {texto("cnpj", "CNPJ")}
       </Painel>
 
+      {/* O domínio SSW fica na aba Integrações, com os sistemas integrados. */}
       <Painel titulo="Operação" icone={Settings2} classeDoCorpo="grid gap-4 p-5 md:grid-cols-2">
-        {texto("dominioSsw", "Domínio SSW", undefined, "Ex.: FRT")}
         {texto("fuso", "Fuso horário", undefined, "America/Sao_Paulo")}
         <Campo
           rotulo="Status"
@@ -129,23 +108,29 @@ export function AbaDados({ empresa }: { empresa: EmpresaCompleta }) {
         </div>
         <PreviaDaMarca cor={f.corPrimaria} nomeCurto={f.nomeCurto} />
         <div className="grid gap-4 md:grid-cols-2">{texto("slogan", "Slogan")}</div>
-        <Logo empresa={empresa} />
+        <div className="grid gap-5 md:grid-cols-2">
+          <ImagemDaMarca empresa={empresa} imagem="logo" />
+          <ImagemDaMarca empresa={empresa} imagem="favicon" />
+        </div>
       </Painel>
 
-      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-flutuante">
-        {!lido.success && (
-          <span role="alert" className="mr-auto text-xs font-medium text-status-bad-fg">
-            {lido.error.issues[0]?.message ?? "Confira os campos."}
-          </span>
-        )}
-        <Button
-          disabled={salvar.gravando || !lido.success}
-          onClick={() => {
-            if (lido.success) void salvar.gravar(lido.data);
-          }}
-        >
-          {salvar.gravando ? "Salvando…" : "Salvar dados"}
-        </Button>
+      {/* Faixa com o fundo da página: o conteúdo que rola por baixo não aparece em volta da barra. */}
+      <div className="sticky bottom-0 z-10 bg-background pt-2 pb-4">
+        <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-flutuante">
+          {!lido.success && (
+            <span role="alert" className="mr-auto text-xs font-medium text-status-bad-fg">
+              {lido.error.issues[0]?.message ?? "Confira os campos."}
+            </span>
+          )}
+          <Button
+            disabled={salvar.gravando || !lido.success}
+            onClick={() => {
+              if (lido.success) void salvar.gravar(lido.data);
+            }}
+          >
+            {salvar.gravando ? "Salvando…" : "Salvar dados"}
+          </Button>
+        </div>
       </div>
     </div>
   );

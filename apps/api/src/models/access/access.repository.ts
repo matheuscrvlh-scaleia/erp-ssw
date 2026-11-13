@@ -48,6 +48,7 @@ export function criarRepositorioAcesso(tx: Transacao): RepositorioAcesso {
     empresa: async (empresaId) => {
       const [linha] = await tx.consultar<EmpresaGravada>(sql`
         select id, nome, nome_curto as "nomeCurto", logo_caminho as "logoCaminho",
+               favicon_caminho as "faviconCaminho",
                cor_primaria as "corPrimaria", cor_destaque as "corDestaque", slogan, fuso, status
         from erp.empresas where id = ${empresaId}`);
       return linha ?? null;
