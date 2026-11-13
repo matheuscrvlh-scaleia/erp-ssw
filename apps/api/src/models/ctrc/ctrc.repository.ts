@@ -1,6 +1,6 @@
 import { comInstantes, sql, type Transacao } from "@erp/db";
 
-import { type LeitorDeConfiguracoes } from "../configuracoes/leitor";
+import { type LeitorDeConfiguracoes } from "../settings/reader";
 import { type RepositorioCtrc } from "./ctrc.service";
 
 /** Teto de segurança: um número repete em poucas séries. */

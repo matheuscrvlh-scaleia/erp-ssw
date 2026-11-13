@@ -194,7 +194,7 @@ function moduloLiberado(empresaId: string | null, key: string, hoje: string): bo
 - Rotas do servidor com módulo (as do R5): `ranking` em toda `ranking.functions` e
   `getRankingOperacional`; `ponto_bonificacao` em `bonificacao.functions`; `performance` **ou**
   `ranking` em `getSlaSerie`. Sem módulo (de propósito): usuários, cargos, departamentos,
-  configurações, prazos configurados, auditoria, acesso/troca de empresa, Plataforma, Ahgora (só
+  configurações, prazos configurados, auditoria, access/troca de empresa, Plataforma, Ahgora (só
   Plataforma).
 
 ### 1.8 Telas — algoritmo exato (`calcularAcesso`)

@@ -5,8 +5,8 @@
  * é o do fuso da empresa (Brasília na FR, decisão Q11).
  */
 import { type Sql, sql } from "@erp/db";
-import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
-import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contratos/filtros";
+import { CODIGOS_ENTREGA } from "@erp/domain/core/codes";
+import { SEM_TIPO_DOCUMENTO } from "@erp/shared/contracts/filters";
 
 type Expressao = Sql;
 

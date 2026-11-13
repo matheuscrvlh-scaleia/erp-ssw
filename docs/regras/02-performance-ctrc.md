@@ -59,7 +59,7 @@ Definidas em `docs/regras/01-nucleo-ctrc.md`; aqui só são usadas pelo nome:
 
 ### 0.3 Texto com vários valores (remetente, destino, cidade)
 
-origem: `texto_casa_filtro`, `src/lib/filtro-texto.ts`.
+origem: `texto_casa_filtro`, `src/lib/text-filter.ts`.
 
 ```ts
 // Postgres ILIKE: sem escapar % e _ digitados pelo usuário; caixa ignorada (inclusive acentuadas),
@@ -1119,7 +1119,7 @@ destino` (`cidade/UF`), `Peso (kg)`, `Volumes`, `Frete (R$)`, `Placa (romaneio)`
 ocorrência`, `Status`, `Link SSW`. Linhas ordenadas por placa (`localeCompare` pt-BR, vazias no
 fim, ordenação estável). Arquivo `performance-${periodoSlug}-${dd-mm-aaaa}`; título "Performance";
 subtítulo `"Período: dd/mm/aaaa a dd/mm/aaaa · N registros"`. PDF: colunas 4 e 5 com largura 90,
-coluna 14 com 110, fonte 7. CSV / Excel / PDF pelo `src/lib/exportacao` (identidade FR).
+coluna 14 com 110, fonte 7. CSV / Excel / PDF pelo `src/lib/export` (identidade FR).
 
 ---
 

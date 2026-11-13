@@ -27,45 +27,45 @@ mesma previsibilidade.
 
 ```
 apps/web/src/
-  main.tsx · roteador.tsx      entrada e roteador (a política de cache do roteador não muda)
+  main.tsx · router.tsx        entrada e roteador (a política de cache do roteador não muda)
   routes/                      SÓ rota: caminho, schema da busca, página. Nenhuma tela aqui.
-  modulos/<dominio>/           uma pasta por domínio, com o nome do recurso na api
-    Pagina<Nome>.tsx           a tela: lê a busca, chama as consultas, monta o <Pagina>
-    componentes/               pedaços da tela, um componente exportado por arquivo
+  modules/<dominio>/           uma pasta por domínio, com o nome do recurso na api
+    <Nome>Page.tsx             a tela: lê a busca, chama as consultas, monta o <Pagina>
+    components/                pedaços da tela, um componente exportado por arquivo
     api.ts                     consultas e mutações do módulo (o único que chama `chamar`)
-    busca.ts                   schema zod dos parâmetros da URL (filtros, página, aba)
-    regras.ts                  lógica pura da tela (derivar, agrupar, ordenar)
-    textos.ts                  rótulos, mensagens e formatação de exibição
-    exportacao.ts              colunas e linhas do Excel/PDF
+    search.ts                  schema zod dos parâmetros da URL (filtros, página, aba)
+    rules.ts                   lógica pura da tela (derivar, agrupar, ordenar)
+    texts.ts                   rótulos, mensagens e formatação de exibição
+    export.ts                  colunas e linhas do Excel/PDF
     *.test.ts(x)               ao lado do arquivo testado
-  componentes/
+  components/
     ui/                        shadcn (gerado; só tema)
-    comum/                     peça usada por 2+ módulos (Pagina, TabelaDados, Filtros, KpiCard...)
+    common/                    peça usada por 2+ módulos (Page, DataTable, Filters, KpiCard...)
     layout/                    casca: menu, cabeçalho, <Pagina>
-  acesso/                      sessão, guarda de rota, inatividade, permissão (`usePermissao`)
+  access/                      sessão, guarda de rota, inatividade, permissão (`usePermissao`)
   hooks/                       hook usado por 2+ módulos
   lib/                         infraestrutura sem tela: `chamar`, exportação, datas, tema
-  dominio/ shared/             cópias da api (ADR 0013): não se editam aqui
+  domain/ shared/              cópias da api (ADR 0013): não se editam aqui
 ```
 
-Os nomes `api`, `busca`, `regras`, `textos` e `exportacao` são fixos. Um módulo só cria o arquivo
+Os nomes `api`, `search`, `rules`, `texts` e `export` são fixos. Um módulo só cria o arquivo
 de que precisa. Tipo que só um arquivo usa fica nele; tipo do contrato vem de `@erp/shared`.
 
 ### 2. Paralelo com a api
 
 | api (MVC) | web | O que faz |
 | --- | --- | --- |
-| contrato (`views/contratos`) | o mesmo contrato (`shared/contratos`) | forma da entrada e da saída |
+| contrato (`views/contracts`) | o mesmo contrato (`shared/contracts`) | forma da entrada e da saída |
 | controller | `api.ts` | a única porta para a rede |
-| model / `dominio` | `regras.ts` / `@erp/dominio` | cálculo; o que vale nos dois lados mora em `dominio` |
-| view | `textos.ts` + componentes | como o dado aparece |
+| model / `domain` | `rules.ts` / `@erp/domain` | cálculo; o que vale nos dois lados mora em `domain` |
+| view | `texts.ts` + componentes | como o dado aparece |
 
 ### 3. Onde fica cada estado
 
 | Estado | Onde | Exemplo |
 | --- | --- | --- |
 | Dado do servidor | TanStack Query (`api.ts`) | lista de CT-e, calendário |
-| Filtro, página, aba, ordenação | URL, validada por `busca.ts` | `?periodo=mes&unidades=...` (link compartilhável, igual ao de hoje) |
+| Filtro, página, aba, ordenação | URL, validada por `search.ts` | `?periodo=mes&unidades=...` (link compartilhável, igual ao de hoje) |
 | Formulário | react-hook-form + `zodResolver` com o schema do contrato | modal de feriado |
 | Efêmero da tela | `useState` no componente | modal aberto, linha expandida |
 | Sessão e empresa ativa | `acesso/` | token, permissões |
@@ -100,14 +100,15 @@ export const mutacaoCriarFeriado = (cliente: QueryClient) =>
 
 ### 5. Página e componentes
 
-- Toda tela usa `<Pagina titulo descricao acoes filtros abas>` (`componentes/layout/Pagina.tsx`):
+- Toda tela usa `<Pagina titulo descricao acoes filtros abas>` (`components/layout/Page.tsx`):
   cabeçalho, ações à direita e filtros grudados no topo saem iguais em todas.
 - A página orquestra: lê a busca, chama as consultas, passa dado pronto aos componentes. Componente
-  de `componentes/` recebe props e não lê a URL nem a rede (exceção: o que carrega sob demanda,
+  de `components/` recebe props e não lê a URL nem a rede (exceção: o que carrega sob demanda,
   como a linha do tempo expandida, que usa a consulta do `api.ts`).
 - Carregando, vazio e erro sempre com as peças comuns (`LinhasCarregando`, `EstadoVazio`,
-  `MensagemErro`, `ErroDeRota`).
-- Arquivo passou de ~300 linhas ou faz duas coisas: quebre em `componentes/`.
+  `MensagemErro`, `ErroDeRota`, nos arquivos `LoadingRows`, `EmptyState`, `ErrorMessage` e
+  `RouteError`).
+- Arquivo passou de ~300 linhas ou faz duas coisas: quebre em `components/`.
 - Permissão: `usePermissao(tela, acao)` só esconde o botão; a api confere de novo.
 - Visual de hoje: classes e textos copiados da tela de referência; cores e espaços pelos tokens do
   Tailwind, sem hex solto.
@@ -115,26 +116,27 @@ export const mutacaoCriarFeriado = (cliente: QueryClient) =>
 ### 6. Dependências entre pastas
 
 ```
-routes → modulos/<x>/Pagina → modulos/<x>/{componentes, api, busca, regras, textos}
-                            → componentes/{comum, layout, ui}, acesso, hooks, lib, @erp/*
+routes → modules/<x>/<Nome>Page → modules/<x>/{components, api, search, rules, texts}
+                                 → components/{common, layout, ui}, access, hooks, lib, @erp/*
 ```
 
 - Um módulo não importa arquivo interno de outro. Peça usada por dois módulos sobe para
-  `componentes/comum` (ou `hooks/`, `lib/`). Consulta de outro módulo pode ser usada, pelo `api.ts`
+  `components/common` (ou `hooks/`, `lib/`). Consulta de outro módulo pode ser usada, pelo `api.ts`
   dele.
-- `componentes/comum`, `hooks` e `lib` não importam de `modulos/`.
+- `components/common`, `hooks` e `lib` não importam de `modules/`.
 - Essas regras entram no ESLint (`no-restricted-imports`), para não depender de revisão.
 
 ### 7. Nomes
 
-- Componente: `PascalCase.tsx`, um exportado por arquivo, nome que diz o que é: `Pagina<Nome>`,
-  `Modal<De><Nome>`, `Aba<Nome>`, `Tabela<Nome>`, `Filtros<Nome>`, `Grafico<Nome>`.
-- Lógica: minúsculo (`regras.ts`, `textos.ts`); hook: `use-<nome>.ts` exportando `use<Nome>`.
-- Português, como na api.
+- Componente: `PascalCase.tsx`, um exportado por arquivo, nome que diz o que é: `<Nome>Page`,
+  `<Nome>Modal`, `<Nome>Tab`, `<Nome>Table`, `<Nome>Filters`, `<Nome>Chart`.
+- Lógica: minúsculo (`rules.ts`, `texts.ts`); hook: `use-<nome>.ts` exportando `use<Nome>`.
+- Arquivos e pastas em inglês (ADR 0017); o código dentro deles (identificadores, textos) segue
+  em português, como na api.
 
 ### 8. Testes
 
-- `regras.ts`, `busca.ts`, `textos.ts` e `exportacao.ts` têm teste (`*.test.ts`).
+- `rules.ts`, `search.ts`, `texts.ts` e `export.ts` têm teste (`*.test.ts`).
 - Componente com lógica (filtro, formulário, permissão) tem teste com Testing Library
   (`*.test.tsx`). Componente só visual não.
 

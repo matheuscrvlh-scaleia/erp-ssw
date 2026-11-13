@@ -3,10 +3,10 @@ import {
   contextoDoSegredo,
   decifrarSegredo,
   type SegredoCifrado,
-} from "@erp/db/segredos";
-import { type HoraExtraDoDia } from "@erp/dominio/bonificacao-entrega";
-import { empresaEmOperacao } from "@erp/dominio/empresas";
-import { ErroDeNegocio } from "@erp/dominio/erros";
+} from "@erp/db/secrets";
+import { empresaEmOperacao } from "@erp/domain/companies";
+import { type HoraExtraDoDia } from "@erp/domain/delivery-bonus";
+import { ErroDeNegocio } from "@erp/domain/errors";
 import {
   apurarDia,
   apurarFuncionario,
@@ -17,7 +17,7 @@ import {
   horaExtraNoDia,
   MAXIMO_FUNCIONARIOS_POR_APURACAO,
   selecionarFuncionarios,
-} from "@erp/dominio/ponto";
+} from "@erp/domain/timekeeping";
 
 import {
   type ClienteAhgora,
@@ -26,8 +26,8 @@ import {
   emParalelo,
   type FuncionarioAhgora,
 } from "../../infra/ahgora";
-import { conflito, naoEncontrado, semPermissao } from "../erros";
-import { type Executor } from "../repositorios";
+import { conflito, naoEncontrado, semPermissao } from "../errors";
+import { type Executor } from "../repositories";
 
 /** Medido em produção: 10 chamadas simultâneas levam ~79 ms por funcionário. */
 const CONCORRENCIA = 10;

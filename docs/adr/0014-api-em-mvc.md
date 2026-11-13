@@ -1,7 +1,7 @@
 # ADR 0014 — API em MVC (Model, View, Controller)
 
 - Situação: aceita (12/11/2026, decisão do dono)
-- Substitui: as camadas por módulo `apps/api/src/modulos/<dominio>/{rotas,casos-de-uso,repositorio}.ts`
+- Substitui: as camadas por módulo `apps/api/src/modules/<dominio>/{rotas,casos-de-uso,repositorio}.ts`
 
 ## Contexto
 
@@ -40,16 +40,16 @@ apps/api/src/
   controllers/<recurso>.controller.ts    C
   models/<recurso>/<recurso>.service.ts  M  operações de negócio (Service Layer)
   models/<recurso>/<recurso>.repository.ts  M  dados (Drizzle)
-  models/repositorios.ts            M  todos os repositórios presos à transação com contexto
-  models/erros.ts                   M  erros de negócio (`naoEncontrado`, `conflito`, ...)
+  models/repositories.ts            M  todos os repositórios presos à transação com contexto
+  models/errors.ts                   M  erros de negócio (`naoEncontrado`, `conflito`, ...)
   models/cte/                       M  gravação do CT-e pelo núcleo + SQL comum de CT-e
-  models/comum/                     M  catálogos (telas, módulos, papéis, permissões), datas, zod, erros
+  models/common/                     M  catálogos (telas, módulos, papéis, permissões), datas, zod, erros
                                        padrão, peças de query string (@erp/shared, cópia no web)
   views/<recurso>.view.ts           V  apresentação: model → corpo da resposta; e-mails
-  views/contratos/ + contrato.ts    V  contratos zod: entrada (validação) e saída (forma da View)
+  views/contracts/ + contrato.ts    V  contratos zod: entrada (validação) e saída (forma da View)
                                        (@erp/shared/contratos, cópia no web)
   controllers/middleware/           C  sessão, guardas, contexto da empresa, segurança, erro → resposta
-  controllers/observabilidade.controller.ts  C  saúde, métricas e documentação
+  controllers/observability.controller.ts  C  saúde, métricas e documentação
   jobs/                             entrada pela fila (BullMQ): o job chama o model, como um controller
   dominio/                          M  regras puras, sem I/O (cópia no web e no worker-ssw, ADR 0013)
   db/                               M  schema Drizzle, cliente com contexto, RLS
@@ -57,7 +57,7 @@ apps/api/src/
 ```
 
 Não há pasta `http/` nem `shared/`: o que montava o app foi para `app.ts`, os middlewares são parte
-do controller, os contratos são a forma da view e o resto do `shared` é model (`models/comum`). Os
+do controller, os contratos são a forma da view e o resto do `shared` é model (`models/common`). Os
 imports seguem `@erp/shared/*`; o `tsconfig.json` aponta cada caminho para a pasta certa, e o
 `scripts/copiar-compartilhado.sh` monta a cópia do web.
 
@@ -66,7 +66,7 @@ imports seguem `@erp/shared/*`; o `tsconfig.json` aponta cada caminho para a pas
 - Um plugin Fastify por recurso (`controlador<Recurso>`), registrado em `app.ts`.
 - Declara a rota com o contrato (`schema: { querystring/body/params: entrada, response: saida }`):
   a validação acontece antes do handler (o "Form Request" do Laravel).
-- Aplica as guardas (`controllers/middleware/guardas`), monta o contexto (empresa, ator), chama o service
+- Aplica as guardas (`controllers/middleware/guards`), monta o contexto (empresa, ator), chama o service
   e entrega o resultado à view. Sem SQL, sem regra, sem montar JSON à mão.
 
 ### Model (`models/`, `dominio/`, `db/`)
@@ -86,7 +86,7 @@ imports seguem `@erp/shared/*`; o `tsconfig.json` aponta cada caminho para a pas
 - Funções puras `apresentar<Coisa>(dadoDoModel) → SaidaDe<contrato>` (Transform View): tirar campo
   interno, renomear, envelope, rótulo e formatação de exibição. Sem I/O, sem consulta, sem decisão
   de negócio (número calculado é do model).
-- O schema de saída do contrato (`shared/contratos`) é o molde: o serializer do Fastify só deixa
+- O schema de saída do contrato (`shared/contracts`) é o molde: o serializer do Fastify só deixa
   sair o que ele declara.
 - Quando o dado do model já é a resposta (ex.: `{ inseridos, atualizados }`), o controller devolve
   direto; não se cria view identidade.
@@ -96,8 +96,8 @@ imports seguem `@erp/shared/*`; o `tsconfig.json` aponta cada caminho para a pas
 
 - A regra não sabe o formato do JSON: mudar a apresentação não toca no model, e o mesmo model
   serve controller e job.
-- Os caminhos mudaram (`modulos/*` → `controllers/`, `models/`, `views/`; `plugins/` →
-  `http/middleware/`; `compartilhado/` → `models/cte/`; `infra/repositorios.ts` e `http/erros.ts` →
+- Os caminhos mudaram (`modules/*` → `controllers/`, `models/`, `views/`; `plugins/` →
+  `http/middleware/`; `compartilhado/` → `models/cte/`; `infra/repositories.ts` e `http/erros.ts` →
   `models/`). As URLs, contratos e respostas **não** mudaram: os testes de contrato
   (`*.controller.test.ts`) são os mesmos.
 - Branch aberta antes desta mudança: rebase na `develop`; o git segue os arquivos movidos

@@ -1,8 +1,8 @@
 import { atribuicoes, type Sql, sql, type Transacao, valoresDeInsercao } from "@erp/db";
-import { decimalEmUnidades, type SituacaoPrevista } from "@erp/dominio/ranking";
-import { type Regra } from "@erp/shared/contratos/ranking";
+import { decimalEmUnidades, type SituacaoPrevista } from "@erp/domain/ranking";
+import { type Regra } from "@erp/shared/contracts/ranking";
 
-import { ondeDoFiltro } from "../performance/consultas";
+import { ondeDoFiltro } from "../performance/queries";
 import { type ConsultaDoRanking, type RepositorioRanking } from "./ranking.service";
 
 /** Teto da lista de CT-e para atribuir (igual a hoje). */

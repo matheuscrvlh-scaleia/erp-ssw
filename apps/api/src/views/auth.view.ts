@@ -1,7 +1,7 @@
-import { type SaidaDe } from "@erp/shared/contrato";
-import { type contratosAuth, type TokenEmitido } from "@erp/shared/contratos/auth";
+import { type SaidaDe } from "@erp/shared/contract";
+import { type contratosAuth, type TokenEmitido } from "@erp/shared/contracts/auth";
 
-import { type Mensagem } from "../infra/correio";
+import { type Mensagem } from "../infra/mail";
 import { type AjudaDeAcesso } from "../models/auth/auth.service";
 
 /** O corpo leva só o access token: o refresh vai no cookie httpOnly. */

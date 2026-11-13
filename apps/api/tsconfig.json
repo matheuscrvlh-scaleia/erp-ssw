@@ -26,19 +26,19 @@
     "noUncheckedSideEffectImports": true,
     "allowUnreachableCode": false,
 
-    // @erp/shared e @erp/dominio são copiados para o web e o worker-ssw com os mesmos imports: o
-    // arquivo fica igual nas cópias. Aqui @erp/shared mora em views/contratos, views/contrato.ts e
-    // models/comum (scripts/copiar-compartilhado.sh). tsx e esbuild leem estes mesmos caminhos.
+    // @erp/shared e @erp/domain são copiados para o web e o worker-ssw com os mesmos imports: o
+    // arquivo fica igual nas cópias. Aqui @erp/shared mora em views/contracts, views/contract.ts e
+    // models/common (scripts/copiar-compartilhado.sh). tsx e esbuild leem estes mesmos caminhos.
     "paths": {
-      "@erp/dominio/nucleo": ["./src/dominio/nucleo/index.ts"],
-      "@erp/dominio/ingestao/relatorios": ["./src/dominio/ingestao/relatorios/index.ts"],
-      "@erp/dominio/*": ["./src/dominio/*"],
-      "@erp/shared/contratos/*": ["./src/views/contratos/*"],
-      "@erp/shared/contrato": ["./src/views/contrato.ts"],
-      "@erp/shared/*": ["./src/models/comum/*"],
+      "@erp/domain/core": ["./src/domain/core/index.ts"],
+      "@erp/domain/ingestion/reports": ["./src/domain/ingestion/reports/index.ts"],
+      "@erp/domain/*": ["./src/domain/*"],
+      "@erp/shared/contracts/*": ["./src/views/contracts/*"],
+      "@erp/shared/contract": ["./src/views/contract.ts"],
+      "@erp/shared/*": ["./src/models/common/*"],
       "@erp/db": ["./src/db/index.ts"],
-      "@erp/db/segredos": ["./src/db/segredos.ts"],
-      "@erp/db/seeds": ["./src/db/seeds/catalogo.ts"]
+      "@erp/db/secrets": ["./src/db/secrets.ts"],
+      "@erp/db/seeds": ["./src/db/seeds/catalog.ts"]
     }
   },
   "include": ["src"]

@@ -147,7 +147,7 @@ function padroesTextoFiltro(filtro: string): string[] {
 
 - `valor` NULL → não casa. `filtro` NULL → não casa (o chamador só aplica o filtro quando
   preenchido).
-- No front, `lerFiltroTexto` (fr-transportes `src/lib/filtro-texto.ts`) já descarta vazios e
+- No front, `lerFiltroTexto` (fr-transportes `src/lib/text-filter.ts`) já descarta vazios e
   duplicados antes de mandar; manter essa normalização no contrato zod da rota.
 - Fragmento SQL: `col ILIKE ANY($padroes::text[])` com `$padroes = padroesTextoFiltro(filtro)`.
 
@@ -1036,7 +1036,7 @@ não pontos percentuais inteiros).
 
 ## 11. Gatilhos → onde a regra roda no sistema novo
 
-Sem gatilho no banco: as regras abaixo viram **funções puras** em `apps/api/src/dominio` chamadas
+Sem gatilho no banco: as regras abaixo viram **funções puras** em `apps/api/src/domain` chamadas
 pelos casos de uso que gravam CT-e ou ocorrência (API e worker), na mesma transação.
 
 ### 11.1 Gravação de CT-e (`ctrcs`) — ordem de hoje
@@ -1078,7 +1078,7 @@ Antes de gravar ocorrência, a ingestão chama §8.4 (garantir código). Cadastr
 ### 11.3 Proposta de ordem no novo (uma função, sempre na mesma sequência)
 
 ```ts
-// apps/api/src/dominio — puro; o caso de uso carrega antes: CT-e antigo, ocorrências do CT-e, cadastro de códigos,
+// apps/api/src/domain — puro; o caso de uso carrega antes: CT-e antigo, ocorrências do CT-e, cadastro de códigos,
 // filiais_ssw, configurações da empresa; e grava depois numa transação.
 function derivarCtrc(antigo: Ctrc | null, novo: Ctrc, ctx: ContextoDerivacao): Ctrc | "descartar" {
   if (!antigo) { if (abaixoDaDataMinima(novo, ctx)) return "descartar"; if (ehFonteBi2(ctx.fonte)) return "descartar"; }

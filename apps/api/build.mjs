@@ -1,4 +1,4 @@
-// Empacota a API num único ESM. Os caminhos @erp/* (views/contratos, models/comum, dominio, db) vêm
+// Empacota a API num único ESM. Os caminhos @erp/* (views/contracts, models/common, domain, db) vêm
 // do tsconfig.json e entram no bundle; as dependências de node_modules ficam de fora (instaladas na
 // imagem).
 import { build } from "esbuild";

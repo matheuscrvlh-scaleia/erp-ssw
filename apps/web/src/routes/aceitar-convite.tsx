@@ -1,12 +1,12 @@
-import { contratosAuth } from "@erp/shared/contratos/auth";
+import { contratosAuth } from "@erp/shared/contracts/auth";
 import { z } from "@erp/shared/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-import { CartaoDeEntrada } from "@/acesso/componentes/CartaoDeEntrada";
-import { FormularioNovaSenha, type NovaSenha } from "@/acesso/componentes/FormularioNovaSenha";
+import { CartaoDeEntrada } from "@/access/components/LoginCard";
+import { FormularioNovaSenha, type NovaSenha } from "@/access/components/NewPasswordForm";
 import { chamar } from "@/lib/api";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { mensagemAmigavel } from "@/lib/error-message";
 
 export const Route = createFileRoute("/aceitar-convite")({
   validateSearch: z.object({ token: z.string().catch("") }),

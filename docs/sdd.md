@@ -46,30 +46,30 @@ apps/
       controllers/         C: rotas HTTP (Fastify) por recurso; middleware/ (sessão, guardas, contexto,
                            segurança, erro → resposta)
       models/<recurso>/    M: <recurso>.service.ts (operações) · <recurso>.repository.ts (SQL puro)
-      models/repositorios.ts  M: todos os repositórios presos à transação com contexto
-      models/comum/        M: catálogos (telas, módulos, papéis, permissões), datas, zod, erros padrão (origem)
+      models/repositories.ts  M: todos os repositórios presos à transação com contexto
+      models/common/        M: catálogos (telas, módulos, papéis, permissões), datas, zod, erros padrão (origem)
       views/               V: apresentação (dado do model → resposta do contrato) e e-mails
-      views/contratos/     V: contratos zod de cada endpoint (origem)
+      views/contracts/     V: contratos zod de cada endpoint (origem)
       dominio/             regras puras (origem)
       db/                  cliente `pg` com contexto de empresa, tag `sql`, ajudantes de linha,
                            aplicador de migrations, seeds
       jobs/                BullMQ: registro, agendamentos, processadores
       infra/               clientes externos: e-mail, S3, Redis, Ahgora, worker-ssw, senhas, tokens, log
-    migracoes/             migrations em SQL escrito à mão (NNNN_nome.sql)
-    bootstrap/papeis.sql   papéis do banco (aplicado uma vez pelo DBA, antes da primeira migration)
+    migrations/            migrations em SQL escrito à mão (NNNN_nome.sql)
+    bootstrap/roles.sql    papéis do banco (aplicado uma vez pelo DBA, antes da primeira migration)
   web/        projeto próprio (SPA)
     src/
       routes/              rotas por arquivo (TanStack Router)
-      modulos/<dominio>/   telas e consultas de cada domínio
+      modules/<dominio>/   telas e consultas de cada domínio
       componentes/         comum + ui (shadcn)
       acesso/              sessão, guarda de rota, inatividade
       dominio/ shared/     cópias iguais às da api
 docker-compose.yml · docs/ · scripts/ · .github/
 ```
 
-`@erp/shared` (na api: `views/contratos`, `views/contrato.ts`, `models/comum`) e `@erp/dominio` têm
-origem na api e cópia byte a byte no web (`src/shared`, `src/dominio`). Os imports `@erp/shared/*` e
-`@erp/dominio/*` são resolvidos pelo `paths` do `tsconfig.json` de cada app. Mudou na api, roda
+`@erp/shared` (na api: `views/contracts`, `views/contract.ts`, `models/common`) e `@erp/domain` têm
+origem na api e cópia byte a byte no web (`src/shared`, `src/domain`). Os imports `@erp/shared/*` e
+`@erp/domain/*` são resolvidos pelo `paths` do `tsconfig.json` de cada app. Mudou na api, roda
 `scripts/copiar-compartilhado.sh` no mesmo commit; o CI confere com `--conferir`. O worker-ssw leva
 a sua própria cópia, com os mesmos imports.
 
@@ -109,7 +109,7 @@ plataforma, prazo do parceiro, prazos, ranking, recálculo, romaneio, segredos e
 
 ### 5.2 Contratos e erros
 
-- Cada endpoint tem um contrato em `views/contratos/<dominio>.ts` (método, caminho, entrada,
+- Cada endpoint tem um contrato em `views/contracts/<dominio>.ts` (método, caminho, entrada,
   saída). A api usa o contrato para validar; o web usa o mesmo contrato para chamar e tipar. Os
   tipos saem dos schemas (`z.infer`, `SaidaDe`, `EntradaDe`), nunca escritos à mão.
 - O schema de saída é o molde da resposta: o serializer do Fastify só deixa sair o que ele declara.
@@ -121,7 +121,7 @@ plataforma, prazo do parceiro, prazos, ranking, recálculo, romaneio, segredos e
 
 ### 5.3 Regras de domínio
 
-`src/dominio` tem só funções puras (sem I/O, sem relógio escondido; quem precisa de "hoje" recebe
+`src/domain` tem só funções puras (sem I/O, sem relógio escondido; quem precisa de "hoje" recebe
 `agora`). Principais: núcleo do CT-e (finalização, ocorrência efetiva, atraso, prazo, universo,
 gravação), performance, romaneio, ranking, bonificação, calendário, acesso, leitores dos relatórios
 SSW. Toda regra portada de uma função SQL cita a origem num comentário. Fica fora de `models/`
@@ -138,14 +138,14 @@ executa.
   vira parâmetro `$n`; um `Sql` interpolado entra como trecho; array vira um parâmetro só, com cast
   explícito (`= any(${ids}::uuid[])`); jsonb por `sql.json(...)`; identificador dinâmico só por
   `sql.identificador`. Colunas saem em camelCase por `as "campo"`; nas tabelas largas,
-  `camposDaLinha`, `valoresDeInsercao` e `atribuicoes` (`src/db/linhas.ts`).
+  `camposDaLinha`, `valoresDeInsercao` e `atribuicoes` (`src/db/rows.ts`).
 - **Tipos:** date, timestamp, timestamptz e interval chegam em texto; instantes são convertidos com
   `comInstantes` / `instanteDoBanco`. bigint e numeric ficam em texto.
-- **Migrations:** `.sql` escritos à mão em `apps/api/migracoes/`, a fonte da verdade do DDL.
-  `bun run db:migrar` (`src/db/migrar.ts`, papel `erp_migracao`) aplica as pendentes em ordem de
+- **Migrations:** `.sql` escritos à mão em `apps/api/migrations/`, a fonte da verdade do DDL.
+  `bun run db:migrar` (`src/db/migrate.ts`, papel `erp_migracao`) aplica as pendentes em ordem de
   nome, cada uma na sua transação e sob advisory lock, e anota em `migracoes.aplicadas`.
 - **Papéis:** `erp_app` (api, sem BYPASSRLS), `erp_worker` (worker-ssw, GRANT mínimo, sem
-  BYPASSRLS), `erp_migracao` (dono das tabelas, só para migrar). Criados por `bootstrap/papeis.sql`.
+  BYPASSRLS), `erp_migracao` (dono das tabelas, só para migrar). Criados por `bootstrap/roles.sql`.
 - **Contexto por transação:** cada requisição roda numa transação (`Banco.transacao`) com
   `set_config` local de `app.empresa_id`, `app.usuario_id` e `app.plataforma`. Sem contexto, nenhuma
   linha.
@@ -172,12 +172,12 @@ executa.
 
 ## 8. Autorização
 
-Guardas no backend (`controllers/middleware/guardas`), nesta ordem: autenticado → empresa ativa →
+Guardas no backend (`controllers/middleware/guards`), nesta ordem: autenticado → empresa ativa →
 módulo liberado para a empresa (`exigirModulo`) → permissão da ação na tela
 (`exigirPermissao(tela, "ver" | "editar" | "excluir")`) → papel (`exigirAdminDaEmpresa`) ou equipe
 da Plataforma (`exigirAdminPlataforma`).
 
-- **Permissão por ação** (`models/comum/acesso/permissoes.ts`): cada tela declara as ações que tem
+- **Permissão por ação** (`models/common/access/permissions.ts`): cada tela declara as ações que tem
   (Ver; Criar/Editar; Excluir). O cargo dá permissões; a exceção por usuário concede ("Sim") ou nega
   ("Não"). Admin e Super Admin têm tudo pelo código. Telas dadas por regra (ex.: Logs) e as da
   Plataforma não entram em cargo de empresa.
@@ -199,7 +199,7 @@ heartbeat SSW) são do worker-ssw.
 
 - O ERP **lê** direto do banco o que as telas de ingestão mostram.
 - O ERP **pede** ao worker-ssw as execuções e operações manuais pelo HTTP interno
-  (`WORKER_SSW_URL` + token; contrato em `views/contratos/worker-ssw.ts`, igual nos dois lados).
+  (`WORKER_SSW_URL` + token; contrato em `views/contracts/worker-ssw.ts`, igual nos dois lados).
   O ERP valida a entrada e grava a auditoria antes de chamar. Sem configuração, as ações respondem
   503 e as leituras seguem.
 - O ERP cadastra as integrações por empresa (`empresa_integracoes`, cifradas); o worker-ssw lê com
@@ -214,14 +214,14 @@ heartbeat SSW) são do worker-ssw.
 - SPA servida pelo Caddy. Em desenvolvimento, o Vite repassa `/api` para a api (mesma origem, o
   cookie `SameSite=Strict` funciona sem CORS).
 - Rotas por arquivo com code splitting; `_autenticado` protege as telas, renova a sessão e controla
-  a inatividade. O arquivo da rota só aponta para a página em `src/modulos/<dominio>/`, no caminho
+  a inatividade. O arquivo da rota só aponta para a página em `src/modules/<dominio>/`, no caminho
   de hoje (`CAMINHO_DA_TELA`): guarda e menu saem dele.
 - Dados pelo TanStack Query, chamando a api pelo contrato (`chamar(contrato, ...)`), com erro
   traduzido para mensagem ao operador; depois de gravar, `invalidateQueries` da chave do domínio.
 - Formulários com react-hook-form + o zod do contrato, e a mesma regra do `dominio` quando há
   cálculo na tela.
 - Mesmo visual do sistema atual: classes e textos copiados da tela de referência; componentes em
-  `src/componentes/ui` (shadcn).
+  `src/components/ui` (shadcn).
 - Exportação para Excel (exceljs) e PDF (jspdf).
 
 ## 12. Segurança
@@ -250,7 +250,7 @@ heartbeat SSW) são do worker-ssw.
 - Variáveis em `.env` na raiz (modelo em `.env.example`). Obrigatórias: `DATABASE_URL`,
   `JWT_CHAVE_PRIVADA`, `SEGREDOS_CHAVES`. Domínio, e-mail e worker-ssw ficam em
   Plataforma › Integrações (cifrados no banco).
-- Ambiente novo: o DBA roda `bootstrap/papeis.sql` uma vez; depois `bun run db:migrar` em
+- Ambiente novo: o DBA roda `bootstrap/roles.sql` uma vez; depois `bun run db:migrar` em
   `apps/api`, de uma máquina confiável, com `DATABASE_URL_MIGRACAO` (papel de migração).
 - Detalhes: `docs/deploy.md`.
 
@@ -276,7 +276,7 @@ O passo a passo com exemplo (módulo Calendário) e o checklist de domínio port
 - O service decide e devolve dado do model; a view só apresenta; o controller só liga HTTP ao
   model. Nada de SQL fora do repository, nada de regra no repository ou na view.
 - Escrita: uma transação só (`db(async ({ recurso, auditoria }) => ...)`), com a auditoria dentro.
-- Recurso novo: repository registrado em `models/repositorios.ts`, controller em `app.ts`.
+- Recurso novo: repository registrado em `models/repositories.ts`, controller em `app.ts`.
 
 ### 15.3 SQL e banco
 
@@ -294,7 +294,7 @@ O passo a passo com exemplo (módulo Calendário) e o checklist de domínio port
 
 ### 15.4 Código compartilhado
 
-- A origem é a api. Mudou `dominio`, `views/contratos` ou `models/comum`, roda
+- A origem é a api. Mudou `dominio`, `views/contracts` ou `models/common`, roda
   `scripts/copiar-compartilhado.sh` no mesmo commit.
 - Regra do núcleo do CT-e vai também ao worker-ssw.
 

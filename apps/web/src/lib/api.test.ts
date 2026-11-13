@@ -1,5 +1,5 @@
-import { contratosAuth } from "@erp/shared/contratos/auth";
-import { contratosCalendario } from "@erp/shared/contratos/calendario";
+import { contratosAuth } from "@erp/shared/contracts/auth";
+import { contratosCalendario } from "@erp/shared/contracts/calendar";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { chamar, definirTokenAcesso, ErroDaApi } from "./api";

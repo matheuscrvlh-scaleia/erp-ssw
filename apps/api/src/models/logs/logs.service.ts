@@ -6,9 +6,9 @@ import {
   type LinhaAuditoria,
   type OrigemIntegracao,
   ORIGENS_INTEGRACAO,
-} from "@erp/shared/contratos/auditoria";
+} from "@erp/shared/contracts/audit";
 
-import { type Executor } from "../repositorios";
+import { type Executor } from "../repositories";
 
 /*
  * Telas de Logs: Alterações (trilha de auditoria) e Integrações (execuções da ingestão).

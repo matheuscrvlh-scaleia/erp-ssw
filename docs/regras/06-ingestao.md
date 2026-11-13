@@ -625,7 +625,7 @@ spec de romaneio; aqui só o agendamento (§4).
 ### 3.10 050 — Relação das coletas
 
 Fora do ciclo e **sem registro em `ssw_relatorio_arquivos`** (a revarredura retroativa reenvia os
-050 dos últimos 3 dias; é idempotente). Parser `src/features/coletas/parse-050.ts` (impresso
+050 dos últimos 3 dias; é idempotente). Parser `src/features/pickups/parse-050.ts` (impresso
 ssw0157 de largura fixa ou CSV `UNIDADE;COLETA;TIPO;...` do FTP; datas `dd/mm` ganham o ano da
 emissão do relatório, e data > emissão + 60 dias volta um ano). Regras de tela/prazo na spec de coletas.
 

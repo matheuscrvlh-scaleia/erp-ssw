@@ -1,4 +1,4 @@
-import { contratosAuth } from "@erp/shared/contratos/auth";
+import { contratosAuth } from "@erp/shared/contracts/auth";
 import { z } from "@erp/shared/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,14 +11,14 @@ import {
   CartaoDeEntrada,
   CLASSE_CAMPO_DE_ENTRADA,
   ErroDoCampo,
-} from "@/acesso/componentes/CartaoDeEntrada";
-import { destinoSeguro } from "@/acesso/guarda";
-import { entrar } from "@/acesso/sessao";
-import { Button } from "@/componentes/ui/button";
-import { Input } from "@/componentes/ui/input";
-import { Label } from "@/componentes/ui/label";
+} from "@/access/components/LoginCard";
+import { destinoSeguro } from "@/access/guard";
+import { entrar } from "@/access/session";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { chamar } from "@/lib/api";
-import { mensagemAmigavel } from "@/lib/mensagem-de-erro";
+import { mensagemAmigavel } from "@/lib/error-message";
 
 /** Só o destino: no login não aparece aviso nenhum além de e-mail ou senha errados. */
 const busca = z.object({

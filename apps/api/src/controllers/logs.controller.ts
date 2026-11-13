@@ -1,4 +1,4 @@
-import { contratosAuditoria as c } from "@erp/shared/contratos/auditoria";
+import { contratosAuditoria as c } from "@erp/shared/contracts/audit";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
 import {
@@ -6,10 +6,10 @@ import {
   listarAlteracoes,
   listarIntegracoes,
 } from "../models/logs/logs.service";
-import { type ExecutorComContexto } from "../models/repositorios";
+import { type ExecutorComContexto } from "../models/repositories";
 import { apresentarAlteracoes, apresentarIntegracoes } from "../views/logs.view";
-import { empresaDaRequisicao, executorDePlataforma } from "./middleware/contexto";
-import { exigirPermissao, exigirPermissaoDaPlataforma } from "./middleware/guardas";
+import { empresaDaRequisicao, executorDePlataforma } from "./middleware/context";
+import { exigirPermissao, exigirPermissaoDaPlataforma } from "./middleware/guards";
 
 /** Admin › Logs: admin (ou Plataforma) na empresa ativa; só os registros dela (Q31). */
 /** Logs da empresa: dado por regra ao admin da empresa e à Plataforma. */

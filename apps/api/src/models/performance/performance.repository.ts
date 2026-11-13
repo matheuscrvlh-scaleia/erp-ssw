@@ -1,8 +1,9 @@
 import { type Sql, sql, type Transacao } from "@erp/db";
-import { CODIGOS_ENTREGA } from "@erp/dominio/nucleo/codigos";
-import { type CodigoDoCatalogo } from "@erp/dominio/performance/catalogo";
+import { CODIGOS_ENTREGA } from "@erp/domain/core/codes";
+import { type CodigoDoCatalogo } from "@erp/domain/performance/catalog";
 
 import { diaNoFuso, lista } from "../cte/sql-cte";
+import { type RepositorioPerformance } from "./performance.service";
 import {
   atraso,
   casaCodigos,
@@ -12,8 +13,7 @@ import {
   finalizado,
   ondeDoFiltro,
   TIPO_EFETIVO,
-} from "./consultas";
-import { type RepositorioPerformance } from "./performance.service";
+} from "./queries";
 
 type Linha = Record<string, unknown>;
 

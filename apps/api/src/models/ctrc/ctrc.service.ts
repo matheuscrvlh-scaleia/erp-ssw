@@ -1,13 +1,13 @@
+import { atrasoDias, normCodigoOcorr } from "@erp/domain/core";
 import {
   finalizacaoDoCtrc,
   lerIdentificacao,
   localizacaoExibida,
   ocorrenciasExibidas,
-} from "@erp/dominio/ctrc/detalhe";
-import { atrasoDias, normCodigoOcorr } from "@erp/dominio/nucleo";
-import { FONTES_OCORRENCIA_EFETIVA, type OpcaoDeCtrc } from "@erp/shared/contratos/ctrc";
+} from "@erp/domain/ctrc/detail";
+import { FONTES_OCORRENCIA_EFETIVA, type OpcaoDeCtrc } from "@erp/shared/contracts/ctrc";
 
-import { type Executor } from "../repositorios";
+import { type Executor } from "../repositories";
 
 /** Código do catálogo da empresa, com o que as telas de CT-e usam. */
 export interface CodigoCadastrado {

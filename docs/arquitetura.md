@@ -47,6 +47,8 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 
 ## Estrutura
 
+Arquivos e pastas em inglês (ADR 0017); o código e a documentação seguem em português.
+
 ```
 apps/
   api/                    projeto próprio: package.json, bun.lock, tsconfig, eslint, Dockerfile
@@ -57,20 +59,20 @@ apps/
       controllers/        C: HTTP (Fastify), um por recurso; middleware/ (sessão, guardas, contexto,
                           segurança, erro → resposta)
       models/             M: services (operações, transação, auditoria) + repositories (SQL puro);
-                          comum/ (catálogos de acesso, datas, zod, erros padrão; cópia no web)
-      views/              V: apresentação (model → resposta do contrato) e e-mails; contratos/ (zod de
+                          common/ (catálogos de acesso, datas, zod, erros padrão; cópia no web)
+      views/              V: apresentação (model → resposta do contrato) e e-mails; contracts/ (zod de
                           entrada e saída de cada endpoint; cópia no web)
       jobs/               entrada pela fila (BullMQ): limpar sessões, prazos configurados,
                           classificação de códigos, recifrar segredos
-      dominio/            regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
+      domain/             regras de negócio PURAS (sem I/O): prazo, ocorrência efetiva, finalizadores,
                           atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
                           leitores dos relatórios SSW (prévia da importação)...
       db/                 cliente `pg` com contexto de empresa, tag `sql`, aplicador de migrations
       infra/              clientes externos: S3, SMTP, Ahgora, worker-ssw, tokens, senhas, log
-    migracoes/            migrations em SQL escrito à mão (`NNNN_nome.sql`)
+    migrations/           migrations em SQL escrito à mão (`NNNN_nome.sql`)
   web/                    projeto próprio (SPA): package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
     src/
-      shared/ dominio/    cópias dos da api (mesmo conteúdo, ver abaixo)
+      shared/ domain/     cópias dos da api (mesmo conteúdo, ver abaixo)
 docker-compose.yml        sobe api, web e redis, cada imagem construída da pasta do app
 docs/
   arquitetura.md          este arquivo
@@ -91,13 +93,13 @@ views/<recurso>.view.ts                   V  apresentar<Coisa>(dado) → saída 
 
 O passo a passo com exemplo (Calendário) está em `docs/molde.md` §5.
 
-Regras puras (cálculos) ficam em `apps/api/src/dominio`; os contratos em `apps/api/src/views/contratos`
-(+ `views/contrato.ts`) e os catálogos e utilitários comuns em `apps/api/src/models/comum`, todos
-importados como `@erp/shared/*`. O web tem cópias em `apps/web/src/{dominio,shared}`, e o worker-ssw leva a sua cópia do núcleo do
-CT-e (ADR 0012). A origem é a api. As cópias usam os mesmos imports (`@erp/dominio/*`,
+Regras puras (cálculos) ficam em `apps/api/src/domain`; os contratos em `apps/api/src/views/contracts`
+(+ `views/contract.ts`) e os catálogos e utilitários comuns em `apps/api/src/models/common`, todos
+importados como `@erp/shared/*`. O web tem cópias em `apps/web/src/{domain,shared}`, e o worker-ssw leva a sua cópia do núcleo do
+CT-e (ADR 0012). A origem é a api. As cópias usam os mesmos imports (`@erp/domain/*`,
 `@erp/shared/*`, resolvidos pelo `tsconfig.json` de cada app), então ficam iguais byte a byte:
 mudou na api, roda `scripts/copiar-compartilhado.sh` no mesmo commit (`--conferir` só compara; o
-README do `dominio` fica na api).
+README do `domain` fica na api).
 
 ## Ingestão do SSW: o worker-ssw (ADR 0012)
 
@@ -109,7 +111,7 @@ RLS valendo). O ERP:
 - **lê** direto do banco as leituras puras das telas de Plataforma (pipeline, aplicações, arquivos
   XML, histórico do FTP, Diagnóstico SSW, integrações) e `GET /api/v1/ssw/atualizacao`/`saude`;
 - **pede ao worker-ssw** pelo HTTP interno (`/interno/v1/*`, `WORKER_SSW_URL` +
-  `WORKER_SSW_TOKEN`; contrato em `apps/api/src/views/contratos/worker-ssw.ts`, cópia do dele):
+  `WORKER_SSW_TOKEN`; contrato em `apps/api/src/views/contracts/worker-ssw.ts`, cópia do dele):
   execuções (rodar FTP/BI2, testar a SSW API, reprocessar webhook e XML órfãos), a situação dos
   jobs e as operações manuais da Importação SSW (retomar/descartar ciclo, importar relatório ou
   XML, aplicar/simular, estado/pausa/trava do FTP). O ERP valida a entrada pelo contrato da tela e

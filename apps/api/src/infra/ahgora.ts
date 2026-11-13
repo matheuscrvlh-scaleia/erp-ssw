@@ -1,6 +1,6 @@
-import { ErroDeNegocio } from "@erp/dominio/erros";
-import { type Turno } from "@erp/dominio/ponto";
-import { batidaAhgora, funcionarioAhgora } from "@erp/shared/contratos/ahgora";
+import { ErroDeNegocio } from "@erp/domain/errors";
+import { type Turno } from "@erp/domain/timekeeping";
+import { batidaAhgora, funcionarioAhgora } from "@erp/shared/contracts/ahgora";
 import { z } from "@erp/shared/zod";
 
 /**

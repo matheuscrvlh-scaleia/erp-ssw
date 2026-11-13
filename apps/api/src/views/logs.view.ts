@@ -1,5 +1,5 @@
-import { type SaidaDe } from "@erp/shared/contrato";
-import { type contratosAuditoria, type OrigemIntegracao } from "@erp/shared/contratos/auditoria";
+import { type SaidaDe } from "@erp/shared/contract";
+import { type contratosAuditoria, type OrigemIntegracao } from "@erp/shared/contracts/audit";
 
 import {
   type AlteracaoGravada,

@@ -16,8 +16,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "db:migrar": "node --env-file-if-exists=.env --import tsx src/db/migrar.ts",
-    "db:semear": "node --env-file-if-exists=.env --import tsx src/db/seeds/executar.ts"
+    "db:migrar": "node --env-file-if-exists=.env --import tsx src/db/migrate.ts",
+    "db:semear": "node --env-file-if-exists=.env --import tsx src/db/seeds/run.ts"
   },
   "prettier": {
     "printWidth": 100,

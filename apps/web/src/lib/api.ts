@@ -5,9 +5,9 @@ import {
   type ParametrosDe,
   type SaidaDe,
   usaCorpo,
-} from "@erp/shared/contrato";
-import { contratosAuth } from "@erp/shared/contratos/auth";
-import { type CodigoErro, erroPadrao, MENSAGEM_ERRO_INTERNO } from "@erp/shared/erros";
+} from "@erp/shared/contract";
+import { contratosAuth } from "@erp/shared/contracts/auth";
+import { type CodigoErro, erroPadrao, MENSAGEM_ERRO_INTERNO } from "@erp/shared/errors";
 import { type z } from "@erp/shared/zod";
 
 /** Erro devolvido pela API no formato padrão `{ erro: { codigo, mensagem } }`. */

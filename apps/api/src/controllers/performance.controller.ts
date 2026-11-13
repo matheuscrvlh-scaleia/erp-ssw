@@ -1,9 +1,9 @@
-import { type Tela } from "@erp/shared/acesso/telas";
-import { contratosPerformance as c } from "@erp/shared/contratos/performance";
+import { type Tela } from "@erp/shared/access/screens";
+import { contratosPerformance as c } from "@erp/shared/contracts/performance";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { semPermissao } from "../models/erros";
+import { semPermissao } from "../models/errors";
 import {
   type ContextoPerformance,
   exportarTela,
@@ -20,8 +20,8 @@ import {
   obterTiposDocumento,
 } from "../models/performance/performance.service";
 import { apresentarExportacao } from "../views/performance.view";
-import { empresaDaRequisicao } from "./middleware/contexto";
-import { exigirEmpresa, exigirModulo, exigirPermissao, type Guarda } from "./middleware/guardas";
+import { empresaDaRequisicao } from "./middleware/context";
+import { exigirEmpresa, exigirModulo, exigirPermissao, type Guarda } from "./middleware/guards";
 
 /** Alguma das telas (a série do gráfico serve à Performance e ao Ranking). */
 function exigirAlgumaTela(...telas: Tela[]): Guarda {

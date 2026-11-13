@@ -6,27 +6,27 @@ lado a lado com este guia.
 
 | Camada | Calendário (exemplo) |
 | --- | --- |
-| Regra pura | `apps/api/src/dominio/calendario.ts` |
-| Contrato | `apps/api/src/views/contratos/calendario.ts` |
-| Tabela + RLS | `apps/api/migracoes/0000_schema_erp.sql` (`erp.feriados`) |
-| API | `apps/api/src/{controllers/calendario.controller,models/calendario/calendario.{service,repository},views/calendario.view}.ts` |
-| Tela | `apps/web/src/routes/_autenticado/calendario.tsx` → `apps/web/src/modulos/calendario/` |
+| Regra pura | `apps/api/src/domain/calendar.ts` |
+| Contrato | `apps/api/src/views/contracts/calendar.ts` |
+| Tabela + RLS | `apps/api/migrations/0000_schema_erp.sql` (`erp.feriados`) |
+| API | `apps/api/src/{controllers/calendar.controller,models/calendar/calendar.{service,repository},views/calendar.view}.ts` |
+| Tela | `apps/web/src/routes/_authenticated/calendario.tsx` → `apps/web/src/modules/calendar/` |
 
 ## 1. Ler a regra antes do código
 
 1. Abra a spec do domínio em `docs/regras/0X-*.md` e as decisões do dono em
    `docs/duvidas-do-dono.md` (vale a recomendação de cada item). Paridade com o sistema atual,
    salvo o que o dono decidiu mudar.
-2. Liste os cálculos (o que vira `apps/api/src/dominio`) separados do que é só leitura/gravação.
+2. Liste os cálculos (o que vira `apps/api/src/domain`) separados do que é só leitura/gravação.
 
-## 2. Regra pura — `apps/api/src/dominio/<dominio>.ts`
+## 2. Regra pura — `apps/api/src/domain/<dominio>.ts`
 
 - Funções sem I/O, sem `Date.now()` escondido (recebem `hoje`/`agora`), sem banco.
 - Comentário curto com a origem: `// origem: calcular_performance (sistema atual)`.
 - Violação de regra de negócio: `throw new ErroDeNegocio("ENTRADA_INVALIDA", "<mensagem para o
-  operador>")` (`apps/api/src/dominio/erros.ts`).
+  operador>")` (`apps/api/src/domain/errors.ts`).
 
-## 3. Contrato — `apps/api/src/views/contratos/<dominio>.ts`
+## 3. Contrato — `apps/api/src/views/contracts/<dominio>.ts`
 
 - Um `contrato({ metodo, caminho, parametros?, entrada?, saida })` por endpoint, em
   `contratos<Dominio>`. `entrada` é query string em GET/DELETE e corpo nos demais.
@@ -34,7 +34,7 @@ lado a lado com este guia.
 - Os tipos saem dos schemas (`z.infer`, `SaidaDe<typeof c.obter>`); não escreva o tipo à mão.
 - Mensagens de validação em português (o `z` de `@erp/shared/zod` já vem com pt-BR).
 
-## 4. Tabela — `apps/api/migracoes/NNNN_<nome>.sql`
+## 4. Tabela — `apps/api/migrations/NNNN_<nome>.sql`
 
 - Migration escrita à mão, com o próximo número da pasta. Depois de aplicada não se edita: correção
   é migration nova.
@@ -70,7 +70,7 @@ decisão.
 escondida.
 
 - `criarRepositorio<Recurso>(tx: Transacao): Repositorio<Recurso>`.
-- Registre em `apps/api/src/models/repositorios.ts` (`Repositorios` + `criarRepositorios`).
+- Registre em `apps/api/src/models/repositories.ts` (`Repositorios` + `criarRepositorios`).
 - Consulta ampla tem teto (`.limit(...)`) e o timeout do banco vira "reduza o período" sozinho
   (tratador central).
 
@@ -103,34 +103,34 @@ app.get(
 
 O padrão completo está no ADR 0016 (`docs/adr/0016-arquitetura-do-web.md`). Em resumo:
 
-- Rota: `src/routes/_autenticado/<caminho>.tsx` só aponta para `modulos/<dominio>/Pagina<Nome>.tsx`
+- Rota: `src/routes/_authenticated/<caminho>.tsx` só aponta para `modules/<dominio>/<Nome>Page.tsx`
   (caminho e schema da busca). O caminho é o mesmo de hoje (`CAMINHO_DA_TELA` em
-  `@erp/shared/acesso/telas`): a guarda e o menu saem dele sozinhos.
-- Módulo: `Pagina<Nome>.tsx` (lê a busca, chama as consultas, monta o `<Pagina>`), `componentes/`
+  `@erp/shared/access/screens`): a guarda e o menu saem dele sozinhos.
+- Módulo: `<Nome>Page.tsx` (lê a busca, chama as consultas, monta o `<Pagina>`), `components/`
   (um componente exportado por arquivo, recebe props) e, só os que precisar, os arquivos de nome
-  fixo `api.ts`, `busca.ts`, `regras.ts`, `textos.ts` e `exportacao.ts`.
+  fixo `api.ts`, `search.ts`, `rules.ts`, `texts.ts` e `export.ts`.
 - Dados: só o `api.ts` chama `chamar(contrato, { parametros, entrada })` de `@/lib/api` (token,
   renovação e erro padrão já tratados). Chaves numa fábrica `chaves` que começa pelo nome do módulo;
   consultas com `queryOptions`; escrita com `mutacao<Acao>(cliente)` (`mutationOptions` que
   invalida a chave do módulo), e o componente só faz `useMutation(mutacaoX(cliente))`. Não mude a
-  política de cache do `roteador.tsx` (contorno de timeout).
-- Estado: filtro, página e aba na URL (`busca.ts`); formulário com `react-hook-form` +
-  `zodResolver`, reaproveitando o schema do contrato e a regra do `src/dominio` (ver
-  `componentes/comum/ModalDeFeriado.tsx`); efêmero em `useState`. Sem store global.
+  política de cache do `router.tsx` (contorno de timeout).
+- Estado: filtro, página e aba na URL (`search.ts`); formulário com `react-hook-form` +
+  `zodResolver`, reaproveitando o schema do contrato e a regra do `src/domain` (ver
+  `components/common/HolidayModal.tsx`); efêmero em `useState`. Sem store global.
 - Permissão na tela vem do acesso (`usePermissao`, `useSuspenseQuery(consultaAcesso)`). A API
   confere de novo; a tela só esconde botão.
 - Mesmo visual do sistema atual: copie classes e textos da tela de referência; `<Pagina>` e as
-  peças comuns de carregando/vazio/erro; componentes em `src/componentes/ui` (shadcn).
+  peças comuns de carregando/vazio/erro; componentes em `src/components/ui` (shadcn).
 - Dependências: um módulo só importa de outro o `api.ts`; peça usada por dois módulos sobe para
-  `componentes/comum`, `hooks` ou `lib`, que não importam de `modulos/`. O ESLint barra.
+  `components/common`, `hooks` ou `lib`, que não importam de `modulos/`. O ESLint barra.
 - Teste de `regras`, `busca`, `textos` e `exportacao` (`*.test.ts`) e de componente com lógica
   (`*.test.tsx`, Testing Library), ao lado do arquivo testado.
 
 ## Checklist do domínio portado
 
 - [ ] Regras e decisões do dono lidas; diferenças propositais anotadas em ADR.
-- [ ] Cálculos em `apps/api/src/dominio`, com origem citada.
-- [ ] Contratos zod em `apps/api/src/views/contratos/<dominio>.ts`, copiados para o web com
+- [ ] Cálculos em `apps/api/src/domain`, com origem citada.
+- [ ] Contratos zod em `apps/api/src/views/contracts/<dominio>.ts`, copiados para o web com
       `scripts/copiar-compartilhado.sh`.
 - [ ] Tabelas com `empresa_id` e RLS na migration escrita à mão e revisada; nada de
       função/gatilho/matview/extensão.

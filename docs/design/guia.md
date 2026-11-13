@@ -10,14 +10,14 @@ permissões. Nada é removido; tudo é reorganizado para ficar mais fácil de us
 ## 1. Cor e tema
 
 - A cor da empresa (`empresas.cor_primaria`, cadastrada em Plataforma › Empresas › Dados) gera a
-  paleta inteira em `src/acesso/marca.ts` (`paletaDaMarca`), com contraste WCAG AA garantido
+  paleta inteira em `src/access/brand.ts` (`paletaDaMarca`), com contraste WCAG AA garantido
   para qualquer cor. Variáveis cruas: `--marca`, `--marca-fg`, `--marca-texto`, `--marca-clara`,
   `--lateral`, `--lateral-destaque`. **As telas não usam essas cruas**, usam os tokens abaixo.
-- Tema claro/escuro: chave no rodapé da barra lateral e na busca rápida (`src/lib/tema.ts`,
+- Tema claro/escuro: chave no rodapé da barra lateral e na busca rápida (`src/lib/theme.ts`,
   classe `.dark` no `<html>`; sempre começa no claro, a troca vale enquanto a aba estiver aberta).
 - **Proibido nas telas:** hex solto (`#212a63`, `text-[#...]`), cores da paleta do Tailwind
   (`amber-*`, `emerald-*`, `red-*`, `slate-*`, `gray-*`, `blue-*`, `white`/`black` para fundo ou
-  texto). Exceção: exportação/impressão (`lib/exportacao`, `relatorio-impressao.ts`), que gera
+  texto). Exceção: exportação/impressão (`lib/export`, `relatorio-impressao.ts`), que gera
   arquivo e não segue o tema.
 
 | Para | Use |
@@ -56,7 +56,7 @@ Use só esta escala. Nada de `text-[9px]`, `[9.5px]`, `[10px]`, `[10.5px]`, `[11
 
 Pesos: 400 corpo, 500 rótulos de controle, 600 ênfase, 700 títulos e números.
 
-## 3. Página (`componentes/layout/Pagina.tsx`)
+## 3. Página (`components/layout/Page.tsx`)
 
 **Toda tela logada começa com `<Pagina>`** (o layout não põe mais padding; quem não usa fica
 colada na borda). Ordem fixa, de cima para baixo:

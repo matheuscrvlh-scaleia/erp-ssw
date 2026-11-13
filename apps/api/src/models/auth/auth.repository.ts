@@ -1,5 +1,5 @@
 import { comInstantes, sql, type Transacao } from "@erp/db";
-import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/acesso/papeis";
+import { PAPEL_ADMIN, PAPEL_SUPER_ADMIN } from "@erp/shared/access/roles";
 
 import { type RepositorioAuth, type SessaoGravada } from "./auth.service";
 

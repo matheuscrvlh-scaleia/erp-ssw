@@ -1,5 +1,5 @@
-import { type SaidaDe } from "@erp/shared/contrato";
-import { type contratosCtrc, type DetalheCtrc } from "@erp/shared/contratos/ctrc";
+import { type SaidaDe } from "@erp/shared/contract";
+import { type contratosCtrc, type DetalheCtrc } from "@erp/shared/contracts/ctrc";
 
 import { type BuscaDoCtrc, type DetalheDoCtrc } from "../models/ctrc/ctrc.service";
 

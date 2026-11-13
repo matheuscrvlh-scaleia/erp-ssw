@@ -22,9 +22,9 @@ geração e aplicação das migrations (`drizzle-kit`).
 - **Tipos:** date, timestamp, timestamptz e interval chegam em texto, como o Drizzle entregava em
   SQL cru. O repositório converte instantes com `comInstantes` / `instanteDoBanco`. bigint chega em
   texto e numeric fica em texto. Colunas saem em camelCase por `as "campo"`. Nas tabelas largas,
-  `camposDaLinha`, `valoresDeInsercao` e `atribuicoes` (`src/db/linhas.ts`).
-- **Migrations:** arquivos `.sql` escritos à mão em `apps/api/migracoes/` (as 17 do drizzle-kit
-  vieram sem mudança). `bun run db:migrar` (`src/db/migrar.ts`) aplica, em ordem de nome, as que
+  `camposDaLinha`, `valoresDeInsercao` e `atribuicoes` (`src/db/rows.ts`).
+- **Migrations:** arquivos `.sql` escritos à mão em `apps/api/migrations/` (as 17 do drizzle-kit
+  vieram sem mudança). `bun run db:migrar` (`src/db/migrate.ts`) aplica, em ordem de nome, as que
   faltam, cada uma na sua transação e sob advisory lock, e anota em `migracoes.aplicadas`. Na
   primeira execução, ele adota como aplicadas as N primeiras, sendo N o número de linhas de
   `drizzle.migracoes_erp`.

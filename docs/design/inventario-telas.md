@@ -1,13 +1,13 @@
 # Inventário do layout atual das telas (apps/web)
 
-Levantamento factual do que existe hoje, sem proposta de redesenho. Base: `apps/web/src` (rotas em `routes/_autenticado/*.tsx` apontando para `modulos/<modulo>/Pagina*.tsx`). Caminhos abaixo são relativos a `apps/web/src`. Contagens de cores e fontes são aproximadas (grep).
+Levantamento factual do que existe hoje, sem proposta de redesenho. Base: `apps/web/src` (rotas em `routes/_autenticado/*.tsx` apontando para `modules/<modulo>/Pagina*.tsx`). Caminhos abaixo são relativos a `apps/web/src`. Contagens de cores e fontes são aproximadas (grep).
 
 ## 0. Casca comum (todas as telas logadas)
 
 - `routes/_autenticado.tsx`: `SidebarProvider` + `BarraLateral` (largura 13rem, azul-marinho `--sidebar`) + faixa superior de 48 px (`h-12`, linha 81) com só o botão de abrir/fechar a lateral (e "Painel BI" no mobile). Conteúdo em `<main>` com `max-w-[1440px] px-4 py-6 md:px-6`.
-- A faixa superior usa `bg-[var(--marca-primaria,#212a63)] text-white` (hex de fallback fixo, linha 81). O mesmo `#212a63` está em `styles.css` (`--sidebar`) e em `acesso/marca.ts:5` (`COR_DO_TEMA`).
-- `FaixaSaudeSsw` (`modulos/ingestao-ssw/FaixaSaudeSsw.tsx`) aparece acima de toda tela quando a integração SSW está indisponível: banner âmbar (`border-amber-500/40 bg-amber-500/10 text-amber-900`).
-- Menu lateral (`acesso/navegacao.ts`): grupo principal (Performance, Ranking, Romaneio, Ocorrências, Comprovantes, Coletas, Prazo parceiro, Histórico, Calendário), grupo "Admin" e grupo "Plataforma". Item com `text-[12.5px]`; nome do usuário `text-[11.5px]` e setor `text-[9.5px]` (`componentes/layout/BarraLateral.tsx:50,123,126`).
+- A faixa superior usa `bg-[var(--marca-primaria,#212a63)] text-white` (hex de fallback fixo, linha 81). O mesmo `#212a63` está em `styles.css` (`--sidebar`) e em `access/brand.ts:5` (`COR_DO_TEMA`).
+- `FaixaSaudeSsw` (`modules/ssw-ingestion/SswHealthStrip.tsx`) aparece acima de toda tela quando a integração SSW está indisponível: banner âmbar (`border-amber-500/40 bg-amber-500/10 text-amber-900`).
+- Menu lateral (`access/navigation.ts`): grupo principal (Performance, Ranking, Romaneio, Ocorrências, Comprovantes, Coletas, Prazo parceiro, Histórico, Calendário), grupo "Admin" e grupo "Plataforma". Item com `text-[12.5px]`; nome do usuário `text-[11.5px]` e setor `text-[9.5px]` (`components/layout/Sidebar.tsx:50,123,126`).
 - Fonte: Manrope (400/500/600). Não existe alternador de tema claro/escuro (nenhum `classList`/ThemeProvider), apesar de `styles.css` ter bloco `.dark` e de ~10 arquivos de módulo terem `dark:` ou classes pensadas para fundo escuro.
 - Tokens em `styles.css`: `--brand`, `--status-good/warn/bad` (+ `-fg`, `-bg`), `--kpi-volume/alert/positive`, `--chart-1..5`, `--muted*`, `--border`, `--radius` 0.625rem. Utilitários próprios: `.num-hero` (30 px), `.label-xs` (11 px caixa-alta), `.live-dot`.
 
@@ -50,7 +50,7 @@ Legenda: FA = `FiltrosAvancados`; FP = `FiltroPeriodo`; KC = `KpiCard` comum; GC
 ## 2. Inventário por tela
 
 ### 2.1 Performance
-**`/performance`** - `modulos/performance/PaginaPerformance.tsx` (rota `performance.index.tsx`). De cima para baixo:
+**`/performance`** - `modules/performance/PerformancePage.tsx` (rota `performance.index.tsx`). De cima para baixo:
 1. Cabeçalho (`<header>` grid, linha 304): h1 `text-[24px] font-semibold` ("Performance do dia" ou "Performance - <período>"), `SeloDosDados` logo abaixo; sem subtítulo. À direita: botão "Relatório de período" (abre `DialogoRelatorio`), `ExportMenu` (linha 322, carrega todas as linhas), "Atualizar" (ghost).
 2. Filtros (`FiltrosAvancados`, linha 348): `FiltroPeriodo` (rótulo vem da base de data), alternador de base de data (div próprio com `bg-foreground text-background`), `BuscaDocumento` CTRC e Nota fiscal, `SeletorDePagador` (Parceiros), `SeletorDeFilial`, `SeletorDeTexto` Remetente e Destino, `FiltroMultiplo` Ocorrência (com `title` longo), `SeletorDeTipoDocumento`. Depois `FiltrandoPor` (etiquetas, linha 467).
 3. Banners: período > 183 dias (âmbar fixo, linha 470); `BannerDeAlertas` (cartões de alerta clicáveis com `color-mix`); erro (`border-amber-200 bg-[var(--status-warn-bg)]`, linha 498); aviso de cobertura (cinza); ao final, ocorrências a classificar (âmbar, linha 662, link para `/admin/codigos`).
@@ -62,7 +62,7 @@ Legenda: FA = `FiltrosAvancados`; FP = `FiltroPeriodo`; KC = `KpiCard` comum; GC
 9. `DialogoRelatorio` (`RelatorioPeriodo.tsx`, 670 linhas): diálogo com `FiltroPeriodo` x2, 3 `<table>`, botão Imprimir; HTML de impressão separado em `relatorio-impressao.ts` (25 hex fixos, legítimo para impressão).
 - Sem "Como funciona".
 
-**`/performance/lista`** - `modulos/listagem/PaginaListagem.tsx` (766 linhas), `TabelaCtrcs.tsx`, `GraficoDeBarras.tsx`.
+**`/performance/lista`** - `modules/listing/ListingPage.tsx` (766 linhas), `TabelaCtrcs.tsx`, `GraficoDeBarras.tsx`.
 1. Cabeçalho (linhas 387-403): botão "Voltar" (com borda, antes do título), h1 `text-lg font-semibold` (título dinâmico; versão mobile `text-base`), à direita `acoes` = "Atualizar" + `ExportMenu` (`tamanhoFonte` 5,5). `SeloDosDados` com `-mt-2` em linha separada.
 2. Grade: card "Total do recorte" (`border-l-[5px] border-l-kpi-positive`, markup próprio, `text-3xl`) + 3 ou 4 `GraficoDeBarras` **próprios** (barras horizontais em HTML/CSS, não recharts): Ocorrências, Distribuição por Unidade, Cidades Destino (top 10), Dias de Atraso (condicional). Interativos: o clique filtra a lista (`aria-pressed` na barra ativa).
 3. **Filtros ficam depois dos gráficos** (`FiltrosAvancados`, linha 510): `FiltroPeriodo`, alternador de base de data, `SeletorDeFilial`, `SeletorDePagador`, `SeletorDeTexto` x2, `SeletorDeOcorrencia`, `SeletorDeRecorte`, faixas de peso e de atraso; depois `FiltrandoPor` (linha 632).
@@ -70,7 +70,7 @@ Legenda: FA = `FiltrosAvancados`; FP = `FiltroPeriodo`; KC = `KpiCard` comum; GC
 - Sem "Como funciona". Faixas âmbar em `TabelaCtrcs` (7 classes fixas, prazo vencido).
 
 ### 2.2 Ocorrências
-**`/ocorrencias`** - `modulos/ocorrencias/PaginaOcorrencias.tsx` (+ `Filtros.tsx`, `Cartoes.tsx`, `Blocos.tsx`, `Lista.tsx`).
+**`/ocorrencias`** - `modules/occurrences/OccurrencesPage.tsx` (+ `Filtros.tsx`, `Cartoes.tsx`, `Blocos.tsx`, `Lista.tsx`).
 1. Cabeçalho (linha 145): h1 `text-[26px] font-bold` (único com essa fonte), `SeloDosDados`, subtítulo `text-[13px] font-medium`. À direita só "Atualizar". Sem export no cabeçalho.
 2. `BarraDeFiltros` do módulo (`Filtros.tsx:27`, usa `FiltrosAvancados`): alternador "Por emissão/Por previsão" (`classeDoSegmento`), `FiltroPeriodo`, `SeletorDePagador`, `SeletorDeFilial`, `SeletorDeTexto` x2, `FiltroMultiplo` Códigos / Responsável / Conferente (com `InfoTip`), `SeletorDeTipoDocumento`. `FiltrandoPor` (linha 178).
 3. 4 cards `CartaoDeMetrica` (próprio, `Cartoes.tsx:21`): Total de ocorrências, Penalizantes, Não penalizantes, Pendentes de classificação; clicáveis (filtram por `resp`), cada um com `CodigosDoCard` (lista de códigos + export).
@@ -80,20 +80,20 @@ Legenda: FA = `FiltrosAvancados`; FP = `FiltroPeriodo`; KC = `KpiCard` comum; GC
 - Sem "Como funciona".
 
 ### 2.3 Comprovantes
-**`/comprovantes`** - `modulos/comprovantes/PaginaComprovantes.tsx`.
+**`/comprovantes`** - `modules/delivery-proofs/DeliveryProofsPage.tsx`.
 Cabeçalho (linha 139): h1 `text-[24px] font-medium`, `SeloDosDados`, subtítulo `text-[12px]`; à direita `ExportMenu` (linha 148) + "Atualizar". `FiltrosAvancados` (linha 181): `FiltroPeriodo` (rótulo "Entrega") + texto "por data de entrega" com `InfoTip`, `SeletorDeFilial`, `SeletorDePagador`, `SeletorDeTexto` x2, `SeletorDeTipoDocumento`, `BuscaDocumento` CTRC e NF. `FiltrandoPor`. 4 `KpiCard` comuns (CT-e entregue, Digitalizados, % digitalizados, Pendentes), clicáveis abrem a gaveta. `section` própria (`label-xs`) com `GraficoBarras` "Tendência por dia de entrega". 2 `TabelaDados` (por unidade, por tipo). `DrawerDetalhe` (`Detalhe` comum, largura larga) com TD da lista.
 
 ### 2.4 Coletas
-**`/coletas`** - `modulos/coletas/PaginaColetas.tsx` (+ `Importador050.tsx`).
+**`/coletas`** - `modules/pickups/PickupsPage.tsx` (+ `Importador050.tsx`).
 Cabeçalho (linha 307): h1 `text-[24px] font-medium`, `SeloAtualizacao` direto (não `SeloDosDados`), subtítulo com cobertura. À direita "Importar 050" (se pode) + "Atualizar". **Sem export no cabeçalho.** `FiltrosAvancados` (linha 349): `FiltroPeriodo` (atalhos próprios, padrão 30d), texto "por data de cadastro", alternador de unidade (botões), `<select>` nativo "Tipo de coleta". Grade de 8 `KpiCard` (Coletas, Coletadas no prazo, atrasadas, Em aberto, Vencidas, Vencem hoje, Com CT-e gerado, Canceladas; filtram a lista). `Quadro` + `GraficoBarras` empilhado ("Coletas por dia de cadastro", cores `--status-*`). 3 `TabelaDados` (por solicitante, por unidade, por tipo de documento), com export individual. TD "Detalhe das coletas": paginação de servidor, `configurarColunas`, `<select>` de Situação e `BuscaDocumento` na faixa de ações. Gaveta `DrawerDetalhe`; diálogo `Importador050`.
 
 ### 2.5 Prazo parceiro
-**`/prazo-parceiro`** - `modulos/prazo-parceiro/PaginaPrazoParceiro.tsx` (+ `componentes.tsx`).
+**`/prazo-parceiro`** - `modules/partner-deadline/PartnerDeadlinePage.tsx` (+ `componentes.tsx`).
 Cabeçalho (linha 185): h1 `text-[24px]` com ícone, `SeloDosDados mostrarXml`, subtítulo; só "Atualizar" à direita. `FiltrosAvancados` (linha 205): `BotoesDePeriodo` **próprio** (Hoje/7d/30d/Mês, sem calendário, `componentes.tsx:101`), 3 `FiltroMultiplo` (Unidades, Parceiros, Tipo documento), texto do período à direita. Banners: positivo (verde fixo, linha ~267), parceiro problema (âmbar), variação (neutro), erro (`--status-bad`). 3 `CartaoMetrica` próprios (Performance total, própria, Diferença; `text-[28px]`/`[32px]`). Dois cartões sem componente: "Origem do prazo" (barra empilhada com `bg-amber-400`) e "Nascidos em atraso" (número `text-[36px]`, botão "Ver lista"). Tabela "Parceiros com mais prazos inviáveis" (`<table>` crua, top 10). Lista de CTRCs (`<table>` crua) com `ExportMenu` (linha 542), `<select>` de tamanho de página e `BotoesDePagina`.
 **`/prazo-parceiro/$id`** - `PaginaDetalheParceiro.tsx`. Link "voltar" (`text-[11px]`) acima do h1; filtros (`BotoesDePeriodo` + `FiltroMultiplo`) e "Atualizar" **dentro do cabeçalho**, sem `FiltrosAvancados`; 3 `CartaoMetrica`; "Atraso na origem"; tabela "CTRCs nascidos em atraso" com `ExportMenu`.
 
 ### 2.6 Romaneio
-**`/romaneio`** - `modulos/romaneio/PaginaRomaneio.tsx` (241 linhas) + `BarraDeFiltros.tsx` (498), `AbaHoje.tsx` (594), `AbasDesempenho.tsx` (1125), `ListaTotal.tsx` (900), `Distribuicao.tsx`, `CardsDoPeriodo.tsx`, `componentes.tsx`.
+**`/romaneio`** - `modules/manifest/ManifestPage.tsx` (241 linhas) + `BarraDeFiltros.tsx` (498), `AbaHoje.tsx` (594), `AbasDesempenho.tsx` (1125), `ListaTotal.tsx` (900), `Distribuicao.tsx`, `CardsDoPeriodo.tsx`, `componentes.tsx`.
 1. Cabeçalho (linha 121): h1 `text-[24px] font-semibold`, `SeloDosDados`; só "Atualizar".
 2. `Abas` comum (linha 138), **sticky** (`sticky top-0 z-20`): Hoje, Total, Romaneio de entrega, Performance por romaneio, Performance Motorista, Performance Ajudante, Prejuízo.
 3. Abas que não são "Hoje": faixa `BaseDeData` ("Contar as cargas pela ...", alternador `bg-[var(--brand)]`) e `BarraDeFiltros` (`FiltrosAvancados`: `FiltroPeriodo`, Parceiros, Unidade responsável, Local. atual, Remetente/Destino (`FiltroTexto`), Código, Tipo documento, previsão (um dia), Placa, Motorista, Ajudante). Faixa de chips "Tabela abaixo filtrada" (pílulas próprias).
@@ -102,7 +102,7 @@ Cabeçalho (linha 185): h1 `text-[24px]` com ícone, `SeloDosDados mostrarXml`, 
 - Nenhum gráfico recharts; nenhum "Como funciona".
 
 ### 2.7 Ranking e equipes
-**`/ranking`** - `modulos/ranking/PaginaRanking.tsx` + `RankingTabela.tsx` (673 linhas). Cabeçalho `<header>` simples (h1 `text-2xl font-semibold`, `SeloDosDados`, subtítulo `text-sm`), **sem ações à direita**. `Abas` (Parceiro | Cidade) abaixo do cabeçalho e **acima dos filtros**; cada aba monta um `RankingTabela`. Dentro: barra de filtros **própria** (`RankingTabela.tsx:334`, div com as mesmas classes de `FiltrosAvancados`, sem botão "Limpar filtros"): `FiltroPeriodo` (4 atalhos, padrão 30d), alternador Emissão/Previsão (`classeDoAlternador`), `SeletorDeFilial`, `SeletorDePagador`, `SeletorDePagadorAgrupado`, `SeletorDeTexto` x2, `SeletorDeTipoDocumento`, e à direita "meta X% · período" + `ExportMenu` (linha 404). Estado dos filtros em `useState` (não na URL). `FiltrandoPor` (linha 416). 4 `KpiCard` comuns (Parceiros/Cidades, CT-e no período, SLA médio com progresso, Abaixo da meta), clicáveis (linhas 419-453). `GraficoSerie` comum (SLA mês a mês, `<select>` de ano nativo em `filtrosExtra`). Tabela **própria** `<table>` com `text-[14px] font-medium` e cabeçalho `text-[13px] font-semibold` (maior que as demais, que usam 12 px), ordenação por clique, ícone de olho para frete, linha clicável abre os casos.
+**`/ranking`** - `modules/ranking/RankingPage.tsx` + `RankingTabela.tsx` (673 linhas). Cabeçalho `<header>` simples (h1 `text-2xl font-semibold`, `SeloDosDados`, subtítulo `text-sm`), **sem ações à direita**. `Abas` (Parceiro | Cidade) abaixo do cabeçalho e **acima dos filtros**; cada aba monta um `RankingTabela`. Dentro: barra de filtros **própria** (`RankingTabela.tsx:334`, div com as mesmas classes de `FiltrosAvancados`, sem botão "Limpar filtros"): `FiltroPeriodo` (4 atalhos, padrão 30d), alternador Emissão/Previsão (`classeDoAlternador`), `SeletorDeFilial`, `SeletorDePagador`, `SeletorDePagadorAgrupado`, `SeletorDeTexto` x2, `SeletorDeTipoDocumento`, e à direita "meta X% · período" + `ExportMenu` (linha 404). Estado dos filtros em `useState` (não na URL). `FiltrandoPor` (linha 416). 4 `KpiCard` comuns (Parceiros/Cidades, CT-e no período, SLA médio com progresso, Abaixo da meta), clicáveis (linhas 419-453). `GraficoSerie` comum (SLA mês a mês, `<select>` de ano nativo em `filtrosExtra`). Tabela **própria** `<table>` com `text-[14px] font-medium` e cabeçalho `text-[13px] font-semibold` (maior que as demais, que usam 12 px), ordenação por clique, ícone de olho para frete, linha clicável abre os casos.
 **`/ranking/regras`** - `PaginaRegras.tsx`: h1 `text-2xl`, botão voltar (ghost), lista de cartões de regra (`rounded-xl border-border bg-card p-4`) com bloco "Simulação (mês anterior)" em `emerald-500/5` e texto `emerald-300` (pensado para fundo escuro). Editor é um **modal próprio** (`fixed inset-0 bg-black/60`, linha 264), não o `Dialog` de `ui/`; `<select>` e `<input type=date>` nativos.
 **`/admin/equipes`** - `PaginaEquipes.tsx`: h1 `text-2xl`, cartão "Nova equipe" (input + select nativos), cartões por equipe (`rounded-xl`), botões gerar/copiar/revogar link, `NovoMembro`, `AtribuirCtes`, `<table className="text-xs">`.
 **`/ranking/equipe/$id`** e **`/ranking/publico/$token`** - `PaginaEquipeDetalhe.tsx`, `PaginaRankingPublico.tsx` + `EquipeMobileView.tsx`: layout mobile (cartão hero `emerald-500/15` com `text-5xl text-emerald-300`, top 3, grade de 3). A rota pública fica fora do `_autenticado` (sem sidebar).
@@ -113,7 +113,7 @@ Cabeçalho (linha 185): h1 `text-[24px]` com ícone, `SeloDosDados mostrarXml`, 
 **`/calendario`** - `PaginaCalendario.tsx`: h1 `text-[20px]` com ícone `CalendarDays`; à direita seletor de ano (setas + input), "Gerar nacionais", "Novo feriado". 3 `Indicador` próprios. Abas de visão (Mês/Ano/Lista) em barra própria (`bg-primary`), `Visoes.tsx` (grade própria, `text-[9px]` nas miniaturas), cores por tipo de feriado em `calendario.ts` (sky/rose/amber). Mesmo assunto (feriados) que `/historico/feriados`, com cabeçalho e controles diferentes.
 
 ### 2.9 CTRC
-**`/ctrc/$numero`** - `modulos/ctrc/PaginaCtrc.tsx` (774 linhas). Cabeçalho: botão "Voltar" (`router.history.back`), `Titulo` (h1 `text-[22px]`: rótulo NF/CTRC + número em `font-mono text-brand`, `SeloDosDados`, subtítulo), à direita `ExportMenu` só PDF (retrato) + "Atualizar". Estados: `Esqueleto`, erro (`border-destructive/40`), não encontrado, `EscolhaDeSerie` (mesmo número em várias séries). Detalhe: faixa de selos (status, prazo, pontualidade; cores `emerald/amber` com `dark:`), grade de 2 colunas de `Cartao` próprio: Identificação, Situação atual (com `JanelaDeOcorrencias`, Dialog), Remetente/Destinatário, Carga & Frete, Prazos & Entrega, Parceiro & Unidade, Performance, Enriquecimento. Banner âmbar (linha 516). `font-mono text-[10.5px]` na chave de acesso (linha 570).
+**`/ctrc/$numero`** - `modules/ctrc/CtrcPage.tsx` (774 linhas). Cabeçalho: botão "Voltar" (`router.history.back`), `Titulo` (h1 `text-[22px]`: rótulo NF/CTRC + número em `font-mono text-brand`, `SeloDosDados`, subtítulo), à direita `ExportMenu` só PDF (retrato) + "Atualizar". Estados: `Esqueleto`, erro (`border-destructive/40`), não encontrado, `EscolhaDeSerie` (mesmo número em várias séries). Detalhe: faixa de selos (status, prazo, pontualidade; cores `emerald/amber` com `dark:`), grade de 2 colunas de `Cartao` próprio: Identificação, Situação atual (com `JanelaDeOcorrencias`, Dialog), Remetente/Destinatário, Carga & Frete, Prazos & Entrega, Parceiro & Unidade, Performance, Enriquecimento. Banner âmbar (linha 516). `font-mono text-[10.5px]` na chave de acesso (linha 570).
 
 ### 2.10 Admin
 - **`/admin/usuarios`** - `PaginaUsuarios.tsx`: `CabecalhoDaPagina` (`admin/comum.tsx`, h1 `text-[24px] font-medium`, descrição `text-[12px]`, ação `ModalNovoUsuario` à direita), linha de filtros solta (input busca + `<select>` Nível/Situação, `h-8`, `border-input`, sem cartão), `TabelaDados` (colunas com `Selo`, ações editar/resetar/reenviar convite). `ModalEditarUsuario`/`ModalNovoUsuario` (Dialog; Abas no novo; `<select>`).
@@ -136,7 +136,7 @@ Cabeçalho (linha 185): h1 `text-[24px]` com ícone, `SeloDosDados mostrarXml`, 
 - **`/plataforma/logs`** - `PaginaLogsDaPlataforma`: `CabecalhoDaPagina` + `LogsComAbas`.
 
 ### 2.12 Telas de acesso
-- **`/login`** (`routes/login.tsx`, 285 linhas), **`/aceitar-convite`**, **`/redefinir-senha`**: `CartaoDeEntrada` (`acesso/componentes/CartaoDeEntrada.tsx`: logo "Painel BI" `bg-[var(--brand)]`, título `text-[20px]`, subtítulo `text-[12px]`), `Label`/`Input`/`Button` de `ui/`. Login tem aviso âmbar fixo (`border-amber-300 bg-amber-50 text-amber-900`).
+- **`/login`** (`routes/login.tsx`, 285 linhas), **`/aceitar-convite`**, **`/redefinir-senha`**: `CartaoDeEntrada` (`access/components/LoginCard.tsx`: logo "Painel BI" `bg-[var(--brand)]`, título `text-[20px]`, subtítulo `text-[12px]`), `Label`/`Input`/`Button` de `ui/`. Login tem aviso âmbar fixo (`border-amber-300 bg-amber-50 text-amber-900`).
 - **`/sem-acesso`** (`routes/_autenticado/sem-acesso.tsx`): fora da casca (sem sidebar), cartão `rounded-[12px]`, h1 `text-[18px]`, botão "Sair".
 - 404 (`PaginaNaoEncontrada`: `text-7xl`), `ErroDeRota`, `ModuloDesligado` (h1 `text-[16px]`).
 
@@ -163,14 +163,14 @@ Contagem = ocorrências de classes `bg|text|border|ring|from|to|fill|stroke-<cor
 | `listagem/TabelaCtrcs.tsx` | ~7 | amber-100..900 (prazo vencido) |
 | `codigos/PaginaCodigos.tsx` | ~6 | amber-50/200/300/700/900, emerald-700 |
 | `ocorrencias/Blocos.tsx` | ~6 | emerald-50/600/700, red-600, amber-500 |
-| `componentes/comum/SeloAtualizacao.tsx` | ~6 | chip "XML aguardando" amber |
+| `components/common/UpdateBadge.tsx` | ~6 | chip "XML aguardando" amber |
 | `ocorrencias/PaginaOcorrencias.tsx` | ~5 | amber-50/100/300/400/900 (banner) |
 | `ahgora/ApuracaoPonto.tsx` | ~5 | amber-500/600 |
 | `romaneio/componentes.tsx`, `performance/Producao.tsx` | ~4 cada | amber-400/500/700 (chips de faixa) |
 | `performance/relatorio-impressao.ts` | 25 hex | HTML de impressão (justificado) |
-| `lib/exportacao/marca.ts` (8 hex), `impressao.ts` (3), `excel.ts` (6 rgb) | ~17 | PDF/Excel (justificado) |
+| `lib/export/brand.ts` (8 hex), `impressao.ts` (3), `excel.ts` (6 rgb) | ~17 | PDF/Excel (justificado) |
 | `routes/_autenticado.tsx` | 1 hex + 3 | `#212a63` fallback + `text-white` |
-| `acesso/marca.ts` | 1 hex | `#212a63` |
+| `access/brand.ts` | 1 hex | `#212a63` |
 | Demais (~15 arquivos) | 1-3 cada | `FiltroMultiplo`, `FiltroPeriodo`, `FiltroTexto`, `ErroDeRota`, `Distribuicao`, `compartilhado/segmento.ts`, etc. (quase sempre `text-white` ou `border-amber-*`) |
 
 Também fora dos tokens: `rounded-[10px]` (85 ocorrências, igual a `--radius` mas escrito como valor) e `bg-[var(--brand)] text-white` repetido em alternadores (o token existe, não há classe utilitária). `var(--brand)` aparece ~45 vezes e `var(--status-bad)` ~29: o uso de token é majoritário em gráficos e erros; o âmbar de alerta é o que mais foge.
@@ -196,7 +196,7 @@ Outras: `text-[9px]` em eixos e rótulos (Romaneio `AbasDesempenho.tsx:252,1086`
 
 ## 5. Padrões repetidos e divergências
 
-### 5.1 Componentes comuns (`componentes/comum`)
+### 5.1 Componentes comuns (`components/common`)
 
 | Componente | O que faz |
 |---|---|
@@ -220,7 +220,7 @@ Outras: `text-[9px]` em eixos e rótulos (Romaneio `AbasDesempenho.tsx:252,1086`
 | `TabelaDados` (+ `tabela-dados.ts`) | Tabela com ordenação (cliente/servidor), paginação (cliente/servidor), seletor de colunas, exportação, estados vazio/erro/carregando. |
 | `periodo.ts`, `ordenar-por-placa.ts`, `use-empresa-da-exportacao.ts` | Utilitários (intervalo do período, ordem de placas, empresa do arquivo exportado). |
 
-Compartilhados fora de `comum`: `modulos/filtros/componentes.tsx` (`BuscaDocumento`, `SeletorDeFilial`, `SeletorDePagador(Agrupado)`, `SeletorDeTexto`, `SeletorDeTipoDocumento`, `ItemMarcavel`, `AvisoDaLista`), `modulos/compartilhado/segmento.ts` (`classeDoSegmento`), `modulos/ingestao-ssw/SeloDosDados.tsx` (envolve `SeloAtualizacao`), `modulos/admin/comum.tsx` (`CabecalhoDaPagina`, `Selo`, `Campo`).
+Compartilhados fora de `comum`: `modules/filters/components.tsx` (`BuscaDocumento`, `SeletorDeFilial`, `SeletorDePagador(Agrupado)`, `SeletorDeTexto`, `SeletorDeTipoDocumento`, `ItemMarcavel`, `AvisoDaLista`), `modules/compartilhado/segmento.ts` (`classeDoSegmento`), `modules/ssw-ingestion/DataBadge.tsx` (envolve `SeloAtualizacao`), `modules/admin/common.tsx` (`CabecalhoDaPagina`, `Selo`, `Campo`).
 
 ### 5.2 Onde cada tela foge dos componentes comuns
 

@@ -9,51 +9,51 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AutenticadoRouteImport } from './routes/_autenticado'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AceitarConviteRouteImport } from './routes/aceitar-convite'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
-import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado/index'
-import { Route as AutenticadoCalendarioRouteImport } from './routes/_autenticado/calendario'
-import { Route as AutenticadoColetasRouteImport } from './routes/_autenticado/coletas'
-import { Route as AutenticadoComprovantesRouteImport } from './routes/_autenticado/comprovantes'
-import { Route as AutenticadoHistoricoRouteImport } from './routes/_autenticado/historico'
-import { Route as AutenticadoOcorrenciasRouteImport } from './routes/_autenticado/ocorrencias'
-import { Route as AutenticadoPrazoParceiroRouteImport } from './routes/_autenticado/prazo-parceiro'
-import { Route as AutenticadoRomaneioRouteImport } from './routes/_autenticado/romaneio'
-import { Route as AutenticadoSemAcessoRouteImport } from './routes/_autenticado/sem-acesso'
-import { Route as AutenticadoAdminAhgoraRouteImport } from './routes/_autenticado/admin.ahgora'
-import { Route as AutenticadoAdminBonificacaoEntregaRouteImport } from './routes/_autenticado/admin.bonificacao-entrega'
-import { Route as AutenticadoAdminCodigosRouteImport } from './routes/_autenticado/admin.codigos'
-import { Route as AutenticadoAdminConfiguracoesRouteImport } from './routes/_autenticado/admin.configuracoes'
-import { Route as AutenticadoAdminDepartamentosRouteImport } from './routes/_autenticado/admin.departamentos'
-import { Route as AutenticadoAdminEquipesRouteImport } from './routes/_autenticado/admin.equipes'
-import { Route as AutenticadoAdminImportacaoSswRouteImport } from './routes/_autenticado/admin.importacao-ssw'
-import { Route as AutenticadoAdminIngestaoRouteImport } from './routes/_autenticado/admin.ingestao'
-import { Route as AutenticadoAdminLogsRouteImport } from './routes/_autenticado/admin.logs'
-import { Route as AutenticadoAdminRolesRouteImport } from './routes/_autenticado/admin.roles'
-import { Route as AutenticadoAdminSswDiagnosticoRouteImport } from './routes/_autenticado/admin.ssw-diagnostico'
-import { Route as AutenticadoAdminUsuariosRouteImport } from './routes/_autenticado/admin.usuarios'
-import { Route as AutenticadoAdminXmlCteRouteImport } from './routes/_autenticado/admin.xml-cte'
-import { Route as AutenticadoCtrcNumeroRouteImport } from './routes/_autenticado/ctrc.$numero'
-import { Route as AutenticadoHistoricoFeriadosRouteImport } from './routes/_autenticado/historico_.feriados'
-import { Route as AutenticadoPerformanceIndexRouteImport } from './routes/_autenticado/performance.index'
-import { Route as AutenticadoPerformanceListaRouteImport } from './routes/_autenticado/performance.lista'
-import { Route as AutenticadoPlataformaAdministradoresRouteImport } from './routes/_autenticado/plataforma.administradores'
-import { Route as AutenticadoPlataformaConfiguracoesRouteImport } from './routes/_autenticado/plataforma.configuracoes'
-import { Route as AutenticadoPlataformaIntegracoesRouteImport } from './routes/_autenticado/plataforma.integracoes'
-import { Route as AutenticadoPlataformaLogsRouteImport } from './routes/_autenticado/plataforma.logs'
-import { Route as AutenticadoPlataformaPainelRouteImport } from './routes/_autenticado/plataforma.painel'
-import { Route as AutenticadoPrazoParceiroIdRouteImport } from './routes/_autenticado/prazo-parceiro_.$id'
-import { Route as AutenticadoRankingIndexRouteImport } from './routes/_autenticado/ranking.index'
-import { Route as AutenticadoRankingRegrasRouteImport } from './routes/_autenticado/ranking.regras'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
+import { Route as AuthenticatedColetasRouteImport } from './routes/_authenticated/coletas'
+import { Route as AuthenticatedComprovantesRouteImport } from './routes/_authenticated/comprovantes'
+import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
+import { Route as AuthenticatedOcorrenciasRouteImport } from './routes/_authenticated/ocorrencias'
+import { Route as AuthenticatedPrazoParceiroRouteImport } from './routes/_authenticated/prazo-parceiro'
+import { Route as AuthenticatedRomaneioRouteImport } from './routes/_authenticated/romaneio'
+import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authenticated/sem-acesso'
+import { Route as AuthenticatedAdminAhgoraRouteImport } from './routes/_authenticated/admin.ahgora'
+import { Route as AuthenticatedAdminBonificacaoEntregaRouteImport } from './routes/_authenticated/admin.bonificacao-entrega'
+import { Route as AuthenticatedAdminCodigosRouteImport } from './routes/_authenticated/admin.codigos'
+import { Route as AuthenticatedAdminConfiguracoesRouteImport } from './routes/_authenticated/admin.configuracoes'
+import { Route as AuthenticatedAdminDepartamentosRouteImport } from './routes/_authenticated/admin.departamentos'
+import { Route as AuthenticatedAdminEquipesRouteImport } from './routes/_authenticated/admin.equipes'
+import { Route as AuthenticatedAdminImportacaoSswRouteImport } from './routes/_authenticated/admin.importacao-ssw'
+import { Route as AuthenticatedAdminIngestaoRouteImport } from './routes/_authenticated/admin.ingestao'
+import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
+import { Route as AuthenticatedAdminRolesRouteImport } from './routes/_authenticated/admin.roles'
+import { Route as AuthenticatedAdminSswDiagnosticoRouteImport } from './routes/_authenticated/admin.ssw-diagnostico'
+import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminXmlCteRouteImport } from './routes/_authenticated/admin.xml-cte'
+import { Route as AuthenticatedCtrcNumeroRouteImport } from './routes/_authenticated/ctrc.$numero'
+import { Route as AuthenticatedHistoricoFeriadosRouteImport } from './routes/_authenticated/historico_.feriados'
+import { Route as AuthenticatedPerformanceIndexRouteImport } from './routes/_authenticated/performance.index'
+import { Route as AuthenticatedPerformanceListaRouteImport } from './routes/_authenticated/performance.lista'
+import { Route as AuthenticatedPlataformaAdministradoresRouteImport } from './routes/_authenticated/plataforma.administradores'
+import { Route as AuthenticatedPlataformaConfiguracoesRouteImport } from './routes/_authenticated/plataforma.configuracoes'
+import { Route as AuthenticatedPlataformaIntegracoesRouteImport } from './routes/_authenticated/plataforma.integracoes'
+import { Route as AuthenticatedPlataformaLogsRouteImport } from './routes/_authenticated/plataforma.logs'
+import { Route as AuthenticatedPlataformaPainelRouteImport } from './routes/_authenticated/plataforma.painel'
+import { Route as AuthenticatedPrazoParceiroIdRouteImport } from './routes/_authenticated/prazo-parceiro_.$id'
+import { Route as AuthenticatedRankingIndexRouteImport } from './routes/_authenticated/ranking.index'
+import { Route as AuthenticatedRankingRegrasRouteImport } from './routes/_authenticated/ranking.regras'
 import { Route as RankingPublicoTokenRouteImport } from './routes/ranking.publico.$token'
-import { Route as AutenticadoPlataformaEmpresasIndexRouteImport } from './routes/_autenticado/plataforma.empresas.index'
-import { Route as AutenticadoPlataformaEmpresasIdRouteImport } from './routes/_autenticado/plataforma.empresas.$id'
-import { Route as AutenticadoRankingEquipeIdRouteImport } from './routes/_autenticado/ranking.equipe.$id'
+import { Route as AuthenticatedPlataformaEmpresasIndexRouteImport } from './routes/_authenticated/plataforma.empresas.index'
+import { Route as AuthenticatedPlataformaEmpresasIdRouteImport } from './routes/_authenticated/plataforma.empresas.$id'
+import { Route as AuthenticatedRankingEquipeIdRouteImport } from './routes/_authenticated/ranking.equipe.$id'
 
-const AutenticadoRoute = AutenticadoRouteImport.update({
-  id: '/_autenticado',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AceitarConviteRoute = AceitarConviteRouteImport.update({
@@ -71,348 +71,355 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AutenticadoIndexRoute = AutenticadoIndexRouteImport.update({
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoCalendarioRoute = AutenticadoCalendarioRouteImport.update({
+const AuthenticatedCalendarioRoute = AuthenticatedCalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoColetasRoute = AutenticadoColetasRouteImport.update({
+const AuthenticatedColetasRoute = AuthenticatedColetasRouteImport.update({
   id: '/coletas',
   path: '/coletas',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoComprovantesRoute = AutenticadoComprovantesRouteImport.update({
-  id: '/comprovantes',
-  path: '/comprovantes',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoHistoricoRoute = AutenticadoHistoricoRouteImport.update({
+const AuthenticatedComprovantesRoute =
+  AuthenticatedComprovantesRouteImport.update({
+    id: '/comprovantes',
+    path: '/comprovantes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
   id: '/historico',
   path: '/historico',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoOcorrenciasRoute = AutenticadoOcorrenciasRouteImport.update({
-  id: '/ocorrencias',
-  path: '/ocorrencias',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoPrazoParceiroRoute =
-  AutenticadoPrazoParceiroRouteImport.update({
+const AuthenticatedOcorrenciasRoute =
+  AuthenticatedOcorrenciasRouteImport.update({
+    id: '/ocorrencias',
+    path: '/ocorrencias',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedPrazoParceiroRoute =
+  AuthenticatedPrazoParceiroRouteImport.update({
     id: '/prazo-parceiro',
     path: '/prazo-parceiro',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoRomaneioRoute = AutenticadoRomaneioRouteImport.update({
+const AuthenticatedRomaneioRoute = AuthenticatedRomaneioRouteImport.update({
   id: '/romaneio',
   path: '/romaneio',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoSemAcessoRoute = AutenticadoSemAcessoRouteImport.update({
+const AuthenticatedSemAcessoRoute = AuthenticatedSemAcessoRouteImport.update({
   id: '/sem-acesso',
   path: '/sem-acesso',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoAdminAhgoraRoute = AutenticadoAdminAhgoraRouteImport.update({
-  id: '/admin/ahgora',
-  path: '/admin/ahgora',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoAdminBonificacaoEntregaRoute =
-  AutenticadoAdminBonificacaoEntregaRouteImport.update({
+const AuthenticatedAdminAhgoraRoute =
+  AuthenticatedAdminAhgoraRouteImport.update({
+    id: '/admin/ahgora',
+    path: '/admin/ahgora',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminBonificacaoEntregaRoute =
+  AuthenticatedAdminBonificacaoEntregaRouteImport.update({
     id: '/admin/bonificacao-entrega',
     path: '/admin/bonificacao-entrega',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoAdminCodigosRoute = AutenticadoAdminCodigosRouteImport.update({
-  id: '/admin/codigos',
-  path: '/admin/codigos',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoAdminConfiguracoesRoute =
-  AutenticadoAdminConfiguracoesRouteImport.update({
+const AuthenticatedAdminCodigosRoute =
+  AuthenticatedAdminCodigosRouteImport.update({
+    id: '/admin/codigos',
+    path: '/admin/codigos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminConfiguracoesRoute =
+  AuthenticatedAdminConfiguracoesRouteImport.update({
     id: '/admin/configuracoes',
     path: '/admin/configuracoes',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoAdminDepartamentosRoute =
-  AutenticadoAdminDepartamentosRouteImport.update({
+const AuthenticatedAdminDepartamentosRoute =
+  AuthenticatedAdminDepartamentosRouteImport.update({
     id: '/admin/departamentos',
     path: '/admin/departamentos',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoAdminEquipesRoute = AutenticadoAdminEquipesRouteImport.update({
-  id: '/admin/equipes',
-  path: '/admin/equipes',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoAdminImportacaoSswRoute =
-  AutenticadoAdminImportacaoSswRouteImport.update({
+const AuthenticatedAdminEquipesRoute =
+  AuthenticatedAdminEquipesRouteImport.update({
+    id: '/admin/equipes',
+    path: '/admin/equipes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminImportacaoSswRoute =
+  AuthenticatedAdminImportacaoSswRouteImport.update({
     id: '/admin/importacao-ssw',
     path: '/admin/importacao-ssw',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoAdminIngestaoRoute =
-  AutenticadoAdminIngestaoRouteImport.update({
+const AuthenticatedAdminIngestaoRoute =
+  AuthenticatedAdminIngestaoRouteImport.update({
     id: '/admin/ingestao',
     path: '/admin/ingestao',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoAdminLogsRoute = AutenticadoAdminLogsRouteImport.update({
+const AuthenticatedAdminLogsRoute = AuthenticatedAdminLogsRouteImport.update({
   id: '/admin/logs',
   path: '/admin/logs',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoAdminRolesRoute = AutenticadoAdminRolesRouteImport.update({
+const AuthenticatedAdminRolesRoute = AuthenticatedAdminRolesRouteImport.update({
   id: '/admin/roles',
   path: '/admin/roles',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoAdminSswDiagnosticoRoute =
-  AutenticadoAdminSswDiagnosticoRouteImport.update({
+const AuthenticatedAdminSswDiagnosticoRoute =
+  AuthenticatedAdminSswDiagnosticoRouteImport.update({
     id: '/admin/ssw-diagnostico',
     path: '/admin/ssw-diagnostico',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoAdminUsuariosRoute =
-  AutenticadoAdminUsuariosRouteImport.update({
+const AuthenticatedAdminUsuariosRoute =
+  AuthenticatedAdminUsuariosRouteImport.update({
     id: '/admin/usuarios',
     path: '/admin/usuarios',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoAdminXmlCteRoute = AutenticadoAdminXmlCteRouteImport.update({
-  id: '/admin/xml-cte',
-  path: '/admin/xml-cte',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoCtrcNumeroRoute = AutenticadoCtrcNumeroRouteImport.update({
+const AuthenticatedAdminXmlCteRoute =
+  AuthenticatedAdminXmlCteRouteImport.update({
+    id: '/admin/xml-cte',
+    path: '/admin/xml-cte',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedCtrcNumeroRoute = AuthenticatedCtrcNumeroRouteImport.update({
   id: '/ctrc/$numero',
   path: '/ctrc/$numero',
-  getParentRoute: () => AutenticadoRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AutenticadoHistoricoFeriadosRoute =
-  AutenticadoHistoricoFeriadosRouteImport.update({
+const AuthenticatedHistoricoFeriadosRoute =
+  AuthenticatedHistoricoFeriadosRouteImport.update({
     id: '/historico_/feriados',
     path: '/historico/feriados',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPerformanceIndexRoute =
-  AutenticadoPerformanceIndexRouteImport.update({
+const AuthenticatedPerformanceIndexRoute =
+  AuthenticatedPerformanceIndexRouteImport.update({
     id: '/performance/',
     path: '/performance/',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPerformanceListaRoute =
-  AutenticadoPerformanceListaRouteImport.update({
+const AuthenticatedPerformanceListaRoute =
+  AuthenticatedPerformanceListaRouteImport.update({
     id: '/performance/lista',
     path: '/performance/lista',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPlataformaAdministradoresRoute =
-  AutenticadoPlataformaAdministradoresRouteImport.update({
+const AuthenticatedPlataformaAdministradoresRoute =
+  AuthenticatedPlataformaAdministradoresRouteImport.update({
     id: '/plataforma/administradores',
     path: '/plataforma/administradores',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPlataformaConfiguracoesRoute =
-  AutenticadoPlataformaConfiguracoesRouteImport.update({
+const AuthenticatedPlataformaConfiguracoesRoute =
+  AuthenticatedPlataformaConfiguracoesRouteImport.update({
     id: '/plataforma/configuracoes',
     path: '/plataforma/configuracoes',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPlataformaIntegracoesRoute =
-  AutenticadoPlataformaIntegracoesRouteImport.update({
+const AuthenticatedPlataformaIntegracoesRoute =
+  AuthenticatedPlataformaIntegracoesRouteImport.update({
     id: '/plataforma/integracoes',
     path: '/plataforma/integracoes',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPlataformaLogsRoute =
-  AutenticadoPlataformaLogsRouteImport.update({
+const AuthenticatedPlataformaLogsRoute =
+  AuthenticatedPlataformaLogsRouteImport.update({
     id: '/plataforma/logs',
     path: '/plataforma/logs',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPlataformaPainelRoute =
-  AutenticadoPlataformaPainelRouteImport.update({
+const AuthenticatedPlataformaPainelRoute =
+  AuthenticatedPlataformaPainelRouteImport.update({
     id: '/plataforma/painel',
     path: '/plataforma/painel',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPrazoParceiroIdRoute =
-  AutenticadoPrazoParceiroIdRouteImport.update({
+const AuthenticatedPrazoParceiroIdRoute =
+  AuthenticatedPrazoParceiroIdRouteImport.update({
     id: '/prazo-parceiro_/$id',
     path: '/prazo-parceiro/$id',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoRankingIndexRoute = AutenticadoRankingIndexRouteImport.update({
-  id: '/ranking/',
-  path: '/ranking/',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoRankingRegrasRoute =
-  AutenticadoRankingRegrasRouteImport.update({
+const AuthenticatedRankingIndexRoute =
+  AuthenticatedRankingIndexRouteImport.update({
+    id: '/ranking/',
+    path: '/ranking/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedRankingRegrasRoute =
+  AuthenticatedRankingRegrasRouteImport.update({
     id: '/ranking/regras',
     path: '/ranking/regras',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const RankingPublicoTokenRoute = RankingPublicoTokenRouteImport.update({
   id: '/ranking/publico/$token',
   path: '/ranking/publico/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AutenticadoPlataformaEmpresasIndexRoute =
-  AutenticadoPlataformaEmpresasIndexRouteImport.update({
+const AuthenticatedPlataformaEmpresasIndexRoute =
+  AuthenticatedPlataformaEmpresasIndexRouteImport.update({
     id: '/plataforma/empresas/',
     path: '/plataforma/empresas/',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoPlataformaEmpresasIdRoute =
-  AutenticadoPlataformaEmpresasIdRouteImport.update({
+const AuthenticatedPlataformaEmpresasIdRoute =
+  AuthenticatedPlataformaEmpresasIdRouteImport.update({
     id: '/plataforma/empresas/$id',
     path: '/plataforma/empresas/$id',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AutenticadoRankingEquipeIdRoute =
-  AutenticadoRankingEquipeIdRouteImport.update({
+const AuthenticatedRankingEquipeIdRoute =
+  AuthenticatedRankingEquipeIdRouteImport.update({
     id: '/ranking/equipe/$id',
     path: '/ranking/equipe/$id',
-    getParentRoute: () => AutenticadoRoute,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AutenticadoIndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/aceitar-convite': typeof AceitarConviteRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
-  '/calendario': typeof AutenticadoCalendarioRoute
-  '/coletas': typeof AutenticadoColetasRoute
-  '/comprovantes': typeof AutenticadoComprovantesRoute
-  '/historico': typeof AutenticadoHistoricoRoute
-  '/ocorrencias': typeof AutenticadoOcorrenciasRoute
-  '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
-  '/romaneio': typeof AutenticadoRomaneioRoute
-  '/sem-acesso': typeof AutenticadoSemAcessoRoute
-  '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
-  '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
-  '/admin/codigos': typeof AutenticadoAdminCodigosRoute
-  '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
-  '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
-  '/admin/equipes': typeof AutenticadoAdminEquipesRoute
-  '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
-  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
-  '/admin/logs': typeof AutenticadoAdminLogsRoute
-  '/admin/roles': typeof AutenticadoAdminRolesRoute
-  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
-  '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
-  '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
-  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
-  '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
-  '/performance/lista': typeof AutenticadoPerformanceListaRoute
-  '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
-  '/plataforma/configuracoes': typeof AutenticadoPlataformaConfiguracoesRoute
-  '/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
-  '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
-  '/plataforma/painel': typeof AutenticadoPlataformaPainelRoute
-  '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
-  '/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
+  '/coletas': typeof AuthenticatedColetasRoute
+  '/comprovantes': typeof AuthenticatedComprovantesRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
+  '/ocorrencias': typeof AuthenticatedOcorrenciasRoute
+  '/prazo-parceiro': typeof AuthenticatedPrazoParceiroRoute
+  '/romaneio': typeof AuthenticatedRomaneioRoute
+  '/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/admin/ahgora': typeof AuthenticatedAdminAhgoraRoute
+  '/admin/bonificacao-entrega': typeof AuthenticatedAdminBonificacaoEntregaRoute
+  '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/admin/departamentos': typeof AuthenticatedAdminDepartamentosRoute
+  '/admin/equipes': typeof AuthenticatedAdminEquipesRoute
+  '/admin/importacao-ssw': typeof AuthenticatedAdminImportacaoSswRoute
+  '/admin/ingestao': typeof AuthenticatedAdminIngestaoRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/roles': typeof AuthenticatedAdminRolesRoute
+  '/admin/ssw-diagnostico': typeof AuthenticatedAdminSswDiagnosticoRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/admin/xml-cte': typeof AuthenticatedAdminXmlCteRoute
+  '/ctrc/$numero': typeof AuthenticatedCtrcNumeroRoute
+  '/historico/feriados': typeof AuthenticatedHistoricoFeriadosRoute
+  '/performance/lista': typeof AuthenticatedPerformanceListaRoute
+  '/plataforma/administradores': typeof AuthenticatedPlataformaAdministradoresRoute
+  '/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
+  '/plataforma/integracoes': typeof AuthenticatedPlataformaIntegracoesRoute
+  '/plataforma/logs': typeof AuthenticatedPlataformaLogsRoute
+  '/plataforma/painel': typeof AuthenticatedPlataformaPainelRoute
+  '/prazo-parceiro/$id': typeof AuthenticatedPrazoParceiroIdRoute
+  '/ranking/regras': typeof AuthenticatedRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
-  '/performance/': typeof AutenticadoPerformanceIndexRoute
-  '/ranking/': typeof AutenticadoRankingIndexRoute
-  '/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
-  '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
-  '/plataforma/empresas/': typeof AutenticadoPlataformaEmpresasIndexRoute
+  '/performance/': typeof AuthenticatedPerformanceIndexRoute
+  '/ranking/': typeof AuthenticatedRankingIndexRoute
+  '/plataforma/empresas/$id': typeof AuthenticatedPlataformaEmpresasIdRoute
+  '/ranking/equipe/$id': typeof AuthenticatedRankingEquipeIdRoute
+  '/plataforma/empresas/': typeof AuthenticatedPlataformaEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/aceitar-convite': typeof AceitarConviteRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
-  '/calendario': typeof AutenticadoCalendarioRoute
-  '/coletas': typeof AutenticadoColetasRoute
-  '/comprovantes': typeof AutenticadoComprovantesRoute
-  '/historico': typeof AutenticadoHistoricoRoute
-  '/ocorrencias': typeof AutenticadoOcorrenciasRoute
-  '/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
-  '/romaneio': typeof AutenticadoRomaneioRoute
-  '/sem-acesso': typeof AutenticadoSemAcessoRoute
-  '/': typeof AutenticadoIndexRoute
-  '/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
-  '/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
-  '/admin/codigos': typeof AutenticadoAdminCodigosRoute
-  '/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
-  '/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
-  '/admin/equipes': typeof AutenticadoAdminEquipesRoute
-  '/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
-  '/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
-  '/admin/logs': typeof AutenticadoAdminLogsRoute
-  '/admin/roles': typeof AutenticadoAdminRolesRoute
-  '/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
-  '/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
-  '/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
-  '/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
-  '/historico/feriados': typeof AutenticadoHistoricoFeriadosRoute
-  '/performance/lista': typeof AutenticadoPerformanceListaRoute
-  '/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
-  '/plataforma/configuracoes': typeof AutenticadoPlataformaConfiguracoesRoute
-  '/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
-  '/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
-  '/plataforma/painel': typeof AutenticadoPlataformaPainelRoute
-  '/prazo-parceiro/$id': typeof AutenticadoPrazoParceiroIdRoute
-  '/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
+  '/coletas': typeof AuthenticatedColetasRoute
+  '/comprovantes': typeof AuthenticatedComprovantesRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
+  '/ocorrencias': typeof AuthenticatedOcorrenciasRoute
+  '/prazo-parceiro': typeof AuthenticatedPrazoParceiroRoute
+  '/romaneio': typeof AuthenticatedRomaneioRoute
+  '/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/admin/ahgora': typeof AuthenticatedAdminAhgoraRoute
+  '/admin/bonificacao-entrega': typeof AuthenticatedAdminBonificacaoEntregaRoute
+  '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/admin/departamentos': typeof AuthenticatedAdminDepartamentosRoute
+  '/admin/equipes': typeof AuthenticatedAdminEquipesRoute
+  '/admin/importacao-ssw': typeof AuthenticatedAdminImportacaoSswRoute
+  '/admin/ingestao': typeof AuthenticatedAdminIngestaoRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/roles': typeof AuthenticatedAdminRolesRoute
+  '/admin/ssw-diagnostico': typeof AuthenticatedAdminSswDiagnosticoRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/admin/xml-cte': typeof AuthenticatedAdminXmlCteRoute
+  '/ctrc/$numero': typeof AuthenticatedCtrcNumeroRoute
+  '/historico/feriados': typeof AuthenticatedHistoricoFeriadosRoute
+  '/performance/lista': typeof AuthenticatedPerformanceListaRoute
+  '/plataforma/administradores': typeof AuthenticatedPlataformaAdministradoresRoute
+  '/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
+  '/plataforma/integracoes': typeof AuthenticatedPlataformaIntegracoesRoute
+  '/plataforma/logs': typeof AuthenticatedPlataformaLogsRoute
+  '/plataforma/painel': typeof AuthenticatedPlataformaPainelRoute
+  '/prazo-parceiro/$id': typeof AuthenticatedPrazoParceiroIdRoute
+  '/ranking/regras': typeof AuthenticatedRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
-  '/performance': typeof AutenticadoPerformanceIndexRoute
-  '/ranking': typeof AutenticadoRankingIndexRoute
-  '/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
-  '/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
-  '/plataforma/empresas': typeof AutenticadoPlataformaEmpresasIndexRoute
+  '/performance': typeof AuthenticatedPerformanceIndexRoute
+  '/ranking': typeof AuthenticatedRankingIndexRoute
+  '/plataforma/empresas/$id': typeof AuthenticatedPlataformaEmpresasIdRoute
+  '/ranking/equipe/$id': typeof AuthenticatedRankingEquipeIdRoute
+  '/plataforma/empresas': typeof AuthenticatedPlataformaEmpresasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_autenticado': typeof AutenticadoRouteWithChildren
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/aceitar-convite': typeof AceitarConviteRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
-  '/_autenticado/calendario': typeof AutenticadoCalendarioRoute
-  '/_autenticado/coletas': typeof AutenticadoColetasRoute
-  '/_autenticado/comprovantes': typeof AutenticadoComprovantesRoute
-  '/_autenticado/historico': typeof AutenticadoHistoricoRoute
-  '/_autenticado/ocorrencias': typeof AutenticadoOcorrenciasRoute
-  '/_autenticado/prazo-parceiro': typeof AutenticadoPrazoParceiroRoute
-  '/_autenticado/romaneio': typeof AutenticadoRomaneioRoute
-  '/_autenticado/sem-acesso': typeof AutenticadoSemAcessoRoute
-  '/_autenticado/': typeof AutenticadoIndexRoute
-  '/_autenticado/admin/ahgora': typeof AutenticadoAdminAhgoraRoute
-  '/_autenticado/admin/bonificacao-entrega': typeof AutenticadoAdminBonificacaoEntregaRoute
-  '/_autenticado/admin/codigos': typeof AutenticadoAdminCodigosRoute
-  '/_autenticado/admin/configuracoes': typeof AutenticadoAdminConfiguracoesRoute
-  '/_autenticado/admin/departamentos': typeof AutenticadoAdminDepartamentosRoute
-  '/_autenticado/admin/equipes': typeof AutenticadoAdminEquipesRoute
-  '/_autenticado/admin/importacao-ssw': typeof AutenticadoAdminImportacaoSswRoute
-  '/_autenticado/admin/ingestao': typeof AutenticadoAdminIngestaoRoute
-  '/_autenticado/admin/logs': typeof AutenticadoAdminLogsRoute
-  '/_autenticado/admin/roles': typeof AutenticadoAdminRolesRoute
-  '/_autenticado/admin/ssw-diagnostico': typeof AutenticadoAdminSswDiagnosticoRoute
-  '/_autenticado/admin/usuarios': typeof AutenticadoAdminUsuariosRoute
-  '/_autenticado/admin/xml-cte': typeof AutenticadoAdminXmlCteRoute
-  '/_autenticado/ctrc/$numero': typeof AutenticadoCtrcNumeroRoute
-  '/_autenticado/historico_/feriados': typeof AutenticadoHistoricoFeriadosRoute
-  '/_autenticado/performance/lista': typeof AutenticadoPerformanceListaRoute
-  '/_autenticado/plataforma/administradores': typeof AutenticadoPlataformaAdministradoresRoute
-  '/_autenticado/plataforma/configuracoes': typeof AutenticadoPlataformaConfiguracoesRoute
-  '/_autenticado/plataforma/integracoes': typeof AutenticadoPlataformaIntegracoesRoute
-  '/_autenticado/plataforma/logs': typeof AutenticadoPlataformaLogsRoute
-  '/_autenticado/plataforma/painel': typeof AutenticadoPlataformaPainelRoute
-  '/_autenticado/prazo-parceiro_/$id': typeof AutenticadoPrazoParceiroIdRoute
-  '/_autenticado/ranking/regras': typeof AutenticadoRankingRegrasRoute
+  '/_authenticated/calendario': typeof AuthenticatedCalendarioRoute
+  '/_authenticated/coletas': typeof AuthenticatedColetasRoute
+  '/_authenticated/comprovantes': typeof AuthenticatedComprovantesRoute
+  '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
+  '/_authenticated/ocorrencias': typeof AuthenticatedOcorrenciasRoute
+  '/_authenticated/prazo-parceiro': typeof AuthenticatedPrazoParceiroRoute
+  '/_authenticated/romaneio': typeof AuthenticatedRomaneioRoute
+  '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/ahgora': typeof AuthenticatedAdminAhgoraRoute
+  '/_authenticated/admin/bonificacao-entrega': typeof AuthenticatedAdminBonificacaoEntregaRoute
+  '/_authenticated/admin/codigos': typeof AuthenticatedAdminCodigosRoute
+  '/_authenticated/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/_authenticated/admin/departamentos': typeof AuthenticatedAdminDepartamentosRoute
+  '/_authenticated/admin/equipes': typeof AuthenticatedAdminEquipesRoute
+  '/_authenticated/admin/importacao-ssw': typeof AuthenticatedAdminImportacaoSswRoute
+  '/_authenticated/admin/ingestao': typeof AuthenticatedAdminIngestaoRoute
+  '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/_authenticated/admin/roles': typeof AuthenticatedAdminRolesRoute
+  '/_authenticated/admin/ssw-diagnostico': typeof AuthenticatedAdminSswDiagnosticoRoute
+  '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/_authenticated/admin/xml-cte': typeof AuthenticatedAdminXmlCteRoute
+  '/_authenticated/ctrc/$numero': typeof AuthenticatedCtrcNumeroRoute
+  '/_authenticated/historico_/feriados': typeof AuthenticatedHistoricoFeriadosRoute
+  '/_authenticated/performance/lista': typeof AuthenticatedPerformanceListaRoute
+  '/_authenticated/plataforma/administradores': typeof AuthenticatedPlataformaAdministradoresRoute
+  '/_authenticated/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
+  '/_authenticated/plataforma/integracoes': typeof AuthenticatedPlataformaIntegracoesRoute
+  '/_authenticated/plataforma/logs': typeof AuthenticatedPlataformaLogsRoute
+  '/_authenticated/plataforma/painel': typeof AuthenticatedPlataformaPainelRoute
+  '/_authenticated/prazo-parceiro_/$id': typeof AuthenticatedPrazoParceiroIdRoute
+  '/_authenticated/ranking/regras': typeof AuthenticatedRankingRegrasRoute
   '/ranking/publico/$token': typeof RankingPublicoTokenRoute
-  '/_autenticado/performance/': typeof AutenticadoPerformanceIndexRoute
-  '/_autenticado/ranking/': typeof AutenticadoRankingIndexRoute
-  '/_autenticado/plataforma/empresas/$id': typeof AutenticadoPlataformaEmpresasIdRoute
-  '/_autenticado/ranking/equipe/$id': typeof AutenticadoRankingEquipeIdRoute
-  '/_autenticado/plataforma/empresas/': typeof AutenticadoPlataformaEmpresasIndexRoute
+  '/_authenticated/performance/': typeof AuthenticatedPerformanceIndexRoute
+  '/_authenticated/ranking/': typeof AuthenticatedRankingIndexRoute
+  '/_authenticated/plataforma/empresas/$id': typeof AuthenticatedPlataformaEmpresasIdRoute
+  '/_authenticated/ranking/equipe/$id': typeof AuthenticatedRankingEquipeIdRoute
+  '/_authenticated/plataforma/empresas/': typeof AuthenticatedPlataformaEmpresasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -503,52 +510,52 @@ export interface FileRouteTypes {
     | '/plataforma/empresas'
   id:
     | '__root__'
-    | '/_autenticado'
+    | '/_authenticated'
     | '/aceitar-convite'
     | '/login'
     | '/redefinir-senha'
-    | '/_autenticado/calendario'
-    | '/_autenticado/coletas'
-    | '/_autenticado/comprovantes'
-    | '/_autenticado/historico'
-    | '/_autenticado/ocorrencias'
-    | '/_autenticado/prazo-parceiro'
-    | '/_autenticado/romaneio'
-    | '/_autenticado/sem-acesso'
-    | '/_autenticado/'
-    | '/_autenticado/admin/ahgora'
-    | '/_autenticado/admin/bonificacao-entrega'
-    | '/_autenticado/admin/codigos'
-    | '/_autenticado/admin/configuracoes'
-    | '/_autenticado/admin/departamentos'
-    | '/_autenticado/admin/equipes'
-    | '/_autenticado/admin/importacao-ssw'
-    | '/_autenticado/admin/ingestao'
-    | '/_autenticado/admin/logs'
-    | '/_autenticado/admin/roles'
-    | '/_autenticado/admin/ssw-diagnostico'
-    | '/_autenticado/admin/usuarios'
-    | '/_autenticado/admin/xml-cte'
-    | '/_autenticado/ctrc/$numero'
-    | '/_autenticado/historico_/feriados'
-    | '/_autenticado/performance/lista'
-    | '/_autenticado/plataforma/administradores'
-    | '/_autenticado/plataforma/configuracoes'
-    | '/_autenticado/plataforma/integracoes'
-    | '/_autenticado/plataforma/logs'
-    | '/_autenticado/plataforma/painel'
-    | '/_autenticado/prazo-parceiro_/$id'
-    | '/_autenticado/ranking/regras'
+    | '/_authenticated/calendario'
+    | '/_authenticated/coletas'
+    | '/_authenticated/comprovantes'
+    | '/_authenticated/historico'
+    | '/_authenticated/ocorrencias'
+    | '/_authenticated/prazo-parceiro'
+    | '/_authenticated/romaneio'
+    | '/_authenticated/sem-acesso'
+    | '/_authenticated/'
+    | '/_authenticated/admin/ahgora'
+    | '/_authenticated/admin/bonificacao-entrega'
+    | '/_authenticated/admin/codigos'
+    | '/_authenticated/admin/configuracoes'
+    | '/_authenticated/admin/departamentos'
+    | '/_authenticated/admin/equipes'
+    | '/_authenticated/admin/importacao-ssw'
+    | '/_authenticated/admin/ingestao'
+    | '/_authenticated/admin/logs'
+    | '/_authenticated/admin/roles'
+    | '/_authenticated/admin/ssw-diagnostico'
+    | '/_authenticated/admin/usuarios'
+    | '/_authenticated/admin/xml-cte'
+    | '/_authenticated/ctrc/$numero'
+    | '/_authenticated/historico_/feriados'
+    | '/_authenticated/performance/lista'
+    | '/_authenticated/plataforma/administradores'
+    | '/_authenticated/plataforma/configuracoes'
+    | '/_authenticated/plataforma/integracoes'
+    | '/_authenticated/plataforma/logs'
+    | '/_authenticated/plataforma/painel'
+    | '/_authenticated/prazo-parceiro_/$id'
+    | '/_authenticated/ranking/regras'
     | '/ranking/publico/$token'
-    | '/_autenticado/performance/'
-    | '/_autenticado/ranking/'
-    | '/_autenticado/plataforma/empresas/$id'
-    | '/_autenticado/ranking/equipe/$id'
-    | '/_autenticado/plataforma/empresas/'
+    | '/_authenticated/performance/'
+    | '/_authenticated/ranking/'
+    | '/_authenticated/plataforma/empresas/$id'
+    | '/_authenticated/ranking/equipe/$id'
+    | '/_authenticated/plataforma/empresas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AutenticadoRoute: typeof AutenticadoRouteWithChildren
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AceitarConviteRoute: typeof AceitarConviteRoute
   LoginRoute: typeof LoginRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
@@ -557,11 +564,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_autenticado': {
-      id: '/_autenticado'
+    '/_authenticated': {
+      id: '/_authenticated'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AutenticadoRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aceitar-convite': {
@@ -585,243 +592,243 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_autenticado/': {
-      id: '/_autenticado/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AutenticadoIndexRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/calendario': {
-      id: '/_autenticado/calendario'
+    '/_authenticated/calendario': {
+      id: '/_authenticated/calendario'
       path: '/calendario'
       fullPath: '/calendario'
-      preLoaderRoute: typeof AutenticadoCalendarioRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedCalendarioRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/coletas': {
-      id: '/_autenticado/coletas'
+    '/_authenticated/coletas': {
+      id: '/_authenticated/coletas'
       path: '/coletas'
       fullPath: '/coletas'
-      preLoaderRoute: typeof AutenticadoColetasRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedColetasRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/comprovantes': {
-      id: '/_autenticado/comprovantes'
+    '/_authenticated/comprovantes': {
+      id: '/_authenticated/comprovantes'
       path: '/comprovantes'
       fullPath: '/comprovantes'
-      preLoaderRoute: typeof AutenticadoComprovantesRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedComprovantesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/historico': {
-      id: '/_autenticado/historico'
+    '/_authenticated/historico': {
+      id: '/_authenticated/historico'
       path: '/historico'
       fullPath: '/historico'
-      preLoaderRoute: typeof AutenticadoHistoricoRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/ocorrencias': {
-      id: '/_autenticado/ocorrencias'
+    '/_authenticated/ocorrencias': {
+      id: '/_authenticated/ocorrencias'
       path: '/ocorrencias'
       fullPath: '/ocorrencias'
-      preLoaderRoute: typeof AutenticadoOcorrenciasRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedOcorrenciasRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/prazo-parceiro': {
-      id: '/_autenticado/prazo-parceiro'
+    '/_authenticated/prazo-parceiro': {
+      id: '/_authenticated/prazo-parceiro'
       path: '/prazo-parceiro'
       fullPath: '/prazo-parceiro'
-      preLoaderRoute: typeof AutenticadoPrazoParceiroRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPrazoParceiroRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/romaneio': {
-      id: '/_autenticado/romaneio'
+    '/_authenticated/romaneio': {
+      id: '/_authenticated/romaneio'
       path: '/romaneio'
       fullPath: '/romaneio'
-      preLoaderRoute: typeof AutenticadoRomaneioRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedRomaneioRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/sem-acesso': {
-      id: '/_autenticado/sem-acesso'
+    '/_authenticated/sem-acesso': {
+      id: '/_authenticated/sem-acesso'
       path: '/sem-acesso'
       fullPath: '/sem-acesso'
-      preLoaderRoute: typeof AutenticadoSemAcessoRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedSemAcessoRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/ahgora': {
-      id: '/_autenticado/admin/ahgora'
+    '/_authenticated/admin/ahgora': {
+      id: '/_authenticated/admin/ahgora'
       path: '/admin/ahgora'
       fullPath: '/admin/ahgora'
-      preLoaderRoute: typeof AutenticadoAdminAhgoraRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminAhgoraRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/bonificacao-entrega': {
-      id: '/_autenticado/admin/bonificacao-entrega'
+    '/_authenticated/admin/bonificacao-entrega': {
+      id: '/_authenticated/admin/bonificacao-entrega'
       path: '/admin/bonificacao-entrega'
       fullPath: '/admin/bonificacao-entrega'
-      preLoaderRoute: typeof AutenticadoAdminBonificacaoEntregaRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminBonificacaoEntregaRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/codigos': {
-      id: '/_autenticado/admin/codigos'
+    '/_authenticated/admin/codigos': {
+      id: '/_authenticated/admin/codigos'
       path: '/admin/codigos'
       fullPath: '/admin/codigos'
-      preLoaderRoute: typeof AutenticadoAdminCodigosRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminCodigosRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/configuracoes': {
-      id: '/_autenticado/admin/configuracoes'
+    '/_authenticated/admin/configuracoes': {
+      id: '/_authenticated/admin/configuracoes'
       path: '/admin/configuracoes'
       fullPath: '/admin/configuracoes'
-      preLoaderRoute: typeof AutenticadoAdminConfiguracoesRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/departamentos': {
-      id: '/_autenticado/admin/departamentos'
+    '/_authenticated/admin/departamentos': {
+      id: '/_authenticated/admin/departamentos'
       path: '/admin/departamentos'
       fullPath: '/admin/departamentos'
-      preLoaderRoute: typeof AutenticadoAdminDepartamentosRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminDepartamentosRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/equipes': {
-      id: '/_autenticado/admin/equipes'
+    '/_authenticated/admin/equipes': {
+      id: '/_authenticated/admin/equipes'
       path: '/admin/equipes'
       fullPath: '/admin/equipes'
-      preLoaderRoute: typeof AutenticadoAdminEquipesRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminEquipesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/importacao-ssw': {
-      id: '/_autenticado/admin/importacao-ssw'
+    '/_authenticated/admin/importacao-ssw': {
+      id: '/_authenticated/admin/importacao-ssw'
       path: '/admin/importacao-ssw'
       fullPath: '/admin/importacao-ssw'
-      preLoaderRoute: typeof AutenticadoAdminImportacaoSswRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminImportacaoSswRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/ingestao': {
-      id: '/_autenticado/admin/ingestao'
+    '/_authenticated/admin/ingestao': {
+      id: '/_authenticated/admin/ingestao'
       path: '/admin/ingestao'
       fullPath: '/admin/ingestao'
-      preLoaderRoute: typeof AutenticadoAdminIngestaoRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminIngestaoRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/logs': {
-      id: '/_autenticado/admin/logs'
+    '/_authenticated/admin/logs': {
+      id: '/_authenticated/admin/logs'
       path: '/admin/logs'
       fullPath: '/admin/logs'
-      preLoaderRoute: typeof AutenticadoAdminLogsRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminLogsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/roles': {
-      id: '/_autenticado/admin/roles'
+    '/_authenticated/admin/roles': {
+      id: '/_authenticated/admin/roles'
       path: '/admin/roles'
       fullPath: '/admin/roles'
-      preLoaderRoute: typeof AutenticadoAdminRolesRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminRolesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/ssw-diagnostico': {
-      id: '/_autenticado/admin/ssw-diagnostico'
+    '/_authenticated/admin/ssw-diagnostico': {
+      id: '/_authenticated/admin/ssw-diagnostico'
       path: '/admin/ssw-diagnostico'
       fullPath: '/admin/ssw-diagnostico'
-      preLoaderRoute: typeof AutenticadoAdminSswDiagnosticoRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminSswDiagnosticoRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/usuarios': {
-      id: '/_autenticado/admin/usuarios'
+    '/_authenticated/admin/usuarios': {
+      id: '/_authenticated/admin/usuarios'
       path: '/admin/usuarios'
       fullPath: '/admin/usuarios'
-      preLoaderRoute: typeof AutenticadoAdminUsuariosRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/admin/xml-cte': {
-      id: '/_autenticado/admin/xml-cte'
+    '/_authenticated/admin/xml-cte': {
+      id: '/_authenticated/admin/xml-cte'
       path: '/admin/xml-cte'
       fullPath: '/admin/xml-cte'
-      preLoaderRoute: typeof AutenticadoAdminXmlCteRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedAdminXmlCteRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/ctrc/$numero': {
-      id: '/_autenticado/ctrc/$numero'
+    '/_authenticated/ctrc/$numero': {
+      id: '/_authenticated/ctrc/$numero'
       path: '/ctrc/$numero'
       fullPath: '/ctrc/$numero'
-      preLoaderRoute: typeof AutenticadoCtrcNumeroRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedCtrcNumeroRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/historico_/feriados': {
-      id: '/_autenticado/historico_/feriados'
+    '/_authenticated/historico_/feriados': {
+      id: '/_authenticated/historico_/feriados'
       path: '/historico/feriados'
       fullPath: '/historico/feriados'
-      preLoaderRoute: typeof AutenticadoHistoricoFeriadosRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedHistoricoFeriadosRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/performance/': {
-      id: '/_autenticado/performance/'
+    '/_authenticated/performance/': {
+      id: '/_authenticated/performance/'
       path: '/performance'
       fullPath: '/performance/'
-      preLoaderRoute: typeof AutenticadoPerformanceIndexRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPerformanceIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/performance/lista': {
-      id: '/_autenticado/performance/lista'
+    '/_authenticated/performance/lista': {
+      id: '/_authenticated/performance/lista'
       path: '/performance/lista'
       fullPath: '/performance/lista'
-      preLoaderRoute: typeof AutenticadoPerformanceListaRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPerformanceListaRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/plataforma/administradores': {
-      id: '/_autenticado/plataforma/administradores'
+    '/_authenticated/plataforma/administradores': {
+      id: '/_authenticated/plataforma/administradores'
       path: '/plataforma/administradores'
       fullPath: '/plataforma/administradores'
-      preLoaderRoute: typeof AutenticadoPlataformaAdministradoresRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPlataformaAdministradoresRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/plataforma/configuracoes': {
-      id: '/_autenticado/plataforma/configuracoes'
+    '/_authenticated/plataforma/configuracoes': {
+      id: '/_authenticated/plataforma/configuracoes'
       path: '/plataforma/configuracoes'
       fullPath: '/plataforma/configuracoes'
-      preLoaderRoute: typeof AutenticadoPlataformaConfiguracoesRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPlataformaConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/plataforma/integracoes': {
-      id: '/_autenticado/plataforma/integracoes'
+    '/_authenticated/plataforma/integracoes': {
+      id: '/_authenticated/plataforma/integracoes'
       path: '/plataforma/integracoes'
       fullPath: '/plataforma/integracoes'
-      preLoaderRoute: typeof AutenticadoPlataformaIntegracoesRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPlataformaIntegracoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/plataforma/logs': {
-      id: '/_autenticado/plataforma/logs'
+    '/_authenticated/plataforma/logs': {
+      id: '/_authenticated/plataforma/logs'
       path: '/plataforma/logs'
       fullPath: '/plataforma/logs'
-      preLoaderRoute: typeof AutenticadoPlataformaLogsRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPlataformaLogsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/plataforma/painel': {
-      id: '/_autenticado/plataforma/painel'
+    '/_authenticated/plataforma/painel': {
+      id: '/_authenticated/plataforma/painel'
       path: '/plataforma/painel'
       fullPath: '/plataforma/painel'
-      preLoaderRoute: typeof AutenticadoPlataformaPainelRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPlataformaPainelRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/prazo-parceiro_/$id': {
-      id: '/_autenticado/prazo-parceiro_/$id'
+    '/_authenticated/prazo-parceiro_/$id': {
+      id: '/_authenticated/prazo-parceiro_/$id'
       path: '/prazo-parceiro/$id'
       fullPath: '/prazo-parceiro/$id'
-      preLoaderRoute: typeof AutenticadoPrazoParceiroIdRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPrazoParceiroIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/ranking/': {
-      id: '/_autenticado/ranking/'
+    '/_authenticated/ranking/': {
+      id: '/_authenticated/ranking/'
       path: '/ranking'
       fullPath: '/ranking/'
-      preLoaderRoute: typeof AutenticadoRankingIndexRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedRankingIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/ranking/regras': {
-      id: '/_autenticado/ranking/regras'
+    '/_authenticated/ranking/regras': {
+      id: '/_authenticated/ranking/regras'
       path: '/ranking/regras'
       fullPath: '/ranking/regras'
-      preLoaderRoute: typeof AutenticadoRankingRegrasRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedRankingRegrasRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/ranking/publico/$token': {
       id: '/ranking/publico/$token'
@@ -830,120 +837,122 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RankingPublicoTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_autenticado/plataforma/empresas/': {
-      id: '/_autenticado/plataforma/empresas/'
+    '/_authenticated/plataforma/empresas/': {
+      id: '/_authenticated/plataforma/empresas/'
       path: '/plataforma/empresas'
       fullPath: '/plataforma/empresas/'
-      preLoaderRoute: typeof AutenticadoPlataformaEmpresasIndexRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPlataformaEmpresasIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/plataforma/empresas/$id': {
-      id: '/_autenticado/plataforma/empresas/$id'
+    '/_authenticated/plataforma/empresas/$id': {
+      id: '/_authenticated/plataforma/empresas/$id'
       path: '/plataforma/empresas/$id'
       fullPath: '/plataforma/empresas/$id'
-      preLoaderRoute: typeof AutenticadoPlataformaEmpresasIdRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedPlataformaEmpresasIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_autenticado/ranking/equipe/$id': {
-      id: '/_autenticado/ranking/equipe/$id'
+    '/_authenticated/ranking/equipe/$id': {
+      id: '/_authenticated/ranking/equipe/$id'
       path: '/ranking/equipe/$id'
       fullPath: '/ranking/equipe/$id'
-      preLoaderRoute: typeof AutenticadoRankingEquipeIdRouteImport
-      parentRoute: typeof AutenticadoRoute
+      preLoaderRoute: typeof AuthenticatedRankingEquipeIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
-interface AutenticadoRouteChildren {
-  AutenticadoCalendarioRoute: typeof AutenticadoCalendarioRoute
-  AutenticadoColetasRoute: typeof AutenticadoColetasRoute
-  AutenticadoComprovantesRoute: typeof AutenticadoComprovantesRoute
-  AutenticadoHistoricoRoute: typeof AutenticadoHistoricoRoute
-  AutenticadoOcorrenciasRoute: typeof AutenticadoOcorrenciasRoute
-  AutenticadoPrazoParceiroRoute: typeof AutenticadoPrazoParceiroRoute
-  AutenticadoRomaneioRoute: typeof AutenticadoRomaneioRoute
-  AutenticadoSemAcessoRoute: typeof AutenticadoSemAcessoRoute
-  AutenticadoIndexRoute: typeof AutenticadoIndexRoute
-  AutenticadoAdminAhgoraRoute: typeof AutenticadoAdminAhgoraRoute
-  AutenticadoAdminBonificacaoEntregaRoute: typeof AutenticadoAdminBonificacaoEntregaRoute
-  AutenticadoAdminCodigosRoute: typeof AutenticadoAdminCodigosRoute
-  AutenticadoAdminConfiguracoesRoute: typeof AutenticadoAdminConfiguracoesRoute
-  AutenticadoAdminDepartamentosRoute: typeof AutenticadoAdminDepartamentosRoute
-  AutenticadoAdminEquipesRoute: typeof AutenticadoAdminEquipesRoute
-  AutenticadoAdminImportacaoSswRoute: typeof AutenticadoAdminImportacaoSswRoute
-  AutenticadoAdminIngestaoRoute: typeof AutenticadoAdminIngestaoRoute
-  AutenticadoAdminLogsRoute: typeof AutenticadoAdminLogsRoute
-  AutenticadoAdminRolesRoute: typeof AutenticadoAdminRolesRoute
-  AutenticadoAdminSswDiagnosticoRoute: typeof AutenticadoAdminSswDiagnosticoRoute
-  AutenticadoAdminUsuariosRoute: typeof AutenticadoAdminUsuariosRoute
-  AutenticadoAdminXmlCteRoute: typeof AutenticadoAdminXmlCteRoute
-  AutenticadoCtrcNumeroRoute: typeof AutenticadoCtrcNumeroRoute
-  AutenticadoHistoricoFeriadosRoute: typeof AutenticadoHistoricoFeriadosRoute
-  AutenticadoPerformanceListaRoute: typeof AutenticadoPerformanceListaRoute
-  AutenticadoPlataformaAdministradoresRoute: typeof AutenticadoPlataformaAdministradoresRoute
-  AutenticadoPlataformaConfiguracoesRoute: typeof AutenticadoPlataformaConfiguracoesRoute
-  AutenticadoPlataformaIntegracoesRoute: typeof AutenticadoPlataformaIntegracoesRoute
-  AutenticadoPlataformaLogsRoute: typeof AutenticadoPlataformaLogsRoute
-  AutenticadoPlataformaPainelRoute: typeof AutenticadoPlataformaPainelRoute
-  AutenticadoPrazoParceiroIdRoute: typeof AutenticadoPrazoParceiroIdRoute
-  AutenticadoRankingRegrasRoute: typeof AutenticadoRankingRegrasRoute
-  AutenticadoPerformanceIndexRoute: typeof AutenticadoPerformanceIndexRoute
-  AutenticadoRankingIndexRoute: typeof AutenticadoRankingIndexRoute
-  AutenticadoPlataformaEmpresasIdRoute: typeof AutenticadoPlataformaEmpresasIdRoute
-  AutenticadoRankingEquipeIdRoute: typeof AutenticadoRankingEquipeIdRoute
-  AutenticadoPlataformaEmpresasIndexRoute: typeof AutenticadoPlataformaEmpresasIndexRoute
+interface AuthenticatedRouteChildren {
+  AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
+  AuthenticatedColetasRoute: typeof AuthenticatedColetasRoute
+  AuthenticatedComprovantesRoute: typeof AuthenticatedComprovantesRoute
+  AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
+  AuthenticatedOcorrenciasRoute: typeof AuthenticatedOcorrenciasRoute
+  AuthenticatedPrazoParceiroRoute: typeof AuthenticatedPrazoParceiroRoute
+  AuthenticatedRomaneioRoute: typeof AuthenticatedRomaneioRoute
+  AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAdminAhgoraRoute: typeof AuthenticatedAdminAhgoraRoute
+  AuthenticatedAdminBonificacaoEntregaRoute: typeof AuthenticatedAdminBonificacaoEntregaRoute
+  AuthenticatedAdminCodigosRoute: typeof AuthenticatedAdminCodigosRoute
+  AuthenticatedAdminConfiguracoesRoute: typeof AuthenticatedAdminConfiguracoesRoute
+  AuthenticatedAdminDepartamentosRoute: typeof AuthenticatedAdminDepartamentosRoute
+  AuthenticatedAdminEquipesRoute: typeof AuthenticatedAdminEquipesRoute
+  AuthenticatedAdminImportacaoSswRoute: typeof AuthenticatedAdminImportacaoSswRoute
+  AuthenticatedAdminIngestaoRoute: typeof AuthenticatedAdminIngestaoRoute
+  AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
+  AuthenticatedAdminRolesRoute: typeof AuthenticatedAdminRolesRoute
+  AuthenticatedAdminSswDiagnosticoRoute: typeof AuthenticatedAdminSswDiagnosticoRoute
+  AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
+  AuthenticatedAdminXmlCteRoute: typeof AuthenticatedAdminXmlCteRoute
+  AuthenticatedCtrcNumeroRoute: typeof AuthenticatedCtrcNumeroRoute
+  AuthenticatedHistoricoFeriadosRoute: typeof AuthenticatedHistoricoFeriadosRoute
+  AuthenticatedPerformanceListaRoute: typeof AuthenticatedPerformanceListaRoute
+  AuthenticatedPlataformaAdministradoresRoute: typeof AuthenticatedPlataformaAdministradoresRoute
+  AuthenticatedPlataformaConfiguracoesRoute: typeof AuthenticatedPlataformaConfiguracoesRoute
+  AuthenticatedPlataformaIntegracoesRoute: typeof AuthenticatedPlataformaIntegracoesRoute
+  AuthenticatedPlataformaLogsRoute: typeof AuthenticatedPlataformaLogsRoute
+  AuthenticatedPlataformaPainelRoute: typeof AuthenticatedPlataformaPainelRoute
+  AuthenticatedPrazoParceiroIdRoute: typeof AuthenticatedPrazoParceiroIdRoute
+  AuthenticatedRankingRegrasRoute: typeof AuthenticatedRankingRegrasRoute
+  AuthenticatedPerformanceIndexRoute: typeof AuthenticatedPerformanceIndexRoute
+  AuthenticatedRankingIndexRoute: typeof AuthenticatedRankingIndexRoute
+  AuthenticatedPlataformaEmpresasIdRoute: typeof AuthenticatedPlataformaEmpresasIdRoute
+  AuthenticatedRankingEquipeIdRoute: typeof AuthenticatedRankingEquipeIdRoute
+  AuthenticatedPlataformaEmpresasIndexRoute: typeof AuthenticatedPlataformaEmpresasIndexRoute
 }
 
-const AutenticadoRouteChildren: AutenticadoRouteChildren = {
-  AutenticadoCalendarioRoute: AutenticadoCalendarioRoute,
-  AutenticadoColetasRoute: AutenticadoColetasRoute,
-  AutenticadoComprovantesRoute: AutenticadoComprovantesRoute,
-  AutenticadoHistoricoRoute: AutenticadoHistoricoRoute,
-  AutenticadoOcorrenciasRoute: AutenticadoOcorrenciasRoute,
-  AutenticadoPrazoParceiroRoute: AutenticadoPrazoParceiroRoute,
-  AutenticadoRomaneioRoute: AutenticadoRomaneioRoute,
-  AutenticadoSemAcessoRoute: AutenticadoSemAcessoRoute,
-  AutenticadoIndexRoute: AutenticadoIndexRoute,
-  AutenticadoAdminAhgoraRoute: AutenticadoAdminAhgoraRoute,
-  AutenticadoAdminBonificacaoEntregaRoute:
-    AutenticadoAdminBonificacaoEntregaRoute,
-  AutenticadoAdminCodigosRoute: AutenticadoAdminCodigosRoute,
-  AutenticadoAdminConfiguracoesRoute: AutenticadoAdminConfiguracoesRoute,
-  AutenticadoAdminDepartamentosRoute: AutenticadoAdminDepartamentosRoute,
-  AutenticadoAdminEquipesRoute: AutenticadoAdminEquipesRoute,
-  AutenticadoAdminImportacaoSswRoute: AutenticadoAdminImportacaoSswRoute,
-  AutenticadoAdminIngestaoRoute: AutenticadoAdminIngestaoRoute,
-  AutenticadoAdminLogsRoute: AutenticadoAdminLogsRoute,
-  AutenticadoAdminRolesRoute: AutenticadoAdminRolesRoute,
-  AutenticadoAdminSswDiagnosticoRoute: AutenticadoAdminSswDiagnosticoRoute,
-  AutenticadoAdminUsuariosRoute: AutenticadoAdminUsuariosRoute,
-  AutenticadoAdminXmlCteRoute: AutenticadoAdminXmlCteRoute,
-  AutenticadoCtrcNumeroRoute: AutenticadoCtrcNumeroRoute,
-  AutenticadoHistoricoFeriadosRoute: AutenticadoHistoricoFeriadosRoute,
-  AutenticadoPerformanceListaRoute: AutenticadoPerformanceListaRoute,
-  AutenticadoPlataformaAdministradoresRoute:
-    AutenticadoPlataformaAdministradoresRoute,
-  AutenticadoPlataformaConfiguracoesRoute:
-    AutenticadoPlataformaConfiguracoesRoute,
-  AutenticadoPlataformaIntegracoesRoute: AutenticadoPlataformaIntegracoesRoute,
-  AutenticadoPlataformaLogsRoute: AutenticadoPlataformaLogsRoute,
-  AutenticadoPlataformaPainelRoute: AutenticadoPlataformaPainelRoute,
-  AutenticadoPrazoParceiroIdRoute: AutenticadoPrazoParceiroIdRoute,
-  AutenticadoRankingRegrasRoute: AutenticadoRankingRegrasRoute,
-  AutenticadoPerformanceIndexRoute: AutenticadoPerformanceIndexRoute,
-  AutenticadoRankingIndexRoute: AutenticadoRankingIndexRoute,
-  AutenticadoPlataformaEmpresasIdRoute: AutenticadoPlataformaEmpresasIdRoute,
-  AutenticadoRankingEquipeIdRoute: AutenticadoRankingEquipeIdRoute,
-  AutenticadoPlataformaEmpresasIndexRoute:
-    AutenticadoPlataformaEmpresasIndexRoute,
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedCalendarioRoute: AuthenticatedCalendarioRoute,
+  AuthenticatedColetasRoute: AuthenticatedColetasRoute,
+  AuthenticatedComprovantesRoute: AuthenticatedComprovantesRoute,
+  AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
+  AuthenticatedOcorrenciasRoute: AuthenticatedOcorrenciasRoute,
+  AuthenticatedPrazoParceiroRoute: AuthenticatedPrazoParceiroRoute,
+  AuthenticatedRomaneioRoute: AuthenticatedRomaneioRoute,
+  AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAdminAhgoraRoute: AuthenticatedAdminAhgoraRoute,
+  AuthenticatedAdminBonificacaoEntregaRoute:
+    AuthenticatedAdminBonificacaoEntregaRoute,
+  AuthenticatedAdminCodigosRoute: AuthenticatedAdminCodigosRoute,
+  AuthenticatedAdminConfiguracoesRoute: AuthenticatedAdminConfiguracoesRoute,
+  AuthenticatedAdminDepartamentosRoute: AuthenticatedAdminDepartamentosRoute,
+  AuthenticatedAdminEquipesRoute: AuthenticatedAdminEquipesRoute,
+  AuthenticatedAdminImportacaoSswRoute: AuthenticatedAdminImportacaoSswRoute,
+  AuthenticatedAdminIngestaoRoute: AuthenticatedAdminIngestaoRoute,
+  AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
+  AuthenticatedAdminRolesRoute: AuthenticatedAdminRolesRoute,
+  AuthenticatedAdminSswDiagnosticoRoute: AuthenticatedAdminSswDiagnosticoRoute,
+  AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
+  AuthenticatedAdminXmlCteRoute: AuthenticatedAdminXmlCteRoute,
+  AuthenticatedCtrcNumeroRoute: AuthenticatedCtrcNumeroRoute,
+  AuthenticatedHistoricoFeriadosRoute: AuthenticatedHistoricoFeriadosRoute,
+  AuthenticatedPerformanceListaRoute: AuthenticatedPerformanceListaRoute,
+  AuthenticatedPlataformaAdministradoresRoute:
+    AuthenticatedPlataformaAdministradoresRoute,
+  AuthenticatedPlataformaConfiguracoesRoute:
+    AuthenticatedPlataformaConfiguracoesRoute,
+  AuthenticatedPlataformaIntegracoesRoute:
+    AuthenticatedPlataformaIntegracoesRoute,
+  AuthenticatedPlataformaLogsRoute: AuthenticatedPlataformaLogsRoute,
+  AuthenticatedPlataformaPainelRoute: AuthenticatedPlataformaPainelRoute,
+  AuthenticatedPrazoParceiroIdRoute: AuthenticatedPrazoParceiroIdRoute,
+  AuthenticatedRankingRegrasRoute: AuthenticatedRankingRegrasRoute,
+  AuthenticatedPerformanceIndexRoute: AuthenticatedPerformanceIndexRoute,
+  AuthenticatedRankingIndexRoute: AuthenticatedRankingIndexRoute,
+  AuthenticatedPlataformaEmpresasIdRoute:
+    AuthenticatedPlataformaEmpresasIdRoute,
+  AuthenticatedRankingEquipeIdRoute: AuthenticatedRankingEquipeIdRoute,
+  AuthenticatedPlataformaEmpresasIndexRoute:
+    AuthenticatedPlataformaEmpresasIndexRoute,
 }
 
-const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
-  AutenticadoRouteChildren,
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  AutenticadoRoute: AutenticadoRouteWithChildren,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AceitarConviteRoute: AceitarConviteRoute,
   LoginRoute: LoginRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,

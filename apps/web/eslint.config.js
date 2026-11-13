@@ -11,42 +11,42 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 // Dependências entre pastas (ADR 0016 §6). Cada migração de módulo remove a sua linha das listas.
-const MODULOS = readdirSync(new URL("./src/modulos", import.meta.url), { withFileTypes: true })
+const MODULOS = readdirSync(new URL("./src/modules", import.meta.url), { withFileTypes: true })
   .filter((d) => d.isDirectory())
   .map((d) => d.name);
 
 // Quem ainda chama `chamar` fora do api.ts do módulo e de lib/.
 const CHAMAM_FORA_DO_API = [
-  "src/acesso/sessao.ts", // atalho: sai na migração das telas de acesso
+  "src/access/session.ts", // atalho: sai na migração das telas de acesso
   "src/routes/aceitar-convite.tsx", // atalho: sai na migração das telas de acesso
   "src/routes/login.tsx", // atalho: sai na migração das telas de acesso
   "src/routes/redefinir-senha.tsx", // atalho: sai na migração das telas de acesso
-  "src/routes/_autenticado/sem-acesso.tsx", // atalho: sai na migração das telas de acesso
+  "src/routes/_authenticated/sem-acesso.tsx", // atalho: sai na migração das telas de acesso
 ];
 
 /** Arquivo interno de outro módulo que ainda é importado (o público é só o `api.ts`). */
 const INTERNOS_AINDA_IMPORTADOS = [
-  "listagem/busca", // atalho: link para a tela da lista; decisão pendente do dono (busca.ts público?)
+  "listing/search", // atalho: link para a tela da lista; decisão pendente do dono (search.ts público?)
 ];
 
 /** Import de outro módulo que não seja o `api.ts` dele, nem relativo que saia da pasta do módulo. */
 function importsDoModulo(modulo, profundidade) {
   const liberados = INTERNOS_AINDA_IMPORTADOS.join("|");
   return {
-    files: [`src/modulos/${modulo}/${"*/".repeat(profundidade)}*.{ts,tsx}`],
+    files: [`src/modules/${modulo}/${"*/".repeat(profundidade)}*.{ts,tsx}`],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
-              regex: `^@/modulos/(?!${modulo}/)(?!(?:${liberados})$)[^/]+/(?!api$)`,
+              regex: `^@/modules/(?!${modulo}/)(?!(?:${liberados})$)[^/]+/(?!api$)`,
               message:
-                "De outro módulo, só o api.ts. Peça usada por dois módulos sobe para componentes/comum, hooks ou lib (ADR 0016 §6).",
+                "De outro módulo, só o api.ts. Peça usada por dois módulos sobe para components/common, hooks ou lib (ADR 0016 §6).",
             },
             {
               regex: `^(?:\.\./){${profundidade + 1}}`,
-              message: "Import relativo saindo do módulo: use @/modulos/<outro>/api (ADR 0016 §6).",
+              message: "Import relativo saindo do módulo: use @/modules/<outro>/api (ADR 0016 §6).",
             },
           ],
         },
@@ -115,7 +115,7 @@ export default tseslint.config(
   },
   {
     // Componentes gerados pelo shadcn: só as regras que exigiriam reescrever o componente.
-    files: ["src/componentes/ui/**/*.tsx"],
+    files: ["src/components/ui/**/*.tsx"],
     rules: {
       "react/no-unknown-property": "off",
       "@typescript-eslint/no-unnecessary-condition": "off",
@@ -123,7 +123,7 @@ export default tseslint.config(
   },
   {
     files: ["src/**/*.{ts,tsx}"],
-    ignores: ["src/modulos/*/api.ts", "src/lib/**", "**/*.test.{ts,tsx}", ...CHAMAM_FORA_DO_API],
+    ignores: ["src/modules/*/api.ts", "src/lib/**", "**/*.test.{ts,tsx}", ...CHAMAM_FORA_DO_API],
     rules: {
       "no-restricted-syntax": [
         "error",
@@ -139,7 +139,7 @@ export default tseslint.config(
   ...MODULOS.flatMap((m) => [0, 1, 2, 3].map((p) => importsDoModulo(m, p))),
   {
     files: [
-      "src/componentes/comum/**/*.{ts,tsx}",
+      "src/components/common/**/*.{ts,tsx}",
       "src/hooks/**/*.{ts,tsx}",
       "src/lib/**/*.{ts,tsx}",
     ],
@@ -149,8 +149,8 @@ export default tseslint.config(
         {
           patterns: [
             {
-              regex: "(?:^@/|/)modulos/",
-              message: "componentes/comum, hooks e lib não dependem de módulo (ADR 0016 §6).",
+              regex: "(?:^@/|/)modules/",
+              message: "components/common, hooks e lib não dependem de módulo (ADR 0016 §6).",
             },
           ],
         },

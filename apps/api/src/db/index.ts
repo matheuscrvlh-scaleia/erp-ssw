@@ -9,7 +9,7 @@ export {
   instanteDoBanco,
   type Linha,
   type Transacao,
-} from "./cliente";
-export { erroParaLog } from "./erros";
-export { atribuicoes, camposDaLinha, valoresDeInsercao } from "./linhas";
+} from "./client";
+export { erroParaLog } from "./errors";
+export { atribuicoes, camposDaLinha, valoresDeInsercao } from "./rows";
 export { Sql, sql } from "./sql";

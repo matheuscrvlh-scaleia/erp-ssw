@@ -33,4 +33,4 @@ de uma pessoa nas outras empresas, que são o que decide se ele pode mexer no lo
 - Mudança visível (linha em `docs/mudancas-visiveis.md`): admin comum não promove ninguém a Super
   Admin e não muda o login de quem tem outras empresas ou é da Plataforma.
 - Produção exige `SEGREDOS_CHAVES`; sem chave a gravação de segredo responde 503.
-- Testes de segurança em `apps/api/src/modulos/{usuarios,plataforma}/rotas.test.ts`.
+- Testes de segurança em `apps/api/src/modules/{usuarios,plataforma}/rotas.test.ts`.

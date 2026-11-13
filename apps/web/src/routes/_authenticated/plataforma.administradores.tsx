@@ -1,0 +1,23 @@
+import { z } from "@erp/shared/zod";
+import { createFileRoute } from "@tanstack/react-router";
+
+import { ABAS_DA_PLATAFORMA, PaginaUsuariosDaPlataforma } from "@/modules/admin/PlatformUsersPage";
+
+const busca = z.object({ aba: z.enum(ABAS_DA_PLATAFORMA).optional().catch(undefined) });
+
+/** Plataforma › Usuários e cargos: a equipe da Plataforma (a URL é a de Administradores). */
+export const Route = createFileRoute("/_authenticated/plataforma/administradores")({
+  validateSearch: (s) => busca.parse(s),
+  component: UsuariosDaPlataforma,
+});
+
+function UsuariosDaPlataforma() {
+  const { aba } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  return (
+    <PaginaUsuariosDaPlataforma
+      aba={aba ?? "usuarios"}
+      aoMudarAba={(proxima) => void navigate({ search: { aba: proxima }, replace: true })}
+    />
+  );
+}

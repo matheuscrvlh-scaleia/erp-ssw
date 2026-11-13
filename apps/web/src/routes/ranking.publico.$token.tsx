@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { PaginaRankingPublico } from "@/modulos/ranking/PaginaRankingPublico";
+import { PaginaRankingPublico } from "@/modules/ranking/PublicRankingPage";
 
 /** Link público do ranking da equipe: sem login, fora do layout autenticado. */
 export const Route = createFileRoute("/ranking/publico/$token")({

@@ -1,4 +1,4 @@
-import { contratosAhgora as c } from "@erp/shared/contratos/ahgora";
+import { contratosAhgora as c } from "@erp/shared/contracts/ahgora";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
@@ -11,8 +11,8 @@ import {
   listarFuncionarios,
 } from "../models/ahgora/ahgora.service";
 import { apresentarApuracao } from "../views/ahgora.view";
-import { empresaDaRequisicao } from "./middleware/contexto";
-import { exigirAdminPlataforma, exigirPermissao } from "./middleware/guardas";
+import { empresaDaRequisicao } from "./middleware/context";
+import { exigirAdminPlataforma, exigirPermissao } from "./middleware/guards";
 
 /** Ponto (Ahgora): só a equipe da Plataforma, com os dados da empresa ativa (decisão de 09/11). */
 const soPlataforma = [exigirPermissao("admin_ahgora", "ver"), exigirAdminPlataforma];

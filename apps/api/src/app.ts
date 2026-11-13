@@ -1,5 +1,5 @@
-import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/segredos";
-import { ErroDeNegocio } from "@erp/dominio/erros";
+import { type ChavesDeSegredo, cifrarSegredo, decifrarSegredo } from "@erp/db/secrets";
+import { ErroDeNegocio } from "@erp/domain/errors";
 import Fastify, { type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { type Redis } from "ioredis";
@@ -7,58 +7,55 @@ import { type Redis } from "ioredis";
 import { type Ambiente } from "./config";
 import { controladorAhgora } from "./controllers/ahgora.controller";
 import { controladorAuth } from "./controllers/auth.controller";
-import { controladorBonificacaoEntrega } from "./controllers/bonificacao-entrega.controller";
-import { controladorCadastros } from "./controllers/cadastros.controller";
-import { controladorCalendario } from "./controllers/calendario.controller";
-import { controladorCodigosOcorrencia } from "./controllers/codigos-ocorrencia.controller";
-import { controladorColetas } from "./controllers/coletas.controller";
-import { controladorComprovantes } from "./controllers/comprovantes.controller";
-import { controladorConfiguracoes } from "./controllers/configuracoes.controller";
+import { controladorCalendario } from "./controllers/calendar.controller";
 import { controladorCtrc } from "./controllers/ctrc.controller";
-import { controladorFiltros } from "./controllers/filtros.controller";
-import { controladorHistorico } from "./controllers/historico.controller";
-import { controladorIngestao } from "./controllers/ingestao.controller";
-import { controladorIngestaoSsw } from "./controllers/ingestao-ssw.controller";
-import { controladorListagem } from "./controllers/listagem.controller";
+import { controladorPrazos } from "./controllers/deadlines.controller";
+import { controladorBonificacaoEntrega } from "./controllers/delivery-bonus.controller";
+import { controladorComprovantes } from "./controllers/delivery-proofs.controller";
+import { controladorFiltros } from "./controllers/filters.controller";
+import { controladorHistorico } from "./controllers/history.controller";
+import { controladorIngestao } from "./controllers/ingestion.controller";
+import { controladorListagem } from "./controllers/listing.controller";
 import { controladorLogs } from "./controllers/logs.controller";
-import { registrarSeguranca } from "./controllers/middleware/seguranca";
-import { pluginSessao } from "./controllers/middleware/sessao";
-import { registrarTratadorDeErros } from "./controllers/middleware/tratador-erros";
+import { controladorRomaneio } from "./controllers/manifest.controller";
+import { controladorCadastros } from "./controllers/master-data.controller";
+import { registrarTratadorDeErros } from "./controllers/middleware/error-handler";
+import { registrarSeguranca } from "./controllers/middleware/security";
+import { pluginSessao } from "./controllers/middleware/session";
 import {
   registrarDocumentacao,
   registrarMetricas,
   registrarSaude,
-} from "./controllers/observabilidade.controller";
-import { controladorOcorrencias } from "./controllers/ocorrencias.controller";
-import { controladorPainelPlataforma } from "./controllers/painel-plataforma.controller";
+} from "./controllers/observability.controller";
+import { controladorCodigosOcorrencia } from "./controllers/occurrence-codes.controller";
+import { controladorOcorrencias } from "./controllers/occurrences.controller";
+import { controladorPrazoParceiro } from "./controllers/partner-deadline.controller";
 import { controladorPerformance } from "./controllers/performance.controller";
-import { controladorPlataforma } from "./controllers/plataforma.controller";
-import { controladorPrazoParceiro } from "./controllers/prazo-parceiro.controller";
-import { controladorPrazos } from "./controllers/prazos.controller";
+import { controladorColetas } from "./controllers/pickups.controller";
+import { controladorPlataforma } from "./controllers/platform.controller";
+import { controladorPainelPlataforma } from "./controllers/platform-dashboard.controller";
 import { controladorRanking } from "./controllers/ranking.controller";
-import { controladorRomaneio } from "./controllers/romaneio.controller";
-import { controladorUsuarios } from "./controllers/usuarios.controller";
-import type { Armazenamento } from "./infra/armazenamento";
-import {
-  criarFonteDaConfiguracao,
-  type FonteDaConfiguracao,
-} from "./infra/configuracao-da-plataforma";
+import { controladorConfiguracoes } from "./controllers/settings.controller";
+import { controladorIngestaoSsw } from "./controllers/ssw-ingestion.controller";
+import { controladorUsuarios } from "./controllers/users.controller";
+import { type LimitadorDeFalhas } from "./infra/limiter";
+import { opcoesDeLog } from "./infra/log";
 import {
   type Correio,
   criarCorreioDaPlataforma,
   criarCorreioDeDesenvolvimento,
-} from "./infra/correio";
-import type { FilaDeJobs } from "./infra/fila";
-import { type LimitadorDeFalhas } from "./infra/limitador";
-import { opcoesDeLog } from "./infra/log";
-import { type ServicoDeSenhas } from "./infra/senhas";
+} from "./infra/mail";
+import { type ServicoDeSenhas } from "./infra/passwords";
+import { criarFonteDaConfiguracao, type FonteDaConfiguracao } from "./infra/platform-config";
+import type { FilaDeJobs } from "./infra/queue";
+import type { Armazenamento } from "./infra/storage";
 import { type EmissorDeTokens } from "./infra/tokens";
 import { type ClienteWorkerSsw, criarClienteWorkerSswDaPlataforma } from "./infra/worker-ssw";
 import { type DependenciasAhgora } from "./models/ahgora/ahgora.service";
 import { type DependenciasAuth } from "./models/auth/auth.service";
-import { type CacheDeConfiguracoes, criarCacheDeConfiguracoes } from "./models/configuracoes/cache";
-import { type ExecutorComContexto } from "./models/repositorios";
-import { type DependenciasUsuarios } from "./models/usuarios/usuarios.service";
+import { type ExecutorComContexto } from "./models/repositories";
+import { type CacheDeConfiguracoes, criarCacheDeConfiguracoes } from "./models/settings/cache";
+import { type DependenciasUsuarios } from "./models/users/users.service";
 
 /** Tudo o que a API usa de fora. Produção monta em `server.ts`; os testes passam falsos. */
 interface Dependencias {

@@ -5,8 +5,8 @@
  * com a mensagem dele; worker fora do ar, lento ou com resposta fora do contrato vira "tente de
  * novo", e o detalhe vai para o log.
  */
-import { ErroDeNegocio } from "@erp/dominio/erros";
-import { montarCaminho } from "@erp/shared/contrato";
+import { ErroDeNegocio } from "@erp/domain/errors";
+import { montarCaminho } from "@erp/shared/contract";
 import {
   consultaDaExecucao,
   DADOS_DOS_JOBS,
@@ -20,11 +20,11 @@ import {
   situacaoDaEmpresa,
   type SituacaoDaExecucao,
   situacaoDaExecucao,
-} from "@erp/shared/contratos/worker-ssw";
-import { type CodigoErro } from "@erp/shared/erros";
+} from "@erp/shared/contracts/worker-ssw";
+import { type CodigoErro } from "@erp/shared/errors";
 import { type z } from "@erp/shared/zod";
 
-import { type FonteDaConfiguracao } from "./configuracao-da-plataforma";
+import { type FonteDaConfiguracao } from "./platform-config";
 
 /**
  * Operações manuais da tela Admin › Importação SSW (ADR 0012, "Operações manuais"). O corpo é o

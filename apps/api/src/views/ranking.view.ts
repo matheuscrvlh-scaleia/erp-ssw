@@ -1,11 +1,11 @@
-import { compararMembros } from "@erp/dominio/ranking-equipes";
-import { type SaidaDe } from "@erp/shared/contrato";
+import { compararMembros } from "@erp/domain/team-ranking";
+import { type SaidaDe } from "@erp/shared/contract";
 import {
   type CalculoDaEquipe,
   type contratosRanking,
   type Equipe,
   type Membro,
-} from "@erp/shared/contratos/ranking";
+} from "@erp/shared/contracts/ranking";
 
 import {
   type CalculoNoLote,

@@ -1,8 +1,8 @@
 # Kit de UI compartilhado (apps/web)
 
 Peças prontas para portar as telas com o visual de hoje. Tudo em português, acessível por teclado
-e leitor de tela. Componentes em `apps/web/src/componentes/comum/`, exportação em
-`apps/web/src/lib/exportacao/`, hooks em `apps/web/src/hooks/`.
+e leitor de tela. Componentes em `apps/web/src/components/common/`, exportação em
+`apps/web/src/lib/export/`, hooks em `apps/web/src/hooks/`.
 
 | Precisa de | Use |
 | --- | --- |
@@ -15,7 +15,7 @@ e leitor de tela. Componentes em `apps/web/src/componentes/comum/`, exportação
 | Filtros na URL | `useFiltrosNaUrl` + `campoFiltro` (ou `lerFiltros` no `validateSearch`) |
 | "Limpar filtros" / faixa "Filtrando por" | `temFiltro` + `EtiquetaDaBusca<B>` + `etiquetasQueLimpam` |
 | Todas as páginas de uma lista (exportar) | `carregarTodasAsPaginas` (`@/lib/paginas`) |
-| Número, percentual, moeda, peso, data | `@erp/shared/formatacao` (`formatarPercentual`, `formatarPeso`...) |
+| Número, percentual, moeda, peso, data | `@erp/shared/formatting` (`formatarPercentual`, `formatarPeso`...) |
 | Fuso da empresa / "hoje" | `useFusoDaEmpresa` + `hojeNoFuso(fuso)` (nunca o relógio do navegador) |
 | Detalhe | `DrawerDetalhe` / `ModalDetalhe` + `GradeDetalhe` / `CampoDetalhe` |
 | Gráfico | `GraficoLinha` / `GraficoBarras` |
@@ -26,7 +26,7 @@ e leitor de tela. Componentes em `apps/web/src/componentes/comum/`, exportação
 
 ---
 
-## Exportação — `@/lib/exportacao`
+## Exportação — `@/lib/export`
 
 Identidade visual da empresa ativa em todo arquivo (mesmo desenho do sistema atual, decisão
 `identidade-visual-nas-exportações-2026-10-13`): logo + título + "Empresa · Painel BI" + "Gerado
@@ -113,7 +113,7 @@ primeira importação".
 <SeloAtualizacao atualizadoEm={dados?.atualizadoEm ?? null} xmlAguardando={orfaos} />
 ```
 
-O horário vem de `consultaAtualizacaoDosDados(empresaId)` (`@/modulos/ingestao-ssw/api`, já busca a
+O horário vem de `consultaAtualizacaoDosDados(empresaId)` (`@/modules/ssw-ingestion/api`, já busca a
 cada 60 s): `{ atualizadoEm, xmlAguardando }` (`xmlAguardando` só para a Plataforma; `null` nos
 demais — passe `?? undefined`).
 
@@ -224,7 +224,7 @@ function Tela() {
   `mes_anterior`; `hoje` é o dia de Brasília (Q11), passado de fora.
 - Múltipla escolha marca na hora e só reconsulta após 600 ms sem clique ou ao fechar
   (`useSelecaoAdiada`).
-- Texto com vários valores: `lerFiltroTexto`/`juntarFiltroTexto` em `@erp/shared/filtro-texto`
+- Texto com vários valores: `lerFiltroTexto`/`juntarFiltroTexto` em `@erp/shared/text-filter`
   (o back usa a mesma regra: "contém qualquer um").
 
 ## Detalhe

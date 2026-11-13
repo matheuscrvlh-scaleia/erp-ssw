@@ -1,13 +1,13 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { type LiberacaoDeModulo, modulosVigentes } from "@erp/dominio/acesso";
-import { type FiltroCtrc, normalizarFiltro } from "@erp/dominio/performance/filtro";
+import { type LiberacaoDeModulo, modulosVigentes } from "@erp/domain/access";
+import { type FiltroCtrc, normalizarFiltro } from "@erp/domain/performance/filter";
 import {
   agregarRanking,
   type BaldeRanking,
   type GrupoRanking,
   type RotuloRanking,
-} from "@erp/dominio/ranking";
+} from "@erp/domain/ranking";
 import {
   calcularBonificacaoDaEquipe,
   type CriterioDaRegra,
@@ -15,9 +15,9 @@ import {
   ranquearEquipes,
   regraVigente,
   type TotaisDaEquipe,
-} from "@erp/dominio/ranking-equipes";
-import { MODULOS } from "@erp/shared/acesso/modulos";
-import { type FiltroPerformanceValidado } from "@erp/shared/contratos/performance";
+} from "@erp/domain/team-ranking";
+import { MODULOS } from "@erp/shared/access/modules";
+import { type FiltroPerformanceValidado } from "@erp/shared/contracts/performance";
 import {
   type BASES_DO_RANKING,
   type CalculoDaEquipe,
@@ -25,13 +25,13 @@ import {
   type LinhaDoRanking,
   type Membro,
   type Regra,
-} from "@erp/shared/contratos/ranking";
-import { hojeNoFuso } from "@erp/shared/datas";
+} from "@erp/shared/contracts/ranking";
+import { hojeNoFuso } from "@erp/shared/dates";
 
-import { type Ator } from "../auditoria/auditoria.service";
-import { naoEncontrado } from "../erros";
-import { type ContextoDaConsulta } from "../performance/consultas";
-import { type Executor, type ExecutorComContexto } from "../repositorios";
+import { type Ator } from "../audit/audit.service";
+import { naoEncontrado } from "../errors";
+import { type ContextoDaConsulta } from "../performance/queries";
+import { type Executor, type ExecutorComContexto } from "../repositories";
 
 export interface EquipeGravada {
   id: string;

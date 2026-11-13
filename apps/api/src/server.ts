@@ -1,24 +1,24 @@
 import { comContexto, conectarBanco, type ContextoBanco, type Transacao } from "@erp/db";
-import { lerChavesDeSegredo } from "@erp/db/segredos";
+import { lerChavesDeSegredo } from "@erp/db/secrets";
 import { Redis } from "ioredis";
 
 import { construirApp } from "./app";
 import { carregarAmbiente } from "./config";
-import { criarArmazenamentoS3 } from "./infra/armazenamento";
-import { filaDesligada } from "./infra/fila";
-import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limitador";
-import { criarServicoDeSenhas } from "./infra/senhas";
+import { criarLimitadorEmMemoria, criarLimitadorRedis } from "./infra/limiter";
+import { criarServicoDeSenhas } from "./infra/passwords";
+import { filaDesligada } from "./infra/queue";
+import { criarArmazenamentoS3 } from "./infra/storage";
 import { criarEmissorDeTokens, lerChavesAnteriores } from "./infra/tokens";
-import { criarFilasDosJobs, ligarWorkersDosJobs, pedirRecifragemDeSegredos } from "./jobs/iniciar";
-import { type RepositoriosDosJobs } from "./jobs/registro";
-import { criarRepositorioAgendamentos } from "./models/agendamentos/agendamentos.repository";
-import { criarCacheDeConfiguracoes } from "./models/configuracoes/cache";
+import { type RepositoriosDosJobs } from "./jobs/registry";
+import { criarFilasDosJobs, ligarWorkersDosJobs, pedirRecifragemDeSegredos } from "./jobs/start";
 import { criarRepositorioCteNucleo } from "./models/cte/cte.repository";
-import { criarRepositorioManutencao } from "./models/manutencao/manutencao.repository";
-import { criarRepositorioPrazosDoJob } from "./models/prazos/recalculo-de-prazos.repository";
-import { criarRepositorioRecalculo } from "./models/recalculo/recalculo.repository";
-import { criarRepositorios } from "./models/repositorios";
-import { criarRepositorioSegredos } from "./models/segredos/segredos.repository";
+import { criarRepositorioPrazosDoJob } from "./models/deadlines/deadline-recalculation.repository";
+import { criarRepositorioManutencao } from "./models/maintenance/maintenance.repository";
+import { criarRepositorioRecalculo } from "./models/recalculation/recalculation.repository";
+import { criarRepositorios } from "./models/repositories";
+import { criarRepositorioAgendamentos } from "./models/schedules/schedules.repository";
+import { criarRepositorioSegredos } from "./models/secrets/secrets.repository";
+import { criarCacheDeConfiguracoes } from "./models/settings/cache";
 
 /**
  * Tempo para terminar as requisições e os jobs em andamento depois do SIGTERM. O job que não

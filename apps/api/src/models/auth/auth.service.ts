@@ -8,14 +8,14 @@ import {
   FALHAS_TOLERADAS_POR_IP,
   normalizarEmail,
   sessaoOciosa,
-} from "@erp/dominio/autenticacao";
-import { ErroDeNegocio } from "@erp/dominio/erros";
-import { type Acesso, type TokenEmitido } from "@erp/shared/contratos/auth";
+} from "@erp/domain/authentication";
+import { ErroDeNegocio } from "@erp/domain/errors";
+import { type Acesso, type TokenEmitido } from "@erp/shared/contracts/auth";
 
-import { gerarTokenOpaco, hashDoToken } from "../../infra/aleatorio";
-import { type Correio } from "../../infra/correio";
-import { type LimitadorDeFalhas } from "../../infra/limitador";
-import { type AlgoritmoSenha, type ServicoDeSenhas } from "../../infra/senhas";
+import { type LimitadorDeFalhas } from "../../infra/limiter";
+import { type Correio } from "../../infra/mail";
+import { type AlgoritmoSenha, type ServicoDeSenhas } from "../../infra/passwords";
+import { gerarTokenOpaco, hashDoToken } from "../../infra/random";
 import { type EmissorDeTokens, type SessaoDoToken } from "../../infra/tokens";
 import { emailDeRedefinicao } from "../../views/auth.view";
 import {
@@ -24,16 +24,16 @@ import {
   empresaDaSessao,
   lerIdentidade,
   vinculoVale,
-} from "../acesso/acesso.service";
-import { type Ator } from "../auditoria/auditoria.service";
+} from "../access/access.service";
+import { type Ator } from "../audit/audit.service";
 import {
   muitasTentativas,
   naoAutenticado,
   naoEncontrado,
   semPermissao,
   sessaoExpirada,
-} from "../erros";
-import { type ExecutorComContexto } from "../repositorios";
+} from "../errors";
+import { type ExecutorComContexto } from "../repositories";
 
 export interface UsuarioParaLogin {
   id: string;

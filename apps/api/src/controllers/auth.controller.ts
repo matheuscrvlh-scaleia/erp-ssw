@@ -1,5 +1,5 @@
-import { ErroDeNegocio } from "@erp/dominio/erros";
-import { contratosAuth as c } from "@erp/shared/contratos/auth";
+import { ErroDeNegocio } from "@erp/domain/errors";
+import { contratosAuth as c } from "@erp/shared/contracts/auth";
 import { type FastifyReply, type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
@@ -15,15 +15,15 @@ import {
   type SessaoEmitida,
   trocarEmpresa,
 } from "../models/auth/auth.service";
-import { sessaoExpirada } from "../models/erros";
+import { sessaoExpirada } from "../models/errors";
 import {
   apresentarAjudaDeAcesso,
   apresentarPedidoDeRedefinicao,
   apresentarToken,
 } from "../views/auth.view";
-import { confirmacao } from "../views/comum.view";
-import { exigirAutenticacao } from "./middleware/guardas";
-import { sessaoObrigatoria } from "./middleware/sessao";
+import { confirmacao } from "../views/common.view";
+import { exigirAutenticacao } from "./middleware/guards";
+import { sessaoObrigatoria } from "./middleware/session";
 
 const COOKIE_REFRESH = "erp_refresh";
 const CAMINHO_DO_COOKIE = "/api/v1/auth";

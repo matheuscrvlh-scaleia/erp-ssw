@@ -1,10 +1,10 @@
-import type { ContagemDosAbertos, ContagemDosAlertas } from "@erp/dominio/performance/alertas";
+import type { ContagemDosAbertos, ContagemDosAlertas } from "@erp/domain/performance/alerts";
 import {
   type JanelasDosAlertas,
   janelasDosAlertas,
   limitesDosAlertas,
   montarAlertas,
-} from "@erp/dominio/performance/alertas";
+} from "@erp/domain/performance/alerts";
 import {
   type CodigoDoCatalogo,
   codigosDePrejuizo,
@@ -12,21 +12,20 @@ import {
   type ConjuntosDoCatalogo,
   conjuntosDoCatalogo,
   descricaoDoCodigo,
-} from "@erp/dominio/performance/catalogo";
-import { type FiltroCtrc, normalizarFiltro } from "@erp/dominio/performance/filtro";
-import { arredondarRazao, centavos, reais } from "@erp/dominio/performance/numeros";
-import {
-  type ContagemPontualidade,
-  montarPontualidade,
-} from "@erp/dominio/performance/pontualidade";
-import { type GrupoPrevisto, montarPrevistos } from "@erp/dominio/performance/previstos";
+} from "@erp/domain/performance/catalog";
+import { type FiltroCtrc, normalizarFiltro } from "@erp/domain/performance/filter";
+import { type GrupoPrevisto, montarPrevistos } from "@erp/domain/performance/forecast";
+import { arredondarRazao, centavos, reais } from "@erp/domain/performance/numbers";
+import { type ContagemPontualidade, montarPontualidade } from "@erp/domain/performance/punctuality";
 import {
   type ImpactoBruto,
   impactoDosCodigos,
   montarBloco,
   type ProducaoDaUnidade,
   unidadesDoRelatorio,
-} from "@erp/dominio/performance/relatorio";
+} from "@erp/domain/performance/report";
+import { configuracaoDaTela, ordenarCodigosDisponiveis } from "@erp/domain/performance/screen";
+import { completarSerie } from "@erp/domain/performance/series";
 import {
   agregadosDeProducao,
   type ContagemDoGrupo,
@@ -34,9 +33,7 @@ import {
   type MetaVigente,
   totaisDoResumo,
   unidadesDoResumo,
-} from "@erp/dominio/performance/resumo";
-import { completarSerie } from "@erp/dominio/performance/serie";
-import { configuracaoDaTela, ordenarCodigosDisponiveis } from "@erp/dominio/performance/tela";
+} from "@erp/domain/performance/summary";
 import {
   type CodigoDisponivel,
   type ConfiguracaoPerformance,
@@ -47,11 +44,11 @@ import {
   type LimitesDosAlertas,
   type PontoSerie,
   type TotaisResumo,
-} from "@erp/shared/contratos/performance";
-import { diferencaEmDias, hojeNoFuso } from "@erp/shared/datas";
+} from "@erp/shared/contracts/performance";
+import { diferencaEmDias, hojeNoFuso } from "@erp/shared/dates";
 
-import { type Executor } from "../repositorios";
-import { type ContextoDaConsulta } from "./consultas";
+import { type Executor } from "../repositories";
+import { type ContextoDaConsulta } from "./queries";
 
 /** Chaves de `configuracoes` que a Performance lê. */
 const CHAVES_DE_CONFIGURACAO = [

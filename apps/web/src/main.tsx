@@ -5,10 +5,10 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { aplicarTemaSalvo } from "@/lib/tema";
-import { instalarAvisoDeVersao } from "@/lib/versao";
+import { aplicarTemaSalvo } from "@/lib/theme";
+import { instalarAvisoDeVersao } from "@/lib/version";
 
-import { criarQueryClient, criarRoteador } from "./roteador";
+import { criarQueryClient, criarRoteador } from "./router";
 
 const queryClient = criarQueryClient(() => {
   const { pathname, search } = window.location;

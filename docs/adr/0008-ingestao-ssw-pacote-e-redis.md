@@ -31,7 +31,7 @@ gatilho.
 ## Consequências
 - Sem Redis a API não registra as rotas da ingestão (desenvolvimento sem Redis segue funcionando).
 - Os jobs (`sincronizar-ftp`, `sincronizar-ftp-retroativo`, `aplicar-ciclos`, `sla-arquivos`,
-  `limpar-ingestao-arquivos`, `reprocessar-xml-orfaos`) usam os nomes, filas e horários do catálogo `@erp/shared/ingestao`; quem
+  `limpar-ingestao-arquivos`, `reprocessar-xml-orfaos`) usam os nomes, filas e horários do catálogo `@erp/shared/ingestion`; quem
   agenda é o despachante do worker, uma execução por empresa com a integração ligada. Nascem
   desligados: `AGENDAMENTOS_LIGADOS=true` e o job listado em `INGESTAO_JOBS_LIGADOS`.
 - A senha do SFTP vem do cofre do worker (`SEGREDOS_CHAVES`/`SEGREDOS_CHAVE_ATUAL`, contexto

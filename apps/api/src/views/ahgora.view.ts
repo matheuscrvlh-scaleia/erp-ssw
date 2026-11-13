@@ -1,5 +1,5 @@
-import { type SaidaDe } from "@erp/shared/contrato";
-import { type contratosAhgora } from "@erp/shared/contratos/ahgora";
+import { type SaidaDe } from "@erp/shared/contract";
+import { type contratosAhgora } from "@erp/shared/contracts/ahgora";
 
 import { type ApuracaoDoPeriodo } from "../models/ahgora/ahgora.service";
 

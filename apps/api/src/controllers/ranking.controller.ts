@@ -1,5 +1,5 @@
 import { ehTempoEsgotado } from "@erp/db";
-import { contratosRanking as c } from "@erp/shared/contratos/ranking";
+import { contratosRanking as c } from "@erp/shared/contracts/ranking";
 import { type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
@@ -21,17 +21,17 @@ import {
   salvarRegra,
   simularRegra,
 } from "../models/ranking/ranking.service";
-import { type ExecutorComContexto } from "../models/repositorios";
-import { confirmacao } from "../views/comum.view";
+import { type ExecutorComContexto } from "../models/repositories";
+import { confirmacao } from "../views/common.view";
 import {
   apresentarCtesParaAtribuir,
   apresentarEquipes,
   apresentarRankingPublico,
   apresentarSimulacao,
 } from "../views/ranking.view";
-import { empresaDaRequisicao } from "./middleware/contexto";
-import { exigirModulo, exigirPermissao } from "./middleware/guardas";
-import { atorDa } from "./middleware/sessao";
+import { empresaDaRequisicao } from "./middleware/context";
+import { exigirModulo, exigirPermissao } from "./middleware/guards";
+import { atorDa } from "./middleware/session";
 
 /**
  * Ranking operacional: tela Ranking. Equipes e atribuição: tela Admin › Equipes. Regras, simulador

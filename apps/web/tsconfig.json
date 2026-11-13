@@ -31,11 +31,11 @@
     // nas cópias (scripts/copiar-compartilhado.sh). Vite e vitest leem estes caminhos (apelidos.ts).
     "paths": {
       "@/*": ["./src/*"],
-      "@erp/dominio/nucleo": ["./src/dominio/nucleo/index.ts"],
-      "@erp/dominio/ingestao/relatorios": ["./src/dominio/ingestao/relatorios/index.ts"],
-      "@erp/dominio/*": ["./src/dominio/*"],
+      "@erp/domain/core": ["./src/domain/core/index.ts"],
+      "@erp/domain/ingestion/reports": ["./src/domain/ingestion/reports/index.ts"],
+      "@erp/domain/*": ["./src/domain/*"],
       "@erp/shared/*": ["./src/shared/*"]
     }
   },
-  "include": ["src", "apelidos.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "aliases.ts", "vite.config.ts", "vitest.config.ts"]
 }

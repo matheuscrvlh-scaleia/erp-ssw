@@ -1,6 +1,6 @@
 /**
  * Gravação de CT-e pelo núcleo no banco do ERP (a regra é `regravarCte` de
- * `@erp/dominio/nucleo`). Usada pelos jobs de recálculo; o worker-ssw tem a cópia dele (ADR 0012).
+ * `@erp/domain/core`). Usada pelos jobs de recálculo; o worker-ssw tem a cópia dele (ADR 0012).
  * Preso a uma transação no contexto da empresa (RLS); toda gravação leva a empresa explícita.
  */
 import {
@@ -12,7 +12,6 @@ import {
   type Transacao,
   valoresDeInsercao,
 } from "@erp/db";
-import { configuracoesVigentes } from "@erp/dominio/configuracoes";
 import {
   type CadastrosDoNucleo,
   cnpjsPropriosDaEmpresa,
@@ -21,7 +20,8 @@ import {
   montarCatalogo,
   type OcorrenciaDoCte,
   type RepositorioCteNucleo,
-} from "@erp/dominio/nucleo";
+} from "@erp/domain/core";
+import { configuracoesVigentes } from "@erp/domain/settings";
 
 /** Colunas `timestamptz` de `erp.ctes`: chegam do banco como texto e o núcleo usa `Date`. */
 const INSTANTES_DO_CTE = [
