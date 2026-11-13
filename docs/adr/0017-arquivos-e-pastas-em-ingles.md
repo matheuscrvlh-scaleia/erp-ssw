@@ -22,5 +22,5 @@ Os apelidos acompanham as pastas: `@erp/dominio/*` → `@erp/domain/*` (`@erp/do
 ## Consequências
 
 - Componente e arquivo podem ter nomes diferentes (`PickupsPage.tsx` exporta `PaginaColetas`).
-- O worker-ssw copia arquivos daqui: na próxima cópia, ajustar a tabela de origens do README dele
-  e trocar o apelido `@erp/dominio` por `@erp/domain`.
+- O worker-ssw tem cópias de arquivos daqui: elas passaram aos mesmos nomes em inglês, com os
+  apelidos `@erp/domain/*` e `@erp/db/secrets` (worker-ssw 4976df4, README com as origens novas).
