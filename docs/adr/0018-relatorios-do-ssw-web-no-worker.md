@@ -31,6 +31,14 @@ ficar só no ERP.
 5. Concorrência: até 2 navegadores por vez em todo o worker-ssw (memória); a fila deduplica por
    empresa, então uma rodada atrasada não acumula outra.
 
+## Cadastro de uma empresa nova (13/11/2026)
+
+Na aba Integrações da empresa, o card **Worker SSW** pede só o necessário: usuário, CPF e senha
+do SSW, as unidades do 038 e as do 050. O domínio é o do card Domínio SSW; a matriz é `MTZ`. Os
+demais parâmetros (`dominio`, `unidade_matriz`, `unidades_038_so_com_dados`) seguem valendo para
+quem já os tem (a FR) e aparecem no card só como informação. A última conexão é a última rodada
+do `baixar-relatorios-ssw`; o último dado, o último relatório recebido.
+
 ## Consequências
 
 - A imagem do worker-ssw passa a levar o Chromium (base `mcr.microsoft.com/playwright`).

@@ -196,6 +196,8 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         em ? { em, nome: nome ?? null } : null;
       return {
         sftp: de(linha?.ftpEm, linha?.ftpNome),
+        // Os relatórios do worker SSW entram pela mesma recepção do SFTP.
+        ssw_web: de(linha?.ftpEm, linha?.ftpNome),
         ssw_bi2: de(linha?.bi2Em, linha?.bi2Nome),
         ssw_webhook: de(linha?.webhookEm, null),
         xml_cte: de(linha?.xmlEm, linha?.xmlNome),

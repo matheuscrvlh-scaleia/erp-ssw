@@ -137,7 +137,7 @@ export type EstadoDaIntegracao = Omit<
 };
 
 /** Integrações que gravam dado no banco (as outras só conectam). */
-export type IntegracaoComDado = "sftp" | "ssw_bi2" | "ssw_webhook" | "xml_cte";
+export type IntegracaoComDado = "sftp" | "ssw_web" | "ssw_bi2" | "ssw_webhook" | "xml_cte";
 
 /** Job do worker-ssw que conecta em cada integração (o do FTP também puxa os XML). */
 const JOB_DA_INTEGRACAO: Partial<Record<TipoIntegracao, JobAcompanhado>> = {
@@ -146,6 +146,7 @@ const JOB_DA_INTEGRACAO: Partial<Record<TipoIntegracao, JobAcompanhado>> = {
   ssw_api: "verificar-token-ssw",
   ssw_bi2: "bi2-0017",
   ssw_webhook: "processar-webhook-ssw",
+  ssw_web: "baixar-relatorios-ssw",
 };
 
 export type EstadoDaIntegracaoDaPlataforma = Omit<
@@ -603,7 +604,13 @@ function parametrosValidos(parametros: Record<string, unknown>): Record<string, 
   return validos;
 }
 
-const COM_DADO: readonly TipoIntegracao[] = ["sftp", "ssw_bi2", "ssw_webhook", "xml_cte"];
+const COM_DADO: readonly TipoIntegracao[] = [
+  "sftp",
+  "ssw_web",
+  "ssw_bi2",
+  "ssw_webhook",
+  "xml_cte",
+];
 const gravaDado = (tipo: TipoIntegracao): tipo is IntegracaoComDado => COM_DADO.includes(tipo);
 
 interface AtividadeDaIntegracao {
