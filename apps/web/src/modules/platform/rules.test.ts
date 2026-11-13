@@ -3,6 +3,7 @@ import {
   conexaoMaisRecente,
   situacaoDaIntegracao,
 } from "@erp/domain/integration-activity";
+import { baseDaSswApi } from "@erp/domain/ingestion/ssw-api";
 import { describe, expect, it } from "vitest";
 
 import { parametrosEditados, problemaDoLogo, slugDoNome } from "./rules";
@@ -59,5 +60,21 @@ describe("Plataforma › situação da integração", () => {
   it("a conexão mais recente entre o job e o teste", () => {
     expect(conexaoMaisRecente(ok(5), falha(1), null)?.ok).toBe(false);
     expect(conexaoMaisRecente(null, null)).toBeNull();
+  });
+});
+
+describe("Plataforma › endereço da SSW API", () => {
+  it("vazio usa o padrão; só o servidor ganha https e /api; barra final sai", () => {
+    expect(baseDaSswApi("  ")).toBe("https://ssw.inf.br/api");
+    expect(baseDaSswApi("tms.ssw.inf.br")).toBe("https://tms.ssw.inf.br/api");
+    expect(baseDaSswApi("https://tms.ssw.inf.br/api/")).toBe("https://tms.ssw.inf.br/api");
+    expect(baseDaSswApi("http://10.0.0.1:8080/v2")).toBe("http://10.0.0.1:8080/v2");
+  });
+
+  it("recusa outro protocolo, consulta na URL e texto que não é endereço", () => {
+    expect(baseDaSswApi("ftp://ssw.inf.br")).toBeNull();
+    expect(baseDaSswApi("https://ssw.inf.br/api?x=1")).toBeNull();
+    expect(baseDaSswApi("ssw")).toBeNull();
+    expect(baseDaSswApi("ssw inf br")).toBeNull();
   });
 });

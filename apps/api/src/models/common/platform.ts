@@ -80,6 +80,11 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
       { chave: "dominio", rotulo: "Domínio" },
       { chave: "usuario", rotulo: "Usuário" },
       { chave: "cnpj_edi", rotulo: "CNPJ EDI" },
+      {
+        chave: "url",
+        rotulo: "Endereço da API",
+        dica: "Vazio = https://ssw.inf.br/api. Para usar outro servidor (ex.: o provisório tms.ssw.inf.br), digite o endereço; sem caminho, o sistema completa com /api.",
+      },
     ],
     segredo: "Senha da SSW API",
     tela: "/admin/ssw-diagnostico",

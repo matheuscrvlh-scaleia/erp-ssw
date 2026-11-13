@@ -705,7 +705,7 @@ export async function salvarIntegracao(
   tipo: TipoIntegracao,
   dados: { ativo: boolean; parametros: Record<string, ValorDeParametro> },
 ): Promise<void> {
-  validarParametrosDeIntegracao(dados.parametros);
+  validarParametrosDeIntegracao(tipo, dados.parametros);
   await db(async ({ plataforma, auditoria }) => {
     await empresaExistente(plataforma, id);
     const antes = (await plataforma.integracoes(id)).find((l) => l.tipo === tipo);
