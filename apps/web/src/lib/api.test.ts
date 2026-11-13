@@ -124,7 +124,7 @@ describe("chamar", () => {
 
   it("sem rede vira INDISPONIVEL com mensagem para o operador", async () => {
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")));
-    await expect(chamar(contratosAuth.provedores)).rejects.toMatchObject({
+    await expect(chamar(contratosAuth.eu)).rejects.toMatchObject({
       codigo: "INDISPONIVEL",
       status: 0,
     });
@@ -132,9 +132,9 @@ describe("chamar", () => {
 
   it("resposta de erro fora do padrão não vaza detalhe", async () => {
     servidor({
-      "GET /api/v1/auth/provedores": () => new Response("<html>502</html>", { status: 502 }),
+      "GET /api/v1/auth/me": () => new Response("<html>502</html>", { status: 502 }),
     });
-    await expect(chamar(contratosAuth.provedores)).rejects.toMatchObject({
+    await expect(chamar(contratosAuth.eu)).rejects.toMatchObject({
       codigo: "ERRO_INTERNO",
       status: 502,
     });

@@ -1,17 +1,13 @@
 import { ErroDeNegocio } from "@erp/dominio/erros";
-import { destinoInterno } from "@erp/shared/acesso/destino";
-import { CAMINHOS_GOOGLE, contratosAuth as c } from "@erp/shared/contratos/auth";
-import { z } from "@erp/shared/zod";
+import { contratosAuth as c } from "@erp/shared/contratos/auth";
 import { type FastifyReply, type FastifyRequest } from "fastify";
 import { type FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 
-import { type ProvedorGoogle } from "../infra/google";
 import {
   ajudaDeAcesso,
   definirSenhaPorToken,
   type DependenciasAuth,
   entrar,
-  entrarComGoogle,
   type Origem,
   pedirRedefinicao,
   renovar,
@@ -30,7 +26,6 @@ import { exigirAutenticacao } from "./middleware/guardas";
 import { sessaoObrigatoria } from "./middleware/sessao";
 
 const COOKIE_REFRESH = "erp_refresh";
-const COOKIE_GOOGLE = "erp_google";
 const CAMINHO_DO_COOKIE = "/api/v1/auth";
 
 const limite = (max: number, minutos: number) => ({
@@ -56,41 +51,15 @@ function apagarRefresh(reply: FastifyReply) {
   reply.clearCookie(COOKIE_REFRESH, { path: CAMINHO_DO_COOKIE });
 }
 
-const desafioGuardado = z.object({
-  verificador: z.string(),
-  estado: z.string(),
-  nonce: z.string(),
-  destino: z.string(),
-});
-
-/** Desafio do Google guardado no cookie assinado; nulo se faltou, foi adulterado ou expirou. */
-function lerDesafio(request: FastifyRequest): z.infer<typeof desafioGuardado> | null {
-  const bruto = request.cookies[COOKIE_GOOGLE];
-  const assinado = bruto ? request.unsignCookie(bruto) : null;
-  if (!assinado?.valid) return null;
-  try {
-    return desafioGuardado.parse(JSON.parse(assinado.value));
-  } catch {
-    return null;
-  }
-}
-
 interface OpcoesRotasAuth {
   deps: DependenciasAuth;
-  google: ProvedorGoogle | null;
-  /** URL registrada no Google para a volta (a requisição chega com o caminho dela). */
-  googleRedirectUri: string | null;
 }
 
 export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
   app,
-  { deps, google, googleRedirectUri },
+  { deps },
   pronto,
 ) => {
-  app.get(c.provedores.caminho, { schema: { response: { 200: c.provedores.saida } } }, () => ({
-    google: google !== null,
-  }));
-
   app.post(
     c.login.caminho,
     {
@@ -204,58 +173,5 @@ export const controladorAuth: FastifyPluginCallbackZod<OpcoesRotasAuth> = (
     },
   );
 
-  if (google && googleRedirectUri) registrarGoogle(app, deps, google, googleRedirectUri);
   pronto();
 };
-
-/** Login pelo Google (só existe com as variáveis configuradas). */
-function registrarGoogle(
-  app: Parameters<FastifyPluginCallbackZod>[0],
-  deps: DependenciasAuth,
-  google: ProvedorGoogle,
-  googleRedirectUri: string,
-) {
-  app.get(
-    CAMINHOS_GOOGLE.iniciar,
-    {
-      schema: { querystring: z.object({ redirect: z.string().max(500).optional() }) },
-      config: limite(20, 1),
-    },
-    async (request, reply) => {
-      const { url, desafio } = await google.iniciar();
-      const guardado = {
-        ...desafio, // Volta do Google só para caminho interno da mesma origem (evita redirecionamento aberto).
-        destino: destinoInterno(request.query.redirect, await deps.webUrl()),
-      };
-      // SameSite=Lax: a volta do Google é navegação de outro site e precisa trazer o cookie.
-      reply.setCookie(COOKIE_GOOGLE, JSON.stringify(guardado), {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        signed: true,
-        path: CAMINHOS_GOOGLE.iniciar,
-        maxAge: 600,
-      });
-      return reply.redirect(url);
-    },
-  );
-
-  app.get(CAMINHOS_GOOGLE.retorno, { config: limite(20, 1) }, async (request, reply) => {
-    const guardado = lerDesafio(request);
-    reply.clearCookie(COOKIE_GOOGLE, { path: CAMINHOS_GOOGLE.iniciar });
-    if (!guardado) return reply.redirect("/login?erro=falhou");
-
-    const urlDeRetorno = new URL(googleRedirectUri);
-    urlDeRetorno.search = new URL(request.url, urlDeRetorno).search;
-    let destino = "/login?erro=falhou";
-    try {
-      const identidade = await google.concluir(urlDeRetorno, guardado);
-      const sessao = await entrarComGoogle(deps, identidade, origemDa(request));
-      if (sessao) gravarRefresh(reply, sessao);
-      destino = sessao ? guardado.destino : "/login?erro=sem_conta";
-    } catch (erro) {
-      request.log.warn({ err: erro }, "login pelo Google falhou");
-    }
-    return reply.redirect(destino);
-  });
-}

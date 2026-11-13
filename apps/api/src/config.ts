@@ -35,13 +35,6 @@ const esquema = z
     JWT_CHAVES_ANTERIORES: z.string().optional(),
     JWT_EMISSOR: z.string().default("erp-ssw"),
     JWT_AUDIENCIA: z.string().default("erp-ssw-web"),
-    /** Assina o cookie do login pelo Google. Sem ele, derivado de `SEGREDOS_CHAVES`. */
-    COOKIE_SEGREDO: z.string().min(32).optional(),
-
-    GOOGLE_CLIENT_ID: z.string().optional(),
-    GOOGLE_CLIENT_SECRET: z.string().optional(),
-    GOOGLE_REDIRECT_URI: z.url().optional(),
-
     /** Base pública dos logos (bucket S3); sem ela o menu mostra as iniciais da empresa. */
     LOGO_URL_BASE: z.url().optional(),
     /** Bucket S3 compatível dos logos (envio pela Plataforma). Sem ele, o envio avisa. */
@@ -57,7 +50,7 @@ const esquema = z
 
     /**
      * Chaves mestras: "1:<base64 de 32 bytes>,2:<…>". Cifram os segredos das integrações (das
-     * empresas e da Plataforma) e derivam o segredo do cookie. Nunca vão para o banco.
+     * empresas e da Plataforma). Nunca vão para o banco.
      */
     SEGREDOS_CHAVES: z.string().optional(),
     /** Versão da chave usada para cifrar segredos novos (padrão: a maior). */
@@ -73,13 +66,6 @@ const esquema = z
     AHGORA_API_SENHA: z.string().optional(),
   })
   .superRefine((env, ctx) => {
-    const google = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI];
-    if (google.some(Boolean) && !google.every(Boolean)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Google: defina GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI.",
-      });
-    }
     if (env.NODE_ENV === "production" && !env.REDIS_URL) {
       ctx.addIssue({ code: "custom", message: "Em produção, REDIS_URL é obrigatório." });
     }
@@ -95,12 +81,6 @@ const esquema = z
     }
     if (env.NODE_ENV === "production" && !env.SEGREDOS_CHAVES) {
       ctx.addIssue({ code: "custom", message: "Em produção, SEGREDOS_CHAVES é obrigatório." });
-    }
-    if (!env.SEGREDOS_CHAVES && !env.COOKIE_SEGREDO) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Defina SEGREDOS_CHAVES (o segredo do cookie sai dela) ou COOKIE_SEGREDO.",
-      });
     }
   });
 

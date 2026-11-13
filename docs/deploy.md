@@ -10,7 +10,7 @@ Configuração padrão por enquanto: um `docker-compose.yml` na raiz, com o Dock
 internet ──8081 (host)──▶ web:80    Caddy: SPA estática, /api/public/* → https://worker.ssw.scaleia.ai,
                                      resto de /api → api:3000
 internet ──3001 (host)──▶ api:3000  Fastify + jobs do ERP (BullMQ) ──▶ redis:6379 (sem porta no host)
-                                     └──▶ Postgres (Supabase), SMTP, Google, Ahgora
+                                     └──▶ Postgres (Supabase), SMTP, Ahgora
 worker-ssw: outro compose; ERP e worker se falam pelos domínios públicos (worker.ssw.scaleia.ai)
 ```
 
@@ -43,9 +43,8 @@ Mudou só o `.env`? `docker compose up -d` recria quem usa a variável.
 
 Postgres do Supabase, schema `erp`, já preparado (migrations e papéis aplicados). A api conecta
 com o papel `erp_app` (sem BYPASSRLS) em `DATABASE_URL`, de preferência pelo pooler em modo
-sessão, porta 5432, cifrado: `...?sslmode=no-verify`. A conexão é cifrada mas não confere o
-certificado (neste driver, `sslmode=require` equivale a `verify-full` e pediria a CA do Supabase
-num arquivo). Migration nova:
+sessão, porta 5432, cifrado: `...?sslmode=no-verify` (o projeto não usa o certificado da CA do
+Supabase; a migração usa o mesmo modo). Migration nova:
 `bun run db:migrar` (em `apps/api`) de uma máquina confiável, com o papel de migração.
 
 Conexões no Postgres: `API_DB_MAX_CONEXOES` (padrão 10) + as do worker-ssw; tem de caber no Pool
@@ -66,8 +65,7 @@ para imagem, git ou GitHub:
   Rotação: a chave nova entra em `JWT_CHAVE_PRIVADA` e a pública da antiga em
   `JWT_CHAVES_ANTERIORES='["<PEM público>"]'` até os tokens dela vencerem (15 min).
 - **`SEGREDOS_CHAVES`** (chave mestra): `echo "SEGREDOS_CHAVES=1:$(openssl rand -base64 32)"`. Cifra
-  os segredos das integrações (das empresas e da Plataforma) e deriva o segredo do cookie do login
-  pelo Google. O **mesmo valor** vai no `.env` do worker-ssw. Fica no ambiente, nunca no banco:
+  os segredos das integrações (das empresas e da Plataforma). O **mesmo valor** vai no `.env` do worker-ssw. Fica no ambiente, nunca no banco:
   guardada junto do que protege, não protegeria nada. Sem ela os segredos do banco não decifram.
   Rotação: `SEGREDOS_CHAVES=1:<antiga>,2:<nova>` (a maior vira a atual), recriar a api e o
   worker-ssw e pedir o job `docker compose run --rm --no-deps api --enable-source-maps

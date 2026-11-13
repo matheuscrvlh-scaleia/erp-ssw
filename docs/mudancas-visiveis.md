@@ -221,6 +221,9 @@ Só telas da Plataforma mudam; operação, números e URLs das integrações fic
 - **Q26 — sem recorte por usuário.** A tela mostra a empresa inteira para quem tem acesso (como hoje).
 ## Admin, Plataforma, auditoria e convites (spec 05)
 
+- **Sem "Continuar com Google".** Decisão do dono (12/11/2026): o login é só com e-mail e senha. O
+  botão some da tela de entrada; quem entrava só pelo Google usa "Esqueci a senha" para criar uma.
+
 - **Q33 — convite cria a senha.** O e-mail de convite leva a `/aceitar-convite`, onde a pessoa cria
   a própria senha (vale 72 h). Na lista de usuários aparece "Convite pendente" e só esses têm o botão
   "Reenviar convite" (quem já tem senha usa "Definir nova senha").
@@ -296,7 +299,7 @@ Mudanças que a segurança exige; quem nota é, em geral, quem integra (SSW, FTP
   token: não são reprocessáveis.
 - **Conta desativada não entra.** Com a senha certa, o login responde "Sua conta foi desativada por
   um administrador." (antes entrava e via a tela "Sem acesso"); a sessão aberta deixa de renovar e
-  a conta desativada não usa as telas da Plataforma. Pelo Google, volta para o login com erro.
+  a conta desativada não usa as telas da Plataforma.
 - **Admin comum não desativa quem está acima.** Desativar ou reativar um Super Admin é só do Super
   Admin ou da Plataforma; quem é da equipe da Plataforma, só a Plataforma (ADR 0007).
 - **Rotas públicas da ingestão com segredo por empresa** (ADR 0010). `x-ftp-ingest-secret` (e

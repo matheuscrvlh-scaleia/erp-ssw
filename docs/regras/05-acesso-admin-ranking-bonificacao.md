@@ -607,9 +607,9 @@ Google ou se um admin definir a senha (§3.1). Ver P1.
    verificar bcrypt (aceitar prefixos `$2a$`/`$2b$`/`$2y$`); **no primeiro acerto, regravar em
    argon2id** na mesma transação e marcar o formato. Mesma mensagem de erro para e-mail
    inexistente e senha errada.
-3. Google (opcional por env): entrar só se houver usuário com o `sub` vinculado ou com o mesmo
-   e-mail verificado (vincula na hora). Hoje o Supabase **cria** usuário novo para e-mail
-   desconhecido (que cai em /sem-acesso por não ter vínculo). Ver P3.
+3. Google: **não existe no novo** (decisão do dono, 12/11/2026). Hoje o Supabase entra pelo Google
+   e cria usuário novo para e-mail desconhecido; no novo, quem só usava o Google cria a senha por
+   "Esqueci a senha".
 4. Convite: e-mail com link de uso único que abre sessão (hoje sem definir senha). Ver P1.
 5. Sessão: o que a arquitetura define (access 15 min, refresh rotativo em cookie). O
    comportamento visível a manter: expiração ⇒ `/login?reason=expired&redirect=...` com o banner e o

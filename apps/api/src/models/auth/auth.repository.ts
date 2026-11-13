@@ -128,20 +128,6 @@ export function criarRepositorioAuth(tx: Transacao): RepositorioAuth {
         where id = ${usuarioId}`);
     },
 
-    usuarioPorIdentidade: async (provedor, sujeito) => {
-      const [linha] = await tx.consultar<{ usuarioId: string }>(sql`
-        select usuario_id as "usuarioId" from erp.identidades_externas
-        where provedor = ${provedor} and sujeito = ${sujeito}`);
-      return linha?.usuarioId ?? null;
-    },
-
-    vincularIdentidade: async (usuarioId, provedor, sujeito, email) => {
-      await tx.executar(sql`
-        insert into erp.identidades_externas (usuario_id, provedor, sujeito, email)
-        values (${usuarioId}, ${provedor}, ${sujeito}, ${email})
-        on conflict do nothing`);
-    },
-
     adminsDaEmpresa: (empresaId) =>
       tx.consultar(sql`
         select u.nome, u.email

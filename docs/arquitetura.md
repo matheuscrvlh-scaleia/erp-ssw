@@ -66,7 +66,7 @@ apps/
                           atraso, gravação do CT-e, performance, romaneio, ranking, bonificação,
                           leitores dos relatórios SSW (prévia da importação)...
       db/                 cliente `pg` com contexto de empresa, tag `sql`, aplicador de migrations
-      infra/              clientes externos: S3, SMTP, Google, Ahgora, worker-ssw, tokens, senhas, log
+      infra/              clientes externos: S3, SMTP, Ahgora, worker-ssw, tokens, senhas, log
     migracoes/            migrations em SQL escrito à mão (`NNNN_nome.sql`)
   web/                    projeto próprio (SPA): package.json, bun.lock, tsconfig, eslint, vitest, Dockerfile
     src/
@@ -144,7 +144,7 @@ agrupar e calcular; o banco só executa a consulta. Nada de função armazenada.
 - Autorização no backend: guards por papel na empresa (`empresa_usuarios.papel`), por tela
   (permissões do cargo/departamento + exceções do usuário), por módulo liberado e por admin de
   plataforma. RLS é a segunda barreira, não a primeira.
-- Auth: login com e-mail + senha (rate limit + bloqueio progressivo), Google OAuth opcional por env,
+- Auth: login só com e-mail + senha (rate limit + bloqueio progressivo; sem login social),
   recuperação de senha por e-mail (SMTP), access token 15 min em memória no front, refresh token
   opaco rotativo (cookie `httpOnly`, `Secure`, `SameSite=Strict`, hash no banco, detecção de reuso),
   logout revoga a família. Troca de empresa ativa reemite o token.

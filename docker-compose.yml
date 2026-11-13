@@ -36,9 +36,6 @@ services:
       # Opcionais: só entram se estiverem no .env (ausente ≠ vazio).
       JWT_CHAVES_ANTERIORES:
       SEGREDOS_CHAVE_ATUAL:
-      GOOGLE_CLIENT_ID:
-      GOOGLE_CLIENT_SECRET:
-      GOOGLE_REDIRECT_URI:
       LOGO_URL_BASE:
       METRICAS_TOKEN:
     ports:

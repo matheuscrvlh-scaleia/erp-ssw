@@ -16,8 +16,6 @@ interface OpcoesSeguranca {
   redis: Redis | null;
   /** Documentação interativa (swagger-ui) precisa de CSP mais solta. */
   comDocumentacao: boolean;
-  /** Assina o cookie do login pelo Google (`COOKIE_SEGREDO` ou derivado da chave mestra). */
-  segredoDoCookie: string;
 }
 
 /** Cabeçalhos, CORS, cookies, limite de taxa (Redis) e proteção contra sobrecarga. */
@@ -29,7 +27,7 @@ export async function registrarSeguranca(app: FastifyInstance, opcoes: OpcoesSeg
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   });
-  await app.register(cookie, { secret: opcoes.segredoDoCookie });
+  await app.register(cookie);
   await app.register(rateLimit, {
     global: true,
     max: 300,
