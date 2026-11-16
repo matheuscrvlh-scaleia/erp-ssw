@@ -7,3 +7,6 @@ coverage/
 .worktrees/
 *.log
 .tanstack/
+
+# Dumps do serviço backup (docker-compose).
+backups/

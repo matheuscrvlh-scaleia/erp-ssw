@@ -12,7 +12,7 @@ navegador ──HTTPS──▶ proxy da VPS ──▶ web (Caddy :80, host 8081)
                                         ├─ SPA estática (React)
                                         ├─ /api/public/*  ──▶ worker-ssw (worker.ssw.scaleia.ai)
                                         └─ /api/*         ──▶ api (Fastify :3000, host 3001)
-                                                                ├─ Postgres (Supabase, schema erp)
+                                                                ├─ Postgres (Docker, schema erp)
                                                                 ├─ Redis (limite de taxa, filas BullMQ)
                                                                 ├─ SMTP/Resend (convite, senha)
                                                                 ├─ S3 (logos)
@@ -79,7 +79,7 @@ a sua própria cópia, com os mesmos imports.
 | --- | --- |
 | Web | Vite 7, React 19, Tailwind 4, shadcn/Radix, TanStack Router e Query, react-hook-form + zod |
 | API | Node 22 LTS, Fastify 5, Zod 4 (`fastify-type-provider-zod`), Swagger fora de produção |
-| Dados | Postgres (Supabase usado como Postgres comum), `pg` com SQL puro e tag `sql`, sem ORM (ADR 0015) |
+| Dados | Postgres 17 em Docker (ADR 0019), `pg` com SQL puro e tag `sql`, sem ORM (ADR 0015) |
 | Jobs | BullMQ + Redis, no processo da api (`JOBS_LIGADOS`, `AGENDAMENTOS_LIGADOS`) |
 | Auth | argon2id (`@node-rs/argon2`), bcryptjs só para validar hash antigo, JWT EdDSA (`jose`) |
 | Arquivos | S3 compatível (`@aws-sdk/client-s3`) |
@@ -133,7 +133,7 @@ executa.
 
 ## 6. Dados
 
-- **Schema `erp`** no Postgres do projeto Supabase `erp-ssw`. Nunca escrever no schema `public`.
+- **Schema `erp`** no Postgres do docker-compose (ADR 0019; antes, Supabase `erp-ssw`). Nunca escrever no schema `public`.
 - **Consultas (ADR 0015):** `pg` direto com a tag `sql` (`src/db/sql.ts`). Todo valor interpolado
   vira parâmetro `$n`; um `Sql` interpolado entra como trecho; array vira um parâmetro só, com cast
   explícito (`= any(${ids}::uuid[])`); jsonb por `sql.json(...)`; identificador dinâmico só por

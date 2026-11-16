@@ -12,8 +12,9 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
    `current_setting(...)`), como defesa em profundidade.
 3. **Login, sessão e permissão são do backend + front.** Senhas atuais migradas sem o usuário
    perceber (hash bcrypt de hoje validado no 1º login e regravado em argon2id).
-4. **Banco: Postgres do Supabase, projeto `erp-ssw`** (`phjsyaeeklnzkxzdmrmn`), usado como Postgres
-   comum, schema próprio (`erp`). As regras foram tiradas do DEVELOP do sistema atual
+4. **Banco: Postgres 17 próprio, em Docker** (serviço `postgres` do docker-compose, ADR 0019),
+   schema próprio (`erp`). Até a virada, os dados estão no Supabase `erp-ssw`
+   (`phjsyaeeklnzkxzdmrmn`), usado como Postgres comum. As regras foram tiradas do DEVELOP do sistema atual
    (`vyockehhhvomqcjqnuwb`), que fica só como referência.
 5. Base funcional = versão multiempresa (empresas, módulos por empresa, Plataforma, logs).
 6. Nada de código morto: só entra o que alguma tela, rota pública ou job usa hoje.
@@ -37,7 +38,7 @@ URLs, mesmas exportações, mesmo login e senha. Muda a engenharia por trás.
 | Repositório | dois projetos independentes (`apps/api`, `apps/web`), cada um com bun e o seu `bun.lock`; o docker-compose junta (ADR 0013) | cada app sobe e evolui sozinho |
 | Web | Vite + React 19 + TS strict + Tailwind 4 + shadcn/Radix + TanStack Router + TanStack Query + react-hook-form | SPA simples de servir; roteamento tipado; cache de dados |
 | API | Node 22 LTS + Fastify 5 + TS strict + Zod 4 (`fastify-type-provider-zod`) | rápido, schema-first, ecossistema maduro |
-| Banco | Postgres (Supabase DEVELOP) + `pg` com **SQL puro, sem ORM** (ADR 0015) | SQL explícito e sempre parametrizado (tag `sql`), migrations `.sql` versionadas, RLS escrito na migration |
+| Banco | Postgres 17 em Docker (ADR 0019) + `pg` com **SQL puro, sem ORM** (ADR 0015) | SQL explícito e sempre parametrizado (tag `sql`), migrations `.sql` versionadas, RLS escrito na migration |
 | Jobs | **BullMQ + Redis**, dentro do processo da API (`JOBS_LIGADOS`) | padrão de mercado; agendamento repetível, retry, concorrência por fila; os jobs do ERP são poucos e leves |
 | Auth | argon2id (`@node-rs/argon2`), JWT de acesso curto (`jose`, EdDSA), refresh opaco rotativo em cookie httpOnly | padrão OWASP; sessão revogável |
 | Arquivos | S3 compatível (`@aws-sdk/client-s3`) | logo da empresa; troca de provedor sem código |

@@ -12,7 +12,8 @@ Leia `docs/arquitetura.md` antes de qualquer coisa. Resumo do que não se negoci
 - O usuário não pode perceber diferença em relação ao sistema atual (telas, números, URLs, textos,
   exportações, login). A especificação está em `docs/regras/`; a referência é o repo `fr-transportes`
   e `C:\Users\Matheus Carvalho\Desktop\erp-ssw-referencia\`.
-- Banco do ERP: Supabase `phjsyaeeklnzkxzdmrmn` (projeto `erp-ssw`), schema `erp`, já com os dados.
+- Banco do ERP: Postgres 17 em Docker (serviço `postgres` do docker-compose, ADR 0019), schema `erp`.
+  Até a virada (docs/deploy.md §6) os dados estão no Supabase `phjsyaeeklnzkxzdmrmn` (projeto `erp-ssw`).
   As regras saíram do DEVELOP do sistema atual (`vyockehhhvomqcjqnuwb`, só referência). **Nunca** o
   projeto de produção do sistema atual (`quyrhwmfbqikkpmiivuq`). Não escrever no schema `public`.
 - Português no domínio, rotas, UI e erros; nomes de arquivo e pasta em inglês (ADR 0017). TS strict, sem `any`, sem código morto.
