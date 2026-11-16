@@ -164,6 +164,17 @@ export const mutacaoDefinirSegredo = (
     onSuccess: () => invalidarEmpresa(cliente, id),
   });
 
+/** "Testar conexão": a lista recarrega com a nova "Última conexão". */
+export const mutacaoTestarIntegracao = (
+  cliente: QueryClient,
+  id: string,
+  tipo: IntegracaoDaEmpresa["tipo"],
+) =>
+  mutationOptions({
+    mutationFn: () => chamar(p.testarIntegracao, { parametros: { id, tipo } }),
+    onSuccess: () => invalidarEmpresa(cliente, id),
+  });
+
 // --- Integrações da Plataforma ---------------------------------------------------------------
 
 export const mutacaoSalvarIntegracaoDaPlataforma = (

@@ -39,7 +39,11 @@ import {
   type ValorDeParametro,
   valorDeParametro,
 } from "@erp/shared/contracts/platform";
-import { type JobAcompanhado, type SituacaoDaEmpresa } from "@erp/shared/contracts/worker-ssw";
+import {
+  type JobAcompanhado,
+  resultadoDoTesteDeConexao,
+  type SituacaoDaEmpresa,
+} from "@erp/shared/contracts/worker-ssw";
 import { hojeNoFuso } from "@erp/shared/dates";
 import {
   INFO_DA_INTEGRACAO_PLATAFORMA,
@@ -54,7 +58,7 @@ import { type FastifyBaseLogger } from "fastify";
 
 import { type Correio } from "../../infra/mail";
 import type { Armazenamento } from "../../infra/storage";
-import { type ClienteWorkerSsw } from "../../infra/worker-ssw";
+import { type ClienteWorkerSsw, exigirWorkerSsw } from "../../infra/worker-ssw";
 import { type Ator, type RepositorioAuditoria } from "../audit/audit.service";
 import { conflito, naoEncontrado } from "../errors";
 import { type Executor } from "../repositories";
@@ -699,6 +703,40 @@ export async function listarIntegracoes(
   return TIPOS_INTEGRACAO_DA_EMPRESA.map((tipo) =>
     paraIntegracao(tipo, gravadas.get(tipo), atividadeDe(tipo, worker, dados), agora),
   );
+}
+
+/** Espera do "Testar conexão": o login no SSW web (Chromium) cabe com folga. */
+const PRAZO_DO_TESTE_MS = 60_000;
+
+/**
+ * "Testar conexão": o worker-ssw entra no SSW web ou consulta o BI2 com a credencial da empresa e
+ * grava o resultado na integração (a "Última conexão" da lista).
+ */
+export async function testarIntegracao(
+  workerSsw: ClienteWorkerSsw | null,
+  id: string,
+  tipo: TipoIntegracaoDaEmpresa,
+): Promise<{ ok: boolean; pendente: boolean; mensagem: string }> {
+  const worker = exigirWorkerSsw(workerSsw);
+  const pendente = {
+    ok: false,
+    pendente: true,
+    mensagem: "O teste ainda está rodando. Recarregue em instantes para ver o resultado.",
+  };
+  const execucaoId = await worker.pedirExecucao(id, {
+    job: "testar-conexao",
+    dados: { integracao: tipo },
+    deduplicar: true,
+  });
+  if (execucaoId === null) return pendente;
+  const fim = await worker.consultarExecucao("testar-conexao", execucaoId, PRAZO_DO_TESTE_MS);
+  if (fim.estado === "na_fila" || fim.estado === "rodando") return pendente;
+  if (fim.estado === "falhou") {
+    return { ok: false, pendente: false, mensagem: fim.erro ?? "O teste falhou. Tente de novo." };
+  }
+  const lido = resultadoDoTesteDeConexao.safeParse(fim.resultado);
+  if (!lido.success) throw conflito("O teste devolveu uma resposta inesperada. Tente de novo.");
+  return { ...lido.data, pendente: false };
 }
 
 export async function salvarIntegracao(

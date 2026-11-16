@@ -129,7 +129,20 @@ export const HUB_CONFIGURACOES_DA_PLATAFORMA: Hub = {
 export const ABAS_DA_EMPRESA: readonly AbaDoHub[] = [
   { valor: "dados", rotulo: "Dados", requisito: "plataforma_empresas", icone: Building },
   { valor: "modulos", rotulo: "Módulos", requisito: "plataforma_empresas", icone: Boxes },
-  { valor: "integracoes", rotulo: "Integrações", requisito: "plataforma_empresas", icone: Plug },
+  {
+    valor: "integracoes",
+    rotulo: "Configuração",
+    grupo: "Integrações",
+    requisito: "plataforma_empresas",
+    icone: Plug,
+  },
+  {
+    valor: "logs",
+    rotulo: "Logs",
+    grupo: "Integrações",
+    requisito: "plataforma_logs",
+    icone: ScrollText,
+  },
 ];
 
 const HUBS: readonly Hub[] = [HUB_CONFIGURACOES, HUB_CONFIGURACOES_DA_PLATAFORMA];

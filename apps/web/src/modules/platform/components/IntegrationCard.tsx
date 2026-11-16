@@ -1,8 +1,10 @@
 import { type IntegracaoDaEmpresa } from "@erp/shared/contracts/platform";
 import { formatarDataHora } from "@erp/shared/formatting";
 import { INFO_DA_INTEGRACAO, ROTULO_DA_SITUACAO_DA_INTEGRACAO } from "@erp/shared/platform";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { PlugZap } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Painel } from "@/components/common/Panel";
 import { SeloStatus } from "@/components/common/StatusBadge";
@@ -10,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useFusoDaEmpresa } from "@/hooks/use-company-timezone";
 import { useGravacao } from "@/hooks/use-save";
+import { mensagemAmigavel } from "@/lib/error-message";
 
-import { mutacaoDefinirSegredo, mutacaoSalvarIntegracao } from "../api";
+import { mutacaoDefinirSegredo, mutacaoSalvarIntegracao, mutacaoTestarIntegracao } from "../api";
 import { parametrosEditados } from "../rules";
 import { paraTexto, TOM_DA_SITUACAO_DA_INTEGRACAO } from "../texts";
 import { CampoDoParametro } from "./ParameterField";
@@ -47,6 +50,18 @@ export function CartaoDeIntegracao({
     sucesso: (valor) => `${info.segredo ?? "Segredo"} ${valor ? "atualizado" : "removido"}`,
   });
 
+  const teste = useMutation(mutacaoTestarIntegracao(cliente, empresaId, integracao.tipo));
+  const testar = async () => {
+    try {
+      const r = await teste.mutateAsync();
+      if (r.ok) toast.success(r.mensagem);
+      else if (r.pendente) toast.info(r.mensagem);
+      else toast.error(r.mensagem);
+    } catch (e) {
+      toast.error(mensagemAmigavel(e));
+    }
+  };
+
   const conexao = integracao.ultimaConexao;
   const dado = integracao.ultimoDado;
   const conhecidas = new Set(info.campos.map((c) => c.chave));
@@ -66,19 +81,31 @@ export function CartaoDeIntegracao({
       }
       classeDoCorpo="space-y-4 p-5"
       rodape={
-        <Button
-          size="sm"
-          className="ml-auto"
-          disabled={salvar.gravando}
-          onClick={() =>
-            void salvar.gravar({
-              ativo,
-              parametros: parametrosEditados(integracao.parametros, info.campos, valores),
-            })
-          }
-        >
-          {salvar.gravando ? "Salvando…" : "Salvar"}
-        </Button>
+        <>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={teste.isPending}
+            onClick={() => void testar()}
+            title="Testa com o que está salvo"
+          >
+            <PlugZap aria-hidden />
+            {teste.isPending ? "Testando…" : "Testar conexão"}
+          </Button>
+          <Button
+            size="sm"
+            className="ml-auto"
+            disabled={salvar.gravando}
+            onClick={() =>
+              void salvar.gravar({
+                ativo,
+                parametros: parametrosEditados(integracao.parametros, info.campos, valores),
+              })
+            }
+          >
+            {salvar.gravando ? "Salvando…" : "Salvar"}
+          </Button>
+        </>
       }
     >
       <div className="flex flex-wrap items-center gap-2">

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { buscaDoHub } from "@/components/layout/TabHub";
+import { useLogsDaEmpresaNaPlataforma } from "@/modules/admin/use-company-integration-logs";
 import { PaginaEmpresa } from "@/modules/platform/CompanyPage";
 
 export const Route = createFileRoute("/_authenticated/plataforma/empresas/$id")({
@@ -17,6 +18,7 @@ function PaginaDaRota() {
       id={id}
       aba={aba}
       aoMudarAba={(nova) => void navigate({ search: { aba: nova } })}
+      useLogsDasIntegracoes={useLogsDaEmpresaNaPlataforma}
     />
   );
 }

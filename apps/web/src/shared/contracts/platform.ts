@@ -289,6 +289,13 @@ export const contratosPlataforma = {
     entrada: z.object({ segredo: z.string().trim().max(4096) }),
     saida: z.object({ segredoDefinidoEm: z.iso.datetime().nullable() }),
   }),
+  testarIntegracao: contrato({
+    metodo: "POST",
+    caminho: "/api/v1/plataforma/empresas/:id/integracoes/:tipo/testar",
+    parametros: parametroTipo,
+    /** `pendente`: o teste passou do tempo de espera e ainda roda; o resultado chega na lista. */
+    saida: z.object({ ok: z.boolean(), pendente: z.boolean(), mensagem: z.string() }),
+  }),
   listarIntegracoesDaPlataforma: contrato({
     metodo: "GET",
     caminho: "/api/v1/plataforma/integracoes",

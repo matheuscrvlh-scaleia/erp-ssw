@@ -275,6 +275,10 @@ Só telas da Plataforma mudam; operação, números e URLs das integrações fic
 - **Endereço do SSW web na Plataforma (16/11).** Plataforma › Configurações › Integrações ganha o
   cartão SSW com o endereço em que o Worker SSW entra (o mesmo para todas as empresas). Trocar ali
   vale no próximo login do worker; sem cadastro, ele usa `https://sistema.ssw.inf.br`.
+- **Testar conexão e Logs nas integrações da empresa (16/11).** Os cartões Worker SSW e SSW BI2
+  ganham "Testar conexão" (login no SSW web; consulta do 0017 de hoje no BI2), que atualiza a
+  "Última conexão". A aba Integrações volta a ter a subaba Logs, com os ciclos do Worker (e os
+  arquivos que faltaram em cada um), os relatórios recebidos e as sincronizações do BI2.
 
 ## Ocorrências, Comprovantes, Coletas, Histórico e Admin › Códigos (spec 04)
 

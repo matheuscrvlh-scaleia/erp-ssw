@@ -8,7 +8,11 @@ import {
   type GrupoDeConfiguracao,
   type NovoUsuario,
 } from "@erp/shared/contracts/admin";
-import { contratosAuditoria as a, ORIGENS_INTEGRACAO } from "@erp/shared/contracts/audit";
+import {
+  contratosAuditoria as a,
+  type ORIGENS_DOS_LOGS_DA_EMPRESA,
+  ORIGENS_INTEGRACAO,
+} from "@erp/shared/contracts/audit";
 import { mutationOptions, type QueryClient, queryOptions } from "@tanstack/react-query";
 
 import { consultaAcesso } from "@/access/session";
@@ -88,6 +92,20 @@ interface FiltrosDasIntegracoes {
   ate: string;
   origem: string;
 }
+
+/** Logs do Worker SSW e do BI2 de uma empresa (Plataforma › Empresa › Integrações › Logs). */
+export const consultaLogsDaEmpresaNaPlataforma = (
+  empresaId: string,
+  filtros: { origem: (typeof ORIGENS_DOS_LOGS_DA_EMPRESA)[number]; de: string; ate: string },
+) =>
+  queryOptions({
+    queryKey: [...chaves.logs, "integracoes-da-empresa", empresaId, filtros],
+    queryFn: () =>
+      chamar(a.logsDasIntegracoesDaEmpresa, {
+        parametros: { id: empresaId },
+        entrada: { origem: filtros.origem, de: ouNada(filtros.de), ate: ouNada(filtros.ate) },
+      }),
+  });
 
 /** Execuções das integrações da empresa ativa. */
 export const consultaIntegracoes = (filtros: FiltrosDasIntegracoes) =>

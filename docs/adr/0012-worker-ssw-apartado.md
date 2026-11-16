@@ -35,7 +35,8 @@ Fastify, que faz a consulta ao SSW. Decisões do dono (10/11/2026):
 - Jobs: `sincronizar-ftp`, `sincronizar-ftp-retroativo`, `aplicar-ciclos`, `bi2-0017`,
   `verificar-token-ssw`, `processar-webhook-ssw`, `reprocessar-xml-orfaos`, `sla-arquivos`,
   `limpar-ingestao-arquivos`, `limpar-ingestao-ssw`, `projecoes-romaneio`,
-  `projecoes-romaneio-completa`, `coletas` (050) e o despachante (`agendador`).
+  `projecoes-romaneio-completa`, `coletas` (050), `testar-conexao` (16/11/2026) e o despachante
+  (`agendador`).
 - HTTP **público**, com as mesmas URLs de hoje: `/api/public/ssw-ocorrencias` (webhook),
   `/api/public/ftp-relatorio-import`, `/api/public/ssw-ciclo-aplicar` e
   `/api/public/xml-orfaos-retry`. A borda (Caddy do ERP) encaminha `/api/public/*` ao worker-ssw;
@@ -104,7 +105,8 @@ Leituras puras (pipeline, aplicações, arquivos XML) continuam no ERP direto do
 - `job` aceito só da lista de jobs que podem ser pedidos de fora: `sincronizar-ftp`,
   `sincronizar-ftp-retroativo`, `aplicar-ciclos`, `bi2-0017`, `verificar-token-ssw`,
   `processar-webhook-ssw`, `reprocessar-xml-orfaos`, `projecoes-romaneio`,
-  `projecoes-romaneio-completa`. `dados` é validado pelo zod do job.
+  `projecoes-romaneio-completa`, `testar-conexao` (botão "Testar conexão" do Worker SSW e do BI2,
+  16/11/2026). `dados` é validado pelo zod do job.
 - `erro` é mensagem para o operador (português, sem detalhe interno).
 - O contrato zod fica em `worker-ssw/src/contrato-interno.ts` e é **copiado** para
   `erp-ssw/packages/shared/src/contratos/worker-ssw.ts` (mesmo conteúdo; o teste de cada lado

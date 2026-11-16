@@ -26,6 +26,13 @@ export const ORIGENS_INTEGRACAO = [
 ] as const;
 export type OrigemIntegracao = (typeof ORIGENS_INTEGRACAO)[number];
 
+/** Plataforma › Empresa › Integrações › Logs: ciclos e relatórios do Worker SSW e o BI2. */
+export const ORIGENS_DOS_LOGS_DA_EMPRESA = [
+  "ciclo_ssw",
+  "relatorio_ssw",
+  "bi2",
+] as const satisfies readonly OrigemIntegracao[];
+
 export const linhaAuditoria = z.object({
   id: z.number().int(),
   empresaId: z.uuid().nullable(),
@@ -72,6 +79,12 @@ const filtrosIntegracao = z.object({
 });
 export type FiltrosIntegracao = z.infer<typeof filtrosIntegracao>;
 
+const filtrosDosLogsDaEmpresa = z.object({
+  origem: z.enum(ORIGENS_DOS_LOGS_DA_EMPRESA),
+  de: dia,
+  ate: dia,
+});
+
 /** Empresa nos logs da Plataforma: uma empresa ou "plataforma" (ações sem empresa). */
 const filtroDeEmpresa = z.union([z.uuid(), z.literal("plataforma")]).optional();
 
@@ -96,5 +109,12 @@ export const contratosAuditoria = {
     caminho: "/api/v1/plataforma/logs/alteracoes",
     entrada: filtrosAuditoria.extend({ empresa: filtroDeEmpresa }),
     saida: saidaAuditoria,
+  }),
+  logsDasIntegracoesDaEmpresa: contrato({
+    metodo: "GET",
+    caminho: "/api/v1/plataforma/empresas/:id/logs/integracoes",
+    parametros: z.object({ id: z.uuid() }),
+    entrada: filtrosDosLogsDaEmpresa,
+    saida: saidaIntegracao,
   }),
 } as const;

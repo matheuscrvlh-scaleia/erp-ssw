@@ -30,6 +30,7 @@ import {
   salvarIntegracaoDaPlataforma,
   salvarModulo,
   testarEmailDaPlataforma,
+  testarIntegracao,
   trocarCargoDoAdmin,
 } from "../models/platform/platform.service";
 import { type ExecutorComContexto } from "../models/repositories";
@@ -277,6 +278,18 @@ export const controladorPlataforma: FastifyPluginCallbackZod<OpcoesRotasPlatafor
       await salvarIntegracao(naEmpresa(request)(id), await atorDa(request), id, tipo, request.body);
       return confirmacao();
     },
+  );
+
+  app.post(
+    c.testarIntegracao.caminho,
+    {
+      schema: {
+        params: c.testarIntegracao.parametros,
+        response: { 200: c.testarIntegracao.saida },
+      },
+      onRequest: pode("plataforma_empresas", "editar"),
+    },
+    (request) => testarIntegracao(opcoes.workerSsw, request.params.id, request.params.tipo),
   );
 
   app.put(
