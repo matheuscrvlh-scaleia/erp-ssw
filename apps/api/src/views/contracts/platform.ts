@@ -3,7 +3,7 @@ import { ehDataIso } from "@erp/shared/dates";
 import {
   SITUACOES_DA_INTEGRACAO,
   STATUS_EMPRESA,
-  TIPOS_INTEGRACAO,
+  TIPOS_INTEGRACAO_DA_EMPRESA,
   TIPOS_INTEGRACAO_PLATAFORMA,
 } from "@erp/shared/platform";
 import { z } from "@erp/shared/zod";
@@ -117,7 +117,7 @@ export const valorDeParametro = z.union([
 export type ValorDeParametro = z.infer<typeof valorDeParametro>;
 
 export const integracaoDaEmpresa = z.object({
-  tipo: z.enum(TIPOS_INTEGRACAO),
+  tipo: z.enum(TIPOS_INTEGRACAO_DA_EMPRESA),
   configurada: z.boolean(),
   ativo: z.boolean(),
   parametros: z.record(z.string(), valorDeParametro),
@@ -152,7 +152,7 @@ export type AdminDaPlataforma = z.infer<typeof adminDaPlataforma>;
 
 const chaveDoCargoDaPlataforma = z.string().min(1).max(64);
 
-const parametroTipo = z.object({ id: z.uuid(), tipo: z.enum(TIPOS_INTEGRACAO) });
+const parametroTipo = z.object({ id: z.uuid(), tipo: z.enum(TIPOS_INTEGRACAO_DA_EMPRESA) });
 
 /** Integração da própria Plataforma (domínio, e-mail, worker-ssw). O segredo nunca sai da API. */
 export const integracaoDaPlataforma = z.object({

@@ -125,48 +125,11 @@ export const HUB_CONFIGURACOES_DA_PLATAFORMA: Hub = {
   ],
 };
 
-/**
- * Plataforma › Empresas › {empresa}. As abas de `ABAS_NA_EMPRESA_ATIVA` reaproveitam as telas que
- * operam na empresa ativa da sessão (a página pede a troca antes de mostrá-las).
- */
+/** Plataforma › Empresas › {empresa}. */
 export const ABAS_DA_EMPRESA: readonly AbaDoHub[] = [
   { valor: "dados", rotulo: "Dados", requisito: "plataforma_empresas", icone: Building },
   { valor: "modulos", rotulo: "Módulos", requisito: "plataforma_empresas", icone: Boxes },
-  // Integrações: os sistemas integrados à empresa e tudo o que opera neles.
-  {
-    valor: "integracoes",
-    rotulo: "Sistemas integrados",
-    grupo: "Integrações",
-    requisito: "plataforma_empresas",
-    icone: Plug,
-  },
-  // Importações: ingestão, importação de relatórios, XML de CT-e e diagnóstico numa tela só; cada
-  // seção aparece para quem tem a tela dela.
-  {
-    valor: "importacoes",
-    rotulo: "Importações",
-    grupo: "Integrações",
-    requisito: "admin_ingestao",
-    tambem: ["admin_importacao_ssw", "admin_xml_cte", "admin_ssw_diagnostico"],
-    icone: FileUp,
-  },
-  {
-    valor: "logs",
-    rotulo: "Logs",
-    grupo: "Integrações",
-    requisito: "plataforma_logs",
-    icone: ScrollText,
-  },
-];
-
-export const ABAS_NA_EMPRESA_ATIVA: readonly string[] = ["importacoes"];
-
-/** Abas da empresa que viraram seções de Importações: o link antigo abre Importações. */
-export const ABAS_ANTIGAS_DE_IMPORTACAO: readonly string[] = [
-  "ingestao",
-  "importacao-ssw",
-  "xml-cte",
-  "diagnostico",
+  { valor: "integracoes", rotulo: "Integrações", requisito: "plataforma_empresas", icone: Plug },
 ];
 
 const HUBS: readonly Hub[] = [HUB_CONFIGURACOES, HUB_CONFIGURACOES_DA_PLATAFORMA];
@@ -254,9 +217,6 @@ export interface DestinoDaBusca extends ItemDoMenu {
   aba?: string;
 }
 
-/** Abas da empresa que só existem lá (ingestão e importação também estão em Administração). */
-const ABAS_DA_EMPRESA_NA_BUSCA = ABAS_DA_EMPRESA.filter((a) => a.valor === "importacoes");
-
 /** Telas fora do menu que continuam com página própria (Usuários e cargos as reúne). */
 const FORA_DO_MENU: readonly ItemDoCatalogo[] = [
   tela("admin_roles", ROTULO_DA_TELA.admin_roles.replace(/^Admin · /, ""), ShieldCheck),
@@ -266,9 +226,7 @@ const FORA_DO_MENU: readonly ItemDoCatalogo[] = [
  * Tudo o que a busca rápida acha: os itens do menu, cada aba das telas com abas (com o caminho
  * novo) e as telas que saíram do menu.
  */
-export function montarBusca(
-  acesso: AcessoDoMenu & { empresa: { id: string; nome: string } | null },
-): DestinoDaBusca[] {
+export function montarBusca(acesso: AcessoDoMenu): DestinoDaBusca[] {
   const menu = montarMenu(acesso);
   const comGrupo = (grupo: string, lista: ItemDoMenu[]) => lista.map((i) => ({ ...i, grupo }));
   const abas = (grupo: string, h: Hub) =>
@@ -279,16 +237,6 @@ export function montarBusca(
       icone: a.icone,
       grupo,
     }));
-  const empresa = acesso.empresa;
-  const daEmpresa = empresa
-    ? abasVisiveis({ abas: ABAS_DA_EMPRESA_NA_BUSCA }, acesso).map((a) => ({
-        caminho: `/plataforma/empresas/${empresa.id}`,
-        aba: a.valor,
-        rotulo: a.rotulo,
-        icone: a.icone,
-        grupo: `Plataforma › ${empresa.nome}`,
-      }))
-    : [];
   return [
     ...comGrupo("Telas", menu.principal),
     ...comGrupo("Administração", menu.administracao),
@@ -296,6 +244,5 @@ export function montarBusca(
     ...comGrupo("Administração", itens(FORA_DO_MENU, acesso)),
     ...comGrupo("Plataforma", menu.plataforma),
     ...abas("Plataforma › Configurações", HUB_CONFIGURACOES_DA_PLATAFORMA),
-    ...daEmpresa,
   ];
 }

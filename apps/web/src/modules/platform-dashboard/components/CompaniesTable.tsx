@@ -3,7 +3,7 @@ import {
   type PainelPlataforma,
 } from "@erp/shared/contracts/platform-dashboard";
 import { formatarDataHora, formatarInteiro, formatarPercentual } from "@erp/shared/formatting";
-import { INFO_DA_INTEGRACAO, ROTULO_DO_STATUS } from "@erp/shared/platform";
+import { NOME_DA_INTEGRACAO, ROTULO_DO_STATUS } from "@erp/shared/platform";
 
 import { type ColunaTabela, TabelaDados } from "@/components/common/DataTable";
 import { SeloStatus } from "@/components/common/StatusBadge";
@@ -153,7 +153,7 @@ function colunas(painel: PainelPlataforma): ColunaTabela<EmpresaNoPainel>[] {
         ) : (
           <span
             className="whitespace-nowrap"
-            title={e.integracoes.map((t) => INFO_DA_INTEGRACAO[t].nome).join("\n")}
+            title={e.integracoes.map((t) => NOME_DA_INTEGRACAO[t]).join("\n")}
           >
             {plural(e.integracoes.length, "ligada", "ligadas")}
           </span>

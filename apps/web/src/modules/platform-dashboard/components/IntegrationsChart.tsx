@@ -1,6 +1,6 @@
 import { type PainelPlataforma } from "@erp/shared/contracts/platform-dashboard";
 import { formatarInteiro } from "@erp/shared/formatting";
-import { INFO_DA_INTEGRACAO } from "@erp/shared/platform";
+import { NOME_DA_INTEGRACAO } from "@erp/shared/platform";
 
 import { emOperacao } from "../rules";
 
@@ -14,7 +14,7 @@ export function GraficoIntegracoes({ painel }: { painel: PainelPlataforma }) {
         return (
           <li key={i.tipo} className="space-y-1.5">
             <div className="flex items-baseline justify-between gap-3 text-[13px]">
-              <span className="truncate">{INFO_DA_INTEGRACAO[i.tipo].nome}</span>
+              <span className="truncate">{NOME_DA_INTEGRACAO[i.tipo]}</span>
               <span className="shrink-0 text-muted-foreground tabular-nums">
                 {formatarInteiro(i.empresas)} de {formatarInteiro(base)}
               </span>

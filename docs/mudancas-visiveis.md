@@ -260,15 +260,18 @@ Só telas da Plataforma mudam; operação, números e URLs das integrações fic
 - **Favicon da empresa.** Plataforma › Empresa › Dados › Marca ganha o envio do favicon (PNG ou
   JPEG até 512 KB). Com favicon, a aba do navegador usa o da empresa depois do login; sem, o do
   sistema.
-- **Domínio SSW na aba Integrações.** Sai de Dados › Operação e vira um cartão próprio em
-  Integrações › Sistemas integrados.
+- **Domínio SSW na aba Integrações.** Sai de Dados › Operação e vira um cartão próprio na aba
+  Integrações da empresa.
 - **Prazo do módulo atrás do calendário.** Em Módulos, início e fim aparecem ao clicar no botão do
   calendário, com o botão Liberar (liga o módulo com essas datas e salva).
 - **Aviso de vencimento.** Módulo com fim daqui a 7, 5, 2 ou 1 dia abre um aviso na tela para os
   usuários da empresa (uma vez por marco, por navegador).
-- **Importações numa aba só.** Ingestão SSW, Importação SSW, Importar XML CT-e e Diagnóstico SSW da
-  empresa viram a aba Importações, uma seção embaixo da outra (cada uma para quem tem a tela dela).
-  Os links antigos (`?aba=ingestao`, `diagnostico`…) abrem Importações.
+- **Integrações da empresa enxutas (16/11).** Plataforma › Empresa › Integrações vira uma aba só,
+  com o Domínio SSW, o Worker SSW e o SSW BI2. Saem as subabas Importações e Logs e os cartões de
+  SFTP, SSW API, Webhook, Ahgora, XML CT-e e Rotas públicas. A tela Diagnóstico SSW
+  (`/admin/ssw-diagnostico`) sai inteira, com a permissão `admin_ssw_diagnostico`. Ingestão,
+  Importação SSW e XML CT-e continuam em Administração › Configurações; os logs das integrações,
+  em Plataforma › Logs.
 
 ## Ocorrências, Comprovantes, Coletas, Histórico e Admin › Códigos (spec 04)
 

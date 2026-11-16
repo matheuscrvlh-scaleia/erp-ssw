@@ -93,65 +93,6 @@ export const eventoWebhook = z.object({
 
 export type EventoWebhook = z.infer<typeof eventoWebhook>;
 
-const contagemWebhook = z.object({
-  total: z.number().int(),
-  processados: z.number().int(),
-  semVinculo: z.number().int(),
-  rejeitados: z.number().int(),
-  erros: z.number().int(),
-});
-
-export type ContagemWebhook = z.infer<typeof contagemWebhook>;
-
-export const statusDoJob = z.object({
-  job: z.string(),
-  descricao: z.string(),
-  integracao: z.string(),
-  /** Cron (UTC) do catálogo; `null` = sob demanda. */
-  cron: z.string().nullable(),
-  /** Integração ligada na empresa ativa. */
-  integracaoLigada: z.boolean(),
-  /** O agendador do worker tem o agendamento no Redis. */
-  agendado: z.boolean(),
-  proximaExecucao: instante.nullable(),
-  aguardando: z.number().int(),
-  ativos: z.number().int(),
-  atrasados: z.number().int(),
-  falhos: z.number().int(),
-  ultimaConclusao: instante.nullable(),
-  ultimasFalhas: z.array(
-    z.object({
-      id: z.string(),
-      quando: instante.nullable(),
-      erro: z.string(),
-      tentativas: z.number().int(),
-    }),
-  ),
-});
-
-export type StatusDoJob = z.infer<typeof statusDoJob>;
-
-const diagnosticoSsw = z.object({
-  /** `false` = API sem Redis: o status dos jobs não está disponível. */
-  filasDisponiveis: z.boolean(),
-  jobs: z.array(statusDoJob),
-  sincronizacoes: z.array(sincronizacaoBi2),
-  webhook: z.object({
-    ultimaAtividade: instante.nullable(),
-    ultimas24h: contagemWebhook,
-    ultimos7d: contagemWebhook,
-  }),
-  orfaos: z.object({
-    /** Eventos autenticados sem CT-e (número que não casou), últimos 7 dias. */
-    webhookSemVinculo7d: z.number().int(),
-    recentes: z.array(
-      z.object({ id: z.uuid(), recebidoEm: instante, numero: z.string().nullable() }),
-    ),
-    /** XML de CT-e na fila de órfãos (pendentes). */
-    xmlPendentes: z.number().int(),
-  }),
-});
-
 export const contratosIngestaoSsw = {
   atualizacao: contrato({
     metodo: "GET",
@@ -223,15 +164,5 @@ export const contratosIngestaoSsw = {
     caminho: "/api/v1/admin/ingestao/webhook/eventos/:id/reprocessar",
     parametros: z.object({ id: z.uuid() }),
     saida: z.object({ enfileirado: z.boolean() }),
-  }),
-  diagnostico: contrato({
-    metodo: "GET",
-    caminho: "/api/v1/admin/ssw-diagnostico",
-    saida: diagnosticoSsw,
-  }),
-  reprocessarTokenIncorreto: contrato({
-    metodo: "POST",
-    caminho: "/api/v1/admin/ssw-diagnostico/webhook/reprocessar-token-incorreto",
-    saida: z.object({ total: z.number().int(), enfileirados: z.number().int() }),
   }),
 } as const;

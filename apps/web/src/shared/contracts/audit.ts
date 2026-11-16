@@ -97,11 +97,4 @@ export const contratosAuditoria = {
     entrada: filtrosAuditoria.extend({ empresa: filtroDeEmpresa }),
     saida: saidaAuditoria,
   }),
-  integracoesDeEmpresaNaPlataforma: contrato({
-    metodo: "GET",
-    caminho: "/api/v1/plataforma/empresas/:id/logs/integracoes",
-    parametros: z.object({ id: z.uuid() }),
-    entrada: filtrosIntegracao,
-    saida: saidaIntegracao,
-  }),
 } as const;

@@ -14,7 +14,6 @@ export const chaves = {
   bi2: () => [...chaves.tudo, "bi2-0017"] as const,
   credenciais: () => [...chaves.tudo, "credenciais"] as const,
   eventosWebhook: () => [...chaves.tudo, "webhook-eventos"] as const,
-  diagnostico: () => [...chaves.tudo, "diagnostico"] as const,
 };
 
 /** Faixa "Integração SSW indisponível" (layout). */
@@ -53,12 +52,6 @@ export const consultaEventosWebhook = queryOptions({
   queryKey: chaves.eventosWebhook(),
   queryFn: () => chamar(c.eventosWebhook),
   refetchInterval: 15_000,
-});
-
-export const consultaDiagnostico = queryOptions({
-  queryKey: chaves.diagnostico(),
-  queryFn: () => chamar(c.diagnostico),
-  refetchInterval: 30_000,
 });
 
 /*
@@ -108,18 +101,6 @@ export const mutacaoReprocessarEvento = (cliente: QueryClient, aoConcluir: () =>
     mutationFn: (id: string) => chamar(c.reprocessarEvento, { parametros: { id } }),
     onSuccess: () => {
       aoConcluir();
-      return cliente.invalidateQueries({ queryKey: chaves.tudo });
-    },
-  });
-
-export const mutacaoReprocessarTokenIncorreto = (
-  cliente: QueryClient,
-  aoConcluir: (saida: SaidaDe<typeof c.reprocessarTokenIncorreto>) => void,
-) =>
-  mutationOptions({
-    mutationFn: () => chamar(c.reprocessarTokenIncorreto),
-    onSuccess: (saida) => {
-      aoConcluir(saida);
       return cliente.invalidateQueries({ queryKey: chaves.tudo });
     },
   });

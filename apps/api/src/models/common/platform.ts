@@ -39,78 +39,38 @@ export const ROTULO_DA_SITUACAO_DA_INTEGRACAO: Record<SituacaoDaIntegracao, stri
   sem_sinal: "Sem sinal",
 };
 
+/** Integrações que a Plataforma configura na empresa (Plataforma › Empresas › Integrações). */
+export const TIPOS_INTEGRACAO_DA_EMPRESA = [
+  "ssw_web",
+  "ssw_bi2",
+] as const satisfies readonly TipoIntegracao[];
+export type TipoIntegracaoDaEmpresa = (typeof TIPOS_INTEGRACAO_DA_EMPRESA)[number];
+
+/** Nome de cada integração (painel da Plataforma). */
+export const NOME_DA_INTEGRACAO: Record<TipoIntegracao, string> = {
+  sftp: "SFTP (relatórios do SSW)",
+  ssw_api: "SSW API",
+  ssw_bi2: "SSW BI2",
+  ssw_webhook: "Webhook SSW",
+  ssw_web: "Worker SSW",
+  ahgora: "Ahgora (ponto)",
+  xml_cte: "XML CT-e",
+  ingestao_publica: "Rotas públicas da ingestão",
+};
+
 interface InfoDaIntegracao {
   nome: string;
   descricao: string;
   campos: readonly { chave: string; rotulo: string; lista?: boolean; dica?: string }[];
   /** Rótulo do segredo (senha/token); sem ele a integração não tem segredo próprio. */
   segredo?: string;
-  /** Tela que opera essa integração. */
-  tela?: string;
-  /** Rótulo do último dado que ela traz (sem ele, a integração só conecta). */
+  /** Rótulo do último dado que ela traz. */
   ultimoDado?: string;
-  /** Nada registra a atividade dela: a tela não mostra situação, conexão nem dado. */
-  semMonitoramento?: true;
 }
 
-export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
-  sftp: {
-    nome: "SFTP (relatórios do SSW)",
-    descricao: "Pasta de onde o sistema puxa os CSV 038, 455, 930, 306, 036 e 050.",
-    campos: [
-      { chave: "host", rotulo: "Servidor" },
-      { chave: "porta", rotulo: "Porta" },
-      { chave: "usuario", rotulo: "Usuário" },
-      {
-        chave: "impressao_digital",
-        rotulo: "Impressão digital do servidor",
-        dica: "Obrigatória: sem ela o sistema não conecta. Peça ao provedor ou rode “ssh-keyscan -p <porta> <servidor> | ssh-keygen -lf -” e copie o SHA256:… da linha da chave.",
-      },
-      { chave: "caminho_xml", rotulo: "Pasta dos XML", dica: "Ex.: /xml_ssw" },
-      { chave: "relatorios_path", rotulo: "Pasta dos relatórios" },
-      { chave: "importados_path", rotulo: "Pasta dos importados" },
-    ],
-    segredo: "Senha do SFTP",
-    tela: "/admin/ingestao",
-    ultimoDado: "Último arquivo recebido",
-  },
-  ssw_api: {
-    nome: "SSW API",
-    descricao: "Consulta de rastreamento e ocorrências na API do SSW.",
-    campos: [
-      { chave: "dominio", rotulo: "Domínio" },
-      { chave: "usuario", rotulo: "Usuário" },
-      { chave: "cnpj_edi", rotulo: "CNPJ EDI" },
-      {
-        chave: "url",
-        rotulo: "Endereço da API",
-        dica: "Vazio = https://ssw.inf.br/api. Para usar outro servidor (ex.: o provisório tms.ssw.inf.br), digite o endereço; sem caminho, o sistema completa com /api.",
-      },
-    ],
-    segredo: "Senha da SSW API",
-    tela: "/admin/ssw-diagnostico",
-    ultimoDado: "Último token gerado",
-  },
-  ssw_bi2: {
-    nome: "SSW BI2",
-    descricao: "API CSV do BI2 (CT-e, 0013, 0017, 0174, 0220).",
-    campos: [{ chave: "dominio", rotulo: "Domínio", dica: "Ex.: FRT" }],
-    segredo: "Token do BI2",
-    tela: "/admin/ingestao",
-    ultimoDado: "Última sincronização",
-  },
-  ssw_webhook: {
-    nome: "Webhook SSW",
-    descricao: "Ocorrências enviadas pelo SSW em tempo real.",
-    campos: [
-      { chave: "cnpjs_aceitos", rotulo: "CNPJs aceitos", lista: true, dica: "Separe por vírgula" },
-    ],
-    segredo: "Segredo do webhook",
-    tela: "/admin/ingestao",
-    ultimoDado: "Última ocorrência recebida",
-  },
+export const INFO_DA_INTEGRACAO: Record<TipoIntegracaoDaEmpresa, InfoDaIntegracao> = {
   ssw_web: {
-    nome: "Worker SSW",
+    nome: NOME_DA_INTEGRACAO.ssw_web,
     descricao:
       "Entra no SSW com este usuário a cada 30 min, baixa os relatórios 036, 038, 050, 306, 455 e 930 e grava direto no sistema. Usa o domínio SSW acima.",
     campos: [
@@ -130,37 +90,14 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracao, InfoDaIntegracao> = {
       },
     ],
     segredo: "Senha do SSW",
-    tela: "/admin/ingestao",
     ultimoDado: "Último relatório recebido",
   },
-  ahgora: {
-    nome: "Ahgora (ponto)",
-    descricao: "Batidas de ponto para apuração e bonificação.",
-    campos: [{ chave: "usuario", rotulo: "Usuário da API" }],
-    segredo: "Senha da API",
-    tela: "/admin/ahgora",
-  },
-  xml_cte: {
-    nome: "XML CT-e",
-    descricao: "XML dos CT-e emitidos, puxados do SFTP.",
-    campos: [
-      {
-        chave: "cnpjs_emitentes",
-        rotulo: "CNPJs emitentes",
-        lista: true,
-        dica: "Separe por vírgula",
-      },
-    ],
-    tela: "/admin/xml-cte",
-    ultimoDado: "Último XML importado",
-  },
-  ingestao_publica: {
-    nome: "Rotas públicas da ingestão",
-    descricao:
-      "Segredo que quem chama /api/public/ftp-relatorio-import, ssw-ciclo-aplicar e xml-orfaos-retry manda no cabeçalho x-ftp-ingest-secret (ou x-cron-token). Identifica a empresa.",
-    campos: [],
-    segredo: "Segredo das rotas públicas",
-    semMonitoramento: true,
+  ssw_bi2: {
+    nome: NOME_DA_INTEGRACAO.ssw_bi2,
+    descricao: "API CSV do BI2 (CT-e, 0013, 0017, 0174, 0220).",
+    campos: [{ chave: "dominio", rotulo: "Domínio", dica: "Ex.: FRT" }],
+    segredo: "Token do BI2",
+    ultimoDado: "Última sincronização",
   },
 };
 

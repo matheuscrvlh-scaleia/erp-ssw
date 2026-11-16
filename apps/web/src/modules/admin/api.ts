@@ -89,19 +89,15 @@ interface FiltrosDasIntegracoes {
   origem: string;
 }
 
-/** Sem `empresaId`: a empresa ativa. Com ele: a empresa escolhida na Plataforma. */
-export const consultaIntegracoes = (
-  empresaId: string | undefined,
-  filtros: FiltrosDasIntegracoes,
-) =>
+/** Execuções das integrações da empresa ativa. */
+export const consultaIntegracoes = (filtros: FiltrosDasIntegracoes) =>
   queryOptions({
-    queryKey: [...chaves.logs, "integracoes", empresaId ?? "ativa", filtros],
+    queryKey: [...chaves.logs, "integracoes", filtros],
     queryFn: () => {
       const origem = ORIGENS_INTEGRACAO.find((o) => o === filtros.origem);
-      const entrada = { origem, de: ouNada(filtros.de), ate: ouNada(filtros.ate) };
-      return empresaId
-        ? chamar(a.integracoesDeEmpresaNaPlataforma, { parametros: { id: empresaId }, entrada })
-        : chamar(a.integracoesDaEmpresa, { entrada });
+      return chamar(a.integracoesDaEmpresa, {
+        entrada: { origem, de: ouNada(filtros.de), ate: ouNada(filtros.ate) },
+      });
     },
   });
 

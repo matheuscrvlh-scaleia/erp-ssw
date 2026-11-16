@@ -175,6 +175,10 @@ Catálogo (`modulos`, seed da migration F1):
 Telas fora de qualquer módulo: `admin_ssw_diagnostico`, `plataforma_empresas`, `plataforma_logs`,
 `plataforma_admins` (e `admin_logs` está no essencial).
 
+> Neste sistema, `admin_ssw_diagnostico` (Diagnóstico SSW) saiu em 16/11/2026, decisão do dono: a
+> tela não existe mais e a migração 0019 apaga a tela e as permissões dela. As listas abaixo são
+> as do sistema atual.
+
 ```ts
 // origem: modulo_liberado (sistema atual). Datas = dia de Brasília (AAAA-MM-DD).
 function moduloLiberado(empresaId: string | null, key: string, hoje: string): boolean {

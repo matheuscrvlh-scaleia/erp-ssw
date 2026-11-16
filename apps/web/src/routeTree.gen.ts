@@ -32,7 +32,6 @@ import { Route as AuthenticatedAdminImportacaoSswRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminIngestaoRouteImport } from './routes/_authenticated/admin.ingestao'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminRolesRouteImport } from './routes/_authenticated/admin.roles'
-import { Route as AuthenticatedAdminSswDiagnosticoRouteImport } from './routes/_authenticated/admin.ssw-diagnostico'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminXmlCteRouteImport } from './routes/_authenticated/admin.xml-cte'
 import { Route as AuthenticatedCtrcNumeroRouteImport } from './routes/_authenticated/ctrc.$numero'
@@ -177,12 +176,6 @@ const AuthenticatedAdminRolesRoute = AuthenticatedAdminRolesRouteImport.update({
   path: '/admin/roles',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAdminSswDiagnosticoRoute =
-  AuthenticatedAdminSswDiagnosticoRouteImport.update({
-    id: '/admin/ssw-diagnostico',
-    path: '/admin/ssw-diagnostico',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedAdminUsuariosRoute =
   AuthenticatedAdminUsuariosRouteImport.update({
     id: '/admin/usuarios',
@@ -313,7 +306,6 @@ export interface FileRoutesByFullPath {
   '/admin/ingestao': typeof AuthenticatedAdminIngestaoRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
-  '/admin/ssw-diagnostico': typeof AuthenticatedAdminSswDiagnosticoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/admin/xml-cte': typeof AuthenticatedAdminXmlCteRoute
   '/ctrc/$numero': typeof AuthenticatedCtrcNumeroRoute
@@ -356,7 +348,6 @@ export interface FileRoutesByTo {
   '/admin/ingestao': typeof AuthenticatedAdminIngestaoRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
-  '/admin/ssw-diagnostico': typeof AuthenticatedAdminSswDiagnosticoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/admin/xml-cte': typeof AuthenticatedAdminXmlCteRoute
   '/ctrc/$numero': typeof AuthenticatedCtrcNumeroRoute
@@ -401,7 +392,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/ingestao': typeof AuthenticatedAdminIngestaoRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/_authenticated/admin/roles': typeof AuthenticatedAdminRolesRoute
-  '/_authenticated/admin/ssw-diagnostico': typeof AuthenticatedAdminSswDiagnosticoRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/admin/xml-cte': typeof AuthenticatedAdminXmlCteRoute
   '/_authenticated/ctrc/$numero': typeof AuthenticatedCtrcNumeroRoute
@@ -446,7 +436,6 @@ export interface FileRouteTypes {
     | '/admin/ingestao'
     | '/admin/logs'
     | '/admin/roles'
-    | '/admin/ssw-diagnostico'
     | '/admin/usuarios'
     | '/admin/xml-cte'
     | '/ctrc/$numero'
@@ -489,7 +478,6 @@ export interface FileRouteTypes {
     | '/admin/ingestao'
     | '/admin/logs'
     | '/admin/roles'
-    | '/admin/ssw-diagnostico'
     | '/admin/usuarios'
     | '/admin/xml-cte'
     | '/ctrc/$numero'
@@ -533,7 +521,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ingestao'
     | '/_authenticated/admin/logs'
     | '/_authenticated/admin/roles'
-    | '/_authenticated/admin/ssw-diagnostico'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/admin/xml-cte'
     | '/_authenticated/ctrc/$numero'
@@ -725,13 +712,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRolesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/admin/ssw-diagnostico': {
-      id: '/_authenticated/admin/ssw-diagnostico'
-      path: '/admin/ssw-diagnostico'
-      fullPath: '/admin/ssw-diagnostico'
-      preLoaderRoute: typeof AuthenticatedAdminSswDiagnosticoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/admin/usuarios': {
       id: '/_authenticated/admin/usuarios'
       path: '/admin/usuarios'
@@ -881,7 +861,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminIngestaoRoute: typeof AuthenticatedAdminIngestaoRoute
   AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
   AuthenticatedAdminRolesRoute: typeof AuthenticatedAdminRolesRoute
-  AuthenticatedAdminSswDiagnosticoRoute: typeof AuthenticatedAdminSswDiagnosticoRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
   AuthenticatedAdminXmlCteRoute: typeof AuthenticatedAdminXmlCteRoute
   AuthenticatedCtrcNumeroRoute: typeof AuthenticatedCtrcNumeroRoute
@@ -922,7 +901,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminIngestaoRoute: AuthenticatedAdminIngestaoRoute,
   AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
   AuthenticatedAdminRolesRoute: AuthenticatedAdminRolesRoute,
-  AuthenticatedAdminSswDiagnosticoRoute: AuthenticatedAdminSswDiagnosticoRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
   AuthenticatedAdminXmlCteRoute: AuthenticatedAdminXmlCteRoute,
   AuthenticatedCtrcNumeroRoute: AuthenticatedCtrcNumeroRoute,

@@ -1,5 +1,4 @@
 import { comInstantes, type Sql, sql, type Transacao } from "@erp/db";
-import { type ContagemWebhook } from "@erp/shared/contracts/ssw-ingestion";
 
 import {
   type EventoLido,
@@ -8,23 +7,14 @@ import {
 } from "./ssw-ingestion.service";
 
 /** `e` = `erp.ssw_webhook_eventos`, `ctes` = o CT-e ligado (left join). */
-const colunasDoEvento = (numeroCte: Sql) => sql`
+const COLUNAS_DO_EVENTO = sql`
   e.id, e.recebido_em as "recebidoEm", e.status_http as "statusHttp", e.autenticado,
   e.motivo_rejeicao as "motivoRejeicao", e.erro_processamento as "erroProcessamento",
-  e.cte_id as "cteId", ${numeroCte} as "numeroCte",
+  e.cte_id as "cteId", ctes.numero as "numeroCte",
   e.payload_bruto is not null as "temPayload", e.token_sha256 as "tokenSha256"`;
 
 const EVENTOS_COM_CTE = sql`
   erp.ssw_webhook_eventos e left join erp.ctes on ctes.id = e.cte_id`;
-
-/** Mesma classificação da tela: rejeitado (auth/4xx), erro (5xx), sem vínculo (202), processado. */
-const ehRejeitado = sql`(not e.autenticado or e.status_http between 400 and 499)`;
-
-/** Número que o SSW mandou (para evento sem CT-e). */
-const numeroDoPayload = sql`coalesce(
-  nullif(e.payload_bruto->'cte'->>'numeroCTe', ''),
-  nullif(nullif(e.payload_bruto->'cte'->>'numeroSSW', ''), '0'),
-  e.payload_bruto->'nf'->>'numeroNFe')`;
 
 function segredoDaLinha(cifrado: string | null, versao: number | null) {
   return cifrado === null || versao === null ? null : { cifrado, versaoChave: versao };
@@ -48,7 +38,7 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
   const eventos = async (resto: Sql) =>
     comInstantes<EventoLido>(
       await tx.consultar(sql`
-        select ${colunasDoEvento(sql`ctes.numero`)} from ${EVENTOS_COM_CTE} ${resto}`),
+        select ${COLUNAS_DO_EVENTO} from ${EVENTOS_COM_CTE} ${resto}`),
       ["recebidoEm"],
     );
 
@@ -124,47 +114,11 @@ export function criarRepositorioIngestaoSsw(tx: Transacao): RepositorioIngestaoS
 
     evento: async (id) => (await eventos(sql`where e.id = ${id}`))[0] ?? null,
 
-    eventosComMotivo: (motivo, limite) =>
-      tx.consultar(sql`
-        select id, token_sha256 as "tokenSha256" from erp.ssw_webhook_eventos
-        where motivo_rejeicao = ${motivo} and payload_bruto is not null
-        order by recebido_em desc
-        limit ${limite}`),
-
-    contagemWebhook: async (desde) => {
-      const [linha] = await tx.consultar<Omit<ContagemWebhook, "processados">>(sql`
-        select count(*)::int as total,
-               (count(*) filter (where ${ehRejeitado}))::int as rejeitados,
-               (count(*) filter (where not ${ehRejeitado} and e.status_http >= 500))::int as erros,
-               (count(*) filter (where not ${ehRejeitado} and e.status_http = 202))::int
-                 as "semVinculo"
-        from erp.ssw_webhook_eventos e
-        where e.recebido_em >= ${desde}`);
-      const c = linha ?? { total: 0, rejeitados: 0, erros: 0, semVinculo: 0 };
-      return { ...c, processados: c.total - c.rejeitados - c.erros - c.semVinculo };
-    },
-
     // "Última atividade do webhook" (era sync_state.ultima_hot — Q45 do dono).
     ultimaAtividadeWebhook: () =>
       instante(sql`
         select max(recebido_em) as em from erp.ssw_webhook_eventos
         where autenticado and status_http = 200`),
-
-    semVinculo: async (desde, limite) => {
-      const filtro = sql`e.recebido_em >= ${desde} and e.autenticado and e.status_http = 202`;
-      const [total] = await tx.consultar<{ n: number }>(sql`
-        select count(*)::int as n from erp.ssw_webhook_eventos e where ${filtro}`);
-      const recentes = comInstantes<EventoLido>(
-        await tx.consultar(sql`
-          select ${colunasDoEvento(numeroDoPayload)}
-          from ${EVENTOS_COM_CTE}
-          where ${filtro}
-          order by e.recebido_em desc
-          limit ${limite}`),
-        ["recebidoEm"],
-      );
-      return { total: total?.n ?? 0, recentes };
-    },
 
     xmlOrfaos: async () => {
       const [linha] = await tx.consultar<{ pendentes: number; expirados: number }>(sql`

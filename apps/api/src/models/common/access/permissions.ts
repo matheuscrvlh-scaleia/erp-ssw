@@ -44,7 +44,6 @@ export const ACOES_DA_TELA: Record<Tela, readonly Acao[]> = {
   admin_bonificacao_entrega: ACOES,
   romaneio_placa: SO_VER,
   admin_logs: SO_VER,
-  admin_ssw_diagnostico: VER_EDITAR,
   plataforma_painel: SO_VER,
   plataforma_empresas: ACOES,
   plataforma_logs: SO_VER,
@@ -179,12 +178,6 @@ export const CATEGORIAS_DA_PLATAFORMA: readonly CategoriaDeTela[] = [
     chave: "ferramentas",
     rotulo: "Ferramentas nas empresas",
     descricao: "Integração com o SSW e ponto, dentro da empresa aberta",
-    telas: [
-      "admin_ingestao",
-      "admin_importacao_ssw",
-      "admin_xml_cte",
-      "admin_ssw_diagnostico",
-      "admin_ahgora",
-    ],
+    telas: ["admin_ingestao", "admin_importacao_ssw", "admin_xml_cte", "admin_ahgora"],
   },
 ];

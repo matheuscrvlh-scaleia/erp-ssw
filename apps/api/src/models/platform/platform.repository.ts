@@ -178,29 +178,20 @@ export function criarRepositorioPlataforma(tx: Transacao): RepositorioPlataforma
         ftpNome: string | null;
         bi2Em: Date | null;
         bi2Nome: string | null;
-        webhookEm: Date | null;
-        xmlEm: Date | null;
-        xmlNome: string | null;
       }>(
         await tx.consultar(sql`
-          select f.em as "ftpEm", f.nome as "ftpNome", b.em as "bi2Em", b.nome as "bi2Nome",
-                 w.em as "webhookEm", x.em as "xmlEm", x.nome as "xmlNome"
+          select f.em as "ftpEm", f.nome as "ftpNome", b.em as "bi2Em", b.nome as "bi2Nome"
           from (select 1) as um
           left join lateral ${ultimo(sql`erp.ingestao_arquivos`, sql`visto_em`, sql`nome_arquivo`, sql.vazio())} f on true
-          left join lateral ${ultimo(sql`erp.bi2_sincronizacoes`, sql`finalizado_em`, sql`codigo_relatorio`, sql`and finalizado_em is not null and erro is null`)} b on true
-          left join lateral ${ultimo(sql`erp.ssw_webhook_eventos`, sql`recebido_em`, sql`null::text`, sql`and autenticado and status_http = 200`)} w on true
-          left join lateral ${ultimo(sql`erp.xml_cte_arquivos`, sql`criado_em`, sql`nome_arquivo`, sql.vazio())} x on true`),
-        ["ftpEm", "bi2Em", "webhookEm", "xmlEm"],
+          left join lateral ${ultimo(sql`erp.bi2_sincronizacoes`, sql`finalizado_em`, sql`codigo_relatorio`, sql`and finalizado_em is not null and erro is null`)} b on true`),
+        ["ftpEm", "bi2Em"],
       );
       const de = (em: Date | null | undefined, nome: string | null | undefined) =>
         em ? { em, nome: nome ?? null } : null;
       return {
-        sftp: de(linha?.ftpEm, linha?.ftpNome),
-        // Os relatórios do worker SSW entram pela mesma recepção do SFTP.
+        // Os relatórios do Worker SSW entram pela recepção de arquivos da ingestão.
         ssw_web: de(linha?.ftpEm, linha?.ftpNome),
         ssw_bi2: de(linha?.bi2Em, linha?.bi2Nome),
-        ssw_webhook: de(linha?.webhookEm, null),
-        xml_cte: de(linha?.xmlEm, linha?.xmlNome),
       };
     },
 

@@ -9,7 +9,6 @@ import {
 import {
   type AtualizacaoDosDados,
   type CredenciaisDaSsw,
-  type DiagnosticoDaSsw,
   type EventoLido,
   type EventosDoWebhook,
   type RodadaDoBi2,
@@ -72,23 +71,5 @@ export function apresentarEventosWebhook(
   return {
     ultimaAtividade: iso(dados.ultimaAtividade),
     eventos: dados.eventos.map(apresentarEventoWebhook),
-  };
-}
-
-export function apresentarDiagnosticoSsw(
-  d: DiagnosticoDaSsw,
-): SaidaDe<typeof contratosIngestaoSsw.diagnostico> {
-  return {
-    ...d,
-    sincronizacoes: d.sincronizacoes.map(apresentarSincronizacaoBi2),
-    webhook: { ...d.webhook, ultimaAtividade: iso(d.webhook.ultimaAtividade) },
-    orfaos: {
-      ...d.orfaos,
-      recentes: d.orfaos.recentes.map((e) => ({
-        id: e.id,
-        recebidoEm: e.recebidoEm.toISOString(),
-        numero: e.numeroCte,
-      })),
-    },
   };
 }

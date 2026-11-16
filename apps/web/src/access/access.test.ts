@@ -141,11 +141,10 @@ describe("montarMenu", () => {
 });
 
 describe("montarBusca", () => {
-  it("acha as abas dos hubs pelo caminho novo e as abas da empresa ativa", () => {
+  it("acha as abas dos hubs pelo caminho novo", () => {
     const busca = montarBusca({
       adminPlataforma: true,
-      telas: ["admin_codigos", "plataforma_integracoes", "admin_ssw_diagnostico"],
-      empresa: { id: "e1", nome: "FR" },
+      telas: ["admin_codigos", "plataforma_integracoes"],
     });
     expect(busca.map((d) => [d.rotulo, d.caminho, d.aba])).toEqual([
       ["Configurações", "/admin/configuracoes", undefined],
@@ -153,7 +152,6 @@ describe("montarBusca", () => {
       ["Configurações", "/plataforma/configuracoes", undefined],
       ["Integrações", "/plataforma/configuracoes", "integracoes"],
       ["Feriados gerais", "/plataforma/configuracoes", "feriados-gerais"],
-      ["Importações", "/plataforma/empresas/e1", "importacoes"],
     ]);
   });
 });

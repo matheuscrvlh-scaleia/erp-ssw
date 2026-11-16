@@ -15,18 +15,12 @@ import {
 } from "@erp/domain/ingestion/ssw-api";
 import { type EntradaDe } from "@erp/shared/contract";
 import {
-  type ContagemWebhook,
   type contratosIngestaoSsw,
   type ResultadoDoTesteSsw,
   resultadoDoTesteSsw,
   type SincronizacaoBi2,
-  type StatusDoJob,
 } from "@erp/shared/contracts/ssw-ingestion";
-import {
-  type IntegracaoDaIngestao,
-  integracoesDoJob,
-  JOBS_DE_INGESTAO,
-} from "@erp/shared/ingestion";
+import { type IntegracaoDaIngestao } from "@erp/shared/ingestion";
 
 import { type ClienteWorkerSsw, exigirWorkerSsw } from "../../infra/worker-ssw";
 import { type Ator } from "../audit/audit.service";
@@ -104,23 +98,6 @@ export interface EventosDoWebhook {
   eventos: EventoLido[];
 }
 
-export interface DiagnosticoDaSsw {
-  /** `false` = worker-ssw não configurado ou fora. */
-  filasDisponiveis: boolean;
-  jobs: StatusDoJob[];
-  sincronizacoes: SincronizacaoLida[];
-  webhook: {
-    ultimaAtividade: Date | null;
-    ultimas24h: ContagemWebhook;
-    ultimos7d: ContagemWebhook;
-  };
-  orfaos: {
-    webhookSemVinculo7d: number;
-    recentes: EventoLido[];
-    xmlPendentes: number;
-  };
-}
-
 export interface RepositorioIngestaoSsw {
   integracao(empresaId: string, tipo: IntegracaoDaIngestao): Promise<IntegracaoLida | null>;
   /** Grava parâmetros (e o segredo, quando vem) da integração; cria desligada se não existe. */
@@ -134,13 +111,7 @@ export interface RepositorioIngestaoSsw {
   sincronizacoesBi2(relatorio: string | null, limite: number): Promise<SincronizacaoLida[]>;
   eventosWebhook(limite: number): Promise<EventoLido[]>;
   evento(id: string): Promise<EventoLido | null>;
-  eventosComMotivo(
-    motivo: string,
-    limite: number,
-  ): Promise<{ id: string; tokenSha256: string[] | null }[]>;
-  contagemWebhook(desde: Date): Promise<ContagemWebhook>;
   ultimaAtividadeWebhook(): Promise<Date | null>;
-  semVinculo(desde: Date, limite: number): Promise<{ total: number; recentes: EventoLido[] }>;
   xmlOrfaos(): Promise<{ pendentes: number; expirados: number }>;
   /** Última aplicação do ciclo de arquivos do SSW (o "Dados atualizados em"). */
   ultimaAplicacao(): Promise<Date | null>;
@@ -168,7 +139,6 @@ type Db = Executor<"ingestaoSsw" | "auditoria">;
 
 const PRAZO_DO_TESTE_MS = 30_000;
 const PRAZO_DO_BI2_MS = 60_000;
-const DIA_MS = 24 * 3_600_000;
 
 const iso = (d: Date | null) => (d === null ? null : d.toISOString());
 
@@ -478,41 +448,6 @@ export async function reprocessarEvento(
   return { enfileirado: true };
 }
 
-/**
- * "Reprocessar webhooks rejeitados por token": os eventos `token_incorreto` com payload cujo
- * token (pelo SHA-256 guardado) é o segredo atual ou o anterior — o SSW trocou o token antes de
- * nós, ou nós antes dele. Os demais nunca viram dado.
- */
-export async function reprocessarTokenIncorreto(
-  db: Db,
-  deps: DependenciasIngestaoSsw,
-  ator: Ator,
-  empresaId: string,
-): Promise<{ total: number; enfileirados: number }> {
-  const workerSsw = exigirWorkerSsw(deps.workerSsw);
-  const aceitos = await resumosAceitos(db, deps, empresaId);
-  const eventos = await db(({ ingestaoSsw }) =>
-    ingestaoSsw.eventosComMotivo("token_incorreto", 1000),
-  );
-  const ids = eventos
-    .filter((e) => assinadoPorSegredoConhecido(e.tokenSha256, aceitos))
-    .map((e) => e.id);
-  await db(async ({ ingestaoSsw, auditoria }) => {
-    for (const id of ids) await ingestaoSsw.marcarReprocesso(id);
-    await auditoria.registrar(ator, {
-      empresaId,
-      acao: "reprocessar",
-      entidade: "ssw_webhook_evento",
-      entidadeId: null,
-      resumo: `Reprocessou ${ids.length} evento(s) do webhook rejeitados por token`,
-      antes: null,
-      depois: null,
-    });
-  });
-  for (const id of ids) await pedirProcessamento(workerSsw, empresaId, id);
-  return { total: eventos.length, enfileirados: ids.length };
-}
-
 /** SHA-256 do segredo atual e do anterior do webhook, decifrados agora. */
 async function resumosAceitos(
   db: Db,
@@ -558,80 +493,4 @@ async function pedirProcessamento(
     dados: { eventoId, protocolo },
     deduplicar: true,
   });
-}
-
-// --- Diagnóstico ------------------------------------------------------------------------------
-
-/** Situação dos jobs pelo worker-ssw; `null` = não configurado ou fora (a tela avisa). */
-async function situacaoDosJobs(deps: DependenciasIngestaoSsw, empresaId: string) {
-  if (deps.workerSsw === null) return null;
-  try {
-    const { jobs } = await deps.workerSsw.situacao(empresaId);
-    return new Map<string, (typeof jobs)[number]>(jobs.map((j) => [j.job, j]));
-  } catch {
-    return null;
-  }
-}
-
-export async function diagnosticoSsw(
-  db: Db,
-  deps: DependenciasIngestaoSsw,
-  empresaId: string,
-): Promise<DiagnosticoDaSsw> {
-  const agora = deps.agora().getTime();
-  const dados = await db(async ({ ingestaoSsw }) => {
-    const ligadas = new Map<string, boolean>();
-    for (const tipo of new Set(JOBS_DE_INGESTAO.flatMap(integracoesDoJob))) {
-      ligadas.set(tipo, (await ingestaoSsw.integracao(empresaId, tipo))?.ativo ?? false);
-    }
-    const semVinculo = await ingestaoSsw.semVinculo(new Date(agora - 7 * DIA_MS), 10);
-    return {
-      ligadas,
-      sincronizacoes: await ingestaoSsw.sincronizacoesBi2(null, 10),
-      ultimaAtividade: await ingestaoSsw.ultimaAtividadeWebhook(),
-      ultimas24h: await ingestaoSsw.contagemWebhook(new Date(agora - DIA_MS)),
-      ultimos7d: await ingestaoSsw.contagemWebhook(new Date(agora - 7 * DIA_MS)),
-      semVinculo,
-      xml: await ingestaoSsw.xmlOrfaos(),
-    };
-  });
-  // O worker-ssw informa a fila e as falhas recentes de cada job (ADR 0012, `/situacao`).
-  const situacao = await situacaoDosJobs(deps, empresaId);
-  const jobs: StatusDoJob[] = JOBS_DE_INGESTAO.map((j) => {
-    const s = situacao?.get(j.job);
-    return {
-      job: j.job,
-      descricao: j.descricao,
-      integracao: j.integracao,
-      cron: j.cron,
-      integracaoLigada: integracoesDoJob(j).some((tipo) => dados.ligadas.get(tipo) ?? false),
-      agendado: s?.agendado ?? false,
-      proximaExecucao: s?.proximaExecucao ?? null,
-      aguardando: s?.naFila ?? 0,
-      ativos: s?.rodando ?? 0,
-      atrasados: s?.atrasados ?? 0,
-      falhos: s?.falhos ?? 0,
-      ultimaConclusao:
-        s?.ultimaExecucao?.estado === "concluida" ? s.ultimaExecucao.terminadaEm : null,
-      ultimasFalhas: (s?.ultimasFalhas ?? []).map(({ execucaoId, ...falha }) => ({
-        id: execucaoId,
-        ...falha,
-      })),
-    };
-  });
-  return {
-    filasDisponiveis: situacao !== null,
-    jobs,
-    sincronizacoes: dados.sincronizacoes,
-    webhook: {
-      ultimaAtividade: dados.ultimaAtividade,
-      ultimas24h: dados.ultimas24h,
-      ultimos7d: dados.ultimos7d,
-    },
-    orfaos: {
-      webhookSemVinculo7d: dados.semVinculo.total,
-      recentes: dados.semVinculo.recentes,
-      xmlPendentes: dados.xml.pendentes,
-    },
-  };
 }

@@ -78,25 +78,5 @@ export const controladorLogs: FastifyPluginCallbackZod<{ executar: ExecutorComCo
       );
     },
   );
-
-  app.get(
-    c.integracoesDeEmpresaNaPlataforma.caminho,
-    {
-      schema: {
-        params: c.integracoesDeEmpresaNaPlataforma.parametros,
-        querystring: c.integracoesDeEmpresaNaPlataforma.entrada,
-        response: { 200: c.integracoesDeEmpresaNaPlataforma.saida },
-      },
-      onRequest: exigirPermissaoDaPlataforma("plataforma_logs", "ver"),
-    },
-    async (request) =>
-      apresentarIntegracoes(
-        await listarIntegracoes(
-          executorDePlataforma(executar, request, request.params.id),
-          request.params.id,
-          request.query,
-        ),
-      ),
-  );
   pronto();
 };

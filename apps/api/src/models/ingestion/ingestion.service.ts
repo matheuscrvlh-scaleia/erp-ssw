@@ -24,7 +24,6 @@ import {
   type SituacaoDoFtp,
   situacaoDoFtp,
 } from "@erp/shared/contracts/worker-ssw";
-import { JOBS_DE_INGESTAO } from "@erp/shared/ingestion";
 import { z } from "@erp/shared/zod";
 
 import {
@@ -142,7 +141,8 @@ export interface DependenciasIngestao {
 type Db = Executor<"ingestao" | "auditoria">;
 
 /** Horário do FTP em português (Q37: o de produção, igual para todas as empresas). */
-const CRON_DO_FTP = JOBS_DE_INGESTAO.find((j) => j.job === "sincronizar-ftp")?.cron ?? "";
+// Todo minuto menos :00 e :30, um horário só para todas as empresas; quem agenda é o worker-ssw.
+const CRON_DO_FTP = "1-29,31-59 * * * *";
 const DESCRICAO_DA_AGENDA = `A cada minuto, exceto :00 e :30 (${CRON_DO_FTP} UTC)`;
 
 /** Espera do "reprocessar órfãos": o teto do HTTP interno. */

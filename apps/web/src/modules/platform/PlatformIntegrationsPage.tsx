@@ -30,9 +30,16 @@ export function PaginaIntegracoesDaPlataforma() {
           <MensagemErro erro={consulta.error} aoTentarDeNovo={() => void consulta.refetch()} />
         </Painel>
       )}
+      {/* Duas colunas independentes: o cartão curto não deixa buraco ao lado do comprido. */}
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        {consulta.data?.integracoes.map((i) => (
-          <CartaoDaPlataforma key={i.tipo} integracao={i} />
+        {[0, 1].map((coluna) => (
+          <div key={coluna} className="space-y-4">
+            {consulta.data?.integracoes
+              .filter((_, i) => i % 2 === coluna)
+              .map((i) => (
+                <CartaoDaPlataforma key={i.tipo} integracao={i} />
+              ))}
+          </div>
         ))}
       </div>
     </Pagina>

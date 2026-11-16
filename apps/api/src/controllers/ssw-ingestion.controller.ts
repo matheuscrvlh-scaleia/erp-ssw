@@ -5,10 +5,8 @@ import {
   atualizacaoDosDados,
   credenciaisSsw,
   type DependenciasIngestaoSsw,
-  diagnosticoSsw,
   eventosWebhook,
   reprocessarEvento,
-  reprocessarTokenIncorreto,
   rodarBi2,
   salvarCredenciaisSsw,
   saudeSsw,
@@ -18,7 +16,6 @@ import {
 import {
   apresentarAtualizacaoDosDados,
   apresentarCredenciaisSsw,
-  apresentarDiagnosticoSsw,
   apresentarEventosWebhook,
   apresentarRodadaDoBi2,
   apresentarStatusBi2,
@@ -28,13 +25,11 @@ import { exigirAdminPlataforma, exigirEmpresa, exigirPermissao } from "./middlew
 import { atorDa } from "./middleware/session";
 
 /**
- * Faixa de saúde: todo usuário com empresa. Ingestão SSW e Diagnóstico SSW: só a Plataforma, na
- * empresa ativa (decisão de 09/11: telas de integração são da Plataforma).
+ * Faixa de saúde: todo usuário com empresa. Ingestão SSW: só a Plataforma, na empresa ativa
+ * (decisão de 09/11: telas de integração são da Plataforma).
  */
 const ingestao = [exigirPermissao("admin_ingestao", "ver"), exigirAdminPlataforma];
 const editarIngestao = [exigirPermissao("admin_ingestao", "editar"), exigirAdminPlataforma];
-const diagnostico = [exigirPermissao("admin_ssw_diagnostico", "ver"), exigirAdminPlataforma];
-const reprocessar = [exigirPermissao("admin_ssw_diagnostico", "editar"), exigirAdminPlataforma];
 
 export const controladorIngestaoSsw: FastifyPluginCallbackZod<{ deps: DependenciasIngestaoSsw }> = (
   app,
@@ -135,20 +130,6 @@ export const controladorIngestaoSsw: FastifyPluginCallbackZod<{ deps: Dependenci
         await empresa(request),
         request.params.id,
       ),
-  );
-
-  app.get(
-    c.diagnostico.caminho,
-    { schema: { response: { 200: c.diagnostico.saida } }, preHandler: diagnostico },
-    async (request) =>
-      apresentarDiagnosticoSsw(await diagnosticoSsw(request.db, deps, await empresa(request))),
-  );
-
-  app.post(
-    c.reprocessarTokenIncorreto.caminho,
-    { schema: { response: { 200: c.reprocessarTokenIncorreto.saida } }, preHandler: reprocessar },
-    async (request) =>
-      reprocessarTokenIncorreto(request.db, deps, await atorDa(request), await empresa(request)),
   );
 
   pronto();

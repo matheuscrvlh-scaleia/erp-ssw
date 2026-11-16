@@ -42,12 +42,12 @@ import {
 import { type JobAcompanhado, type SituacaoDaEmpresa } from "@erp/shared/contracts/worker-ssw";
 import { hojeNoFuso } from "@erp/shared/dates";
 import {
-  INFO_DA_INTEGRACAO,
   INFO_DA_INTEGRACAO_PLATAFORMA,
   type StatusEmpresa,
   type TipoIntegracao,
+  type TipoIntegracaoDaEmpresa,
   type TipoIntegracaoPlataforma,
-  TIPOS_INTEGRACAO,
+  TIPOS_INTEGRACAO_DA_EMPRESA,
   TIPOS_INTEGRACAO_PLATAFORMA,
 } from "@erp/shared/platform";
 import { type FastifyBaseLogger } from "fastify";
@@ -136,17 +136,10 @@ export type EstadoDaIntegracao = Omit<
   ultimoDado: { em: Date; detalhe: string | null } | null;
 };
 
-/** Integrações que gravam dado no banco (as outras só conectam). */
-export type IntegracaoComDado = "sftp" | "ssw_web" | "ssw_bi2" | "ssw_webhook" | "xml_cte";
-
-/** Job do worker-ssw que conecta em cada integração (o do FTP também puxa os XML). */
-const JOB_DA_INTEGRACAO: Partial<Record<TipoIntegracao, JobAcompanhado>> = {
-  sftp: "sincronizar-ftp",
-  xml_cte: "sincronizar-ftp",
-  ssw_api: "verificar-token-ssw",
-  ssw_bi2: "bi2-0017",
-  ssw_webhook: "processar-webhook-ssw",
+/** Job do worker-ssw que conecta em cada integração. */
+const JOB_DA_INTEGRACAO: Record<TipoIntegracaoDaEmpresa, JobAcompanhado> = {
   ssw_web: "baixar-relatorios-ssw",
+  ssw_bi2: "bi2-0017",
 };
 
 export type EstadoDaIntegracaoDaPlataforma = Omit<
@@ -240,7 +233,7 @@ export interface RepositorioPlataforma {
   /** O último registro gravado por cada integração que grava dado (nulo = nenhum ainda). */
   ultimosDados(
     empresaId: string,
-  ): Promise<Record<IntegracaoComDado, { em: Date; nome: string | null } | null>>;
+  ): Promise<Record<TipoIntegracaoDaEmpresa, { em: Date; nome: string | null } | null>>;
   gravarIntegracao(
     empresaId: string,
     tipo: TipoIntegracao,
@@ -604,15 +597,6 @@ function parametrosValidos(parametros: Record<string, unknown>): Record<string, 
   return validos;
 }
 
-const COM_DADO: readonly TipoIntegracao[] = [
-  "sftp",
-  "ssw_web",
-  "ssw_bi2",
-  "ssw_webhook",
-  "xml_cte",
-];
-const gravaDado = (tipo: TipoIntegracao): tipo is IntegracaoComDado => COM_DADO.includes(tipo);
-
 interface AtividadeDaIntegracao {
   /** Última execução do job do worker-ssw desta integração. */
   job: Conexao | null;
@@ -620,7 +604,7 @@ interface AtividadeDaIntegracao {
 }
 
 function paraIntegracao(
-  tipo: TipoIntegracao,
+  tipo: TipoIntegracaoDaEmpresa,
   l: IntegracaoGravada | undefined,
   atividade: AtividadeDaIntegracao,
   agora: Date,
@@ -674,11 +658,11 @@ async function situacaoNoWorker(
   }
 }
 
-/** Conexão = execução terminada do job; o token da SSW API é o dado dela. */
+/** Conexão = execução terminada do job. */
 function atividadeDe(
-  tipo: TipoIntegracao,
+  tipo: TipoIntegracaoDaEmpresa,
   worker: SituacaoDaEmpresa | null,
-  dados: Record<IntegracaoComDado, { em: Date; nome: string | null } | null>,
+  dados: Record<TipoIntegracaoDaEmpresa, { em: Date; nome: string | null } | null>,
 ): AtividadeDaIntegracao {
   const execucao = worker?.jobs.find((j) => j.job === JOB_DA_INTEGRACAO[tipo])?.ultimaExecucao;
   const job = execucao
@@ -688,11 +672,6 @@ function atividadeDe(
         mensagem: execucao.erro ?? null,
       }
     : null;
-  if (tipo === "ssw_api") {
-    const token = worker?.tokenSswGeradoEm;
-    return { job, ultimoDado: token ? { em: new Date(token), detalhe: null } : null };
-  }
-  if (!gravaDado(tipo)) return { job, ultimoDado: null };
   const dado = dados[tipo];
   return { job, ultimoDado: dado ? { em: dado.em, detalhe: dado.nome } : null };
 }
@@ -717,7 +696,7 @@ export async function listarIntegracoes(
     situacaoNoWorker(deps, id),
   ]);
   const agora = deps.agora();
-  return TIPOS_INTEGRACAO.map((tipo) =>
+  return TIPOS_INTEGRACAO_DA_EMPRESA.map((tipo) =>
     paraIntegracao(tipo, gravadas.get(tipo), atividadeDe(tipo, worker, dados), agora),
   );
 }
@@ -726,10 +705,10 @@ export async function salvarIntegracao(
   db: Executor<"plataforma" | "auditoria">,
   ator: Ator,
   id: string,
-  tipo: TipoIntegracao,
+  tipo: TipoIntegracaoDaEmpresa,
   dados: { ativo: boolean; parametros: Record<string, ValorDeParametro> },
 ): Promise<void> {
-  validarParametrosDeIntegracao(tipo, dados.parametros);
+  validarParametrosDeIntegracao(dados.parametros);
   await db(async ({ plataforma, auditoria }) => {
     await empresaExistente(plataforma, id);
     const antes = (await plataforma.integracoes(id)).find((l) => l.tipo === tipo);
@@ -762,13 +741,10 @@ export async function definirSegredo(
   db: Executor<"plataforma" | "auditoria">,
   ator: Ator,
   id: string,
-  tipo: TipoIntegracao,
+  tipo: TipoIntegracaoDaEmpresa,
   valor: string,
   agora: Date,
 ): Promise<Date | null> {
-  if (!INFO_DA_INTEGRACAO[tipo].segredo) {
-    throw new ErroDeNegocio("ENTRADA_INVALIDA", "Esta integração não tem senha nem token.");
-  }
   const remover = valor === "";
   if (!remover && !chaves) throw cofreDesligado();
   const segredo =
