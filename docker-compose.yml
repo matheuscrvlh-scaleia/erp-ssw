@@ -22,8 +22,9 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORTA: "3000"
-      # O web (Caddy) fica na frente: o IP do cliente sai do X-Forwarded-For.
-      PROXIES_CONFIAVEIS: "1"
+      # Proxies na frente da api: o web (Caddy) e, se houver, o nginx do host (então 2). O IP do
+      # cliente sai do X-Forwarded-For.
+      PROXIES_CONFIAVEIS: ${PROXIES_CONFIAVEIS:-1}
       REDIS_URL: redis://redis:6379/0
       # Obrigatórias (a api recusa no boot e diz qual falta). Domínio, e-mail (Resend) e
       # worker-ssw ficam na tela Plataforma › Integrações, não aqui.

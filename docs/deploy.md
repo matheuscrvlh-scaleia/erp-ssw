@@ -20,7 +20,9 @@ worker-ssw: outro compose na mesma VPS; banco pela rede erp_banco, o resto pelos
 - O sistema inteiro responde na 8081; a 3001 expõe a api direto (`/healthz`, `/readyz`).
 - O Docker ignora o ufw para porta publicada: 3001 e 8081 ficam abertas para a internet. Postgres
   e Redis só escutam no `127.0.0.1` do host.
-- HTTPS fica com o proxy que estiver na frente da VPS. Os links dos e-mails usam o domínio
+- HTTPS fica com o proxy que estiver na frente da VPS. Na VPS atual: Cloudflare → nginx do host
+  (`/etc/nginx/sites-available/ssw2.scaleia.ai`, IP real do Cloudflare) → web:8081, com
+  `PROXIES_CONFIAVEIS=2` no `.env` (nginx + Caddy). Os links dos e-mails usam o domínio
   cadastrado em Plataforma › Integrações.
 
 ## 2. Primeiro deploy

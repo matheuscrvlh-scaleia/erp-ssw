@@ -3,6 +3,11 @@
 {
 	admin off
 	auto_https off
+	# O nginx do host (rede privada do Docker) repassa o IP do cliente no X-Forwarded-For. Quem
+	# chega direto pela internet não é confiável e tem o cabeçalho descartado.
+	servers {
+		trusted_proxies static private_ranges
+	}
 }
 
 :80 {
