@@ -178,6 +178,7 @@ export const PARAMETROS_DA_INTEGRACAO_PLATAFORMA = {
       ),
   }),
   worker_ssw: z.object({ url: enderecoHttp }),
+  ssw: z.object({ url: enderecoHttp }),
 } as const;
 
 const parametroTipoDaPlataforma = z.object({ tipo: z.enum(TIPOS_INTEGRACAO_PLATAFORMA) });

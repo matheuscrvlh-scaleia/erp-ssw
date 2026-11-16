@@ -272,6 +272,9 @@ Só telas da Plataforma mudam; operação, números e URLs das integrações fic
   (`/admin/ssw-diagnostico`) sai inteira, com a permissão `admin_ssw_diagnostico`. Ingestão,
   Importação SSW e XML CT-e continuam em Administração › Configurações; os logs das integrações,
   em Plataforma › Logs.
+- **Endereço do SSW web na Plataforma (16/11).** Plataforma › Configurações › Integrações ganha o
+  cartão SSW com o endereço em que o Worker SSW entra (o mesmo para todas as empresas). Trocar ali
+  vale no próximo login do worker; sem cadastro, ele usa `https://sistema.ssw.inf.br`.
 
 ## Ocorrências, Comprovantes, Coletas, Histórico e Admin › Códigos (spec 04)
 

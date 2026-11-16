@@ -105,7 +105,7 @@ export const INFO_DA_INTEGRACAO: Record<TipoIntegracaoDaEmpresa, InfoDaIntegraca
  * Integrações da própria Plataforma (valem para todas as empresas): o que antes ficava no .env da
  * VPS. O segredo de cada uma vai cifrado com a chave mestra (`SEGREDOS_CHAVES`), que fica no .env.
  */
-export const TIPOS_INTEGRACAO_PLATAFORMA = ["dominio", "email", "worker_ssw"] as const;
+export const TIPOS_INTEGRACAO_PLATAFORMA = ["dominio", "email", "worker_ssw", "ssw"] as const;
 export type TipoIntegracaoPlataforma = (typeof TIPOS_INTEGRACAO_PLATAFORMA)[number];
 
 export const INFO_DA_INTEGRACAO_PLATAFORMA: Record<TipoIntegracaoPlataforma, InfoDaIntegracao> = {
@@ -132,6 +132,18 @@ export const INFO_DA_INTEGRACAO_PLATAFORMA: Record<TipoIntegracaoPlataforma, Inf
       "Endereço do worker-ssw e o token de serviço. Sem eles, as ações das telas de ingestão ficam indisponíveis.",
     campos: [{ chave: "url", rotulo: "Endereço", dica: "Ex.: https://worker.ssw.scaleia.ai" }],
     segredo: "Token de serviço",
+  },
+  ssw: {
+    nome: "SSW",
+    descricao:
+      "Endereço do SSW web em que o Worker SSW entra para baixar os relatórios, o mesmo para todas as empresas. Vale no próximo login do worker.",
+    campos: [
+      {
+        chave: "url",
+        rotulo: "Endereço do SSW web",
+        dica: "Sem cadastro, o worker usa https://sistema.ssw.inf.br. Ex.: https://tms.ssw.inf.br",
+      },
+    ],
   },
 };
 

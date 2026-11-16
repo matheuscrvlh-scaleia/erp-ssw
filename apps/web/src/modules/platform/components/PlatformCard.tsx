@@ -1,7 +1,7 @@
 import { type IntegracaoDaPlataforma } from "@erp/shared/contracts/platform";
 import { INFO_DA_INTEGRACAO_PLATAFORMA } from "@erp/shared/platform";
 import { useQueryClient } from "@tanstack/react-query";
-import { Globe, type LucideIcon, Mail, Send, Server } from "lucide-react";
+import { Globe, Link, type LucideIcon, Mail, Send, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { CAMPO } from "@/components/common/FormFields";
@@ -23,6 +23,7 @@ const ICONE_DA_INTEGRACAO: Record<IntegracaoDaPlataforma["tipo"], LucideIcon> = 
   dominio: Globe,
   email: Mail,
   worker_ssw: Server,
+  ssw: Link,
 };
 
 /** Uma integração da Plataforma: parâmetros, segredo e, no e-mail, o envio de teste. */
